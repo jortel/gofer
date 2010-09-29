@@ -69,20 +69,3 @@ class Producer(Endpoint):
             sn = Producer.send(self, str(dst), **body)
             sns.append((repr(dst),sn))
         return sns
-
-
-class EventProducer(Producer):
-    """
-    Event producer.
-    """
-
-    def send(self, subject, event):
-        """
-        Send an event.
-        @param subject: A subject.
-        @type subject: str
-        @param event: The event body
-        @type event: object
-        """
-        destination = Topic('event', subject)
-        Producer.send(self, destination, event=event)
