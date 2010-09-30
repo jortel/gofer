@@ -16,14 +16,14 @@
 import sys
 import os
 from getopt import getopt
-from gopher.client import *
-from gopher.client.config import Config
-from gopher.client.lock import Lock, LockFailed
-from gopher.client.agent import *
-from gopher.client.agent.action import Action
-from gopher.client.agent.plugin import PluginLoader
-from gopher.client.agent.plugins import *
-from gopher.client.logutil import getLogger
+from gopher import *
+from gopher.config import Config
+from gopher.lock import Lock, LockFailed
+from gopher.agent import *
+from gopher.agent.action import Action
+from gopher.agent.plugin import PluginLoader
+from gopher.agent.plugins import *
+from gopher.logutil import getLogger
 from gopher.messaging import Queue
 from gopher.messaging.broker import Broker
 from gopher.messaging.base import Agent as Base
