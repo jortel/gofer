@@ -26,7 +26,7 @@ class PluginLoader:
     """
 
     ROOT = '/var/lib/gopher'
-    PLUGINS = 'gopherplugins'
+    PLUGINS = 'plugins'
 
     @classmethod
     def abspath(cls):
@@ -34,11 +34,10 @@ class PluginLoader:
 
     def __init__(self):
         path = self.abspath()
-        if os.path.exists(path):
-            return
-        os.makedirs(path)
-        pkg = os.path.join(path, '__init__.py')
-        f = open(pkg, 'w')
+        if not os.path.exists(path):
+            os.makedirs(path)
+        fn = os.path.join(path, '__init__.py')
+        f = open(fn, 'w')
         f.close()
 
     def load(self):
