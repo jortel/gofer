@@ -26,7 +26,7 @@ class PluginLoader:
     """
 
     ROOT = '/var/lib/gopher'
-    PLUGINS = 'agentplugins'
+    PLUGINS = 'gopherplugins'
 
     @classmethod
     def abspath(cls):

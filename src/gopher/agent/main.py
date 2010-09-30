@@ -22,7 +22,6 @@ from gopher.agent.lock import Lock, LockFailed
 from gopher.agent.config import Config
 from gopher.agent.action import Action
 from gopher.agent.plugin import PluginLoader
-from gopher.agent.plugins import *
 from gopher.agent.logutil import getLogger
 from gopher.messaging import Queue
 from gopher.messaging.broker import Broker
