@@ -17,13 +17,13 @@ import sys
 import os
 from getopt import getopt
 from gopher import *
-from gopher.config import Config
-from gopher.lock import Lock, LockFailed
 from gopher.agent import *
+from gopher.agent.lock import Lock, LockFailed
+from gopher.agent.config import Config
 from gopher.agent.action import Action
 from gopher.agent.plugin import PluginLoader
 from gopher.agent.plugins import *
-from gopher.logutil import getLogger
+from gopher.agent.logutil import getLogger
 from gopher.messaging import Queue
 from gopher.messaging.broker import Broker
 from gopher.messaging.base import Agent as Base
@@ -68,8 +68,8 @@ class Agent(Base):
         id = self.id()
         actionThread = ActionThread(actions)
         actionThread.start()
-        cfg = Config()
         queue = Queue(id)
+        cfg = Config()
         url = cfg.messaging.url
         if url and isinstance(url, str):
             broker = Broker.get(url)
@@ -87,12 +87,13 @@ class Agent(Base):
         Get agent id.
         @return: The agent UUID.
         """
-        cid = ConsumerId()
-        while ( not cid.uuid ):
-            log.info('Not registered.')
-            sleep(60)
-            cid.read()
-        return cid.uuid
+        while True:
+            cfg = Config()
+            cid = cfg.main.uuid
+            if cid:
+                return cid
+            log.info('Not associated.')
+            sleep(90)
 
 
 class AgentLock(Lock):
