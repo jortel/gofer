@@ -50,7 +50,6 @@ mkdir -p %{buildroot}/var/log/%{name}
 mkdir -p %{buildroot}/var/lib/%{name}/plugins
 
 cp bin/%{name}d %{buildroot}/usr/bin
-cp etc/%{name}/* %{buildroot}/etc/%{name}
 cp etc/init.d/%{name}d %{buildroot}/etc/init.d
 cp %{buildroot}/plugins/* %{buildroot}/var/lib/%{name}/plugins
 
