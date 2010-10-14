@@ -24,7 +24,6 @@ if major != '2' or minor not in ['4', '5', '6', '7']:
     raise Exception('unsupported version of python')
 
 requires = [
-    'python-qpid >= 0.7',
 ]
 
 if minor not in ['6', '7']:
