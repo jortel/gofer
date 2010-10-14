@@ -23,6 +23,7 @@ from gopher.messaging import Queue
 from gopher.messaging.base import Container
 from gopher.messaging.producer import Producer
 from gopher.messaging.window import *
+from gopher.proxy import Agent
 from time import sleep
 from datetime import datetime as dt
 from datetime import timedelta as delta
@@ -32,20 +33,6 @@ basicConfig(filename='/tmp/messaging.log', level=INFO)
 
 log = getLogger(__name__)
 
-
-
-class Agent(Container):
-
-    def __init__(self, id, **options):
-        self.__producer = Producer()
-        Container.__init__(self, id, self.__producer, **options)
-
-    def delete(self):
-        queue = self._Container__destination()
-        if isinstance(queue, (list,tuple)):
-            raise Exception, 'group delete, not permitted'
-        session = self.__producer.session()
-        queue.delete(session)
 
 
 def demo(agent):
