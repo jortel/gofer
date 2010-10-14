@@ -30,6 +30,9 @@ Requires: python-qpid >= 0.7
 %description common
 Contains common gopher modules.
 
+%prep
+%setup -q
+
 %build
 pushd src
 %{__python} setup.py build
