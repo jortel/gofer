@@ -18,8 +18,8 @@ import os
 from getopt import getopt
 from gopher import *
 from gopher.agent import *
-from gopher.action import Action
-from gopher.plugin import PluginLoader
+from gopher.agent.action import Action
+from gopher.agent.plugin import PluginLoader
 from gopher.agent.lock import Lock, LockFailed
 from gopher.agent.config import Config
 from gopher.agent.logutil import getLogger
