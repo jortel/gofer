@@ -3,8 +3,8 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name: gopher
-Version: 0.1
-Release: 2%{?dist}
+Version: 0.2
+Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
 License: GPLv2
@@ -85,5 +85,8 @@ fi
 %{python_sitelib}/%{name}/messaging/
 
 %changelog
+* Thu Oct 14 2010 Jeff Ortel <jortel@redhat.com> 0.2-1
+- Fix tito/rpm build errors.
+
 * Thu Sep 30 2010 Jeff Ortel <jortel@redhat.com> 0.1-1
 - 0.1
