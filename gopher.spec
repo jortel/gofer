@@ -45,13 +45,15 @@ pushd src
 popd
 
 mkdir -p %{buildroot}/usr/bin
+mkdir -p %{buildroot}/etc/%{name}
 mkdir -p %{buildroot}/etc/init.d
 mkdir -p %{buildroot}/var/log/%{name}
 mkdir -p %{buildroot}/var/lib/%{name}/plugins
 
 cp bin/%{name}d %{buildroot}/usr/bin
 cp etc/init.d/%{name}d %{buildroot}/etc/init.d
-cp %{buildroot}/plugins/* %{buildroot}/var/lib/%{name}/plugins
+cp etc/%{name}/* %{buildroot}/etc/%{name}
+cp src/plugins/*.py %{buildroot}/var/lib/%{name}/plugins
 
 rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
 
@@ -64,7 +66,8 @@ rm -rf %{buildroot}
 %{python_sitelib}/%{name}/agent/
 %{_bindir}/%{name}d
 %attr(755,root,root) %{_sysconfdir}/init.d/%{name}d
-%config(noreplace) /etc/%{name}/agent.conf
+%config(noreplace) %{_sysconfdir}/%{name}/agent.conf
+/var/lib/%{name}/plugins/
 
 %post
 chkconfig --add %{name}d
