@@ -13,56 +13,83 @@
 # in this software or its documentation.
 #
 
+"""
+Plugin classes.
+"""
+
 import os
 import sys
+from iniparse import INIConfig as Base
 from logging import getLogger
 
 log = getLogger(__name__)
 
 
+class PluginDescriptor(Base):
+    """
+    Provides a plugin descriptor
+    """
+    
+    ROOT = '/etc/gopher/plugins'
+    
+    @classmethod
+    def load(cls):
+        """
+        Load the plugin descriptors.
+        @return: A list of descriptors.
+        @rtype: list
+        """
+        lst = []
+        for fn in os.listdir(cls.ROOT):
+            path = os.path.join(cls.ROOT, fn)
+            fp = open(path)
+            descriptor = cls(fp)
+            plugin = fn.split('.')[0]
+            lst.append((plugin, descriptor))
+        return lst
+
+
 class PluginLoader:
     """
     Agent plugins loader.
+    @ivar plugins: A dict of plugins and configuratons
+    @type plugins: dict
     """
 
-    ROOT = '/var/lib/gopher'
-    PLUGINS = 'plugins'
-
-    @classmethod
-    def abspath(cls):
-        return os.path.join(cls.ROOT, cls.PLUGINS)
+    ROOT = '/var/lib/gopher/plugins'
+    
+    plugins = {}
 
     def __init__(self):
-        path = self.abspath()
-        if not os.path.exists(path):
-            os.makedirs(path)
-        fn = os.path.join(path, '__init__.py')
-        f = open(fn, 'w')
-        f.close()
+        if not os.path.exists(self.ROOT):
+            os.makedirs(self.ROOT)
 
     def load(self):
         """
         Load the plugins.
         """
         sys.path.append(self.ROOT)
-        path = self.abspath()
-        for fn in os.listdir(path):
-            if fn.startswith('__'):
+        for plugin, cfg in PluginDescriptor.load():
+            enabled = self.__enabled(cfg)
+            if not enabled:
                 continue
-            if not fn.endswith('.py'):
-                continue
-            self.__import(fn)
+            self.__import(plugin, cfg)
+                
+    def __enabled(self, cfg):
+        try:
+            return cfg.main.enabled
+        except:
+            return False
 
-    def __import(self, fn):
+    def __import(self, plugin, cfg):
         """
         Import a module by file name.
         @param fn: The module file name.
         @type fn: str
         """
-        mod = fn.rsplit('.', 1)[0]
-        imp = '%s.%s' % (self.PLUGINS, mod)
         try:
-            __import__(imp)
-            log.info('plugin "%s", imported', imp)
+            __import__(plugin)
+            self.plugins[plugin] = cfg
+            log.info('plugin "%s", imported', plugin)
         except:
-            log.error('plugin "%s", import failed', imp, exc_info=True)
+            log.error('plugin "%s", import failed', plugin, exc_info=True)

@@ -46,6 +46,7 @@ popd
 
 mkdir -p %{buildroot}/usr/bin
 mkdir -p %{buildroot}/etc/%{name}
+mkdir -p %{buildroot}/etc/%{name}/plugins
 mkdir -p %{buildroot}/etc/init.d
 mkdir -p %{buildroot}/var/log/%{name}
 mkdir -p %{buildroot}/var/lib/%{name}/plugins
@@ -53,6 +54,7 @@ mkdir -p %{buildroot}/var/lib/%{name}/plugins
 cp bin/%{name}d %{buildroot}/usr/bin
 cp etc/init.d/%{name}d %{buildroot}/etc/init.d
 cp etc/%{name}/* %{buildroot}/etc/%{name}
+cp etc/plugins/*.conf %{buildroot}/etc/%{name}/plugins
 cp src/plugins/*.py %{buildroot}/var/lib/%{name}/plugins
 
 rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
