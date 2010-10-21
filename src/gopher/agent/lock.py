@@ -36,7 +36,7 @@ class LockFile:
     @ivar pid: current process id.
     @type pid: int
     @ivar fp: The I{file pointer} to the lock file.
-    @ivar fp: I{file-like} pointer.
+    @type fp: I{file-like} pointer.
     """
 
     def __init__(self, path):

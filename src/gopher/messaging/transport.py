@@ -59,7 +59,7 @@ class SSLFactory:
         """
         @param host: A host or IP.
         @type host: str
-        @type port: A tcp port.
+        @param port: A tcp port.
         @type port: int
         """
         url = '%s:%d' % (host, port)
