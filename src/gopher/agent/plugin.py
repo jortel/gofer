@@ -19,6 +19,7 @@ Plugin classes.
 
 import os
 import sys
+from gopher import *
 from iniparse import INIConfig as Base
 from logging import getLogger
 
@@ -57,8 +58,6 @@ class PluginLoader:
     """
 
     ROOT = '/var/lib/gopher/plugins'
-    
-    plugins = {}
 
     def __init__(self):
         if not os.path.exists(self.ROOT):
@@ -76,6 +75,13 @@ class PluginLoader:
             self.__import(plugin, cfg)
                 
     def __enabled(self, cfg):
+        """
+        Safely validate the plugin is enabled.
+        @param cfg: A plugin descriptor.
+        @type cfg: L{PluginDescriptor}
+        @return: True if enabled.
+        @rtype: bool
+        """
         try:
             return cfg.main.enabled
         except:
@@ -84,12 +90,14 @@ class PluginLoader:
     def __import(self, plugin, cfg):
         """
         Import a module by file name.
-        @param fn: The module file name.
-        @type fn: str
+        @param plugin: The plugin (module) name.
+        @type plugin: str
+        @param cfg: A plugin descriptor.
+        @type cfg: L{PluginDescriptor}
         """
         try:
             __import__(plugin)
-            self.plugins[plugin] = cfg
+            Plugin.descriptor[plugin] = cfg
             log.info('plugin "%s", imported', plugin)
         except:
             log.error('plugin "%s", import failed', plugin, exc_info=True)

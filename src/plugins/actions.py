@@ -17,14 +17,15 @@
 Builtin Actions.
 """
 
+from gopher import Plugin
 from gopher.agent.action import *
 from logging import getLogger
 
 log = getLogger(__name__)
 
-
 @action(minutes=10)
 class TestAction(Action):
 
     def perform(self):
-        log.info('Hello')
+        cfg = Plugin.cfg(__name__)
+        log.info('Hello:\n%s', cfg)
