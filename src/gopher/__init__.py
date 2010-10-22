@@ -24,4 +24,11 @@ class Plugin:
     
     @classmethod
     def cfg(cls, name):
+        """
+        Get plugin configuration.
+        @param name: The plugin (module) name.
+        @type name: str
+        @return: The plugin configuration
+        @rtype: PluginDescriptor
+        """
         return cls.descriptor.get(name)
