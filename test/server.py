@@ -36,6 +36,8 @@ log = getLogger(__name__)
 
 
 def demo(agent):
+    print agent.admin.hello()
+    
     dog = agent.Dog()
     repolib = agent.RepoLib()
     print agent.dog.bark('RUF')

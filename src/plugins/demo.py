@@ -18,10 +18,9 @@ Demo plugin.
 """
 import os
 from gopher import Plugin
-from gopher.agent.action import *
-from gopher.messaging.decorators import *
+from gopher.agent.action import Action
+from gopher.decorators import *
 from gopher.agent.config import Config
-from gopher.agent.identity import identity
 from logging import getLogger
 
 log = getLogger(__name__)
