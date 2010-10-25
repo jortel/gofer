@@ -69,6 +69,6 @@ class Shell:
             f.close()
 
 
-@identity
-def getuuid():
-    return '123'
+#@identity
+#def getuuid():
+#    return '123'
