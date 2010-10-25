@@ -14,15 +14,25 @@
 #
 
 """
-Gopher (builtin) remote API.
+Demo plugin.
 """
-
 import os
+from gopher import Plugin
+from gopher.agent.action import *
 from gopher.messaging.decorators import *
 from gopher.agent.config import Config
+from gopher.agent.identity import identity
 from logging import getLogger
 
 log = getLogger(__name__)
+
+
+@action(minutes=10)
+class TestAction(Action):
+
+    def perform(self):
+        cfg = Plugin.cfg(__name__)
+        log.info('Hello:\n%s', cfg)#
 
 
 @remote
@@ -57,3 +67,8 @@ class Shell:
             return f.read()
         finally:
             f.close()
+
+
+@identity
+def getuuid():
+    return '123'

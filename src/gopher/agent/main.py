@@ -22,6 +22,7 @@ from gopher.agent.action import Action
 from gopher.agent.plugin import PluginLoader
 from gopher.agent.lock import Lock, LockFailed
 from gopher.agent.config import Config
+from gopher.agent.identity import Identity
 from gopher.agent.logutil import getLogger
 from gopher.messaging import Queue
 from gopher.messaging.broker import Broker
@@ -86,11 +87,11 @@ class Agent(Base):
         Get agent id.
         @return: The agent UUID.
         """
+        ident = Identity()
         while True:
-            cfg = Config()
-            cid = cfg.main.uuid
-            if cid:
-                return cid
+            uuid = ident.getuuid()
+            if uuid:
+                return uuid
             log.info('Not associated.')
             sleep(90)
 
