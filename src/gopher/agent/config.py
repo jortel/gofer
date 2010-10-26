@@ -21,6 +21,8 @@ from iniparse import INIConfig as Base
 class Config(Base):
     """
     The gopher agent configuration.
+    @cvar ROOT: The root configuration directory.
+    @type ROOT: str
     @cvar PATH: The absolute path to the config directory.
     @type PATH: str
     @cvar USER: The path to an alternate configuration file
@@ -31,9 +33,11 @@ class Config(Base):
     @type ALT: str
     """
 
+    ROOT = '/etc/gopher'
     FILE = 'agent.conf'
-    PATH = os.path.join('/etc/gopher', FILE)
+    PATH = os.path.join(ROOT, FILE)
     USER = os.path.join('~/.gopher', FILE)
+    CNFD = os.path.join(ROOT, 'conf.d')
     ALT = 'GOPHER_OVERRIDE'
 
     def __init__(self):
@@ -49,6 +53,7 @@ class Config(Base):
             if altpath:
                 alt = self.__read(altpath)
                 self.__mergeIn(alt)
+            self.__addconfd()
         finally:
             fp.close()
 
@@ -137,3 +142,12 @@ class Config(Base):
             return path
         else:
             None
+            
+    def __addconfd(self):
+        """
+        Read and merge the conf.d files.
+        """
+        for fn in os.listdir(self.CNFD):
+            path = os.path.join(self.CNFD, fn)
+            cfg = self.__read(path)
+            self.__mergeIn(cfg)
