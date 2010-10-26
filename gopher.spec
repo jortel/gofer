@@ -3,7 +3,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name: gopher
-Version: 0.3
+Version: 0.4
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -90,6 +90,9 @@ fi
 %{python_sitelib}/%{name}/messaging/
 
 %changelog
+* Tue Oct 26 2010 Jeff Ortel <jortel@redhat.com> 0.4-1
+- Add conf.d/ processing. (jortel@redhat.com)
+
 * Tue Oct 26 2010 Jeff Ortel <jortel@redhat.com> 0.3-1
 - Add conf.d/ processing. (jortel@redhat.com)
 - Add decorator module for convenient import. (jortel@redhat.com)
