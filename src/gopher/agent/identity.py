@@ -25,26 +25,29 @@ class Identity:
     @ivar plugin: The identity plugin
     @type plugin: An identity function
     """
-    plugin = []
+    plugins = []
         
     def getuuid(self):
-        for fn in self.plugin:
+        """
+        Get the agent UUID.
+        @return: The UUID.
+        @rtype: str
+        """
+        for plugin in self.plugins:
             try:
-                return fn()
+                return plugin.getuuid()
             except:
-                log.error('plugin (%s) failed', fn, exc_info=True)
+                log.error('plugin (%s) failed', plugin, exc_info=True)
         cfg = Config()
         return cfg.main.uuid
-            
-    def __str__(self):
-        return self.uuid
-    
 
-def identity(fn):
+
+def identity(cls):
     """
     Identity decorator
-    @param fn: A function that provides identity
+    @param cls: A function that provides identity
     @type fn: callable
     """
-    Identity.plugin.append(fn)
-    return fn
+    plugin = cls()
+    Identity.plugins.append(plugin)
+    return cls

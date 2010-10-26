@@ -20,8 +20,14 @@ SPEC = $(PKG).spec
 SETUP = setup.py
 DOCTAR = gopher-docs.tar.gz
 FEDORAPEOPLE = jortel@fedorapeople.org
+TITODIR = /tmp/tito
 
-all : docs
+release : rpm rdocs
+    scp `find $(TITODIR) -name \*.rpm` fedorahosted.org:gopher
+
+rpm	:
+	rm -rf $(TITODIR)
+	tito build --rpm
 
 rdocs : docs
 	scp /tmp/$(DOCTAR) $(FEDORAPEOPLE):
