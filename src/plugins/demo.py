@@ -70,5 +70,5 @@ class Shell:
 
 #@identity
 #class MyIdentity:
-#    def getuuid():
-#        return '123'
+#    def getuuid(self):
+#        return 'zzz'
