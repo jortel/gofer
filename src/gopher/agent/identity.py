@@ -40,6 +40,22 @@ class Identity:
                 log.error('plugin (%s) failed', plugin, exc_info=True)
         cfg = Config()
         return cfg.main.uuid
+    
+    def getcert(self):
+        """
+        Get the x509 certificate & private key location.
+        @return: tuple (key-path, crt-path)
+        @rtype: tuple
+        """
+        for plugin in self.plugins:
+            try:
+                return plugin.getcert()
+            except:
+                log.error('plugin (%s) failed', plugin, exc_info=True)
+        cfg = Config()
+        keypath = None
+        crtpath = cfg.messaging.clientcert
+        return (keypath, crtpath)
 
 
 def identity(cls):
