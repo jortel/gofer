@@ -142,7 +142,7 @@ class Config(Base):
             return path
         else:
             None
-            
+
     def __addconfd(self):
         """
         Read and merge the conf.d files.

@@ -47,6 +47,7 @@ popd
 mkdir -p %{buildroot}/usr/bin
 mkdir -p %{buildroot}/etc/%{name}
 mkdir -p %{buildroot}/etc/%{name}/plugins
+mkdir -p %{buildroot}/etc/%{name}/conf.d
 mkdir -p %{buildroot}/etc/init.d
 mkdir -p %{buildroot}/var/log/%{name}
 mkdir -p %{buildroot}/var/lib/%{name}/plugins
