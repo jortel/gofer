@@ -45,8 +45,8 @@ class Identity:
 def identity(cls):
     """
     Identity decorator
-    @param cls: A function that provides identity
-    @type fn: callable
+    @param cls: A class that provides identity
+    @type cls: plugin class
     """
     plugin = cls()
     Identity.plugins.append(plugin)

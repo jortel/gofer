@@ -23,7 +23,7 @@ FEDORAPEOPLE = jortel@fedorapeople.org
 TITODIR = /tmp/tito
 
 release : rpm rdocs
-    scp `find $(TITODIR) -name \*.rpm` fedorahosted.org:gopher
+	scp `find $(TITODIR) -name \*.rpm` fedorahosted.org:gopher
 
 rpm	:
 	rm -rf $(TITODIR)
