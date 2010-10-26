@@ -3,7 +3,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name: gopher
-Version: 0.2
+Version: 0.3
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -88,6 +88,16 @@ fi
 %{python_sitelib}/%{name}/messaging/
 
 %changelog
+* Tue Oct 26 2010 Jeff Ortel <jortel@redhat.com> 0.3-1
+- Add conf.d/ processing. (jortel@redhat.com)
+- Add decorator module for convenient import. (jortel@redhat.com)
+- Comment out the demo identity plugin. (jortel@redhat.com)
+- Add identity plugin. (jortel@redhat.com)
+- Update epydocs. (jortel@redhat.com)
+- Add support for plugin to get configuration. (jortel@redhat.com)
+- Add plugin descriptors. (jortel@redhat.com)
+- Add makefile and fix epydocs. (jortel@redhat.com)
+
 * Thu Oct 14 2010 Jeff Ortel <jortel@redhat.com> 0.2-1
 - Fix tito/rpm build errors.
 
