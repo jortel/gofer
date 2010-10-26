@@ -54,8 +54,8 @@ mkdir -p %{buildroot}/var/lib/%{name}/plugins
 
 cp bin/%{name}d %{buildroot}/usr/bin
 cp etc/init.d/%{name}d %{buildroot}/etc/init.d
-cp etc/%{name}/* %{buildroot}/etc/%{name}
-cp etc/plugins/*.conf %{buildroot}/etc/%{name}/plugins
+cp etc/%{name}/*.conf %{buildroot}/etc/%{name}
+cp etc/%{name}/plugins/*.conf %{buildroot}/etc/%{name}/plugins
 cp src/plugins/*.py %{buildroot}/var/lib/%{name}/plugins
 
 rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
@@ -66,10 +66,12 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root,-)
 %doc
+%dir %{_sysconfdir}/%{name}/conf.d/
 %{python_sitelib}/%{name}/agent/
 %{_bindir}/%{name}d
 %attr(755,root,root) %{_sysconfdir}/init.d/%{name}d
 %config(noreplace) %{_sysconfdir}/%{name}/agent.conf
+%config %{_sysconfdir}/%{name}/plugins/*.conf
 /var/lib/%{name}/plugins/
 
 %post
