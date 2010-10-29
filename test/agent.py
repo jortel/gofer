@@ -27,7 +27,18 @@ from gopher.messaging.consumer import RequestConsumer
 from gopher.messaging.broker import Broker
 from logging import INFO, basicConfig
 
-basicConfig(filename='/tmp/messaging.log', level=INFO)
+basicConfig(filename='/tmp/gopher.log', level=INFO)
+
+@remote
+@alias(name='admin')
+class AgentAdmin:
+
+    @remotemethod
+    def hello(self):
+        s = []
+        s.append('Hello, I am gopher agent.')
+        s.append('Status: ready')
+        return '\n'.join(s)
 
 @remote
 @alias(name=['repolib'])
@@ -57,7 +68,8 @@ class Dog:
 class Agent(Base):
     def __init__(self, id):
         queue = Queue(id)
-        url = 'ssl://localhost:5674'
+        #url = 'ssl://localhost:5674'
+        url = 'tcp://localhost:5672'
         broker = Broker.get(url)
         broker.cacert = '/etc/pki/qpid/ca/ca.crt'
         broker.clientcert = '/etc/pki/qpid/client/client.pem'

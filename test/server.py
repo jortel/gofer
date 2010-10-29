@@ -29,7 +29,7 @@ from datetime import datetime as dt
 from datetime import timedelta as delta
 from logging import INFO, basicConfig, getLogger
 
-basicConfig(filename='/tmp/messaging.log', level=INFO)
+basicConfig(filename='/tmp/gopher.log', level=INFO)
 
 log = getLogger(__name__)
 
