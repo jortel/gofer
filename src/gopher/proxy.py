@@ -30,13 +30,17 @@ class Agent(Container):
     @type __producer: L{Producer}
     """
 
-    def __init__(self, id, producer=None, **options):
+    def __init__(self, uuid, producer=None, **options):
         """
+        @param uuid: The agent ID.
+        @type uuid: str
         @param producer: The AMQP producer.
         @type producer: L{Producer}
         """
-        self.__producer = producer or Producer()
-        Container.__init__(self, id, self.__producer, **options)
+        if not producer:
+            producer = Producer()
+        self.__producer = producer
+        Container.__init__(self, uuid, self.__producer, **options)
 
     def delete(self):
         """

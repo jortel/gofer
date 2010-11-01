@@ -70,16 +70,16 @@ class Container:
     @type __options: L{Options}
     """
 
-    def __init__(self, id, producer, **options):
+    def __init__(self, uuid, producer, **options):
         """
-        @param id: The peer ID.
-        @type id: str
+        @param uuid: The peer ID.
+        @type uuid: str
         @param producer: An AMQP producer.
         @type producer: L{gopher.messaging.producer.Producer}
         @param options: keyword options.
         @type options: dict
         """
-        self.__id = id
+        self.__id = uuid
         self.__options = Options(window=Window(), timeout=90)
         self.__stubs = []
         self.__options.update(options)
