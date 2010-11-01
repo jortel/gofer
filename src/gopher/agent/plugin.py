@@ -57,7 +57,7 @@ class PluginLoader:
     @type plugins: dict
     """
 
-    ROOT = '/var/lib/gopher/plugins'
+    ROOT = '/usr/lib/gopher/plugins'
 
     def __init__(self):
         if not os.path.exists(self.ROOT):
