@@ -31,7 +31,7 @@ class TestAction(Action):
 
     def perform(self):
         cfg = Plugin.cfg(__name__)
-        log.info('Hello:\n%s', cfg)#
+        log.info('Hello:\n%s', cfg)
 
 
 @remote
@@ -45,6 +45,22 @@ class AgentAdmin:
         s.append('Hello, I am gopher agent "%s"' % cfg.main.uuid)
         s.append('Here is my configuration:\n%s' % cfg)
         s.append('Status: ready')
+        return '\n'.join(s)
+    
+    def help(self):
+        s = []
+        s.append('plugins:')
+        for p in Plugin.descriptor.keys():
+            s.append('  %s' % p)
+        s.append('actions:')
+        for a in Action.actions:
+            s.append(str(a))
+        s.append('methods:')
+        for m in Remote.methods:
+            p = m.__module__
+            c = m.im_class.__name__
+            n = m.__name__
+            s.append('  (%s) %s.%s' % (p, c, m))
         return '\n'.join(s)
 
 
