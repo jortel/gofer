@@ -50,13 +50,13 @@ mkdir -p %{buildroot}/etc/%{name}/plugins
 mkdir -p %{buildroot}/etc/%{name}/conf.d
 mkdir -p %{buildroot}/etc/init.d
 mkdir -p %{buildroot}/var/log/%{name}
-mkdir -p %{buildroot}/var/lib/%{name}/plugins
+mkdir -p %{buildroot}/usr/lib/%{name}/plugins
 
 cp bin/%{name}d %{buildroot}/usr/bin
 cp etc/init.d/%{name}d %{buildroot}/etc/init.d
 cp etc/%{name}/*.conf %{buildroot}/etc/%{name}
 cp etc/%{name}/plugins/*.conf %{buildroot}/etc/%{name}/plugins
-cp src/plugins/*.py %{buildroot}/var/lib/%{name}/plugins
+cp src/plugins/*.py %{buildroot}/usr/lib/%{name}/plugins
 
 rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
 
@@ -72,7 +72,7 @@ rm -rf %{buildroot}
 %attr(755,root,root) %{_sysconfdir}/init.d/%{name}d
 %config(noreplace) %{_sysconfdir}/%{name}/agent.conf
 %config %{_sysconfdir}/%{name}/plugins/*.conf
-/var/lib/%{name}/plugins/
+/usr/lib/%{name}/plugins/
 
 %post
 chkconfig --add %{name}d
