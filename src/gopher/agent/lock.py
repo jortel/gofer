@@ -79,6 +79,7 @@ class LockFile:
         @param pid: The process ID.
         @type pid: int
         """
+        self.fp.truncate(0)
         self.fp.seek(0)
         content = str(pid)
         self.fp.write(content)
