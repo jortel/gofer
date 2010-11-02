@@ -3,7 +3,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name: gopher
-Version: 0.7
+Version: 0.8
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -90,6 +90,9 @@ fi
 %{python_sitelib}/%{name}/messaging/
 
 %changelog
+* Tue Nov 02 2010 Jeff Ortel <jortel@redhat.com> 0.8-1
+- handle keyboard interupts. (jortel@redhat.com)
+
 * Tue Nov 02 2010 Jeff Ortel <jortel@redhat.com> 0.7-1
 - Mangle plugin module name when found in the path to prevent name collisions.
   (jortel@redhat.com)
