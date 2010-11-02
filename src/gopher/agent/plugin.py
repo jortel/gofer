@@ -96,11 +96,31 @@ class PluginLoader:
         @type cfg: L{PluginDescriptor}
         """
         try:
-            name = '%splugin' % plugin
+            name = self.__mangled(plugin)
             mod = '%s.py' % plugin
             path = os.path.join(self.ROOT, mod)
             imp.load_source(name, path)
+            log.info('plugin "%s", imported as: "%s"', plugin, name)
+            Plugin.descriptor[name] = cfg
             Plugin.descriptor[plugin] = cfg
-            log.info('plugin "%s", imported', plugin)
         except:
-            log.error('plugin "%s", import failed', plugin, exc_info=True)
+            log.error(
+                'plugin "%s", import failed',
+                plugin, 
+                exc_info=True)
+            
+    def __mangled(self, plugin):
+        """
+        Get the module name for the specified plugin.
+        @param plugin: The name of the plugin.
+        @type plugin: str
+        @return: The (mangled if necessary) plugin's module name.
+        @rtype: str
+        """
+        try:
+            imp.find_module(plugin)
+            log.warn('"%s" found in python-path', plugin)
+            log.info('"%s" mangled to avoid collisions', plugin)
+            return '%s_plugin' % plugin
+        except:
+            return plugin
