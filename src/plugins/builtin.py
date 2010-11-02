@@ -47,6 +47,7 @@ class AgentAdmin:
         s.append('Status: ready')
         return '\n'.join(s)
     
+    @remotemethod
     def help(self):
         s = []
         s.append('plugins:')
@@ -54,14 +55,20 @@ class AgentAdmin:
             s.append('  %s' % p)
         s.append('actions:')
         for a in Action.actions:
-            s.append(str(a))
+            s.append('  %s %s' % a)
         s.append('methods:')
-        for m in Remote.methods:
-            p = m.__module__
-            c = m.im_class.__name__
-            n = m.__name__
-            s.append('  (%s) %s.%s' % (p, c, m))
+        for m in self.__methods():
+            s.append('  %s.%s()' % m)
         return '\n'.join(s)
+    
+    def __methods(self):
+        methods = []
+        for c in Remote.classes:
+            for m in dir(c):
+                m = getattr(c, m)
+                if callable(m) and m.im_func in Remote.methods:
+                    methods.append((c, m.__name__))
+        return methods
 
 
 @remote
