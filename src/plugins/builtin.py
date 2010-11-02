@@ -50,13 +50,13 @@ class AgentAdmin:
     @remotemethod
     def help(self):
         s = []
-        s.append('plugins:')
+        s.append('Plugins:')
         for p in Plugin.descriptor.keys():
             s.append('  %s' % p)
-        s.append('actions:')
+        s.append('Actions:')
         for a in Action.actions:
             s.append('  %s %s' % a)
-        s.append('methods:')
+        s.append('Methods (remote):')
         for m in self.__methods():
             s.append('  %s.%s()' % m)
         return '\n'.join(s)
@@ -68,6 +68,7 @@ class AgentAdmin:
                 m = getattr(c, m)
                 if callable(m) and m.im_func in Remote.methods:
                     methods.append((c, m.__name__))
+        methods.sort()
         return methods
 
 
