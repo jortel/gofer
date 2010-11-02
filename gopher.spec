@@ -3,7 +3,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name: gopher
-Version: 0.6
+Version: 0.7
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -90,6 +90,16 @@ fi
 %{python_sitelib}/%{name}/messaging/
 
 %changelog
+* Tue Nov 02 2010 Jeff Ortel <jortel@redhat.com> 0.7-1
+- Mangle plugin module name when found in the path to prevent name collisions.
+  (jortel@redhat.com)
+- Update plugin importer to be more precise. (jortel@redhat.com)
+- Fix intermittent problem whereby gopherd allows multiple instances.
+  (jortel@redhat.com)
+- Add builtin admin.help(). (jortel@redhat.com)
+- Rename demo (plugin) to builtin. (jortel@redhat.com)
+- Replace /var/lib with: /usr/lib for plugins. (jortel@redhat.com)
+
 * Mon Nov 01 2010 Jeff Ortel <jortel@redhat.com> 0.6-1
 - Move gopher plugins to proper location /usr/lib. (jortel@redhat.com)
 - Change 'id' parameter to be uuid. (jortel@redhat.com)
