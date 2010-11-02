@@ -19,6 +19,7 @@ Plugin classes.
 
 import os
 import sys
+import imp
 from gopher import *
 from iniparse import INIConfig as Base
 from logging import getLogger
@@ -67,7 +68,6 @@ class PluginLoader:
         """
         Load the plugins.
         """
-        sys.path.append(self.ROOT)
         for plugin, cfg in PluginDescriptor.load():
             enabled = self.__enabled(cfg)
             if not enabled:
@@ -96,7 +96,10 @@ class PluginLoader:
         @type cfg: L{PluginDescriptor}
         """
         try:
-            __import__(plugin)
+            name = '%splugin' % plugin
+            mod = '%s.py' % plugin
+            path = os.path.join(self.ROOT, mod)
+            imp.load_source(name, path)
             Plugin.descriptor[plugin] = cfg
             log.info('plugin "%s", imported', plugin)
         except:
