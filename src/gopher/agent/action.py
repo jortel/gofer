@@ -14,7 +14,7 @@
 #
 
 """
-Action slass for pulp agent.
+Action slass for gopher agent.
 """
 
 from datetime import datetime as dt
