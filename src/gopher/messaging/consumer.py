@@ -63,6 +63,8 @@ class ReceiverThread(Thread):
                 self.consumer.received(m)
             except Empty:
                 pass
+            except KeyboardInterrupt:
+                raise
             except Exception:
                 log.error('failed:\n%s', m, exc_info=True)
 
@@ -213,6 +215,8 @@ class Reader(Consumer):
             envelope.load(message.content)
             log.info('{%s} read next:\n%s', self.id(), envelope)
             return envelope
+        except KeyboardInterrupt:
+            raise
         except Empty:
             pass
 
