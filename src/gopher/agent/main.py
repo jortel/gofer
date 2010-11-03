@@ -65,10 +65,10 @@ class Agent(Base):
     """
 
     def __init__(self, actions=[]):
-        id = self.id()
+        uuid = self.uuid()
         actionThread = ActionThread(actions)
         actionThread.start()
-        queue = Queue(id)
+        queue = Queue(uuid)
         cfg = Config()
         url = cfg.messaging.url
         if url and isinstance(url, str):
@@ -78,13 +78,13 @@ class Agent(Base):
             consumer = RequestConsumer(queue, url=url)
             Base.__init__(self, consumer)
         else:
-            log.warn('agent {%s} has messaging disabled.', id)
-        log.info('agent {%s} - started.', id)
+            log.warn('agent {%s} has messaging disabled.', uuid)
+        log.info('agent {%s} - started.', uuid)
         actionThread.join()
 
-    def id(self):
+    def uuid(self):
         """
-        Get agent id.
+        Get agent uuid.
         @return: The agent UUID.
         """
         ident = Identity()
