@@ -15,20 +15,20 @@ BuildArch: noarch
 BuildRequires: python2-devel
 BuildRequires: python-setuptools
 BuildRequires: rpm-python
-Requires: %{name}-common = %{version}
+Requires: %{name}-lib = %{version}
 
 %description
 Gofer provides a lightweight, extensible python agent.
 
-%package common
-Summary: Gofer common modules.
+%package lib
+Summary: Gofer lib modules.
 Group: Development/Languages
 BuildRequires: rpm-python
 Requires: python-simplejson
 Requires: python-qpid >= 0.7
 
-%description common
-Contains common gofer modules.
+%description lib
+Contains lib gofer modules.
 
 %prep
 %setup -q
@@ -83,7 +83,7 @@ if [ $1 = 0 ] ; then
    /sbin/chkconfig --del %{name}d
 fi
 
-%files common
+%files lib
 %defattr(-,root,root,-)
 %doc
 %{python_sitelib}/%{name}/*.py*
