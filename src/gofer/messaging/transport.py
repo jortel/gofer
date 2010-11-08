@@ -17,7 +17,7 @@
 Contains custom QPID transport classes.
 """
 
-from gopher.messaging.broker import Broker
+from gofer.messaging.broker import Broker
 from ssl import wrap_socket, CERT_NONE, CERT_REQUIRED
 from qpid.messaging.transports import connect, TRANSPORTS, tls
 from logging import getLogger

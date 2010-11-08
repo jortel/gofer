@@ -18,8 +18,8 @@ Provides RMI dispatcher classes.
 
 import sys
 import traceback as tb
-from gopher.messaging import *
-from gopher.messaging.decorators import mayinvoke
+from gofer.messaging import *
+from gofer.messaging.decorators import mayinvoke
 from logging import getLogger
 
 

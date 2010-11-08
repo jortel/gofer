@@ -17,9 +17,9 @@
 AMQP endpoint base classes.
 """
 
-from gopher.messaging import *
-from gopher.messaging.broker import Broker
-from gopher.messaging.transport import SSLTransport
+from gofer.messaging import *
+from gofer.messaging.broker import Broker
+from gofer.messaging.transport import SSLTransport
 from qpid.messaging import Connection
 from time import sleep
 from logging import getLogger

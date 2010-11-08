@@ -18,7 +18,7 @@ import logging
 from logging import root, Formatter
 from logging.handlers import RotatingFileHandler
 
-LOGDIR = '/var/log/gopher'
+LOGDIR = '/var/log/gofer'
 LOGFILE = 'agent.log'
 
 handler = None

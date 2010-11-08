@@ -13,7 +13,7 @@
 # in this software or its documentation.
 #
 
-from gopher.agent.config import Config
+from gofer.agent.config import Config
 from logging import getLogger
 
 log = getLogger(__name__)

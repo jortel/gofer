@@ -16,8 +16,8 @@
 # in this software or its documentation.
 #
 
-from gopher.messaging.base import Container
-from gopher.messaging.producer import Producer
+from gofer.messaging.base import Container
+from gofer.messaging.producer import Producer
 from logging import getLogger
 
 log = getLogger(__name__)

@@ -18,8 +18,8 @@ Provides (local) message storage classes.
 """
 
 import os
-from gopher.messaging import *
-from gopher.messaging.window import Window
+from gofer.messaging import *
+from gofer.messaging.window import Window
 from time import sleep
 from stat import *
 from threading import Thread, RLock
@@ -45,7 +45,7 @@ class PendingQueue:
     @type uncommitted: [path,..]
     """
 
-    ROOT = '/var/lib/gopher/messaging'
+    ROOT = '/var/lib/gofer/messaging'
 
     def __init__(self, id):
         """
@@ -216,7 +216,7 @@ class PendingReceiver(Thread):
     @ivar queue: The L{PendingQueue} being read.
     @type queue: L{PendingQueue}
     @ivar consumer: The queue listener.
-    @type consumer: L{gopher.messaging.consumer.Consumer}
+    @type consumer: L{gofer.messaging.consumer.Consumer}
     """
 
     def __init__(self, queue, listener):

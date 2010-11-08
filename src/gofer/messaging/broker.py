@@ -17,7 +17,7 @@
 Defined AMQP broker objects.
 """
 
-from gopher.messaging import *
+from gofer.messaging import *
 from qpid.messaging import Connection
 from threading import RLock
 from logging import getLogger

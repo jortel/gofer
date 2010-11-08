@@ -17,9 +17,9 @@
 Contains request delivery policies.
 """
 
-from gopher.messaging import *
-from gopher.messaging.dispatcher import Return
-from gopher.messaging.consumer import Reader
+from gofer.messaging import *
+from gofer.messaging.dispatcher import Return
+from gofer.messaging.consumer import Reader
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -39,13 +39,13 @@ class RequestMethod:
     """
     Base class for request methods.
     @ivar producer: A queue producer.
-    @type producer: L{gopher.messaging.producer.Producer}
+    @type producer: L{gofer.messaging.producer.Producer}
     """
 
     def __init__(self, producer):
         """
         @param producer: A queue producer.
-        @type producer: L{gopher.messaging.producer.Producer}
+        @type producer: L{gofer.messaging.producer.Producer}
         """
         self.producer = producer
 
@@ -83,13 +83,13 @@ class Synchronous(RequestMethod):
     The synchronous request method.
     This method blocks until a reply is received.
     @ivar reader: A queue reader used to read the reply.
-    @type reader: L{gopher.messaging.consumer.Reader}
+    @type reader: L{gofer.messaging.consumer.Reader}
     """
 
     def __init__(self, producer, timeout):
         """
         @param producer: A queue producer.
-        @type producer: L{gopher.messaging.producer.Producer}
+        @type producer: L{gofer.messaging.producer.Producer}
         @param timeout: The request timeout (seconds).
         @type timeout: int
         """
@@ -154,7 +154,7 @@ class Asynchronous(RequestMethod):
     def __init__(self, producer, tag=None):
         """
         @param producer: A queue producer.
-        @type producer: L{gopher.messaging.producer.Producer}
+        @type producer: L{gofer.messaging.producer.Producer}
         @param tag: A reply I{correlation} tag.
         @type tag: str
         """

@@ -20,7 +20,7 @@ from iniparse import INIConfig as Base
 
 class Config(Base):
     """
-    The gopher agent configuration.
+    The gofer agent configuration.
     @cvar ROOT: The root configuration directory.
     @type ROOT: str
     @cvar PATH: The absolute path to the config directory.
@@ -33,12 +33,12 @@ class Config(Base):
     @type ALT: str
     """
 
-    ROOT = '/etc/gopher'
+    ROOT = '/etc/gofer'
     FILE = 'agent.conf'
     PATH = os.path.join(ROOT, FILE)
-    USER = os.path.join('~/.gopher', FILE)
+    USER = os.path.join('~/.gofer', FILE)
     CNFD = os.path.join(ROOT, 'conf.d')
-    ALT = 'GOPHER_OVERRIDE'
+    ALT = 'GOFER_OVERRIDE'
 
     def __init__(self):
         """

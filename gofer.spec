@@ -2,13 +2,13 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
-Name: gopher
+Name: gofer
 Version: 0.9
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
 License: GPLv2
-URL: https://fedorahosted.org/gopher/
+URL: https://fedorahosted.org/gofer/
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch: noarch
@@ -18,17 +18,17 @@ BuildRequires: rpm-python
 Requires: %{name}-common = %{version}
 
 %description
-Gopher provides a lightweight, extensible python agent.
+Gofer provides a lightweight, extensible python agent.
 
 %package common
-Summary: Gopher common modules.
+Summary: Gofer common modules.
 Group: Development/Languages
 BuildRequires: rpm-python
 Requires: python-simplejson
 Requires: python-qpid >= 0.7
 
 %description common
-Contains common gopher modules.
+Contains common gofer modules.
 
 %prep
 %setup -q
@@ -101,14 +101,14 @@ fi
 - Mangle plugin module name when found in the path to prevent name collisions.
   (jortel@redhat.com)
 - Update plugin importer to be more precise. (jortel@redhat.com)
-- Fix intermittent problem whereby gopherd allows multiple instances.
+- Fix intermittent problem whereby goferd allows multiple instances.
   (jortel@redhat.com)
 - Add builtin admin.help(). (jortel@redhat.com)
 - Rename demo (plugin) to builtin. (jortel@redhat.com)
 - Replace /var/lib with: /usr/lib for plugins. (jortel@redhat.com)
 
 * Mon Nov 01 2010 Jeff Ortel <jortel@redhat.com> 0.6-1
-- Move gopher plugins to proper location /usr/lib. (jortel@redhat.com)
+- Move gofer plugins to proper location /usr/lib. (jortel@redhat.com)
 - Change 'id' parameter to be uuid. (jortel@redhat.com)
 - Add AgentAdmin back to test agent. (jortel@redhat.com)
 - add getcert() to Identity. (jortel@redhat.com)

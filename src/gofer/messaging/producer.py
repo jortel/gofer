@@ -17,8 +17,8 @@
 Contains AMQP message producer classes.
 """
 
-from gopher.messaging import *
-from gopher.messaging.endpoint import Endpoint
+from gofer.messaging import *
+from gofer.messaging.endpoint import Endpoint
 from qpid.messaging import Message
 from logging import getLogger
 

@@ -16,18 +16,18 @@
 import sys
 import os
 from getopt import getopt
-from gopher import *
-from gopher.agent import *
-from gopher.agent.action import Action
-from gopher.agent.plugin import PluginLoader
-from gopher.agent.lock import Lock, LockFailed
-from gopher.agent.config import Config
-from gopher.agent.identity import Identity
-from gopher.agent.logutil import getLogger
-from gopher.messaging import Queue
-from gopher.messaging.broker import Broker
-from gopher.messaging.base import Agent as Base
-from gopher.messaging.consumer import RequestConsumer
+from gofer import *
+from gofer.agent import *
+from gofer.agent.action import Action
+from gofer.agent.plugin import PluginLoader
+from gofer.agent.lock import Lock, LockFailed
+from gofer.agent.config import Config
+from gofer.agent.identity import Identity
+from gofer.agent.logutil import getLogger
+from gofer.messaging import Queue
+from gofer.messaging.broker import Broker
+from gofer.messaging.base import Agent as Base
+from gofer.messaging.consumer import RequestConsumer
 from time import sleep
 from threading import Thread
 
@@ -103,7 +103,7 @@ class AgentLock(Lock):
     @type PATH: str
     """
 
-    PATH = '/var/run/gopherd.pid'
+    PATH = '/var/run/goferd.pid'
 
     def __init__(self):
         Lock.__init__(self, self.PATH)
@@ -139,7 +139,7 @@ def usage():
     Show usage.
     """
     s = []
-    s.append('\ngopherd <optoins>')
+    s.append('\ngoferd <optoins>')
     s.append('  -h, --help')
     s.append('      Show help')
     s.append('  -c, --console')

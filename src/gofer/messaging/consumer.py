@@ -17,12 +17,12 @@
 Provides AMQP message consumer classes.
 """
 
-from gopher.messaging import *
-from gopher.messaging.endpoint import Endpoint
-from gopher.messaging.producer import Producer
-from gopher.messaging.dispatcher import Return
-from gopher.messaging.window import *
-from gopher.messaging.store import PendingQueue, PendingReceiver
+from gofer.messaging import *
+from gofer.messaging.endpoint import Endpoint
+from gofer.messaging.producer import Producer
+from gofer.messaging.dispatcher import Return
+from gofer.messaging.window import *
+from gofer.messaging.store import PendingQueue, PendingReceiver
 from qpid.messaging import Empty
 from threading import Thread
 from logging import getLogger
@@ -248,9 +248,9 @@ class RequestConsumer(Consumer):
     """
     An AMQP request consumer.
     @ivar producer: A reply producer.
-    @type producer: L{gopher.messaging.producer.Producer}
+    @type producer: L{gofer.messaging.producer.Producer}
     @ivar dispatcher: An RMI dispatcher.
-    @type dispatcher: L{gopher.messaging.dispatcher.Dispatcher}
+    @type dispatcher: L{gofer.messaging.dispatcher.Dispatcher}
     """
 
     def start(self, dispatcher):
@@ -258,7 +258,7 @@ class RequestConsumer(Consumer):
         Start processing messages on the queue using the
         specified dispatcher.
         @param dispatcher: An RMI dispatcher.
-        @type dispatcher: L{gopher.messaging.Dispatcher}
+        @type dispatcher: L{gofer.messaging.Dispatcher}
         """
         q = PendingQueue(self.id())
         self.pending = PendingReceiver(q, self)

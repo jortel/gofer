@@ -32,7 +32,7 @@ if minor not in ['6', '7']:
     ])
 
 setup(
-    name='gopher',
+    name='gofer',
     version='0.1',
     description='Universal python agent',
     author='Jeff Ortel',
@@ -41,7 +41,7 @@ setup(
     license='GPLv2+',
     packages=find_packages(),
     scripts = [
-        '../bin/gopherd',
+        '../bin/goferd',
     ],
     include_package_data=False,
     data_files=[],

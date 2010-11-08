@@ -17,10 +17,10 @@
 Demo plugin.
 """
 import os
-from gopher import Plugin
-from gopher.agent.action import Action
-from gopher.decorators import *
-from gopher.agent.config import Config
+from gofer import Plugin
+from gofer.agent.action import Action
+from gofer.decorators import *
+from gofer.agent.config import Config
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -42,7 +42,7 @@ class AgentAdmin:
     def hello(self):
         s = []
         cfg = Config()
-        s.append('Hello, I am gopher agent "%s"' % cfg.main.uuid)
+        s.append('Hello, I am gofer agent "%s"' % cfg.main.uuid)
         s.append('Here is my configuration:\n%s' % cfg)
         s.append('Status: ready')
         return '\n'.join(s)

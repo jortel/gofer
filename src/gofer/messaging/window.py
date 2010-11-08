@@ -17,7 +17,7 @@
 Contains maintenance window classes.
 """
 
-from gopher.messaging import *
+from gofer.messaging import *
 from datetime import datetime as dt
 from datetime import timedelta as delta
 

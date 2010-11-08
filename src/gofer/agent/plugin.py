@@ -20,7 +20,7 @@ Plugin classes.
 import os
 import sys
 import imp
-from gopher import *
+from gofer import *
 from iniparse import INIConfig as Base
 from logging import getLogger
 
@@ -32,7 +32,7 @@ class PluginDescriptor(Base):
     Provides a plugin descriptor
     """
     
-    ROOT = '/etc/gopher/plugins'
+    ROOT = '/etc/gofer/plugins'
     
     @classmethod
     def load(cls):
@@ -58,7 +58,7 @@ class PluginLoader:
     @type plugins: dict
     """
 
-    ROOT = '/usr/lib/gopher/plugins'
+    ROOT = '/usr/lib/gofer/plugins'
 
     def __init__(self):
         if not os.path.exists(self.ROOT):

@@ -1,15 +1,15 @@
 #!/bin/bash
-# gopherd         This shell script controls the gopher daemon.
+# goferd         This shell script controls the gofer daemon.
 # Author:       Jeff Ortel <jortel@redhat.com>
 # chkconfig:    345 97 2
-# description:  Gopher agent responds to commands from gopher server.
+# description:  Gofer agent responds to commands from gofer server.
 # processname:  python
 #
 
 . /etc/init.d/functions
 
 BINDIR=/usr/bin
-PROG=gopherd
+PROG=goferd
 LOCK=/var/lock/subsys/$PROG
 PID=/var/run/$PROG.pid
 

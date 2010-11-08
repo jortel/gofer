@@ -14,7 +14,7 @@
 # in this software or its documentation.
 #
 
-from gopher.agent.main import main
+from gofer.agent.main import main
 
 if __name__ == '__main__':
     main()

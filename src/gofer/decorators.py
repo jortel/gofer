@@ -13,6 +13,6 @@
 # in this software or its documentation.
 #
 
-from gopher.agent.action import action
-from gopher.agent.identity import identity
-from gopher.messaging.decorators import *
+from gofer.agent.action import action
+from gofer.agent.identity import identity
+from gofer.messaging.decorators import *

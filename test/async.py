@@ -20,8 +20,8 @@ import sys
 sys.path.append('../../')
 
 from time import sleep
-from gopher.messaging import Queue
-from gopher.messaging.async import ReplyConsumer
+from gofer.messaging import Queue
+from gofer.messaging.async import ReplyConsumer
 from logging import INFO, basicConfig
 
 basicConfig(filename='/tmp/messaging.log', level=INFO)

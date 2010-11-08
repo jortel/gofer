@@ -19,17 +19,17 @@
 import sys
 sys.path.append('../../')
 
-from gopher.messaging import Queue
-from gopher.messaging.base import Container
-from gopher.messaging.producer import Producer
-from gopher.messaging.window import *
-from gopher.proxy import Agent
+from gofer.messaging import Queue
+from gofer.messaging.base import Container
+from gofer.messaging.producer import Producer
+from gofer.messaging.window import *
+from gofer.proxy import Agent
 from time import sleep
 from datetime import datetime as dt
 from datetime import timedelta as delta
 from logging import INFO, basicConfig, getLogger
 
-basicConfig(filename='/tmp/gopher.log', level=INFO)
+basicConfig(filename='/tmp/gofer.log', level=INFO)
 
 log = getLogger(__name__)
 

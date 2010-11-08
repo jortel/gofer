@@ -19,9 +19,9 @@ Proxies (stubs) are the I{local} representation of I{remote}
 classes on which we invoke methods.
 """
 
-from gopher.messaging import *
-from gopher.messaging.dispatcher import Request
-from gopher.messaging.window import Window
+from gofer.messaging import *
+from gofer.messaging.dispatcher import Request
+from gofer.messaging.window import Window
 
 
 class Method:

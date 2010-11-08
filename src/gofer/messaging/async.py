@@ -17,9 +17,9 @@
 Provides async AMQP message consumer classes.
 """
 
-from gopher.messaging import *
-from gopher.messaging.dispatcher import Return
-from gopher.messaging.consumer import Consumer
+from gofer.messaging import *
+from gofer.messaging.dispatcher import Return
+from gofer.messaging.consumer import Consumer
 from logging import getLogger
 
 log = getLogger(__name__)

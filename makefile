@@ -15,15 +15,15 @@
 # written by: Jeff Ortel ( jortel@redhat.com )
 #
 
-PKG = gopher
+PKG = gofer
 SPEC = $(PKG).spec
 SETUP = setup.py
-DOCTAR = gopher-docs.tar.gz
+DOCTAR = gofer-docs.tar.gz
 FEDORAPEOPLE = jortel@fedorapeople.org
 TITODIR = /tmp/tito
 
 release : rpm rdocs
-	scp `find $(TITODIR) -name \*.rpm` fedorahosted.org:gopher
+	scp `find $(TITODIR) -name \*.rpm` fedorahosted.org:gofer
 
 rpm	:
 	rm -rf $(TITODIR)
@@ -31,17 +31,17 @@ rpm	:
 
 rdocs : docs
 	scp /tmp/$(DOCTAR) $(FEDORAPEOPLE):
-	ssh $(FEDORAPEOPLE) 'cd public_html/gopher; rm -rf doc; tar xmzvf ~/$(DOCTAR)'
+	ssh $(FEDORAPEOPLE) 'cd public_html/gofer; rm -rf doc; tar xmzvf ~/$(DOCTAR)'
 
 docs :
 	rm -rf doc
 	rm -f /tmp/$(DOCTAR)
-	epydoc -vo doc `find src/gopher -name "*.py"`
+	epydoc -vo doc `find src/gofer -name "*.py"`
 	tar czvf /tmp/$(DOCTAR) doc
 
 pdf :
-	epydoc -vo doc --pdf `find src/gopher -name \*.py`
-	mv doc/api.pdf doc/gopher.pdf
+	epydoc -vo doc --pdf `find src/gofer -name \*.py`
+	mv doc/api.pdf doc/gofer.pdf
 
 clean :
 	rm -rf doc

@@ -17,12 +17,12 @@
 Agent base classes.
 """
 
-from gopher.messaging import *
-from gopher.messaging.stub import Stub
-from gopher.messaging.decorators import Remote
-from gopher.messaging.dispatcher import Dispatcher
-from gopher.messaging.window import Window
-from gopher.messaging.policy import *
+from gofer.messaging import *
+from gofer.messaging.stub import Stub
+from gofer.messaging.decorators import Remote
+from gofer.messaging.dispatcher import Dispatcher
+from gofer.messaging.window import Window
+from gofer.messaging.policy import *
 from new import classobj
 from logging import getLogger
 
@@ -35,7 +35,7 @@ class Agent:
     The agent base provides a dispatcher and automatic
     registration of methods based on decorators.
     @ivar consumer: A qpid consumer.
-    @type consumer: L{gopher.messaging.Consumer}
+    @type consumer: L{gofer.messaging.Consumer}
     """
 
     def __init__(self, consumer):
@@ -43,7 +43,7 @@ class Agent:
         Construct the L{Dispatcher} using the specified
         AMQP I{consumer} and I{start} the AMQP consumer.
         @param consumer: A qpid consumer.
-        @type consumer: L{gopher.messaging.Consumer}
+        @type consumer: L{gofer.messaging.Consumer}
         """
         dispatcher = Dispatcher()
         dispatcher.register(*Remote.classes, **Remote.aliases)
@@ -63,7 +63,7 @@ class Container:
     @ivar __id: The peer ID.
     @type __id: str
     @ivar __producer: An AMQP producer.
-    @type __producer: L{gopher.messaging.producer.Producer}
+    @type __producer: L{gofer.messaging.producer.Producer}
     @ivar __stubs: A list of L{Stub} objects.
     @type __stubs: [L{Stub},..]
     @ivar __options: Container options.
@@ -75,7 +75,7 @@ class Container:
         @param uuid: The peer ID.
         @type uuid: str
         @param producer: An AMQP producer.
-        @type producer: L{gopher.messaging.producer.Producer}
+        @type producer: L{gofer.messaging.producer.Producer}
         @param options: keyword options.
         @type options: dict
         """
@@ -90,7 +90,7 @@ class Container:
         Set the request method based on options.
         The selected method is added to I{options}.
         @param producer: An AMQP producer.
-        @type producer: L{gopher.messaging.producer.Producer}
+        @type producer: L{gofer.messaging.producer.Producer}
         """
         if self.__async():
             ctag = self.__options.ctag

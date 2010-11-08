@@ -20,14 +20,14 @@ import sys
 sys.path.append('../../')
 
 from time import sleep
-from gopher.messaging import Queue
-from gopher.messaging.base import Agent as Base
-from gopher.messaging.decorators import *
-from gopher.messaging.consumer import RequestConsumer
-from gopher.messaging.broker import Broker
+from gofer.messaging import Queue
+from gofer.messaging.base import Agent as Base
+from gofer.messaging.decorators import *
+from gofer.messaging.consumer import RequestConsumer
+from gofer.messaging.broker import Broker
 from logging import INFO, basicConfig
 
-basicConfig(filename='/tmp/gopher.log', level=INFO)
+basicConfig(filename='/tmp/gofer.log', level=INFO)
 
 @remote
 @alias(name='admin')
@@ -36,7 +36,7 @@ class AgentAdmin:
     @remotemethod
     def hello(self):
         s = []
-        s.append('Hello, I am gopher agent.')
+        s.append('Hello, I am gofer agent.')
         s.append('Status: ready')
         return '\n'.join(s)
 
