@@ -3,7 +3,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name: gofer
-Version: 0.9
+Version: 0.1
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -90,49 +90,5 @@ fi
 %{python_sitelib}/%{name}/messaging/
 
 %changelog
-* Thu Nov 04 2010 Jeff Ortel <jortel@redhat.com> 0.9-1
-- replace 'id' with 'uuid' to avoid name collision with builtin id().
-  (jortel@redhat.com)
-
-* Tue Nov 02 2010 Jeff Ortel <jortel@redhat.com> 0.8-1
-- handle keyboard interupts. (jortel@redhat.com)
-
-* Tue Nov 02 2010 Jeff Ortel <jortel@redhat.com> 0.7-1
-- Mangle plugin module name when found in the path to prevent name collisions.
-  (jortel@redhat.com)
-- Update plugin importer to be more precise. (jortel@redhat.com)
-- Fix intermittent problem whereby goferd allows multiple instances.
-  (jortel@redhat.com)
-- Add builtin admin.help(). (jortel@redhat.com)
-- Rename demo (plugin) to builtin. (jortel@redhat.com)
-- Replace /var/lib with: /usr/lib for plugins. (jortel@redhat.com)
-
-* Mon Nov 01 2010 Jeff Ortel <jortel@redhat.com> 0.6-1
-- Move gofer plugins to proper location /usr/lib. (jortel@redhat.com)
-- Change 'id' parameter to be uuid. (jortel@redhat.com)
-- Add AgentAdmin back to test agent. (jortel@redhat.com)
-- add getcert() to Identity. (jortel@redhat.com)
-- Fix demo Identity plugin. (jortel@redhat.com)
-- fix epydocs. (jortel@redhat.com)
-
-* Tue Oct 26 2010 Jeff Ortel <jortel@redhat.com> 0.5-1
-- Make identity plugin a class. (jortel@redhat.com)
-
-* Tue Oct 26 2010 Jeff Ortel <jortel@redhat.com> 0.4-1
-- Add conf.d/ processing. (jortel@redhat.com)
-
-* Tue Oct 26 2010 Jeff Ortel <jortel@redhat.com> 0.3-1
-- Add conf.d/ processing. (jortel@redhat.com)
-- Add decorator module for convenient import. (jortel@redhat.com)
-- Comment out the demo identity plugin. (jortel@redhat.com)
-- Add identity plugin. (jortel@redhat.com)
-- Update epydocs. (jortel@redhat.com)
-- Add support for plugin to get configuration. (jortel@redhat.com)
-- Add plugin descriptors. (jortel@redhat.com)
-- Add makefile and fix epydocs. (jortel@redhat.com)
-
-* Thu Oct 14 2010 Jeff Ortel <jortel@redhat.com> 0.2-1
-- Fix tito/rpm build errors.
-
 * Thu Sep 30 2010 Jeff Ortel <jortel@redhat.com> 0.1-1
 - 0.1
