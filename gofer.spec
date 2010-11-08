@@ -90,5 +90,8 @@ fi
 %{python_sitelib}/%{name}/messaging/
 
 %changelog
+* Mon Nov 08 2010 Jeff Ortel <jortel@redhat.com> 0.1-1
+- new package built with tito
+
 * Thu Sep 30 2010 Jeff Ortel <jortel@redhat.com> 0.1-1
 - 0.1
