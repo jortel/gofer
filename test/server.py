@@ -64,7 +64,7 @@ if __name__ == '__main__':
     print '(demo) synchronous'
     agent = Agent('123')
     demo(agent)
-    agent.delete()
+    #agent.delete()
     agent = None
 
     # asynchronous (fire and forget)
