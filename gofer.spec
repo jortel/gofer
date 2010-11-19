@@ -3,7 +3,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name: gofer
-Version: 0.1
+Version: 0.2
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -90,6 +90,10 @@ fi
 %{python_sitelib}/%{name}/messaging/
 
 %changelog
+* Fri Nov 19 2010 Jeff Ortel <jortel@redhat.com> 0.2-1
+- Add brew build informaton. (jortel@redhat.com)
+- Fix test. (jortel@redhat.com)
+
 * Mon Nov 08 2010 Jeff Ortel <jortel@redhat.com> 0.1-1
 - new package built with tito
 
