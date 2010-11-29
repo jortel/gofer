@@ -18,7 +18,7 @@ import os
 from getopt import getopt
 from gofer import *
 from gofer.agent import *
-from gofer.agent.action import Action
+from gofer.agent.action import Actions
 from gofer.agent.plugin import PluginLoader
 from gofer.agent.lock import Lock, LockFailed
 from gofer.agent.config import Config
@@ -125,11 +125,9 @@ def start(daemon=True):
     try:
         pl = PluginLoader()
         pl.load()
-        actions = []
-        for cls, interval in Action.actions:
-            action = cls(**interval)
-            actions.append(action)
-        agent = Agent(actions)
+        actions = Actions()
+        collated = actions.collated()
+        agent = Agent(collated)
         agent.close()
     finally:
         lock.release()

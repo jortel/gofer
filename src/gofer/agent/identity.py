@@ -14,6 +14,7 @@
 #
 
 from gofer.agent.config import Config
+from gofer.collator import Collator
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -33,37 +34,37 @@ class Identity:
         @return: The UUID.
         @rtype: str
         """
-        for plugin in self.plugins:
-            try:
-                return plugin.getuuid()
-            except:
-                log.error('plugin (%s) failed', plugin, exc_info=True)
+        c = Collator()
+        classes, functions = c.collate(self.plugins)
+        for cls,methods in classes.items():
+            inst = cls()
+            for m,d in methods:
+                try:
+                    m = getattr(inst, m.__name__)
+                    return m()
+                except:
+                    log.error('%s.%s() failed',
+                        cls.__name__,
+                        m.__name__,
+                        exc_info=True)
+        for mod,functions in functions.items():
+            for fn,d in functions:
+                try:
+                    return fn()
+                except:
+                    log.error('%s.%s() failed',
+                        mod.__name__,
+                        fn.__name__,
+                        exc_info=True)
         cfg = Config()
         return cfg.main.uuid
     
-    def getcert(self):
-        """
-        Get the x509 certificate & private key location.
-        @return: tuple (key-path, crt-path)
-        @rtype: tuple
-        """
-        for plugin in self.plugins:
-            try:
-                return plugin.getcert()
-            except:
-                log.error('plugin (%s) failed', plugin, exc_info=True)
-        cfg = Config()
-        keypath = None
-        crtpath = cfg.messaging.clientcert
-        return (keypath, crtpath)
 
-
-def identity(cls):
+def identity(fn):
     """
     Identity decorator
-    @param cls: A class that provides identity
-    @type cls: plugin class
+    @param fn: A method/function that provides identity
+    @type fn: callable
     """
-    plugin = cls()
-    Identity.plugins.append(plugin)
-    return cls
+    Identity.plugins.append(fn)
+    return fn

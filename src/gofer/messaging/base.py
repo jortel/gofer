@@ -46,7 +46,8 @@ class Agent:
         @type consumer: L{gofer.messaging.Consumer}
         """
         dispatcher = Dispatcher()
-        dispatcher.register(*Remote.classes, **Remote.aliases)
+        remote = Remote()
+        dispatcher.register(*remote.collated())
         consumer.start(dispatcher)
         self.consumer = consumer
 

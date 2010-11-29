@@ -15,4 +15,4 @@
 
 from gofer.agent.action import action
 from gofer.agent.identity import identity
-from gofer.messaging.decorators import *
+from gofer.messaging.decorators import remote

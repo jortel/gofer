@@ -29,33 +29,27 @@ from logging import INFO, basicConfig
 
 basicConfig(filename='/tmp/gofer.log', level=INFO)
 
-@remote
-@alias(name='admin')
 class AgentAdmin:
 
-    @remotemethod
+    @remote
     def hello(self):
         s = []
         s.append('Hello, I am gofer agent.')
         s.append('Status: ready')
         return '\n'.join(s)
 
-@remote
-@alias(name=['repolib'])
 class RepoLib:
-    @remotemethod
+    @remote
     def update(self):
         print 'Repo updated'
 
-@remote
-@alias('dog')
 class Dog:
-    @remotemethod
+    @remote
     def bark(self, words):
         print 'Ruf %s' % words
         return 'Yes master.  I will bark because that is what dogs do. "%s"' % words
 
-    @remotemethod
+    @remote
     def wag(self, n):
         for i in range(0, n):
             print 'wag'
@@ -63,7 +57,17 @@ class Dog:
 
     def notpermitted(self):
         print 'not permitted.'
+        
 
+@remote
+def echo(something):
+    print something
+    return something
+
+
+def notdecorated():
+    pass
+        
 
 class Agent(Base):
     def __init__(self, id):

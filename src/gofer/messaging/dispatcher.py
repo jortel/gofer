@@ -17,9 +17,10 @@ Provides RMI dispatcher classes.
 """
 
 import sys
+import inspect
 import traceback as tb
 from gofer.messaging import *
-from gofer.messaging.decorators import mayinvoke
+from gofer.messaging.decorators import Remote
 from logging import getLogger
 
 
@@ -41,7 +42,7 @@ class MethodNotFound(Exception):
     """
 
     def __init__(self, classname, method):
-        message = 'method %s.%s(), not found' % (classname, method)
+        message = '%s.%s(), not found' % (classname, method)
         Exception.__init__(self, message)
 
 
@@ -51,7 +52,7 @@ class NotPermitted(Exception):
     """
 
     def __init__(self, classname, method):
-        message = 'method %s.%s(), not permitted' % (classname, method)
+        message = '%s.%s(), not permitted' % (classname, method)
         Exception.__init__(self, message)
 
 
@@ -137,34 +138,53 @@ class RMI(object):
 
     def getclass(self):
         """
-        Get an instance of the class specified in
+        Get an instance of the class or module specified in
         the request using the catalog.
-        @return: An instance of the class.
-        @rtype: object
+        @return: An instance.
+        @rtype: (class|module)
         """
         key = self.request.classname
         inst = self.catalog.get(key, None)
         if inst is None:
             raise ClassNotFound(key)
-        return inst()
+        if inspect.isclass(inst):
+            return inst()
+        else:
+            return inst
 
     def getmethod(self, inst):
         """
         Get method of the class specified in the request.
         Ensures that remote invocation is permitted.
+        @param inst: A class or module object.
+        @type inst: (class|module)
         @return: The requested method.
-        @rtype: instancemethod
+        @rtype: (method|function)
         """
         cn, fn = \
             (self.request.classname,
              self.request.method)
         if hasattr(inst, fn):
             method = getattr(inst, fn)
-            if not mayinvoke(method):
+            if not self.permitted(method):
                 raise NotPermitted(cn, fn)
             return method
         else:
             raise MethodNotFound(cn, fn)
+        
+    def permitted(self, method):
+        """
+        Get whether remote invocation of the specified method is permitted.
+        @param method: The method in question.
+        @type method: (method|function)
+        @return: True if permitted.
+        @rtype: bool
+        """
+        if inspect.ismethod(method):
+            fn = method.im_func
+        else:
+            fn = method
+        return ( hasattr(fn, 'remotepermitted') ) 
 
     def __call__(self):
         """
@@ -214,7 +234,7 @@ class Dispatcher:
         log.info('dispatching:%s', rmi)
         return rmi()
 
-    def register(self, *classes, **aliases):
+    def register(self, *classes):
         """
         Register classes exposed as RMI targets.
         @param classes: A list of classes
@@ -222,8 +242,6 @@ class Dispatcher:
         @return self
         @rtype: L{Dispatcher}
         """
-        for alias,cls in aliases.items():
-            self.classes[alias] = cls
         for cls in classes:
             self.classes[cls.__name__] = cls
         return self

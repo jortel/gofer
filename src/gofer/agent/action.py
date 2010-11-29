@@ -17,6 +17,8 @@
 Action slass for gofer agent.
 """
 
+import inspect
+from gofer.collator import Collator
 from datetime import datetime as dt
 from datetime import timedelta
 from logging import getLogger
@@ -24,17 +26,44 @@ from logging import getLogger
 log = getLogger(__name__)
 
 
+class Actions:
+    """
+    @cvar functions: The list of decorated functions.
+    """
+    functions = {}
+    
+    def collated(self):
+        collated = []
+        c = Collator()
+        classes, functions = c.collate(self.functions)
+        for c,m in classes.items():
+            inst = c()
+            for m,d in m:
+                m = getattr(inst, m.__name__)
+                action = Action(m, **d)
+                collated.append(action)
+        for m,f in functions.items():
+            for f,d in f:
+                action = Action(f, **d)
+                collated.append(action)
+        return collated
+
 
 def action(**interval):
-    def decorator(cls):
-        Action.actions.append((cls, interval))
-        return cls
+    """
+    Action decorator.
+    """
+    def decorator(fn):
+        Actions.functions[fn] = interval
+        return fn
     return decorator
 
 
 class Action:
     """
     Abstract recurring action (base).
+    @ivar target: The action target.
+    @type target: (method|function)
     @keyword interval: The run interval.
       One of:
         - days
@@ -45,25 +74,19 @@ class Action:
     @ivar last: The last run timestamp.
     @type last: datetime
     """
-    
-    actions = []
 
-    def __init__(self, **interval):
+    def __init__(self, target, **interval):
         """
+        @param target: The action target.
+        @type target: (method|function)
         @param interval: The run interval (minutes).
         @type interval: timedelta
         """
+        self.target = target
         for k,v in interval.items():
             interval[k] = int(v)
         self.interval = timedelta(**interval)
         self.last = dt(1900, 1, 1)
-
-    def perform(self):
-        """
-        Perform action.
-        This MUST be overridden by subclasses.
-        """
-        pass # override
 
     def name(self):
         """
@@ -71,7 +94,16 @@ class Action:
         @return: The action name.
         @rtype: str
         """
-        return self.__class__.__name__
+        t = self.target
+        if inspect.ismethod(t):
+            cls = t.im_class
+        else:
+            cls = t.__module__
+        method = t.__name__
+        return '%s.%s()' % (cls, method)
+    
+    def __str__(self):
+        return self.name()
 
     def __call__(self):
         try:
@@ -80,6 +112,6 @@ class Action:
             if next < now:
                 self.last = now
                 log.info('perform "%s"', self.name())
-                self.perform()
+                self.target()
         except Exception, e:
             log.exception(e)

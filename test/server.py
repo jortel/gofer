@@ -36,11 +36,17 @@ log = getLogger(__name__)
 
 
 def demo(agent):
-    print agent.admin.hello()
+    
+    plugin = agent.__main__()
+    plugin.echo('have a nice day')
+    
+    admin = agent.AgentAdmin()
+    
+    print admin.hello()
     
     dog = agent.Dog()
     repolib = agent.RepoLib()
-    print agent.dog.bark('RUF')
+    print dog.bark('RUF')
     print dog.bark('hello')
     print dog.wag(3)
     print dog.bark('hello again')
@@ -52,6 +58,11 @@ def demo(agent):
         print e
     try:
         print dog.notpermitted()
+    except Exception, e:
+        log.info('failed:', exc_info=True)
+        print e
+    try:
+        print plugin.notdecorated()
     except Exception, e:
         log.info('failed:', exc_info=True)
         print e

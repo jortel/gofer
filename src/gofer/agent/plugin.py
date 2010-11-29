@@ -67,12 +67,17 @@ class PluginLoader:
     def load(self):
         """
         Load the plugins.
+        @return: A list of loaded plugin modules
+        @rtype: list
         """
+        modules = []
         for plugin, cfg in PluginDescriptor.load():
             enabled = self.__enabled(cfg)
             if not enabled:
                 continue
-            self.__import(plugin, cfg)
+            mod = self.__import(plugin, cfg)
+            modules.append(mod)
+        return modules
                 
     def __enabled(self, cfg):
         """
@@ -94,15 +99,18 @@ class PluginLoader:
         @type plugin: str
         @param cfg: A plugin descriptor.
         @type cfg: L{PluginDescriptor}
+        @return: The loaded module.
+        @rtype: Module
         """
         try:
             name = self.__mangled(plugin)
             mod = '%s.py' % plugin
             path = os.path.join(self.ROOT, mod)
-            imp.load_source(name, path)
+            mod = imp.load_source(name, path)
             log.info('plugin "%s", imported as: "%s"', plugin, name)
             Plugin.descriptor[name] = cfg
             Plugin.descriptor[plugin] = cfg
+            return mod
         except:
             log.error(
                 'plugin "%s", import failed',

@@ -18,27 +18,27 @@ Demo plugin.
 """
 import os
 from gofer import Plugin
-from gofer.agent.action import Action
 from gofer.decorators import *
+from gofer.messaging.decorators import Remote
+from gofer.collator import Collator
+from gofer.agent.action import Actions
 from gofer.agent.config import Config
 from logging import getLogger
 
 log = getLogger(__name__)
 
 
-@action(minutes=10)
-class TestAction(Action):
+class TestAction:
 
-    def perform(self):
+    @action(minutes=10)
+    def hello(self):
         cfg = Plugin.cfg(__name__)
         log.info('Hello:\n%s', cfg)
 
 
-@remote
-@alias(name='admin')
 class AgentAdmin:
 
-    @remotemethod
+    @remote
     def hello(self):
         s = []
         cfg = Config()
@@ -47,36 +47,49 @@ class AgentAdmin:
         s.append('Status: ready')
         return '\n'.join(s)
     
-    @remotemethod
+    @remote
     def help(self):
         s = []
         s.append('Plugins:')
         for p in Plugin.descriptor.keys():
             s.append('  %s' % p)
         s.append('Actions:')
-        for a in Action.actions:
+        for a in self.__actions():
             s.append('  %s %s' % a)
-        s.append('Methods (remote):')
-        for m in self.__methods():
+        methods, functions = self.__remote()
+        s.append('Methods:')
+        for m in methods:
+            s.append('  %s.%s()' % m)
+        s.append('Functions:')
+        for m in functions:
             s.append('  %s.%s()' % m)
         return '\n'.join(s)
     
-    def __methods(self):
+    def __actions(self):
+        actions = []
+        for a in Actions().collated():
+            actions.append((a.name(), a.interval))
+        return actions
+    
+    def __remote(self):
         methods = []
-        for c in Remote.classes:
-            for m in dir(c):
-                m = getattr(c, m)
-                if callable(m) and m.im_func in Remote.methods:
-                    methods.append((c, m.__name__))
+        funclist = []
+        c = Collator()
+        classes, functions = c.collate(Remote.functions)
+        for n,v in classes.items():
+            for m,d in v:
+                methods.append((n.__name__, m.__name__))
+        for n,v in functions.items():
+            for f,d in v:
+                funclist.append((n.__name__, f.__name__))
         methods.sort()
-        return methods
+        funclist.sort()
+        return (methods, funclist)
 
 
-@remote
-@alias(name='shell')
 class Shell:
 
-    @remotemethod
+    @remote
     def run(self, cmd):
         """
         Run a shell command.
@@ -90,9 +103,18 @@ class Shell:
             return f.read()
         finally:
             f.close()
+            
+            
+@remote
+def echo(something):
+    return something
 
 
 #@identity
-#class MyIdentity:
+#def getuuid():
+#    return 'zzz'
+
+#class Identity:    
+#    @identity
 #    def getuuid(self):
-#        return 'zzz'
+#        return 'yyy'

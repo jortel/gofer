@@ -17,64 +17,32 @@
 Provides decorator classes & funcitons.
 """
 
+from gofer.collator import Collator
+
 
 class Remote:
     """
-    @cvar classes: A list of remoted classes.
-    @cvar aliases: A list of class aliases.
-    @cvar methods: A list of remoted methods.
+    @cvar functions: The list of decorated functions.
     """
-    classes = []
-    aliases = {}
-    methods = []
+    functions = []
+    
+    def collated(self):
+        collated = []
+        c = Collator()
+        classes, functions = c.collate(self.functions)
+        for c in classes.keys():
+            collated.append(c)
+        for m in functions.keys():
+            collated.append(m)
+        return collated
+            
 
-
-def remote(cls):
+def remote(fn):
     """
     Decorator used to register remotable classes.
     @param cls: A class to register.
     @type cls: python class.
     """
-    Remote.classes.append(cls)
-    return cls
-
-def alias(name=[]):
-    """
-    @param name: The aliased name.
-    @type name: (str|[str,])
-    """
-    def decorator(cls):
-        """
-        Decorator used to register remote class synonyms.
-        @param cls: A class to register.
-        @type cls: python class.
-        """
-        if isinstance(name, (list,tuple)):
-            aliases = name
-        else:
-            aliases = (name,)
-        for alias in aliases:
-            Remote.aliases[alias] = cls
-        return cls
-    return decorator
-
-def remotemethod(fn):
-    """
-    @param fn: A function related to an instancemethod.
-    @type fn: function
-    Decorator used to register methods that may
-    be invoked remotely.
-    """
-    Remote.methods.append(fn)
+    fn.remotepermitted = 1
+    Remote.functions.append(fn)
     return fn
-
-def mayinvoke(im):
-    """
-    Get whether the specified instance method (im)
-    may be invoked remotely.
-    @param im: An instance method.
-    @type im: instancemethod
-    @return: True if exposed via @remotemethod decorator.
-    @rtype: bool
-    """
-    return im.im_func in Remote.methods
