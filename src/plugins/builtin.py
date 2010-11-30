@@ -36,7 +36,7 @@ class TestAction:
         log.info('Hello:\n%s', cfg)
 
 
-class AgentAdmin:
+class Admin:
 
     @remote
     def hello(self):
