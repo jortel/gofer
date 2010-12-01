@@ -21,10 +21,122 @@ import os
 import sys
 import imp
 from gofer import *
+from gofer.collator import Collator
+from gofer.agent.identity import Identity
+from gofer.agent.config import Config
 from iniparse import INIConfig as Base
+from iniparse.config import Undefined
 from logging import getLogger
 
 log = getLogger(__name__)
+
+
+class Plugin(object):
+    """
+    Represents a plugin.
+    @ivar name: The plugin name.
+    @type name: str
+    @ivar synonyms: The plugin synonyms.
+    @type synonyms: list
+    @ivar descriptor: The plugin descriptor.
+    @type descriptor: str
+    @cvar plugins: The dict of loaded plugins.
+    @type plugins: dict
+    """
+    plugins = {}
+    
+    @classmethod
+    def add(cls, plugin):
+        """
+        Add the plugin by name and synonyms.
+        @param plugin: The plugin to add.
+        @type plugin: L{Plugin}
+        @return: The added plugin
+        @rtype: L{Plugin}
+        """
+        cls.plugins[plugin.name] = plugin
+        for name in plugin.synonyms:
+            cls.plugins[name] = plugin
+        return plugin
+    
+    @classmethod
+    def find(cls, name):
+        """
+        Find a plugin by name or synonym.
+        @param name: A plugin name or synonym.
+        @type name: str
+        @return: The plugin when found.
+        @rtype: L{Plugin} 
+        """
+        return cls.plugins.get(name)
+    
+    @classmethod
+    def all(cls):
+        """
+        Get a unique list of loaded plugins.
+        @return: A list of plugins
+        @rtype: list
+        """
+        unique = []
+        for p in cls.plugins.values():
+            if p in unique:
+                continue
+            unique.append(p)
+        return unique
+    
+    def __init__(self, name, descriptor, synonyms=[]):
+        """
+        @param name: The plugin name.
+        @type name: str
+        @param descriptor: The plugin descriptor.
+        @type descriptor: str
+        @param synonyms: The plugin synonyms.
+        @type synonyms: list
+        """
+        self.name = name
+        self.synonyms = synonyms
+        self.descriptor = descriptor
+        
+    def names(self):
+        """
+        Get I{all} the names by which the plugin can be found.
+        @return: A list of name and synonyms.
+        @rtype: list
+        """
+        names = [self.name]
+        names += self.synonyms
+        return names
+    
+    def enabled(self):
+        """
+        Get whether the plugin is enabled.
+        @return: True if enabled.
+        @rtype: bool
+        """
+        cfg = elf.cfg()
+        try:
+            return int(cfg.main.enabled)
+        except:
+            return 0
+        
+    def getuuid(self):
+        """
+        Get the plugin's messaging UUID.
+        The comes from the plugin's identity plugin.
+        Else, the plugin descriptor.
+        @return: The plugin's messaging UUID.
+        @rtype: str
+        """
+        ident = Identity(self)
+        uuid = ident.getuuid()
+        if not uuid:
+            cfg = self.cfg()
+            uuid = cfg.messaging.uuid
+        if isinstance(uuid, (str,int)):
+            return uuid
+        
+    def cfg(self):
+        return self.descriptor
 
 
 class PluginDescriptor(Base):
@@ -67,17 +179,17 @@ class PluginLoader:
     def load(self):
         """
         Load the plugins.
-        @return: A list of loaded plugin modules
+        @return: A list of loaded plugins
         @rtype: list
         """
-        modules = []
+        loaded = []
         for plugin, cfg in PluginDescriptor.load():
             enabled = self.__enabled(cfg)
             if not enabled:
                 continue
-            mod = self.__import(plugin, cfg)
-            modules.append(mod)
-        return modules
+            p = self.__import(plugin, cfg)
+            loaded.append(p)
+        return loaded
                 
     def __enabled(self, cfg):
         """
@@ -88,7 +200,7 @@ class PluginLoader:
         @rtype: bool
         """
         try:
-            return cfg.main.enabled
+            return int(cfg.main.enabled)
         except:
             return False
 
@@ -108,9 +220,12 @@ class PluginLoader:
             path = os.path.join(self.ROOT, mod)
             mod = imp.load_source(name, path)
             log.info('plugin "%s", imported as: "%s"', plugin, name)
-            Plugin.descriptor[name] = cfg
-            Plugin.descriptor[plugin] = cfg
-            return mod
+            synonyms = []
+            if name != plugin:
+                synonyms.append(name)
+            p = Plugin(plugin, cfg, synonyms=synonyms)
+            Plugin.add(p)
+            return p
         except:
             log.error(
                 'plugin "%s", import failed',

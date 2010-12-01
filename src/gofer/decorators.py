@@ -13,6 +13,7 @@
 # in this software or its documentation.
 #
 
-from gofer.agent.action import action
 from gofer.agent.identity import identity
+from gofer.agent.action import action
 from gofer.messaging.decorators import remote
+

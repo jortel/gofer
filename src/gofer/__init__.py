@@ -12,23 +12,3 @@
 # granted to use or replicate Red Hat trademarks that are incorporated
 # in this software or its documentation.
 #
-
-
-class Plugin:
-    """
-    Plugin base class.
-    @ivar descriptor: Maps modules to descriptor.
-    @type descriptor: dict
-    """
-    descriptor = {}
-    
-    @classmethod
-    def cfg(cls, name):
-        """
-        Get plugin configuration.
-        @param name: The plugin (module) name.
-        @type name: str
-        @return: The plugin configuration
-        @rtype: PluginDescriptor
-        """
-        return cls.descriptor.get(name)

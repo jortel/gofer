@@ -17,10 +17,11 @@
 Demo plugin.
 """
 import os
-from gofer import Plugin
+import socket
 from gofer.decorators import *
-from gofer.messaging.decorators import Remote
 from gofer.collator import Collator
+from gofer.messaging.decorators import Remote
+from gofer.agent.plugin import Plugin
 from gofer.agent.action import Actions
 from gofer.agent.config import Config
 from logging import getLogger
@@ -32,8 +33,8 @@ class TestAction:
 
     @action(minutes=10)
     def hello(self):
-        cfg = Plugin.cfg(__name__)
-        log.info('Hello:\n%s', cfg)
+        plugin = Plugin.find(__name__)
+        log.info('Hello:\n%s', plugin.cfg())
 
 
 class Admin:
@@ -42,7 +43,7 @@ class Admin:
     def hello(self):
         s = []
         cfg = Config()
-        s.append('Hello, I am gofer agent "%s"' % cfg.main.uuid)
+        s.append('Hello, I am gofer agent "%s"' % socket.gethostname())
         s.append('Here is my configuration:\n%s' % cfg)
         s.append('Status: ready')
         return '\n'.join(s)
@@ -51,8 +52,11 @@ class Admin:
     def help(self):
         s = []
         s.append('Plugins:')
-        for p in Plugin.descriptor.keys():
-            s.append('  %s' % p)
+        for p in Plugin.all():
+            if p.synonyms:
+                s.append('  %s %s' % (p.name, p.synonyms))
+            else:
+                s.append('  %s' % p.name)
         s.append('Actions:')
         for a in self.__actions():
             s.append('  %s %s' % a)

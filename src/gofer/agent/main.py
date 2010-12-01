@@ -19,19 +19,20 @@ from getopt import getopt
 from gofer import *
 from gofer.agent import *
 from gofer.agent.action import Actions
-from gofer.agent.plugin import PluginLoader
+from gofer.agent.plugin import PluginLoader, Plugin
 from gofer.agent.lock import Lock, LockFailed
 from gofer.agent.config import Config
 from gofer.agent.identity import Identity
 from gofer.agent.logutil import getLogger
 from gofer.messaging import Queue
 from gofer.messaging.broker import Broker
-from gofer.messaging.base import Agent as Base
+from gofer.messaging.base import Agent as Session
 from gofer.messaging.consumer import RequestConsumer
 from time import sleep
 from threading import Thread
 
 log = getLogger(__name__)
+cfg = Config()
 
 
 class ActionThread(Thread):
@@ -57,43 +58,144 @@ class ActionThread(Thread):
             for action in self.actions:
                 action()
             sleep(10)
+
+
+class PluginMonitorThread(Thread):
+    """
+    Run actions independantly of main thread.
+    @ivar plugins: A list of plugins to load.
+    @type plugins: [L{Plugin},..]
+    """
+    
+    URL = 'tcp://localhost:5672'
+    
+    def __init__(self, plugins):
+        """
+        @param plugins: A list of plugins to monitor.
+        @type plugins: [L{Plugin},..]
+        """
+        self.plugins = {}
+        for p in plugins:
+            self.plugins[p] = None
+        Thread.__init__(self, name='PluginMonitor')
+   
+    def run(self):
+        """
+        Monitor plugin attach/detach.
+        """
+        self.setupBroker()
+        while True:
+            self.update()
+            sleep(10)
             
+    def update(self):
+        """
+        Update plugin messaging sessions.
+        v = (<uuid>,<ssn>)
+        """
+        for plugin,v in self.plugins.items():
+            if not v:
+                v = [None, None]
+                self.plugins[plugin] = v
+            uuid = plugin.getuuid()
+            if v[0] == uuid:
+                continue # unchanged
+            ssn = v[1]
+            if ssn:
+                ssn.close()
+                log.info('messaging stopped for uuid="%s"', uuid)
+            if not uuid:
+                continue
+            try:
+                v[0] = uuid
+                v[1] = self.attach(plugin, uuid)
+            except:
+                log.error('plugin %s', plugin.name, exc_info=1)
+                    
+    def attach(self, plugin, uuid):
+        """
+        Start an AMQP session (attach).
+        @param plugin: A plugin.
+        @type plugin: L{Plugin}
+        @param uuid: A messaging consumer uuid.
+        @type uuid: str
+        @return: A new session.
+        @rtype: L{Session}
+        """
+        pd = plugin.cfg()
+        if not self.enabled(pd):
+            return
+        url = self.url()
+        queue = Queue(uuid)
+        consumer = RequestConsumer(queue, url=url)
+        log.info('messaging started for uuid="%s".', uuid)
+        return Session(consumer)
+    
+    def enabled(self, pd):
+        """
+        Get whether messaging is enabled.
+        @param pd: A plugin descriptor.
+        @type pd: L{PluginDescriptor}
+        @return: True if enabled.
+        @rtype: bool
+        """
+        try:
+            return int(pd.messaging.enabled)
+        except:
+            return 0
+        
+    def url(self):
+        """
+        Get the messaging url.
+        @return: Either the url specified in the conf or the default.
+        @rtype: str
+        """
+        try:
+            return cfg.messaging.url
+        except:
+            return self.URL
+    
+    def setupBroker(self):
+        """
+        Setup (configure) the broker using the conf.
+        @return: self
+        @rtype: L{PluginMonitorThread}
+        """
+        url = self.url()
+        broker = Broker.get(url)
+        for property in ('cacert', 'clientcert'):
+            try:
+                v = getattr(cfg.messaging, property)
+                setattr(broker, property, v)
+            except AttributeError:
+                pass
+        log.info('broker (qpid) configured: %s', broker)
+        return self
 
-class Agent(Base):
+
+class Agent:
     """
-    Pulp agent.
+    Gofer (main) agent.
+    Starts (2) threads.  A thread to run actions and
+    another to monitor/update plugin sessions on the bus.
     """
 
-    def __init__(self, actions=[]):
-        uuid = self.uuid()
+    def __init__(self, plugins, actions):
+        """
+        @param plugins: A list of loaded plugins
+        @type plugins: list
+        @param actions: A list of loaded actions.
+        @type actions: list
+        """
+        self.plugins = {}
+        for p in plugins:
+            self.plugins[p] = (None, None)
         actionThread = ActionThread(actions)
         actionThread.start()
-        queue = Queue(uuid)
-        cfg = Config()
-        url = cfg.messaging.url
-        if url and isinstance(url, str):
-            broker = Broker.get(url)
-            broker.cacert = cfg.messaging.cacert
-            broker.clientcert = cfg.messaging.clientcert
-            consumer = RequestConsumer(queue, url=url)
-            Base.__init__(self, consumer)
-        else:
-            log.warn('agent {%s} has messaging disabled.', uuid)
-        log.info('agent {%s} - started.', uuid)
+        pluginThread = PluginMonitorThread(plugins)
+        pluginThread.start()
+        log.info('agent started.')
         actionThread.join()
-
-    def uuid(self):
-        """
-        Get agent uuid.
-        @return: The agent UUID.
-        """
-        ident = Identity()
-        while True:
-            uuid = ident.getuuid()
-            if uuid:
-                return uuid
-            log.info('Not associated.')
-            sleep(90)
 
 
 class AgentLock(Lock):
@@ -124,10 +226,10 @@ def start(daemon=True):
         daemonize(lock)
     try:
         pl = PluginLoader()
-        pl.load()
+        plugins = pl.load()
         actions = Actions()
         collated = actions.collated()
-        agent = Agent(collated)
+        agent = Agent(plugins, collated)
         agent.close()
     finally:
         lock.release()

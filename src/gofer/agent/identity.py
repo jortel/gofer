@@ -13,7 +13,6 @@
 # in this software or its documentation.
 #
 
-from gofer.agent.config import Config
 from gofer.collator import Collator
 from logging import getLogger
 
@@ -26,7 +25,10 @@ class Identity:
     @ivar plugin: The identity plugin
     @type plugin: An identity function
     """
-    plugins = []
+    plugins = {}
+    
+    def __init__(self, plugin):
+        self.plugin = plugin
         
     def getuuid(self):
         """
@@ -34,8 +36,15 @@ class Identity:
         @return: The UUID.
         @rtype: str
         """
+        fnlist = []
+        for name in self.plugin.names():
+            fnlist = self.plugins.get(name)
+            if fnlist:
+                break
+        if not fnlist:
+            return
         c = Collator()
-        classes, functions = c.collate(self.plugins)
+        classes, functions = c.collate(fnlist)
         for cls,methods in classes.items():
             inst = cls()
             for m,d in methods:
@@ -56,8 +65,6 @@ class Identity:
                         mod.__name__,
                         fn.__name__,
                         exc_info=True)
-        cfg = Config()
-        return cfg.main.uuid
     
 
 def identity(fn):
@@ -66,5 +73,10 @@ def identity(fn):
     @param fn: A method/function that provides identity
     @type fn: callable
     """
-    Identity.plugins.append(fn)
+    name = fn.__module__
+    fnlist = Identity.plugins.get(name)
+    if fnlist is None:
+        fnlist = []
+        Identity.plugins[name] = fnlist
+    fnlist.append(fn)
     return fn
