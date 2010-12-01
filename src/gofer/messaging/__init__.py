@@ -207,7 +207,7 @@ class Queue(Destination):
         s.append(';{')
         s.append('create:always')
         s.append(',node:{type:queue,durable:True}')
-        s.append(',link:{durable:True}')
+        s.append(',link:{durable:True,x-subscribe:{exclusive:True}}')
         s.append('}')
         return ''.join(s)
 
@@ -223,7 +223,7 @@ class Queue(Destination):
         s.append(';{')
         s.append('create:always,delete:receiver')
         s.append(',node:{type:queue}')
-        s.append(',link:{durable:True}')
+        s.append(',link:{durable:True,x-subscribe:{exclusive:True}}')
         s.append('}')
         return ''.join(s)
 

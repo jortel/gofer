@@ -155,10 +155,14 @@ class PluginDescriptor(Base):
         """
         lst = []
         for fn in os.listdir(cls.ROOT):
+            plugin,ext = fn.split('.',1)
+            if not ext in ('.conf'):
+                continue
             path = os.path.join(cls.ROOT, fn)
+            if os.path.isdir(path):
+                continue
             fp = open(path)
             descriptor = cls(fp)
-            plugin = fn.split('.')[0]
             lst.append((plugin, descriptor))
         return lst
 

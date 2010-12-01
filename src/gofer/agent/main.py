@@ -128,8 +128,9 @@ class PluginMonitorThread(Thread):
         url = self.url()
         queue = Queue(uuid)
         consumer = RequestConsumer(queue, url=url)
+        ssn = Session(consumer)
         log.info('messaging started for uuid="%s".', uuid)
-        return Session(consumer)
+        return ssn
     
     def enabled(self, pd):
         """
