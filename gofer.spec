@@ -3,7 +3,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name: gofer
-Version: 0.4
+Version: 0.5
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -94,6 +94,9 @@ fi
 %{python_sitelib}/%{name}/messaging/
 
 %changelog
+* Thu Dec 02 2010 Jeff Ortel <jortel@redhat.com> 0.5-1
+- python 2.4 (& RHEL 5) compatibility. (jortel@redhat.com)
+
 * Thu Dec 02 2010 Jeff Ortel <jortel@redhat.com> 0.4-1
 - Modify builtin (generated) uuid to be persistent. (jortel@redhat.com)
 - Use hostname for 'builtin' plugin's uuid. Use the hostname unless it is non-
