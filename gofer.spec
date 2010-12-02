@@ -3,7 +3,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name: gofer
-Version: 0.2
+Version: 0.3
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -90,6 +90,18 @@ fi
 %{python_sitelib}/%{name}/messaging/
 
 %changelog
+* Thu Dec 02 2010 Jeff Ortel <jortel@redhat.com> 0.3-1
+- Set 'builtin' plugin back to uuid=123. (jortel@redhat.com)
+- Re-specify exclusive queue subscription; filter plugin descriptors by ext.
+  (jortel@redhat.com)
+- Add support for each plugin to specify a messaging consumer (uuid).
+  (jortel@redhat.com)
+- Rename builtin AgentAdmin to just Admin. (jortel@redhat.com)
+- Replace class decorators for python 2.4 compat. (jortel@redhat.com)
+- Fix cvs tags. (jortel@redhat.com)
+- Automatic commit of package [gofer] release [0.2-1]. (jortel@redhat.com)
+- Add brew build informaton. (jortel@redhat.com)
+
 * Fri Nov 19 2010 Jeff Ortel <jortel@redhat.com> 0.2-1
 - Add brew build informaton. (jortel@redhat.com)
 - Fix test. (jortel@redhat.com)
