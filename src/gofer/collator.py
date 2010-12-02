@@ -28,8 +28,8 @@ class Collator:
         """
         Collate decorated functions/methods.
         Returns (Classes, Unbound) where:
-            Classes is: dict {class:[methods,..]
-            Unbound is: dict {module: [functions,...]
+            - Classes is: dict {class:[methods,..]}
+            - Unbound is: dict {module: [functions,...]}
         @param functions: A collection of decorated functions.
         @type functions: (list|dict)
         @return: A tuple (classes, unbound)

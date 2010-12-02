@@ -40,8 +40,8 @@ class Remote:
 def remote(fn):
     """
     Decorator used to register remotable classes.
-    @param cls: A class to register.
-    @type cls: python class.
+    @param fn: A method/function to register.
+    @type fn: function.
     """
     fn.remotepermitted = 1
     Remote.functions.append(fn)
