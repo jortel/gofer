@@ -18,6 +18,7 @@ Demo plugin.
 """
 import os
 import socket
+from uuid import uuid4
 from gofer.decorators import *
 from gofer.collator import Collator
 from gofer.messaging.decorators import Remote
@@ -114,11 +115,21 @@ def echo(something):
     return something
 
 
-#@identity
-#def getuuid():
-#    return 'zzz'
+class Identity:
+    """
+    The default identity is the hostname.
+    """
+ 
+    @identity
+    def getuuid(self):
+        host = socket.gethostname()
+        if host.startswith('localhost'):
+            uuid = str(uuid4())
+            log.info(
+                '"%s" not unique, using "%s" for builtin uuid.',
+                host,
+                uuid)
+        else:
+            uuid = host
+        return uuid
 
-#class Identity:    
-#    @identity
-#    def getuuid(self):
-#        return 'yyy'
