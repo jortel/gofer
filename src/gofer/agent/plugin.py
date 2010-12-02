@@ -192,6 +192,8 @@ class PluginLoader:
             if not enabled:
                 continue
             p = self.__import(plugin, cfg)
+            if not p:
+                continue
             loaded.append(p)
         return loaded
                 

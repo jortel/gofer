@@ -121,23 +121,20 @@ class Identity:
     """
     
     PATH = '/var/lib/gofer/builtin/uuid'
-    HOSTNAME = socket.gethostname()
+
+    uuid = None
     
     def __init__(self):
         self.mkdir()
 
     @identity
     def getuuid(self):
-        uuid = self.generated()
-        host = self.HOSTNAME
-        if host.startswith('localhost'):
-            log.info(
-                '"%s" not unique, using "%s" for builtin uuid.',
-                host,
-                uuid)
-        else:
-            uuid = host
-        return uuid
+        if not self.uuid:
+            self.uuid = self.generated()
+            host = socket.gethostname()
+            if not host.startswith('localhost'):
+                self.uuid = host
+        return self.uuid
     
     def generated(self):
         uuid = self.read()

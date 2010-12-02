@@ -26,6 +26,10 @@ Group: Development/Languages
 BuildRequires: rpm-python
 Requires: python-simplejson
 Requires: python-qpid >= 0.7
+%if 7%{?rhel} <= 6
+Requires: python-uuid
+Requires: python-ssl
+%endif
 
 %description lib
 Contains lib gofer modules.

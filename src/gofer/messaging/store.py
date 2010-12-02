@@ -230,7 +230,7 @@ class PendingReceiver(Thread):
         Main receiver (thread).
         Read and dispatch envelopes.
         """
-        log.info('{%s} started', self.name)
+        log.info('{%s} started', self.getName())
         while self.__run:
             envelope = self.queue.next(3)
             if envelope:
@@ -253,4 +253,4 @@ class PendingReceiver(Thread):
         Stop the receiver.
         """
         self.__run = False
-        log.info('{%s} stopping', self.name)
+        log.info('{%s} stopping', self.getName())
