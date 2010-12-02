@@ -119,12 +119,18 @@ class Identity:
     """
     The default identity is the hostname.
     """
- 
+    
+    PATH = '/var/lib/gofer/builtin/uuid'
+    HOSTNAME = socket.gethostname()
+    
+    def __init__(self):
+        self.mkdir()
+
     @identity
     def getuuid(self):
-        host = socket.gethostname()
+        uuid = self.generated()
+        host = self.HOSTNAME
         if host.startswith('localhost'):
-            uuid = str(uuid4())
             log.info(
                 '"%s" not unique, using "%s" for builtin uuid.',
                 host,
@@ -132,4 +138,31 @@ class Identity:
         else:
             uuid = host
         return uuid
+    
+    def generated(self):
+        uuid = self.read()
+        if not uuid:
+            uuid = str(uuid4())
+            self.write(uuid)
+        return uuid
+    
+    def read(self):
+        try:
+            f = open(self.PATH)
+            uuid = f.read()
+            f.close()
+            return uuid
+        except:
+            pass
 
+    def write(self, uuid):
+        f = open(self.PATH, 'w')
+        f.write(uuid)
+        f.close()
+        log.info('uuid %s written to: %s', uuid, self.PATH)
+
+    def mkdir(self):
+        path = os.path.dirname(self.PATH)
+        if os.path.exists(path):
+            return
+        os.makedirs(path)
