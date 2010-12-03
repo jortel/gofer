@@ -122,18 +122,18 @@ class Plugin(object):
     def getuuid(self):
         """
         Get the plugin's messaging UUID.
-        The comes from the plugin's identity plugin.
-        Else, the plugin descriptor.
+        The uuid defined in the plugin descriptor is returned
+        when specified.  If not, the plugin's registered identity
+        function/method is called and value returend.
         @return: The plugin's messaging UUID.
         @rtype: str
         """
-        ident = Identity(self)
-        uuid = ident.getuuid()
-        if not uuid:
-            cfg = self.cfg()
-            uuid = cfg.messaging.uuid
-        if isinstance(uuid, (str,int)):
-            return uuid
+        cfg = self.cfg()
+        uuid = cfg.messaging.uuid
+        if not isinstance(uuid, (str,int)):
+            ident = Identity(self)
+            uuid = ident.getuuid()
+        return uuid
         
     def cfg(self):
         return self.descriptor
