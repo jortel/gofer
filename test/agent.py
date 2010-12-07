@@ -17,8 +17,6 @@
 #
 
 import sys
-sys.path.append('../../')
-
 from time import sleep
 from gofer.messaging import Queue
 from gofer.messaging.base import Agent as Base
@@ -29,7 +27,7 @@ from logging import INFO, basicConfig
 
 basicConfig(filename='/tmp/gofer.log', level=INFO)
 
-class AgentAdmin:
+class Admin:
 
     @remote
     def hello(self):
@@ -83,9 +81,8 @@ class Agent(Base):
             print 'Agent: sleeping...'
 
 if __name__ == '__main__':
+    uuid = 'xyz'
     if len(sys.argv) > 1:
-        cid = sys.argv[1]
-    else:
-        cid = '123'
-    print 'starting agent (%s)' % cid
-    agent = Agent(cid)
+        uuid = sys.argv[1]
+    print 'starting agent (%s)' % uuid
+    agent = Agent(uuid)

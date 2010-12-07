@@ -16,9 +16,6 @@
 # in this software or its documentation.
 #
 
-import sys
-sys.path.append('../../')
-
 from gofer.messaging import Queue
 from gofer.messaging.base import Container
 from gofer.messaging.producer import Producer
@@ -36,11 +33,10 @@ log = getLogger(__name__)
 
 
 def demo(agent):
+
+    agent.__main__.echo('have a nice day')
     
-    plugin = agent.__main__()
-    plugin.echo('have a nice day')
-    
-    admin = agent.AgentAdmin()
+    admin = agent.Admin()
     
     print admin.hello()
     
@@ -71,23 +67,24 @@ def later(**offset):
     return dt.utcnow()+delta(**offset)
 
 if __name__ == '__main__':
+    uuid = 'xyz'
     # synchronous
     print '(demo) synchronous'
-    agent = Agent('123')
+    agent = Agent(uuid)
     demo(agent)
     #agent.delete()
     agent = None
 
     # asynchronous (fire and forget)
     print '(demo) asynchronous fire-and-forget'
-    agent = Agent('123', async=True)
+    agent = Agent(uuid, async=True)
     demo(agent)
 
     # asynchronous
     print '(demo) asynchronous'
     tag = 'xyz'
     window = Window(begin=dt.utcnow(), minutes=1)
-    agent = Agent('123', ctag=tag, window=window)
+    agent = Agent(uuid, ctag=tag, window=window)
     demo(agent)
 
     # asynchronous
