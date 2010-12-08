@@ -18,7 +18,7 @@ Contains request delivery policies.
 """
 
 from gofer.messaging import *
-from gofer.messaging.dispatcher import Return
+from gofer.messaging.dispatcher import *
 from gofer.messaging.consumer import Reader
 from logging import getLogger
 
@@ -32,8 +32,12 @@ class RequestTimeout(Exception):
     """
 
     def __init__(self, sn):
+        """
+        @param sn: The request serial number.
+        @type sn: str
+        """
         Exception.__init__(self, sn)
-
+        
 
 class RequestMethod:
     """
@@ -91,8 +95,10 @@ class Synchronous(RequestMethod):
         @param producer: A queue producer.
         @type producer: L{gofer.messaging.producer.Producer}
         @param timeout: The request timeout (seconds).
-        @type timeout: int
+        @type timeout: tuple
         """
+        if not isinstance(timeout, (list,tuple)):
+            timeout = (timeout, timeout)
         self.timeout = timeout
         self.queue = Queue(getuuid(), durable=False)
         RequestMethod.__init__(self, producer)
@@ -121,7 +127,7 @@ class Synchronous(RequestMethod):
         return self.__getreply(sn)
 
     def __getstarted(self, sn):
-        envelope = self.reader.search(sn, self.timeout)
+        envelope = self.reader.search(sn, self.timeout[0])
         if envelope:
             log.info('request (%s), started', sn)
         else:
@@ -135,7 +141,7 @@ class Synchronous(RequestMethod):
         @return: The matched reply envelope.
         @rtype: L{Envelope}
         """
-        envelope = self.reader.search(sn, self.timeout)
+        envelope = self.reader.search(sn, self.timeout[1])
         if not envelope:
             raise RequestTimeout(sn)
         reply = Return(envelope.result)
@@ -143,7 +149,7 @@ class Synchronous(RequestMethod):
         if reply.succeeded():
             return reply.retval
         else:
-            raise Exception, reply.exval
+            raise RemoteException.instance(reply)
 
 
 class Asynchronous(RequestMethod):

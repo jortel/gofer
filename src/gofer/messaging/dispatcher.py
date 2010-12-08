@@ -27,7 +27,11 @@ from logging import getLogger
 log = getLogger(__name__)
 
 
-class ClassNotFound(Exception):
+class DispatchError(Exception):
+    pass
+
+
+class ClassNotFound(DispatchError):
     """
     Target class not found.
     """
@@ -36,7 +40,7 @@ class ClassNotFound(Exception):
         Exception.__init__(self, classname)
 
 
-class MethodNotFound(Exception):
+class MethodNotFound(DispatchError):
     """
     Target method not found.
     """
@@ -46,7 +50,7 @@ class MethodNotFound(Exception):
         Exception.__init__(self, message)
 
 
-class NotPermitted(Exception):
+class NotPermitted(DispatchError):
     """
     Permission denied or not visible.
     """
@@ -54,6 +58,41 @@ class NotPermitted(Exception):
     def __init__(self, classname, method):
         message = '%s.%s(), not permitted' % (classname, method)
         Exception.__init__(self, message)
+        
+        
+class RemoteException(Exception):
+    """
+    The re-raised (propagated) exception base class.
+    """
+
+    @classmethod
+    def instance(cls, reply):
+        classname = reply.xclass
+        mod = reply.xmodule
+        state = reply.xstate
+        args = reply.xargs
+        try:
+            C = globals().get(classname)
+            if not C:
+                mod = __import__(mod, fromlist=[classname,])
+                C = getattr(mod, classname)
+            inst = cls.__new(C)
+            inst.__dict__.update(state)
+            if isinstance(inst, Exception):
+                inst.args = args
+            return inst
+        except Exception,e:
+            pass
+        return RemoteException(reply.exval)
+    
+    @classmethod
+    def __new(cls, C):
+        try:
+            import new
+            return new.instance(C)
+        except:
+            pass
+        return Exception.__new__(C)
 
 
 class Return(Envelope):
@@ -80,8 +119,21 @@ class Return(Envelope):
         @rtype: L{Return}
         """
         info = sys.exc_info()
-        ex = '\n'.join(tb.format_exception(*info))
-        return Return(exval=ex)
+        inst = info[1]
+        xclass = inst.__class__
+        exval = '\n'.join(tb.format_exception(*info))
+        mod = inspect.getmodule(xclass)
+        if mod:
+            mod = mod.__name__
+        args = None
+        if issubclass(xclass, Exception):
+            args = inst.args
+        state = inst.__dict__
+        return Return(exval=exval,
+                      xmodule=mod,
+                      xclass=xclass.__name__,
+                      xstate=state,
+                      xargs=args)
 
     def succeeded(self):
         """

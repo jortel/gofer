@@ -27,6 +27,11 @@ from logging import INFO, basicConfig
 
 basicConfig(filename='/tmp/gofer.log', level=INFO)
 
+class MyError(Exception):
+    def __init__(self, a, b):
+        Exception.__init__(self, a)
+        self.b = b
+
 class Admin:
 
     @remote
@@ -52,6 +57,14 @@ class Dog:
         for i in range(0, n):
             print 'wag'
         return 'Yes master.  I will wag my tail because that is what dogs do.'
+    
+    @remote
+    def keyError(self, key):
+        raise KeyError, key
+    
+    @remote
+    def myError(self):
+        raise MyError('This is myerror.', 23)
 
     def notpermitted(self):
         print 'not permitted.'

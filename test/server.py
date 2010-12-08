@@ -25,11 +25,11 @@ from time import sleep
 from datetime import datetime as dt
 from datetime import timedelta as delta
 from logging import INFO, basicConfig, getLogger
+from agent import MyError
 
 basicConfig(filename='/tmp/gofer.log', level=INFO)
 
 log = getLogger(__name__)
-
 
 
 def demo(agent):
@@ -62,6 +62,23 @@ def demo(agent):
     except Exception, e:
         log.info('failed:', exc_info=True)
         print e
+    try:
+        print dog.keyError('jeff')
+    except KeyError, e:
+        log.info('failed:', exc_info=True)
+        print e
+    except Exception, e:
+        log.info('failed:', exc_info=True)
+        print e
+    try:
+        print dog.myError()
+    except MyError, e:
+        log.info('failed:', exc_info=True)
+        print e
+    except Exception, e:
+        log.info('failed:', exc_info=True)
+        print e
+
 
 def later(**offset):
     return dt.utcnow()+delta(**offset)

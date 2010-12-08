@@ -18,7 +18,7 @@ Provides async AMQP message consumer classes.
 """
 
 from gofer.messaging import *
-from gofer.messaging.dispatcher import Return
+from gofer.messaging.dispatcher import Return, RemoteException
 from gofer.messaging.consumer import Consumer
 from logging import getLogger
 
@@ -183,7 +183,7 @@ class Failed(FinalReply):
         """
         AsyncReply.__init__(self, envelope)
         reply = Return(envelope.result)
-        self.exval = Exception(reply.exval)
+        self.exval = RemoteException.instance(reply)
 
     def throw(self):
         raise self.exval

@@ -59,8 +59,9 @@ class ReceiverThread(Thread):
         receiver = self.consumer.receiver
         while self.__run:
             try:
-                m = receiver.fetch(timeout=1)
+                m = receiver.fetch(timeout=10)
                 self.consumer.received(m)
+                log.info('ready')
             except Empty:
                 pass
             except KeyboardInterrupt:
