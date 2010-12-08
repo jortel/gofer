@@ -3,7 +3,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name: gofer
-Version: 0.6
+Version: 0.7
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -94,6 +94,11 @@ fi
 %{python_sitelib}/%{name}/messaging/
 
 %changelog
+* Wed Dec 08 2010 Jeff Ortel <jortel@redhat.com> 0.7-1
+- Support timeout as tuple. (jortel@redhat.com)
+- Enhanced exception propagation. (jortel@redhat.com)
+- Fix testings. (jortel@redhat.com)
+
 * Fri Dec 03 2010 Jeff Ortel <jortel@redhat.com> 0.6-1
 - Reverse presidence of uuid: plugin descriptor now overrides @identity
   function/method. (jortel@redhat.com)
