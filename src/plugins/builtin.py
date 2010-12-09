@@ -28,6 +28,7 @@ from gofer.agent.config import Config
 from logging import getLogger
 
 log = getLogger(__name__)
+plugin = Plugin.find(__name__)
 
 
 class TestAction:

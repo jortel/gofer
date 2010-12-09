@@ -48,7 +48,18 @@ class Plugin(object):
     @classmethod
     def add(cls, plugin):
         """
-        Add the plugin by name and synonyms.
+        Add the plugin.
+        @param plugin: The plugin to add.
+        @type plugin: L{Plugin}
+        @return: The added plugin
+        @rtype: L{Plugin}
+        """
+        return cls.update(plugin)
+    
+    @classmethod
+    def update(cls, plugin):
+        """
+        Add the plugin.
         @param plugin: The plugin to add.
         @type plugin: L{Plugin}
         @return: The added plugin
@@ -57,6 +68,18 @@ class Plugin(object):
         cls.plugins[plugin.name] = plugin
         for name in plugin.synonyms:
             cls.plugins[name] = plugin
+        return plugin
+    
+    @classmethod
+    def delete(cls, plugin):
+        """
+        Delete the plugin.
+        @param plugin: The plugin to add.
+        @type plugin: L{Plugin}
+        """
+        for k,v in cls.plugins.items():
+            if v == plugin:
+                del cls.plugins[k]
         return plugin
     
     @classmethod
@@ -220,19 +243,20 @@ class PluginLoader:
         @return: The loaded module.
         @rtype: Module
         """
+        p = Plugin(plugin, cfg)
+        Plugin.add(p)
         try:
             name = self.__mangled(plugin)
             mod = '%s.py' % plugin
             path = os.path.join(self.ROOT, mod)
             mod = imp.load_source(name, path)
             log.info('plugin "%s", imported as: "%s"', plugin, name)
-            synonyms = []
             if name != plugin:
-                synonyms.append(name)
-            p = Plugin(plugin, cfg, synonyms=synonyms)
-            Plugin.add(p)
+                p.synonyms.append(name)
+            Plugin.update(p)
             return p
         except:
+            Plugin.delete(p)
             log.error(
                 'plugin "%s", import failed',
                 plugin, 
