@@ -26,7 +26,7 @@ Group: Development/Languages
 BuildRequires: rpm-python
 Requires: python-simplejson
 Requires: python-qpid >= 0.7
-%if 7%{?rhel} <= 6
+%if 0%{?rhel} && 0%{?rhel} < 6
 Requires: python-uuid
 Requires: python-ssl
 %endif
