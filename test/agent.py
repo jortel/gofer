@@ -65,6 +65,11 @@ class Dog:
     @remote
     def myError(self):
         raise MyError('This is myerror.', 23)
+    
+    @remote
+    def sleep(self, n):
+        sleep(n)
+        return 'Good morning, master!'
 
     def notpermitted(self):
         print 'not permitted.'

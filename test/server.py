@@ -16,6 +16,7 @@
 # in this software or its documentation.
 #
 
+import sys
 from gofer.messaging import Queue
 from gofer.messaging.base import Container
 from gofer.messaging.producer import Producer
@@ -85,18 +86,18 @@ def later(**offset):
 
 if __name__ == '__main__':
     uuid = 'xyz'
+
+    # TTL
+    agent = Agent(uuid, timeout=10)
+    dog = agent.Dog()
+    print dog.sleep(1)
+    
     # synchronous
     print '(demo) synchronous'
     agent = Agent(uuid)
     demo(agent)
     #agent.delete()
     agent = None
-
-    w = Window(begin=dt.utcnow(), seconds=1)
-    #sleep(1)
-    agent = Agent(uuid, window=w)
-    admin = agent.Admin()
-    admin.hello()
 
     # asynchronous (fire and forget)
     print '(demo) asynchronous fire-and-forget'

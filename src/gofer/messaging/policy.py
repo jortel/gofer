@@ -120,6 +120,7 @@ class Synchronous(RequestMethod):
         """
         sn = self.producer.send(
             destination,
+            ttl=self.timeout[0],
             replyto=str(self.queue),
             request=request,
             **any)

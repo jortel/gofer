@@ -36,11 +36,13 @@ class Producer(Endpoint):
         """
         pass
 
-    def send(self, destination, **body):
+    def send(self, destination, ttl=None, **body):
         """
         Send a message.
         @param destination: An AMQP destination.
         @type destination: L{Destination}
+        @param ttl: Time to Live (seconds)
+        @type ttl: float
         @keyword body: envelope body.
         @return: The message serial number.
         @rtype: str
@@ -48,7 +50,8 @@ class Producer(Endpoint):
         sn = getuuid()
         envelope = Envelope(sn=sn, version=version, origin=self.id())
         envelope.update(body)
-        message = Message(content=envelope.dump(), durable=True)
+        json = envelope.dump()
+        message = Message(content=json, durable=True, ttl=ttl)
         address = str(destination)
         sender = self.session().sender(address)
         sender.send(message);
