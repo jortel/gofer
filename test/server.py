@@ -92,6 +92,12 @@ if __name__ == '__main__':
     #agent.delete()
     agent = None
 
+    ttl = TTL(seconds=1)
+    #sleep(1)
+    agent = Agent(uuid, window=ttl)
+    admin = agent.Admin()
+    admin.hello()
+
     # asynchronous (fire and forget)
     print '(demo) asynchronous fire-and-forget'
     agent = Agent(uuid, async=True)

@@ -129,7 +129,11 @@ class Synchronous(RequestMethod):
     def __getstarted(self, sn):
         envelope = self.reader.search(sn, self.timeout[0])
         if envelope:
-            log.info('request (%s), started', sn)
+            self.reader.ack()
+            if envelope.status:
+                log.info('request (%s), started', sn)
+            else:
+                self.__onreply(envelope)
         else:
             raise RequestTimeout(sn)
 
@@ -142,10 +146,21 @@ class Synchronous(RequestMethod):
         @rtype: L{Envelope}
         """
         envelope = self.reader.search(sn, self.timeout[1])
-        if not envelope:
+        if envelope:
+            self.reader.ack()
+            return self.__onreply(envelope)
+        else:
             raise RequestTimeout(sn)
+        
+    def __onreply(self, envelope):
+        """
+        Handle the reply.
+        @param envelope: The reply envelope.
+        @type envelope: L{Envelope}
+        @return: The matched reply envelope.
+        @rtype: L{Envelope}
+        """
         reply = Return(envelope.result)
-        self.reader.ack()
         if reply.succeeded():
             return reply.retval
         else:
