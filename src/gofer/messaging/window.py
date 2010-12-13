@@ -193,16 +193,6 @@ class Window(Envelope):
         else:
             return 'Empty'
         
-        
-class TTL(Window):
-    """
-    Represents a (window) Time To Live.
-    """
-    
-    def __init__(self, **window):
-        window['begin'] = dt.utcnow()
-        Window.__init__(self, **window)
-
 
 class WindowMissed(Exception):
     """

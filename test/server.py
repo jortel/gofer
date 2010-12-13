@@ -92,9 +92,9 @@ if __name__ == '__main__':
     #agent.delete()
     agent = None
 
-    ttl = TTL(seconds=1)
+    w = Window(begin=dt.utcnow(), seconds=1)
     #sleep(1)
-    agent = Agent(uuid, window=ttl)
+    agent = Agent(uuid, window=w)
     admin = agent.Admin()
     admin.hello()
 
