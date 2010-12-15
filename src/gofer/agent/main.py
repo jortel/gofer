@@ -49,6 +49,7 @@ class ActionThread(Thread):
         """
         self.actions = actions
         Thread.__init__(self, name='Actions')
+        self.setDaemon(True)
    
     def run(self):
         """
@@ -78,6 +79,7 @@ class PluginMonitorThread(Thread):
         for p in plugins:
             self.plugins[p] = None
         Thread.__init__(self, name='PluginMonitor')
+        self.setDaemon(True)
    
     def run(self):
         """

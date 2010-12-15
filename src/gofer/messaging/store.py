@@ -224,6 +224,7 @@ class PendingReceiver(Thread):
         self.queue = queue
         self.listener = listener
         Thread.__init__(self, name='pending:%s' % queue.id)
+        self.setDaemon(True)
 
     def run(self):
         """

@@ -49,6 +49,7 @@ class ReceiverThread(Thread):
         self.__run = True
         self.consumer = consumer
         Thread.__init__(self, name=consumer.id())
+        self.setDaemon(True)
 
     def run(self):
         """
@@ -64,9 +65,7 @@ class ReceiverThread(Thread):
                 log.info('ready')
             except Empty:
                 pass
-            except KeyboardInterrupt:
-                raise
-            except Exception:
+            except:
                 log.error('failed:\n%s', m, exc_info=True)
 
     def stop(self):
