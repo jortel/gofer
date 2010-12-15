@@ -25,7 +25,7 @@ from gofer.messaging.consumer import RequestConsumer
 from gofer.messaging.broker import Broker
 from logging import INFO, basicConfig
 
-basicConfig(filename='/tmp/gofer.log', level=INFO)
+basicConfig(filename='/tmp/gofer/agent.log', level=INFO)
 
 class MyError(Exception):
     def __init__(self, a, b):

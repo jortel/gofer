@@ -28,7 +28,7 @@ from datetime import timedelta as delta
 from logging import INFO, basicConfig, getLogger
 from agent import MyError
 
-basicConfig(filename='/tmp/gofer.log', level=INFO)
+basicConfig(filename='/tmp/gofer/server.log', level=INFO)
 
 log = getLogger(__name__)
 
@@ -84,7 +84,7 @@ def demo(agent):
 def later(**offset):
     return dt.utcnow()+delta(**offset)
 
-if __name__ == '__main__':
+def main():
     uuid = 'xyz'
 
     # TTL
@@ -143,3 +143,11 @@ if __name__ == '__main__':
     print dog.bark('hello again', **opts)
 
     agent = None
+
+if __name__ == '__main__':
+    for i in range(0,10):
+        print '======= %d ========' % i
+        main()
+    print 'finished.'
+
+

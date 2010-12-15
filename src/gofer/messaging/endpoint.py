@@ -115,10 +115,9 @@ class Endpoint:
         session = self.__session
         self.__session = None
         try:
-            session.stop()
             session.close()
         except:
-            pass
+            log.error(self.uuid, exc_info=1)
 
     def __parsedurl(self):
         urlpart = self.url.split('://', 1)

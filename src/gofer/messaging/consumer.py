@@ -330,7 +330,10 @@ class RequestConsumer(Consumer):
         @param envelope: The received envelope.
         @type envelope: L{Envelope}
         """
-        window = Window(envelope.window)
+        w = envelope.window
+        if not isinstance(w, dict):
+            return
+        window = Window(w)
         if window.future():
             pending = self.pending.queue
             pending.add(envelope)
