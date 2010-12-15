@@ -215,8 +215,6 @@ class Reader(Consumer):
             envelope.load(message.content)
             log.info('{%s} read next:\n%s', self.id(), envelope)
             return envelope
-        except KeyboardInterrupt:
-            raise
         except Empty:
             pass
 
