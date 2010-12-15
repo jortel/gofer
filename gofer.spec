@@ -3,7 +3,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name: gofer
-Version: 0.9
+Version: 0.10
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -94,6 +94,11 @@ fi
 %{python_sitelib}/%{name}/messaging/
 
 %changelog
+* Wed Dec 15 2010 Jeff Ortel <jortel@redhat.com> 0.10-1
+- session.stop() not supported in python-qpid 0.7. (jortel@redhat.com)
+- Remove unused catch. (jortel@redhat.com)
+- Make worker threads daemons. (jortel@redhat.com)
+
 * Mon Dec 13 2010 Jeff Ortel <jortel@redhat.com> 0.9-1
 - Set AMQP message TTL=timeout for synchronous RMI. (jortel@redhat.com)
 
