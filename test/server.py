@@ -114,7 +114,7 @@ def main():
     # asynchronous
     print '(demo) group asynchronous'
     tag = 'xyz'
-    group = ('123', 'ABC',)
+    group = (uuid, 'ABC',)
     window = Window(begin=dt.utcnow(), minutes=1)
     agent = Agent(group, ctag=tag)
     demo(agent)
