@@ -320,6 +320,7 @@ class Import:
             else:
                 var = self.properties.var(k)
                 if var:
+                    var = '$(%s)' % var.strip()
                     vdict[var] = v
         return (imported, vdict)
     
@@ -336,8 +337,8 @@ class Reader:
     @type path: str
     """
     
-    BUILTIN = {
-        'hostname':socket.gethostname(),
+    MACROS = {
+        '%{hostname}':socket.gethostname(),
         }
     
     def __init__(self, path):
@@ -348,7 +349,6 @@ class Reader:
         f = open(path)
         try:
             bfr = f.read()
-            self.vdict.update(self.BUILTIN)
             self.lines = self.__post(bfr.split('\n'))
         finally:
             f.close()
@@ -407,11 +407,10 @@ class Reader:
         @return: The line w/ vars replaced.
         @rtype: str
         """
-        for k,v in self.vdict.items():
-            var = '$(%s)' % k
-            if var in ln:
-                ln = ln.replace(var, v)
-                log.info('line "%s" s/%s/%s/', ln, var, v)
+        for k,v in self.MACROS.items()+self.vdict.items():
+            if k in ln:
+                log.info('line "%s" s/%s/%s/', ln, k, v)
+                ln = ln.replace(k, v)
         return ln
     
     def __str__(self):
