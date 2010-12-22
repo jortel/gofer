@@ -15,8 +15,53 @@
 
 
 import os
-from iniparse import INIConfig as Base
+import re
+from iniparse import INIConfig
+from iniparse.config import Undefined
+from gofer.agent.logutil import getLogger
 
+log = getLogger(__name__)
+
+
+def ndef(x):
+    """
+    Section/property not defined.
+    @param x: A section/property
+    @type x: A section or property object.
+    @return: True if not defined.
+    """
+    return isinstance(x, Undefined)
+
+def nvl(x, d=None):
+    """
+    Not define value.
+    @param x: An object to check.
+    @type x: A section/property
+    @return: d if not defined, else x.
+    """
+    if ndef(x):
+        return d
+    else:
+        return x
+    
+    
+class Base(INIConfig):
+    """
+    Base configuration.
+    Uses L{Reader} which provides import.
+    """
+
+    def __init__(self, path):
+        """
+        @param path: The path to an INI file.
+        @type path: str
+        """
+        fp = Reader(path)
+        try:
+            INIConfig.__init__(self, fp)
+        finally:
+            fp.close()
+            
 
 class Config(Base):
     """
@@ -46,36 +91,31 @@ class Config(Base):
         Merge (in) alternate configuration file when specified
         by environment variable.
         """
-        fp = open(self.PATH)
         try:
-            Base.__init__(self, fp)
+            Base.__init__(self, self.PATH)
+            self.__addconfd()
             altpath = self.__altpath()
             if altpath:
-                alt = self.__read(altpath)
+                alt = Base(altpath)
                 self.__mergeIn(alt)
-            self.__addconfd()
-        finally:
-            fp.close()
-
-    def write(self):
+                log.info('merged[in]:%s\n%s', altpath, self)
+        except:
+            log.error(self.PATH, exc_info=1)
+            raise
+    
+    def __update(self, other):
         """
-        Write the configuration.
+        Update with the specified I{other} configuration.
+        @param other: The conf to update with.
+        @type other: Base
+        @return: self
+        @rtype: L{Config}
         """
-        altpath = self.__altpath()
-        if altpath:
-            alt = self.__read(altpath)
-            self.__mergeOut(alt)
-            path = altpath
-            s = str(alt)
-        else:
-            path = self.PATH
-            s = str(self)
-        fp = open(path, 'w')
-        try:
-            fp.write(s)
-        finally:
-            fp.close()
-
+        for section in other:
+            for key in other[section]:
+                self[section][key] = other[section][key]
+        return self
+    
     def __mergeIn(self, other):
         """
         Merge (in) the specified I{other} configuration.
@@ -87,11 +127,8 @@ class Config(Base):
         for section in other:
             if section not in self:
                 continue
-            sA = self[section]
-            sB = other[section]
-            for key in sB:
-                value = sB[key]
-                setattr(sA, key, value)
+            for key in other[section]:
+                self[section][key] = other[section][key]
         return self
 
     def __mergeOut(self, other):
@@ -105,27 +142,29 @@ class Config(Base):
         for section in other:
             if section not in self:
                 continue
-            sA = self[section]
-            sB = other[section]
-            for key in sB:
-                value = sA[key]
-                setattr(sB, key, value)
+            for key in other[section]:
+                other[section][key] = self[section][key]
         return self
 
-    def __read(self, path):
+    def write(self):
         """
-        Read the configuration at the specified path.
-        @param path: The fully qualified path.
-        @type path: str
-        @return: The configuration object.
-        @rtype: Base
+        Write the configuration.
         """
-        fp = open(path)
+        altpath = self.__altpath()
+        if altpath:
+            alt = self.__read(altpath)
+            self.__mergeOut(alt)
+            log.info('merge[out]:%s\n%s', altpath, alt)
+            path = altpath
+            s = str(alt)
+        else:
+            path = self.PATH
+            s = str(self)
+        fp = open(path, 'w')
         try:
-            return Base(fp)
+            fp.write(s)
         finally:
             fp.close()
-
 
     def __altpath(self):
         """
@@ -149,5 +188,229 @@ class Config(Base):
         """
         for fn in os.listdir(self.CNFD):
             path = os.path.join(self.CNFD, fn)
-            cfg = self.__read(path)
-            self.__mergeIn(cfg)
+            cfg = Base(path)
+            self.__update(cfg)
+            log.info('updated with: %s\n%s', path, self)
+
+
+class Properties:
+    """
+    Import property specification.
+    @ivar pattern: The regex for property specification.
+    @type pattern: I{regex.pattern}
+    @ivar vdict: The variable dictionary.
+    @type vdict: dict
+    @ivar plain: The list of I{plan} properties to import.
+    @type plain: [str,..]
+    """
+
+    pattern = re.compile('([^(]+)(\()([^)]+)(\))')
+    
+    def __init__(self, properties=()):
+        """
+        @param properties: A list of property specifications.
+        @type properties: [str,..]
+        """
+        self.vdict = {}
+        self.plain = []
+        for p in properties:
+            if not p:
+                continue
+            m = self.pattern.match(p)
+            if m:
+                key = m.group(1).strip()
+                value = m.group(3).strip()
+                self.vdict[key] = value
+            else:
+                self.plain.append(p) 
+                
+    def isplain(self, property):
+        """
+        Get whether a property is I{plain} and is to be imported.
+        @param property: A property name.
+        @type property: str
+        @return: True when property is to be imported.
+        @rtype: bool
+        """
+        return ( property in self.plain )
+    
+    def var(self, property):
+        """
+        Get the property's declared variable name.
+        @param property: A property name.
+        @type property: str
+        @return: The variable name declared for the property
+            or None when not declared.
+        @rtype: str
+        """
+        return self.vdict.get(property)
+    
+    def empty(self):
+        """
+        Get whether the object is empty.
+        @return: True no properties defined.
+        @rtype: bool
+        """
+        return ( len(self) == 0 )
+    
+    def __iter__(self):
+        keys = self.vdict.keys()
+        keys += self.plain
+        return iter(keys)
+    
+    def __len__(self):
+        return ( len(self.vdict)+len(self.plain) )
+    
+    
+class Import:
+    """
+    Represents an import directive.
+    @import:<path>:<section>:<property>,
+    where <property> is: <name>|<name>(<variable>).
+    When the <variable> form is used, a variable is assigned the value 
+    to be used as $(var) in the conf rather than imported.
+    @cvar allproperties: An (empty) object representing all properties
+        are to be imported.
+    @type allproperties: L{Properties}
+    @ivar path: The path to the imported ini file.
+    @type path: str
+    @ivar section: The name of the section to be imported.
+    @type section: str
+    @ivar properties: The property specification.
+    @type properties: L{Properties}
+    """
+    
+    allproperties = Properties()
+
+    def __init__(self, imp):
+        """
+        @param imp: An import directive.
+        @type imp: str
+        """
+        part = imp.split(':')
+        self.path = part[1]
+        self.section = None
+        self.properties = self.allproperties
+        if len(part) > 2:
+            self.section = part[2].strip()
+        if len(part) > 3:
+            plist = [s.strip() for s in part[3].split(',')]
+            self.properties = Properties(plist)
+    
+    def __call__(self):
+        """
+        Execute the import directive.
+        @return: The (imported) lines & declared (vdict) variables.
+        @rtype: tuple(<imported>,<vdict>)
+        """
+        vdict = {}
+        input = Base(self.path)
+        if not self.section:
+            return (input, vdict)
+        imported = INIConfig()
+        S = input[self.section]
+        if ndef(S):
+            raise Exception, '[%s] not found in %s' % (self.section, self.path)
+        for k in S:
+            v = input[self.section][k]
+            if self.properties.empty() or self.properties.isplain(k):
+                imported[self.section][k] = v
+            else:
+                var = self.properties.var(k)
+                if var:
+                    vdict[var] = v
+        return (imported, vdict)
+    
+
+class Reader:
+    """
+    File reader.
+    post-process directives.
+    @ivar idx: The line index.
+    @type idx: int
+    @ivar vdict: The variable dictionary.
+    @type vdict: dict
+    @ivar path: The path to a file to read.
+    @type path: str
+    """
+    
+    def __init__(self, path):
+        self.idx = 0
+        self.vdict = {}
+        self.path = path
+        log.info('reading: %s', path)
+        f = open(path)
+        try:
+            bfr = f.read()
+            self.lines = self.__post(bfr.split('\n'))
+        finally:
+            f.close()
+
+    def readline(self):
+        """
+        read the next line.
+        @return: The line of None on EOF.
+        @rtype: str 
+        """
+        if self.idx < len(self.lines):
+            ln = self.lines[self.idx]
+            self.idx += 1
+            return ln+'\n'
+        
+    def close(self):
+        pass
+
+    def __post(self, input):
+        """
+        Post-process file content for directives.
+        @param input: The file content (lines).
+        @type input: list
+        @return: The post processed content.
+        @rtype: list
+        """
+        output = []
+        for ln in input:
+            if ln.startswith('@import'):
+                for ln in self.__import(ln):
+                    output.append(ln)
+            else:
+                ln = self.__repl(ln)
+                output.append(ln)
+        return output
+
+    def __import(self, ln):
+        """
+        Procecss an i{import} directive and return the result.
+        @param ln: A line containing the directive.
+        @type ln: str
+        @return: The import result (lines).
+        @rtype: [str,..]
+        """
+        log.info('processing: %s', ln)
+        imp = Import(ln)
+        imported, vdict = imp()
+        self.vdict.update(vdict)
+        return str(imported).split('\n')
+    
+    def __repl(self, ln):
+        """
+        Replace variables contained in the line.
+        @param ln: A file line.
+        @type ln: str
+        @return: The line w/ vars replaced.
+        @rtype: str
+        """
+        for k,v in self.vdict.items():
+            var = '$(%s)' % k
+            if var in ln:
+                ln = ln.replace(var, v)
+                log.info('line "%s" s/%s/%s/', ln, var, v)
+        return ln
+    
+    def __str__(self):
+        return self.path
+
+
+if __name__ == '__main__':
+    cfg = Config()
+    print cfg
