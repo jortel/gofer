@@ -23,8 +23,7 @@ import imp
 from gofer import *
 from gofer.collator import Collator
 from gofer.agent.identity import Identity
-from gofer.agent.config import Config
-from iniparse import INIConfig as Base
+from gofer.agent.config import Base, Config
 from iniparse.config import Undefined
 from logging import getLogger
 
@@ -184,8 +183,7 @@ class PluginDescriptor(Base):
             path = os.path.join(cls.ROOT, fn)
             if os.path.isdir(path):
                 continue
-            fp = open(path)
-            descriptor = cls(fp)
+            descriptor = cls(path)
             lst.append((plugin, descriptor))
         return lst
 

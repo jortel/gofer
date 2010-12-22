@@ -16,6 +16,8 @@
 
 import os
 import re
+import socket
+from gofer import singleton
 from iniparse import INIConfig
 from iniparse.config import Undefined
 from gofer.agent.logutil import getLogger
@@ -62,7 +64,7 @@ class Base(INIConfig):
         finally:
             fp.close()
             
-
+@singleton
 class Config(Base):
     """
     The gofer agent configuration.
@@ -334,6 +336,10 @@ class Reader:
     @type path: str
     """
     
+    BUILTIN = {
+        'hostname':socket.gethostname(),
+        }
+    
     def __init__(self, path):
         self.idx = 0
         self.vdict = {}
@@ -342,6 +348,7 @@ class Reader:
         f = open(path)
         try:
             bfr = f.read()
+            self.vdict.update(self.BUILTIN)
             self.lines = self.__post(bfr.split('\n'))
         finally:
             f.close()

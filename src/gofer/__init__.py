@@ -12,3 +12,12 @@
 # granted to use or replicate Red Hat trademarks that are incorporated
 # in this software or its documentation.
 #
+
+def singleton(cls):
+    instances = {}
+    def getinstance(): 
+        if cls not in instances:
+            inst = cls()
+            instances[cls] = inst
+            return inst
+    return getinstance
