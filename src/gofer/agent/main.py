@@ -22,7 +22,6 @@ from gofer.agent.action import Actions
 from gofer.agent.plugin import PluginLoader, Plugin
 from gofer.agent.lock import Lock, LockFailed
 from gofer.agent.config import Config
-from gofer.agent.identity import Identity
 from gofer.agent.logutil import getLogger
 from gofer.messaging import Queue
 from gofer.messaging.broker import Broker

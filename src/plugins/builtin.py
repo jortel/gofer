@@ -45,7 +45,7 @@ class Admin:
     def hello(self):
         s = []
         cfg = Config()
-        s.append('Hello, I am gofer agent "%s"' % socket.gethostname())
+        s.append('Hello, I am gofer agent "%s"' % plugin.getuuid())
         s.append('Here is my configuration:\n%s' % cfg)
         s.append('Status: ready')
         return '\n'.join(s)
@@ -115,52 +115,14 @@ class Shell:
 def echo(something):
     return something
 
+#
+# Set the uuid to the hostname when not
+# specified in the config.
+#
+if not plugin.getuuid():
+    hostname = socket.gethostname()
+    uuid = str(uuid4())
+    if not hostname.startswith('localhost'):
+        uuid = hostname
+    plugin.setuuid(uuid)
 
-class Identity:
-    """
-    The default identity is the hostname.
-    """
-    
-    PATH = '/var/lib/gofer/builtin/uuid'
-
-    uuid = None
-    
-    def __init__(self):
-        self.mkdir()
-
-    @identity
-    def getuuid(self):
-        if not self.uuid:
-            self.uuid = self.generated()
-            host = socket.gethostname()
-            if not host.startswith('localhost'):
-                self.uuid = host
-        return self.uuid
-    
-    def generated(self):
-        uuid = self.read()
-        if not uuid:
-            uuid = str(uuid4())
-            self.write(uuid)
-        return uuid
-    
-    def read(self):
-        try:
-            f = open(self.PATH)
-            uuid = f.read()
-            f.close()
-            return uuid
-        except:
-            pass
-
-    def write(self, uuid):
-        f = open(self.PATH, 'w')
-        f.write(uuid)
-        f.close()
-        log.info('uuid %s written to: %s', uuid, self.PATH)
-
-    def mkdir(self):
-        path = os.path.dirname(self.PATH)
-        if os.path.exists(path):
-            return
-        os.makedirs(path)

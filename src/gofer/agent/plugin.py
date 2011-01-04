@@ -22,8 +22,7 @@ import sys
 import imp
 from gofer import *
 from gofer.collator import Collator
-from gofer.agent.identity import Identity
-from gofer.agent.config import Base, Config
+from gofer.agent.config import Base, Config, nvl
 from iniparse.config import Undefined
 from logging import getLogger
 
@@ -135,7 +134,7 @@ class Plugin(object):
         @return: True if enabled.
         @rtype: bool
         """
-        cfg = elf.cfg()
+        cfg = self.cfg()
         try:
             return int(cfg.main.enabled)
         except:
@@ -144,18 +143,24 @@ class Plugin(object):
     def getuuid(self):
         """
         Get the plugin's messaging UUID.
-        The uuid defined in the plugin descriptor is returned
-        when specified.  If not, the plugin's registered identity
-        function/method is called and value returend.
         @return: The plugin's messaging UUID.
         @rtype: str
         """
         cfg = self.cfg()
-        uuid = cfg.messaging.uuid
-        if not isinstance(uuid, (str,int)):
-            ident = Identity(self)
-            uuid = ident.getuuid()
-        return uuid
+        return nvl(cfg.messaging.uuid, None)
+    
+    def setuuid(self, uuid, save=False):
+        """
+        Set the plugin's UUID.
+        @param uuid: The new UUID.
+        @type uuid: str
+        @param save: Save to plugin descriptor.
+        @type save: bool
+        """
+        cfg = self.cfg()
+        cfg.messaging.uuid = uuid
+        if save:
+            cfg.write()
         
     def cfg(self):
         return self.descriptor
@@ -184,8 +189,15 @@ class PluginDescriptor(Base):
             if os.path.isdir(path):
                 continue
             descriptor = cls(path)
+            descriptor.__dict__['__path__'] = path
             lst.append((plugin, descriptor))
         return lst
+    
+    def write(self):
+        path = self.__dict__['__path__']
+        f = open(path, 'w')
+        f.write(str(self))
+        f.close()
 
 
 class PluginLoader:
