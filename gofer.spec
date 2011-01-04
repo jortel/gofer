@@ -3,7 +3,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name: gofer
-Version: 0.10
+Version: 0.11
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -94,6 +94,15 @@ fi
 %{python_sitelib}/%{name}/messaging/
 
 %changelog
+* Tue Jan 04 2011 Jeff Ortel <jortel@redhat.com> 0.11-1
+- Quiet logged Endpoint.close() not checking for already closed.
+  (jortel@redhat.com)
+- Replace builtin variables with macros (format=%{macro}). (jortel@redhat.com)
+- make Config a singleton; Make PluginDescriptor a 'Base' config.
+  (jortel@redhat.com)
+- Add support for @import directive. (jortel@redhat.com)
+- The server test needs to use the correct uuid. (jortel@redhat.com)
+
 * Wed Dec 15 2010 Jeff Ortel <jortel@redhat.com> 0.10-1
 - session.stop() not supported in python-qpid 0.7. (jortel@redhat.com)
 - Remove unused catch. (jortel@redhat.com)
