@@ -15,13 +15,14 @@
 
 import sys
 import os
+import logging
 from getopt import getopt
 from gofer import *
 from gofer.agent import *
 from gofer.agent.action import Actions
 from gofer.agent.plugin import PluginLoader, Plugin
 from gofer.agent.lock import Lock, LockFailed
-from gofer.agent.config import Config
+from gofer.agent.config import Config, nvl
 from gofer.agent.logutil import getLogger
 from gofer.messaging import Queue
 from gofer.messaging.broker import Broker
@@ -269,9 +270,26 @@ def daemonize(lock):
         lock.update(pid)
         os.waitpid(pid, os.WNOHANG)
         os._exit(0)
+        
+def setupLogging():
+    """
+    Set logging levels based on configuration.
+    """
+    for p in nvl(cfg.logging, []):
+        level = cfg.logging[p]
+        if not level:
+            continue
+        try:
+            name = 'gofer.%s' % p
+            L = getattr(logging, level.upper())
+            logger = logging.getLogger(name)
+            logger.setLevel(L)
+        except:
+            pass
 
 def main():
     daemon = True
+    setupLogging()
     opts, args = getopt(sys.argv[1:], 'hc', ['help','console'])
     for opt,arg in opts:
         if opt in ('-h', '--help'):

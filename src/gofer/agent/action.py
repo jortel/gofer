@@ -111,7 +111,7 @@ class Action:
             now = dt.utcnow()
             if next < now:
                 self.last = now
-                log.info('perform "%s"', self.name())
+                log.debug('perform "%s"', self.name())
                 self.target()
         except Exception, e:
             log.exception(e)
