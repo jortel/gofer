@@ -112,9 +112,11 @@ class Endpoint:
         """
         Close (shutdown) the endpoint.
         """
-        session = self.__session
-        self.__session = None
+        if not self.__session:
+            return
         try:
+            session = self.__session
+            self.__session = None
             session.close()
         except:
             log.error(self.uuid, exc_info=1)
