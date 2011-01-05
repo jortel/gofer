@@ -3,7 +3,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name: gofer
-Version: 0.11
+Version: 0.12
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -94,6 +94,11 @@ fi
 %{python_sitelib}/%{name}/messaging/
 
 %changelog
+* Wed Jan 05 2011 Jeff Ortel <jortel@redhat.com> 0.12-1
+- Adjust sleep times & correct log messages. (jortel@redhat.com)
+- Make logging (level) configurable. (jortel@redhat.com)
+- Remove @identity decorator. (jortel@redhat.com)
+
 * Tue Jan 04 2011 Jeff Ortel <jortel@redhat.com> 0.11-1
 - Quiet logged Endpoint.close() not checking for already closed.
   (jortel@redhat.com)
