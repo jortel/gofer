@@ -58,7 +58,7 @@ class ActionThread(Thread):
         while True:
             for action in self.actions:
                 action()
-            sleep(10)
+            sleep(1)
 
 
 class PluginMonitorThread(Thread):
@@ -88,7 +88,7 @@ class PluginMonitorThread(Thread):
         self.setupBroker()
         while True:
             self.update()
-            sleep(10)
+            sleep(1)
             
     def update(self):
         """
@@ -105,8 +105,9 @@ class PluginMonitorThread(Thread):
             ssn = v[1]
             if ssn:
                 ssn.close()
-                log.info('messaging stopped for uuid="%s"', uuid)
+                log.info('messaging stopped for uuid="%s"', v[0])
             if not uuid:
+                v[0] = None
                 continue
             try:
                 v[0] = uuid

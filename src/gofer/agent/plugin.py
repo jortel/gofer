@@ -52,27 +52,18 @@ class Plugin(object):
         @return: The added plugin
         @rtype: L{Plugin}
         """
-        return cls.update(plugin)
-    
-    @classmethod
-    def update(cls, plugin):
-        """
-        Add the plugin.
-        @param plugin: The plugin to add.
-        @type plugin: L{Plugin}
-        @return: The added plugin
-        @rtype: L{Plugin}
-        """
         cls.plugins[plugin.name] = plugin
-        for name in plugin.synonyms:
-            cls.plugins[name] = plugin
+        for syn in plugin.synonyms:
+            if syn == plugin.name:
+                continue
+            cls.plugins[syn] = plugin
         return plugin
     
     @classmethod
     def delete(cls, plugin):
         """
         Delete the plugin.
-        @param plugin: The plugin to add.
+        @param plugin: The plugin to delete.
         @type plugin: L{Plugin}
         """
         for k,v in cls.plugins.items():
@@ -115,8 +106,12 @@ class Plugin(object):
         @type synonyms: list
         """
         self.name = name
-        self.synonyms = synonyms
         self.descriptor = descriptor
+        self.synonyms = []
+        for syn in synonyms:
+            if syn == name:
+                continue
+            self.synonyms.append(syn)
         
     def names(self):
         """
@@ -158,7 +153,10 @@ class Plugin(object):
         @type save: bool
         """
         cfg = self.cfg()
-        cfg.messaging.uuid = uuid
+        if uuid:
+            cfg.messaging.uuid = uuid
+        else:
+            delattr(cfg.messaging, 'uuid')
         if save:
             cfg.write()
         
@@ -253,17 +251,14 @@ class PluginLoader:
         @return: The loaded module.
         @rtype: Module
         """
-        p = Plugin(plugin, cfg)
+        syn = self.__mangled(plugin)
+        p = Plugin(plugin, cfg, (syn,))
         Plugin.add(p)
         try:
-            name = self.__mangled(plugin)
             mod = '%s.py' % plugin
             path = os.path.join(self.ROOT, mod)
-            mod = imp.load_source(name, path)
-            log.info('plugin "%s", imported as: "%s"', plugin, name)
-            if name != plugin:
-                p.synonyms.append(name)
-            Plugin.update(p)
+            mod = imp.load_source(syn, path)
+            log.info('plugin "%s", imported as: "%s"', plugin, syn)
             return p
         except:
             Plugin.delete(p)
