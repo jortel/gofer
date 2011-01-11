@@ -251,7 +251,8 @@ class RMI(object):
             inst, method = self.resolve()
             retval = method(*args, **keywords)
             return Return.succeed(retval)
-        except:
+        except Exception, e:
+            log.exception(e)
             return Return.exception()
 
     def __str__(self):
