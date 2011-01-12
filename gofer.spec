@@ -3,7 +3,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name: gofer
-Version: 0.12
+Version: 0.13
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -94,6 +94,12 @@ fi
 %{python_sitelib}/%{name}/messaging/
 
 %changelog
+* Wed Jan 12 2011 Jeff Ortel <jortel@redhat.com> 0.13-1
+- Make Broker a smart singleton. (jortel@redhat.com)
+- py 2.4 compat: replace @singleton class decorator with __metaclass__
+  Singleton. (jortel@redhat.com)
+- Log dispatch exceptions. (jortel@redhat.com)
+
 * Wed Jan 05 2011 Jeff Ortel <jortel@redhat.com> 0.12-1
 - Adjust sleep times & correct log messages. (jortel@redhat.com)
 - Make logging (level) configurable. (jortel@redhat.com)
