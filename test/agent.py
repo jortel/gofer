@@ -90,7 +90,7 @@ class Agent(Base):
         queue = Queue(id)
         #url = 'ssl://localhost:5674'
         url = 'tcp://localhost:5672'
-        broker = Broker.get(url)
+        broker = Broker(url)
         broker.cacert = '/etc/pki/qpid/ca/ca.crt'
         broker.clientcert = '/etc/pki/qpid/client/client.pem'
         Base.__init__(self, RequestConsumer(queue, url=url))

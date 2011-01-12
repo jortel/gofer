@@ -63,7 +63,7 @@ class SSLFactory:
         @type port: int
         """
         url = '%s:%d' % (host, port)
-        broker = Broker.get(url)
+        broker = Broker(url)
         transport = SSLTransport(broker)
         return transport
 

@@ -17,9 +17,9 @@
 Defined AMQP broker objects.
 """
 
+from gofer import Singleton
 from gofer.messaging import *
 from qpid.messaging import Connection
-from threading import RLock
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -39,55 +39,7 @@ class Broker:
         the private key & certificate used for client authentication.
     @type clientcert: str
     """
-
-    domain = {}
-    __lock = RLock()
-
-    @classmethod
-    def add(cls, broker):
-        """
-        Add a broker to the domain.
-        @param broker: A broker to add
-        @type broker: L{Broker}
-        """
-        cls.lock()
-        try:
-            key = broker.url
-            cls.domain[key] = broker
-        finally:
-            cls.unlock()
-
-    @classmethod
-    def get(cls, url):
-        """
-        Get a broker from the domain by I{url}.
-        Created and added if not found.
-        @param url: A broker url
-        @type url: L{URL}
-        @return: The requested broker.
-        @rtype: L{Broker}
-        """
-        cls.lock()
-        try:
-            if not isinstance(url, URL):
-                url = URL(url)
-            b = cls.domain.get(url)
-            if not b:
-                b = Broker(url)
-                cls.add(b)
-            return b
-        finally:
-            cls.unlock()
-
-    @classmethod
-    def lock(cls):
-        """ acquire mutex """
-        cls.__lock.acquire()
-
-    @classmethod
-    def unlock(cls):
-        """ release mutex """
-        cls.__lock.release()
+    __metaclass__ = Singleton
 
     def __init__(self, url):
         """

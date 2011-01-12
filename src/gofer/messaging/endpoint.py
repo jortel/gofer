@@ -40,17 +40,6 @@ class Endpoint:
 
     LOCALHOST = 'tcp://localhost:5672'
 
-    @classmethod
-    def shutdown(cls):
-        """
-        Shutdown all connections.
-        """
-        for broker in Broker.domain.values():
-            try:
-                broker.close()
-            except:
-                pass
-
     def __init__(self, uuid=getuuid(), url=LOCALHOST):
         """
         @param uuid: The endpoint uuid.
@@ -77,7 +66,7 @@ class Endpoint:
         @return: The global connection.
         @rtype: L{Connection}
         """
-        broker = Broker.get(self.url)
+        broker = Broker(self.url)
         con = broker.connect()
         log.info('{%s} connected to AMQP' % self.id())
         return con

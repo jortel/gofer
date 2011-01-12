@@ -166,7 +166,7 @@ class PluginMonitorThread(Thread):
         @rtype: L{PluginMonitorThread}
         """
         url = self.url()
-        broker = Broker.get(url)
+        broker = Broker(url)
         for property in ('cacert', 'clientcert'):
             try:
                 v = getattr(cfg.messaging, property)
