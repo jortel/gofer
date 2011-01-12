@@ -13,11 +13,20 @@
 # in this software or its documentation.
 #
 
-def singleton(cls):
-    instances = {}
-    def getinstance(): 
-        if cls not in instances:
-            inst = cls()
-            instances[cls] = inst
-            return inst
-    return getinstance
+class Singleton(type):
+    """
+    Singleton metaclass
+    usage: __metaclass__ = Singleton
+    """
+
+    def __init__(self, name, bases, ns):
+        super(Singleton, self).__init__(name, bases, ns)
+        self.instances = {}
+        
+    def __call__(self, *args, **kwargs):
+        key = (tuple(args), tuple(sorted(kwargs.items())))
+        inst = self.instances.get(key)
+        if inst is None: 
+            inst = super(Singleton, self).__call__(*args, **kwargs)
+            self.instances[key] = inst
+        return inst

@@ -17,7 +17,7 @@
 import os
 import re
 import socket
-from gofer import singleton
+from gofer import Singleton
 from iniparse import INIConfig
 from iniparse.config import Undefined
 from gofer.agent.logutil import getLogger
@@ -63,8 +63,8 @@ class Base(INIConfig):
             INIConfig.__init__(self, fp)
         finally:
             fp.close()
-            
-@singleton
+
+
 class Config(Base):
     """
     The gofer agent configuration.
@@ -79,6 +79,7 @@ class Config(Base):
         configuration file.
     @type ALT: str
     """
+    __metaclass__ = Singleton
 
     ROOT = '/etc/gofer'
     FILE = 'agent.conf'
