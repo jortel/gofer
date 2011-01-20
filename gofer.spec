@@ -3,7 +3,7 @@
 %{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
 
 Name: gofer
-Version: 0.13
+Version: 0.14
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -94,6 +94,9 @@ fi
 %{python_sitelib}/%{name}/messaging/
 
 %changelog
+* Thu Jan 20 2011 Jeff Ortel <jortel@redhat.com> 0.14-1
+- Fix conditional for pkgs required on RHEL. (jortel@redhat.com)
+
 * Wed Jan 12 2011 Jeff Ortel <jortel@redhat.com> 0.13-1
 - Make Broker a smart singleton. (jortel@redhat.com)
 - py 2.4 compat: replace @singleton class decorator with __metaclass__
