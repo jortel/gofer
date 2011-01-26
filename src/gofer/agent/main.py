@@ -24,10 +24,6 @@ from gofer.agent.plugin import PluginLoader, Plugin
 from gofer.agent.lock import Lock, LockFailed
 from gofer.agent.config import Config, nvl
 from gofer.agent.logutil import getLogger
-from gofer.messaging import Queue
-from gofer.messaging.broker import Broker
-from gofer.messaging.base import Agent as Session
-from gofer.messaging.consumer import RequestConsumer
 from time import sleep
 from threading import Thread
 
@@ -64,28 +60,24 @@ class ActionThread(Thread):
 class PluginMonitorThread(Thread):
     """
     Run actions independantly of main thread.
-    @ivar plugins: A list of plugins to load.
-    @type plugins: [L{Plugin},..]
+    @ivar plugin: A plugin to monitor.
+    @type plugin: L{Plugin}
     """
-    
-    URL = 'tcp://localhost:5672'
-    
-    def __init__(self, plugins):
+
+    def __init__(self, plugin):
         """
-        @param plugins: A list of plugins to monitor.
-        @type plugins: [L{Plugin},..]
+        @param plugin: A plugin to monitor.
+        @type plugin: L{Plugin}
         """
-        self.plugins = {}
-        for p in plugins:
-            self.plugins[p] = None
-        Thread.__init__(self, name='PluginMonitor')
+        self.plugin = plugin
+        self.lastuuid = None
+        Thread.__init__(self, name='%s-monitor' % plugin.name)
         self.setDaemon(True)
    
     def run(self):
         """
         Monitor plugin attach/detach.
         """
-        self.setupBroker()
         while True:
             self.update()
             sleep(1)
@@ -95,87 +87,22 @@ class PluginMonitorThread(Thread):
         Update plugin messaging sessions.
         v = (<uuid>,<ssn>)
         """
-        for plugin,v in self.plugins.items():
-            if not v:
-                v = [None, None]
-                self.plugins[plugin] = v
-            uuid = plugin.getuuid()
-            if v[0] == uuid:
-                continue # unchanged
-            ssn = v[1]
-            if ssn:
-                ssn.close()
-                log.info('messaging stopped for uuid="%s"', v[0])
-            if not uuid:
-                v[0] = None
-                continue
-            try:
-                v[0] = uuid
-                v[1] = self.attach(plugin, uuid)
-            except:
-                log.error('plugin %s', plugin.name, exc_info=1)
-                    
-    def attach(self, plugin, uuid):
-        """
-        Start an AMQP session (attach).
-        @param plugin: A plugin.
-        @type plugin: L{Plugin}
-        @param uuid: A messaging consumer uuid.
-        @type uuid: str
-        @return: A new session.
-        @rtype: L{Session}
-        """
-        pd = plugin.cfg()
-        if not self.enabled(pd):
+        plugin = self.plugin
+        uuid = plugin.getuuid()
+        if uuid == self.lastuuid:
+            return # unchanged
+        if plugin.detach():
+            log.info('uuid="%s", detached', self.lastuuid)
+        if not uuid:
+            self.lastuuid = uuid
             return
-        url = self.url()
-        queue = Queue(uuid)
-        consumer = RequestConsumer(queue, url=url)
-        ssn = Session(consumer)
-        log.info('messaging started for uuid="%s".', uuid)
-        return ssn
-    
-    def enabled(self, pd):
-        """
-        Get whether messaging is enabled.
-        @param pd: A plugin descriptor.
-        @type pd: L{PluginDescriptor}
-        @return: True if enabled.
-        @rtype: bool
-        """
         try:
-            return int(pd.messaging.enabled)
+            plugin.attach(uuid)
+            log.info('uuid="%s", attached', uuid)
+            self.lastuuid = uuid
         except:
-            return 0
-        
-    def url(self):
-        """
-        Get the messaging url.
-        @return: Either the url specified in the conf or the default.
-        @rtype: str
-        """
-        try:
-            return cfg.messaging.url
-        except:
-            return self.URL
-    
-    def setupBroker(self):
-        """
-        Setup (configure) the broker using the conf.
-        @return: self
-        @rtype: L{PluginMonitorThread}
-        """
-        url = self.url()
-        broker = Broker(url)
-        for property in ('cacert', 'clientcert'):
-            try:
-                v = getattr(cfg.messaging, property)
-                setattr(broker, property, v)
-            except AttributeError:
-                pass
-        log.info('broker (qpid) configured: %s', broker)
-        return self
-
+            log.error('plugin %s', plugin.name, exc_info=1)
+                    
 
 class Agent:
     """
@@ -191,13 +118,11 @@ class Agent:
         @param actions: A list of loaded actions.
         @type actions: list
         """
-        self.plugins = {}
-        for p in plugins:
-            self.plugins[p] = (None, None)
         actionThread = ActionThread(actions)
         actionThread.start()
-        pluginThread = PluginMonitorThread(plugins)
-        pluginThread.start()
+        for plugin in plugins:
+            pt = PluginMonitorThread(plugin)
+            pt.start()
         log.info('agent started.')
         actionThread.join()
 

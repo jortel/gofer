@@ -123,6 +123,5 @@ if not plugin.getuuid():
     hostname = socket.gethostname()
     uuid = str(uuid4())
     if not hostname.startswith('localhost'):
-        uuid = hostname
+        uuid = 'admin@%s' % hostname
     plugin.setuuid(uuid)
-

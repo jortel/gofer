@@ -325,6 +325,18 @@ class Import:
                     vdict[var] = v
         return (imported, vdict)
     
+    
+def _cnfvalue(macro):
+    """
+    configuration macro resolver
+    @return: The resolved configuration value
+    @rtype: str
+    """
+    n = macro[2:-1]
+    cfg = Config()
+    s,p = n.split('.',1)
+    return nvl(cfg[s][p])
+    
 
 class Reader:
     """
@@ -340,6 +352,9 @@ class Reader:
     
     MACROS = {
         '%{hostname}':socket.gethostname(),
+        '%{messaging.url}':_cnfvalue,
+        '%{messaging.cacert}':_cnfvalue,
+        '%{messaging.clientcert}':_cnfvalue,
         }
     
     def __init__(self, path):
@@ -410,6 +425,8 @@ class Reader:
         """
         for k,v in self.MACROS.items()+self.vdict.items():
             if k in ln:
+                if callable(v):
+                    v = v(k)
                 log.info('line "%s" s/%s/%s/', ln, k, v)
                 ln = ln.replace(k, v)
         return ln

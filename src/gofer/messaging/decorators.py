@@ -26,6 +26,19 @@ class Remote:
     """
     functions = []
     
+    @classmethod
+    def add(cls, fn):
+        cls.functions.append(fn)
+
+    @classmethod
+    def purge(cls, mod):
+        purged = []
+        for fn in cls.functions:
+            if fn.__module__ == mod:
+                purged.append(fn)
+        for fn in purged:
+            cls.functions.remove(fn)
+    
     def collated(self):
         collated = []
         c = Collator()
@@ -35,7 +48,7 @@ class Remote:
         for m in functions.keys():
             collated.append(m)
         return collated
-            
+
 
 def remote(fn):
     """
@@ -44,5 +57,5 @@ def remote(fn):
     @type fn: function.
     """
     fn.remotepermitted = 1
-    Remote.functions.append(fn)
+    Remote.add(fn)
     return fn

@@ -20,10 +20,15 @@ Plugin classes.
 import os
 import sys
 import imp
+from threading import RLock
 from gofer import *
+from gofer.messaging import Queue
 from gofer.collator import Collator
 from gofer.agent.config import Base, Config, nvl
-from iniparse.config import Undefined
+from gofer.messaging.broker import Broker
+from gofer.messaging.base import Agent as Session
+from gofer.messaging.consumer import RequestConsumer
+from gofer.messaging.decorators import Remote
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -40,8 +45,12 @@ class Plugin(object):
     @type descriptor: str
     @cvar plugins: The dict of loaded plugins.
     @type plugins: dict
+    @cvar URL: The default URL.
+    @type URL: str
     """
     plugins = {}
+
+    URL = 'tcp://localhost:5672'
     
     @classmethod
     def add(cls, plugin):
@@ -112,6 +121,8 @@ class Plugin(object):
             if syn == name:
                 continue
             self.synonyms.append(syn)
+        self.session = None
+        self.__mutex = RLock()
         
     def names(self):
         """
@@ -141,8 +152,27 @@ class Plugin(object):
         @return: The plugin's messaging UUID.
         @rtype: str
         """
+        self.lock()
+        try:
+            cfg = self.cfg()
+            return nvl(cfg.messaging.uuid, None)
+        finally:
+            self.unlock()
+    
+    def getbroker(self):
+        """
+        Get the amqp broker for this plugin.  Each plugin can
+        connect to a different broker.
+        @return: The broker if configured.
+        @rtype: L{Broker}
+        """
         cfg = self.cfg()
-        return nvl(cfg.messaging.uuid, None)
+        url = nvl(cfg.messaging.url, self.URL)
+        broker = Broker(url)
+        broker.cacert = nvl(cfg.messaging.cacert, None)
+        broker.clientcert = nvl(cfg.messaging.clientcert, None)
+        log.info('broker (qpid) configured: %s', broker)
+        return broker
     
     def setuuid(self, uuid, save=False):
         """
@@ -152,16 +182,52 @@ class Plugin(object):
         @param save: Save to plugin descriptor.
         @type save: bool
         """
-        cfg = self.cfg()
-        if uuid:
-            cfg.messaging.uuid = uuid
+        self.lock()
+        try:
+            cfg = self.cfg()
+            if uuid:
+                cfg.messaging.uuid = uuid
+            else:
+                delattr(cfg.messaging, 'uuid')
+            if save:
+                cfg.write()
+        finally:
+            self.unlock()
+    
+    def attach(self, uuid=None):
+        """
+        Attach (connect) to AMQP broker using the specified uuid.
+        @param uuid: The (optional) messaging UUID.
+        @type uuid: str
+        """
+        if not uuid:
+            uuid = self.getuuid()
+        broker = self.getbroker()
+        url = broker.url
+        queue = Queue(uuid)
+        consumer = RequestConsumer(queue, url=url)
+        ssn = Session(consumer)
+        self.session = ssn
+    
+    def detach(self):
+        """
+        Detach (disconnect) from AMQP broker (if connected).
+        """
+        if self.session:
+            self.session.close()
+            self.session = None
+            return True
         else:
-            delattr(cfg.messaging, 'uuid')
-        if save:
-            cfg.write()
+            return False
         
     def cfg(self):
         return self.descriptor
+    
+    def lock(self):
+        self.__mutex.acquire()
+        
+    def unlock(self):
+        self.__mutex.release()
 
 
 class PluginDescriptor(Base):
@@ -261,6 +327,7 @@ class PluginLoader:
             log.info('plugin "%s", imported as: "%s"', plugin, syn)
             return p
         except:
+            Remote.purge(syn)
             Plugin.delete(p)
             log.error(
                 'plugin "%s", import failed',
