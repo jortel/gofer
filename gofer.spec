@@ -1,6 +1,5 @@
-# sitelib for noarch packages, sitearch for others (remove the unneeded one)
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%{!?python_sitearch: %global python_sitearch %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1))")}
+%{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
 Version: 0.14
@@ -15,13 +14,13 @@ BuildArch: noarch
 BuildRequires: python2-devel
 BuildRequires: python-setuptools
 BuildRequires: rpm-python
-Requires: %{name}-lib = %{version}
+Requires: python-%{name} = %{version}
 
 %description
 Gofer provides a lightweight, extensible python agent.
 
-%package lib
-Summary: Gofer lib modules.
+%package -n python-%{name}
+Summary: Gofer python lib modules.
 Group: Development/Languages
 BuildRequires: rpm-python
 Requires: python-simplejson
@@ -31,8 +30,18 @@ Requires: python-uuid
 Requires: python-ssl
 %endif
 
-%description lib
-Contains lib gofer modules.
+%description -n python-%{name}
+Contains gofer python lib modules.
+
+%package -n ruby-%{name}
+Summary: Gofer ruby lib modules.
+Group: Development/Languages
+BuildRequires: rubygems
+Requires: rubygems
+Requires: rubygem(json)
+
+%description -n ruby-%{name}
+Contains gofer ruby lib modules.
 
 %prep
 %setup -q
@@ -46,6 +55,16 @@ popd
 rm -rf %{buildroot}
 pushd src
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
+pushd ruby
+mkdir -p %{buildroot}/%{ruby_sitelib}/%{name}/messaging
+cp %{name}.rb %{buildroot}/%{ruby_sitelib}
+pushd %{name}
+cp *.rb %{buildroot}/%{ruby_sitelib}/%{name}
+pushd messaging
+cp *.rb %{buildroot}/%{ruby_sitelib}/%{name}/messaging
+popd
+popd
+popd
 popd
 
 mkdir -p %{buildroot}/usr/bin
@@ -87,11 +106,19 @@ if [ $1 = 0 ] ; then
    /sbin/chkconfig --del %{name}d
 fi
 
-%files lib
+%files -n python-%{name}
 %defattr(-,root,root,-)
 %doc
 %{python_sitelib}/%{name}/*.py*
 %{python_sitelib}/%{name}/messaging/
+
+%files -n ruby-%{name}
+%defattr(-,root,root,-)
+%doc
+%{ruby_sitelib}/%{name}
+%{ruby_sitelib}/%{name}.rb*
+%{ruby_sitelib}/%{name}/*.rb*
+%{ruby_sitelib}/%{name}/messaging/
 
 %changelog
 * Thu Jan 20 2011 Jeff Ortel <jortel@redhat.com> 0.14-1
