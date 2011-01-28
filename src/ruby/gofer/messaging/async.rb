@@ -16,7 +16,7 @@
 require 'gofer/messaging/consumer'
 require 'gofer/messaging/dispatcher'
 
-class AsyncConsumer < Consumer
+class ReplyConsumer < Consumer
   
   def start(listener)
     @listener = listener

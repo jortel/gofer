@@ -25,7 +25,7 @@ from gofer import *
 from gofer.messaging import Queue
 from gofer.collator import Collator
 from gofer.agent.config import Base, Config, nvl
-from gofer.messaging.broker import Broker
+from gofer.messaging.broker import Broker, URL
 from gofer.messaging.base import Agent as Session
 from gofer.messaging.consumer import RequestConsumer
 from gofer.messaging.decorators import Remote
@@ -155,7 +155,7 @@ class Plugin(object):
         self.lock()
         try:
             cfg = self.cfg()
-            return nvl(cfg.messaging.uuid, None)
+            return nvl(cfg.messaging.uuid)
         finally:
             self.unlock()
     
@@ -167,10 +167,16 @@ class Plugin(object):
         @rtype: L{Broker}
         """
         cfg = self.cfg()
-        url = nvl(cfg.messaging.url, self.URL)
-        broker = Broker(url)
-        broker.cacert = nvl(cfg.messaging.cacert, None)
-        broker.clientcert = nvl(cfg.messaging.clientcert, None)
+        main = Config()
+        url = nvl(cfg.messaging.url,
+              nvl(main.messaging.url, self.URL))
+        broker = Broker(URL(url))
+        broker.cacert = \
+            nvl(cfg.messaging.cacert,
+            nvl(main.messaging.cacert))
+        broker.clientcert = \
+            nvl(cfg.messaging.clientcert,
+            nvl(main.messaging.clientcert))
         log.info('broker (qpid) configured: %s', broker)
         return broker
     
