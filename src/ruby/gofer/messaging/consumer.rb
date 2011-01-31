@@ -13,6 +13,7 @@
 # in this software or its documentation.
 #
 
+require 'timeout'
 require 'rubygems'
 require 'qpid'
 require 'json'
@@ -138,13 +139,16 @@ class Reader < Consumer
     end
   end
 
-  def next(timeout=nil)
-    m = @incoming.get(true, timeout)
-    if !m.nil?
-      puts "message: \"#{m.body}\" received"
-      envelope = JSON.parse(m.body)
-      puts "#{self.id} read next:\n#{envelope}"
-      return envelope
+  def next(timeout=0)
+    begin
+      Timeout::timeout(timeout) do
+        m = @incoming.get(true)
+        puts "message: \"#{m.body}\" received"
+        envelope = JSON.parse(m.body)
+        puts "#{self.id} read next:\n#{envelope}"
+        return envelope
+      end
+    rescue Timeout::Error ;
     end
   end
   

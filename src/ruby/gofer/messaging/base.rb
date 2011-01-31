@@ -24,10 +24,10 @@ end
 
 
 class Container
-  
-  def initialize(uuid, producer, options={})
+
+  def initialize(uuid, options={})
     @uuid = uuid
-    @producer = producer
+    @producer = options.delete(:producer)
     @options = options
   end
   
@@ -44,6 +44,7 @@ class Container
   end
 
 end
+
 
 class StubFactory
   
