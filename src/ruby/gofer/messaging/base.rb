@@ -22,22 +22,46 @@ require 'gofer/messaging/stub'
 class Agent
 end
 
+
 class Container
   
   def initialize(uuid, producer, options={})
+    @uuid = uuid
+    @producer = producer
+    @options = options
+  end
+  
+  def send(name, *args, &block)
+    return self.method_missing(name, *args, &block) 
+  end
+
+  def method_missing(sym, *args, &block)
+    return StubFactory.new(
+      sym,
+      @uuid,
+      @producer,
+      @options)
+  end
+
+end
+
+class StubFactory
+  
+  def initialize(cls, uuid, producer, options={})
+    @cls = cls
     @id = uuid
     @options = {:window=>{}, :timeout=>90}
     @options.update(options)
     @producer = producer
   end
   
-  def stub(cls, options={})
+  def new(options={})
     opts = {}
     opts.update(@options)
     opts.update(options)
     opts[:method] = stubmethod(opts)
     destination = destination()
-    return Gofer::Stub.new(destination, cls.to_s, opts)
+    return Gofer::Stub.new(destination, @cls.to_s, opts)
   end
   
   private
