@@ -24,11 +24,11 @@ class RemoteException < Exception ; end
 class Return
   
   def initialize(hash)
-    @hash = hash['result']
+    @hash = hash[:result]
   end
 
   def succeeded(h)
-    return @hash.has_key?('retval')
+    return @hash.has_key?(:retval)
   end
 
   def failed()
@@ -36,15 +36,15 @@ class Return
   end
   
   def retval()
-    return @hash['retval']    
+    return @hash[:retval]    
   end
   
   def exval()
-    return @hash['exval']    
+    return @hash[:exval]    
   end
   
   def status()
-    return @hash['status']    
+    return @hash[:status]    
   end
 
 end

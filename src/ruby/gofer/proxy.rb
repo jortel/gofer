@@ -20,11 +20,11 @@ module Gofer
   
   class Agent < Container
   
-    def initialize(uuid, producer=nil, options={})
-      if producer.nil?
-        producer = Producer.new()
+    def initialize(uuid, options={})
+      if options[:producer].nil?
+        options[:producer] = Producer.new()
       end
-      super(uuid, producer, options)
+      super(uuid, options)
     end
 
   end

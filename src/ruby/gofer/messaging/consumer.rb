@@ -105,7 +105,7 @@ class Consumer < Endpoint
   end
   
   def received(message)
-    envelope = JSON.parse(message.body)
+    envelope = JSON.parse(message.body, :symbolize_names=>true)
     puts "#{self.id} received:\n#{envelope}"
     if self.valid(envelope)
         self.dispatch(envelope)
@@ -115,7 +115,7 @@ class Consumer < Endpoint
   
   def valid(envelope)
     valid = true
-    if envelope['version'] != Gofer::VERSION
+    if envelope[:version] != Gofer::VERSION
         valid = false
         puts "#{self.id} version mismatch (discarded):\n#{envelope}"
     end
@@ -144,7 +144,7 @@ class Reader < Consumer
       Timeout::timeout(timeout) do
         m = @incoming.get(true)
         puts "message: \"#{m.body}\" received"
-        envelope = JSON.parse(m.body)
+        envelope = JSON.parse(m.body, :symbolize_names=>true)
         puts "#{self.id} read next:\n#{envelope}"
         return envelope
       end
@@ -159,7 +159,7 @@ class Reader < Consumer
       if envelope.nil?
         return
       end
-      if sn == envelope['sn']
+      if sn == envelope[:sn]
         puts "#{self.id} search found:\n#{envelope}"
         return envelope
       end

@@ -67,7 +67,7 @@ class Synchronous < RequestMethod
     envelope = @reader.search(sn, @timeout[0])
     if !envelope.nil?:
       @reader.ack()
-      if envelope['status']
+      if envelope[:status]
         puts "request (#{sn}), started"
       else
         onreply(envelope)
