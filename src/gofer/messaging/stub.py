@@ -122,5 +122,13 @@ class Stub:
         cn = self.__class__.__name__
         return Method(cn, name, self)
 
-    def __call__(self):
+    def __call__(self, **options):
+        """
+        Simulated constructor.
+        @param options: keyword options.
+        @type options: dict
+        @return: self
+        @rtype: L{Stub}
+        """
+        self.__options.update(options)
         return self

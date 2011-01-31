@@ -44,7 +44,7 @@ class Listener:
 
 
 if __name__ == '__main__':
-    tag = 'xyz'
+    tag = 'XYZ'
     c = ReplyConsumer(Queue(tag))
     #c.start(Listener())
     c.start(callback)

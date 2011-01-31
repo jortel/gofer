@@ -86,6 +86,7 @@ def later(**offset):
 
 def main():
     uuid = 'xyz'
+    tag = 'XYZ'
 
     # TTL
     agent = Agent(uuid, timeout=10)
@@ -106,14 +107,12 @@ def main():
 
     # asynchronous
     print '(demo) asynchronous'
-    tag = 'xyz'
     window = Window(begin=dt.utcnow(), minutes=1)
     agent = Agent(uuid, ctag=tag, window=window)
     demo(agent)
 
     # asynchronous
     print '(demo) group asynchronous'
-    tag = 'xyz'
     group = (uuid, 'ABC',)
     window = Window(begin=dt.utcnow(), minutes=1)
     agent = Agent(group, ctag=tag)
@@ -127,20 +126,20 @@ def main():
     print 'group 2'
     begin = later(seconds=20)
     window = Window(begin=begin, minutes=10)
-    opts = dict(window=window, any='group 2')
-    print dog.bark('hello', **opts)
-    print dog.wag(3, **opts)
-    print dog.bark('hello again', **opts)
+    dog = agent.Dog(window=window, any='group 2')
+    print dog.bark('hello')
+    print dog.wag(3)
+    print dog.bark('hello again')
 
     # group 1
 
     print 'group 1'
     begin = later(seconds=10)
     window = Window(begin=begin, minutes=10)
-    opts = dict(window=window, any='group 1')
-    print dog.bark('hello', **opts)
-    print dog.wag(3, **opts)
-    print dog.bark('hello again', **opts)
+    dog = agent.Dog(window=window, any='group 1')
+    print dog.bark('hello')
+    print dog.wag(3)
+    print dog.bark('hello again')
 
     agent = None
 
