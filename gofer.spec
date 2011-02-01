@@ -22,7 +22,7 @@ Gofer provides a lightweight, extensible python agent.
 %package -n python-%{name}
 Summary: Gofer python lib modules.
 Group: Development/Languages
-BuildRequires: rpm-python
+BuildRequires: python
 Requires: python-simplejson
 Requires: python-qpid >= 0.7
 %if !0%{?fedora}
@@ -36,7 +36,7 @@ Contains gofer python lib modules.
 %package -n ruby-%{name}
 Summary: Gofer ruby lib modules.
 Group: Development/Languages
-BuildRequires: rubygems
+BuildRequires: ruby
 Requires: rubygems
 Requires: rubygem(json)
 
