@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.15
+Version: 0.16
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -121,6 +121,9 @@ fi
 %{ruby_sitelib}/%{name}/messaging/
 
 %changelog
+* Tue Feb 01 2011 Jeff Ortel <jortel@redhat.com> 0.16-1
+- Fix build requires. (jortel@redhat.com)
+
 * Mon Jan 31 2011 Jeff Ortel <jortel@redhat.com> 0.15-1
 - ruby: symbolize JSON key names; Fix proxy constructor. (jortel@redhat.com)
 - Add timeout support using Timeout since ruby-qpid does not support
