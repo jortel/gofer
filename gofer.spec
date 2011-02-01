@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.14
+Version: 0.15
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -121,6 +121,23 @@ fi
 %{ruby_sitelib}/%{name}/messaging/
 
 %changelog
+* Mon Jan 31 2011 Jeff Ortel <jortel@redhat.com> 0.15-1
+- ruby: symbolize JSON key names; Fix proxy constructor. (jortel@redhat.com)
+- Add timeout support using Timeout since ruby-qpid does not support
+  Queue.get() w/ timeout arg. (jortel@redhat.com)
+- Replace stub() method w/ StubFactory(). (jortel@redhat.com)
+- Add keyword (options) to Stub pseudo constructor. Supports Eg: dog =
+  agent.Dog(window=mywin, any=100). Update async test to use ctag = XYZ.
+  (jortel@redhat.com)
+- Fix & simplify inherited messaging properties. Name ReplyConsumer properly.
+  (jortel@redhat.com)
+- Add ruby packaging. (jortel@redhat.com)
+- Make messaging completely centric. * Add [messaging] section to plugin
+  descriptor. * Remove messaging.enabled property. * Refactor plugin monitor
+  thread to be 1 thread/plugin. * Clean up decorated /Remote/ functions when
+  plugin fails to load. (jortel@redhat.com)
+- Add ruby (client) API bindings. (jortel@redhat.com)
+
 * Thu Jan 20 2011 Jeff Ortel <jortel@redhat.com> 0.14-1
 - Fix conditional for pkgs required on RHEL. (jortel@redhat.com)
 
