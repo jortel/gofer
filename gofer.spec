@@ -37,6 +37,7 @@ Contains gofer python lib modules.
 Summary: Gofer ruby lib modules.
 Group: Development/Languages
 BuildRequires: ruby
+Requires: ruby-qpid
 Requires: rubygems
 Requires: rubygem(json)
 

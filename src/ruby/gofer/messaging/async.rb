@@ -28,7 +28,7 @@ class ReplyConsumer < Consumer
       reply = getreply(envelope)
       reply.notify(@listener)
     rescue Exception=>e
-      puts "Exception: #{e.to_s}"
+      @log.info("Exception: #{e.to_s}")
     end
   end
   

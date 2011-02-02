@@ -16,11 +16,18 @@
 require 'rubygems'
 require 'uuidtools'
 require 'json'
+require 'logger'
 
 
 module Gofer
 
   VERSION = "0.2"
+  
+  @@logger = Logger.new('/tmp/ruby-gofer.log')
+  
+  def Gofer.logger()
+    return @@logger
+  end
   
   class Destination
     

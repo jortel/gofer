@@ -13,6 +13,7 @@
 # in this software or its documentation.
 #
 
+require 'pp'
 require 'rubygems'
 require 'qpid'
 require 'json'
@@ -39,7 +40,7 @@ class Producer < Endpoint
     mp = ssn.message_properties(:content_type=>"text/plain")
     msg = Qpid::Message.new(dp, mp, json)
     ssn.message_transfer(:message=>msg)
-    puts "#{self.id} sent (#{address})\n#{envelope}"
+    @log.info("#{self.id} sent (#{address})\n#{envelope.inspect}")
     return sn
   end
   

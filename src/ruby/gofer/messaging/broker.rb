@@ -23,9 +23,9 @@ class Broker
 
   def Broker.new(url)
     broker = @@domain[url]
-    if !broker
+    if broker.nil?
       broker = self.allocate()
-      broker.send:initialize, url
+      broker.send(:initialize, url)
       @@domain[url] = broker
     end
     return broker

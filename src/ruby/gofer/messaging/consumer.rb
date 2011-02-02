@@ -13,6 +13,7 @@
 # in this software or its documentation.
 #
 
+require 'pp'
 require 'timeout'
 require 'rubygems'
 require 'qpid'
@@ -24,6 +25,7 @@ require 'gofer/messaging/endpoint'
 class ReceiverThread
   
   def initialize(consumer)
+    @log = Gofer::logger()
     @consumer = consumer
     @thread = nil
   end
@@ -40,10 +42,13 @@ class ReceiverThread
   def run()
     while true
       incoming = @consumer.incoming()
-      m = incoming.get(true, nil) # TODO: use 1 instead of nil when supported
-      if !m.nil?
-        puts "message: \"#{m.body}\" received"
-        @consumer.received(m)
+      begin
+        Timeout::timeout(1) do
+          m = incoming.get(true)
+          @log.info("message: \"#{m.body}\" received")
+          @consumer.received(m)
+        end
+      rescue Timeout::Error ;
       end
     end
   end
@@ -73,7 +78,7 @@ class Consumer < Endpoint
   def open()
     session = self.session()
     @destination.create(session)
-    puts "{%s} opening: #{@destination}" % self.id()
+    @log.info("{#{self.id}} opening: #{@destination}")
     session.message_subscribe(
       :destination => @uuid,
       :queue => @destination.to_s,
@@ -106,7 +111,7 @@ class Consumer < Endpoint
   
   def received(message)
     envelope = JSON.parse(message.body, :symbolize_names=>true)
-    puts "#{self.id} received:\n#{envelope}"
+    @log.info("#{self.id} received:\n#{envelope.inspect}")
     if self.valid(envelope)
         self.dispatch(envelope)
     end
@@ -117,7 +122,7 @@ class Consumer < Endpoint
     valid = true
     if envelope[:version] != Gofer::VERSION
         valid = false
-        puts "#{self.id} version mismatch (discarded):\n#{envelope}"
+        @log.info("#{self.id} version mismatch (discarded):\n#{envelope.inspect}")
     end
     return valid
   end
@@ -143,9 +148,9 @@ class Reader < Consumer
     begin
       Timeout::timeout(timeout) do
         m = @incoming.get(true)
-        puts "message: \"#{m.body}\" received"
+        @log.info("message: \"#{m.body}\" received")
         envelope = JSON.parse(m.body, :symbolize_names=>true)
-        puts "#{self.id} read next:\n#{envelope}"
+        @log.debug("#{self.id} read next:\n#{envelope.inspect}")
         return envelope
       end
     rescue Timeout::Error ;
@@ -153,17 +158,17 @@ class Reader < Consumer
   end
   
   def search(sn, timeout)
-    puts "#{self.id} searching for: sn=#{sn}"
+    @log.debug("#{self.id} searching for: sn=#{sn}")
     while true
       envelope = self.next(timeout)
       if envelope.nil?
         return
       end
       if sn == envelope[:sn]
-        puts "#{self.id} search found:\n#{envelope}"
+        @log.debug("#{self.id} search found:\n#{envelope.inspect}")
         return envelope
       end
-      puts "#{self.id} search found:\n#{envelope}"
+      @log.debug("#{self.id} search found:\n#{envelope.inspect}")
       self.ack()
     end
   end

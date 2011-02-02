@@ -20,7 +20,20 @@ module Gofer
   
   class Agent < Container
   
+    # options:
+    #  url      - (str|URL) A broker URL.
+    #  ctag     - (str) Async correlateion tag.
+    #  async    - (bool) Async invocation flag.
+    #  window   - (Window) Maintenance window.
+    #  any      - (object) Any data to be round-tripped on each request.
+    #  producer - (Producer) A configured amqp producer
+    #  timeout  - (int|Array[2]) Synchronous timeout value.
+    #
     def initialize(uuid, options={})
+      url = options.delete(:url)
+      unless url.nil?
+        options[:producer] = Producer.new(url)
+      end
       if options[:producer].nil?
         options[:producer] = Producer.new()
       end

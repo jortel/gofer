@@ -24,6 +24,7 @@ class Endpoint
   attr_reader :uuid, :url
   
   def initialize(uuid=nil, url=nil)
+    @log = Gofer::logger()
     @uuid = (uuid ? uuid : getuuid())
     @url = (url ? url : LOCALHOST)
     @session = nil
@@ -37,7 +38,7 @@ class Endpoint
   def connection()
     broker = Broker.new(@url)
     con = broker.connect()
-    puts "{%s} connected to AMQP" % self.id()
+    @log.info("{#{id}} connected to AMQP")
     return con
   end
   

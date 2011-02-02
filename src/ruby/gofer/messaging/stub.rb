@@ -21,6 +21,7 @@ module Gofer
   class Stub
   
     def initialize(pid, classname, opts={})
+      @log = Gofer::logger()
       @pid = pid
       @classname = classname
       @opts = opts
@@ -32,7 +33,7 @@ module Gofer
   
     def method_missing(sym, *args, &block)
       begin
-        puts "invoke: #{@classname}.#{sym}(#{args})"
+        @log.info("invoke: #{@classname}.#{sym}(#{args})")
         request = {
           :classname=>@classname,
           :method=>sym,

@@ -23,6 +23,7 @@ class RequestTimeout < Exception ; end
 class RequestMethod
 
   def initialize(producer)
+    @log = Gofer::logger()
     @producer = producer    
   end
   
@@ -68,7 +69,7 @@ class Synchronous < RequestMethod
     if !envelope.nil?:
       @reader.ack()
       if envelope[:status]
-        puts "request (#{sn}), started"
+        @log.info("request (#{sn}), started")
       else
         onreply(envelope)
       end
