@@ -30,13 +30,6 @@ module Gofer
     #  timeout  - (int|Array[2]) Synchronous timeout value.
     #
     def initialize(uuid, options={})
-      url = options.delete(:url)
-      unless url.nil?
-        options[:producer] = Producer.new(url)
-      end
-      if options[:producer].nil?
-        options[:producer] = Producer.new()
-      end
       super(uuid, options)
     end
 

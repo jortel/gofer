@@ -17,6 +17,7 @@
 require 'gofer/messaging/pkg'
 require 'gofer/messaging/policy'
 require 'gofer/messaging/stub'
+require 'gofer/messaging/producer'
 
 
 class Agent
@@ -26,8 +27,9 @@ end
 class Container
 
   def initialize(uuid, options={})
+    url = options.delete(:url)
     @uuid = uuid
-    @producer = options.delete(:producer)
+    @producer = options.delete(:producer)||Producer.new(nil, url)
     @options = options
   end
   

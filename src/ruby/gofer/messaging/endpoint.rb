@@ -25,8 +25,8 @@ class Endpoint
   
   def initialize(uuid=nil, url=nil)
     @log = Gofer::logger()
-    @uuid = (uuid ? uuid : getuuid())
-    @url = (url ? url : LOCALHOST)
+    @uuid = uuid||getuuid()
+    @url = url||LOCALHOST
     @session = nil
     self.open()
   end
