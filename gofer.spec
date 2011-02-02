@@ -22,6 +22,7 @@ Gofer provides a lightweight, extensible python agent.
 %package -n python-%{name}
 Summary: Gofer python lib modules.
 Group: Development/Languages
+Obsoletes: %{name}-lib
 BuildRequires: python
 Requires: python-simplejson
 Requires: python-qpid >= 0.7
