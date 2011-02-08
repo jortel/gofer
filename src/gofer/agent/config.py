@@ -17,7 +17,7 @@
 import os
 import re
 import socket
-from gofer import Singleton
+from gofer import NAME, Singleton
 from iniparse import INIConfig
 from iniparse.config import Undefined
 from gofer.agent.logutil import getLogger
@@ -81,12 +81,12 @@ class Config(Base):
     """
     __metaclass__ = Singleton
 
-    ROOT = '/etc/gofer'
+    ROOT = '/etc/%s' % NAME
     FILE = 'agent.conf'
     PATH = os.path.join(ROOT, FILE)
-    USER = os.path.join('~/.gofer', FILE)
+    USER = os.path.join('~/.%s' % NAME, FILE)
     CNFD = os.path.join(ROOT, 'conf.d')
-    ALT = 'GOFER_OVERRIDE'
+    ALT = '%s_OVERRIDE' % NAME.upper()
 
     def __init__(self):
         """

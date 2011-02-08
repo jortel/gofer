@@ -18,6 +18,7 @@ Provides (local) message storage classes.
 """
 
 import os
+from gofer import NAME
 from gofer.messaging import *
 from gofer.messaging.window import Window
 from time import sleep
@@ -45,7 +46,7 @@ class PendingQueue:
     @type uncommitted: [path,..]
     """
 
-    ROOT = '/var/lib/gofer/messaging'
+    ROOT = '/var/lib/%s/messaging' % NAME
 
     def __init__(self, id):
         """

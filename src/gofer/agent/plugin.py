@@ -241,7 +241,7 @@ class PluginDescriptor(Base):
     Provides a plugin descriptor
     """
     
-    ROOT = '/etc/gofer/plugins'
+    ROOT = '/etc/%s/plugins' % NAME
     
     @classmethod
     def load(cls):
@@ -277,7 +277,7 @@ class PluginLoader:
     @type plugins: dict
     """
 
-    ROOT = '/usr/lib/gofer/plugins'
+    ROOT = '/usr/lib/%s/plugins' % NAME
 
     def __init__(self):
         if not os.path.exists(self.ROOT):

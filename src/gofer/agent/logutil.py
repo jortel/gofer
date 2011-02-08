@@ -16,10 +16,11 @@
 import os
 import sys
 import logging
+from gofer import NAME
 from logging import root, Formatter
 from logging.handlers import RotatingFileHandler
 
-LOGDIR = '/var/log/gofer'
+LOGDIR = '/var/log/%s' % NAME
 LOGFILE = 'agent.log'
 
 TIME = '%(asctime)s'

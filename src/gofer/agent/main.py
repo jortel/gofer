@@ -134,7 +134,7 @@ class AgentLock(Lock):
     @type PATH: str
     """
 
-    PATH = '/var/run/goferd.pid'
+    PATH = '/var/run/%sd.pid' % NAME
 
     def __init__(self):
         Lock.__init__(self, self.PATH)
@@ -168,7 +168,7 @@ def usage():
     Show usage.
     """
     s = []
-    s.append('\ngoferd <optoins>')
+    s.append('\n%sd <options>' % NAME)
     s.append('  -h, --help')
     s.append('      Show help')
     s.append('  -c, --console')

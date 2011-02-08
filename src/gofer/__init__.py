@@ -15,6 +15,21 @@
 
 from threading import RLock
 
+
+# process name used to build the following paths:
+#   /etc/<NAME>
+#   /etc/<NAME>/agent.conf
+#   /etc/<NAME>/conf.d
+#   /etc/<NAME>/plugins
+#   /var/lib/<NAME>
+#   /var/lib/<NAME>/messaging
+#   /usr/lib/<NAME>/<plugin>
+#   /var/run/<NAME>d.pid
+#   /var/log/<NAME>/agent.log
+#   ~/.<NAME>/agent.conf
+NAME = 'gofer'
+
+
 class Singleton(type):
     """
     Singleton metaclass
