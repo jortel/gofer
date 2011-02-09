@@ -244,6 +244,11 @@ class PluginDescriptor(Base):
     ROOT = '/etc/%s/plugins' % NAME
     
     @classmethod
+    def __mkdir(cls):
+        if not os.path.exists(cls.ROOT):
+            os.makedirs(cls.ROOT)
+    
+    @classmethod
     def load(cls):
         """
         Load the plugin descriptors.
@@ -251,6 +256,7 @@ class PluginDescriptor(Base):
         @rtype: list
         """
         lst = []
+        cls.__mkdir()
         for fn in os.listdir(cls.ROOT):
             plugin,ext = fn.split('.',1)
             if not ext in ('.conf'):
