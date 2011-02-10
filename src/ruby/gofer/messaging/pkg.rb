@@ -86,7 +86,7 @@ module Gofer
     def create(ssn)
       # TODO: create as temp when !@durable
       if !@created
-        ssn.queue_declare(@name)
+        ssn.queue_declare(@name, :exclusive=>true, :auto_delete=>!@durable)
         ssn.exchange_declare(@name, :type=>"direct")
         @created = true
       end

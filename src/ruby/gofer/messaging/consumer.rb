@@ -80,9 +80,9 @@ class Consumer < Endpoint
     @destination.create(session)
     @log.info("{#{self.id}} opening: #{@destination}")
     session.message_subscribe(
-      :destination => @uuid,
-      :queue => @destination.to_s,
-      :accept_mode => session.message_accept_mode.none)
+      :destination=>@uuid,
+      :queue=>@destination.to_s,
+      :accept_mode=>session.message_accept_mode.none)
     @incoming = session.incoming(@uuid)
   end
   
