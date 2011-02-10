@@ -33,6 +33,9 @@ class Producer < Endpoint
         :version=>Gofer::VERSION,
         :origin=>self.id()
     }
+    unless ttl.nil?
+      ttl = ttl*1000
+    end
     envelope.update(body)
     json = JSON.pretty_generate(envelope)
     address = destination.to_s()
