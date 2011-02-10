@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.18
+Version: 0.19
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -123,6 +123,11 @@ fi
 %{ruby_sitelib}/%{name}/messaging/
 
 %changelog
+* Thu Feb 10 2011 Jeff Ortel <jortel@redhat.com> 0.19-1
+- ruby: ruby & c++ API expect ttl as miliseconds. (jortel@redhat.com)
+- ruby: make non-durable queues auto_delete; make all queues exclusive.
+  (jortel@redhat.com)
+
 * Wed Feb 09 2011 Jeff Ortel <jortel@redhat.com> 0.18-1
 - Make sure plugins directory exists. (jortel@redhat.com)
 - Make file paths portable; fix usage. (jortel@redhat.com)
