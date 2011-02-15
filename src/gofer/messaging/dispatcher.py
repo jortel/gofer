@@ -52,11 +52,31 @@ class MethodNotFound(DispatchError):
 
 class NotPermitted(DispatchError):
     """
-    Permission denied or not visible.
+    Called method not decorated as I{remote}.
     """
 
-    def __init__(self, classname, method):
-        message = '%s.%s(), not permitted' % (classname, method)
+    def __init__(self, cnfn):
+        message = '%s.%s(), not permitted' % cnfn
+        Exception.__init__(self, message)
+        
+        
+class NotShared(DispatchError):
+    """
+    Method not shared between UUIDs.
+    """
+
+    def __init__(self, cnfn):
+        message = '%s.%s(), not shared' % cnfn
+        Exception.__init__(self, message)
+
+
+class NotAuthorized(DispatchError):
+    """
+    Not authorized, secret not matched.
+    """
+
+    def __init__(self, cnfn):
+        message = '%s.%s(), not authorized' % cnfn
         Exception.__init__(self, message)
         
         
@@ -213,30 +233,101 @@ class RMI(object):
         @return: The requested method.
         @rtype: (method|function)
         """
-        cn, fn = \
-            (self.request.classname,
-             self.request.method)
+        cn, fn = self.__cnfn()
         if hasattr(inst, fn):
             method = getattr(inst, fn)
-            if not self.permitted(method):
-                raise NotPermitted(cn, fn)
-            return method
+            return self.permitted(method)
         else:
             raise MethodNotFound(cn, fn)
         
     def permitted(self, method):
         """
-        Get whether remote invocation of the specified method is permitted.
+        Check whether remote invocation of the specified method is permitted.
         @param method: The method in question.
         @type method: (method|function)
         @return: True if permitted.
         @rtype: bool
         """
+        auth = self.request.auth
+        fninfo = self.__fninfo(method)
+        if fninfo is None:
+            NotPermitted(self.__cnfn())
+        self.__shared(fninfo, auth)
+        self.__authorized(fninfo, auth)
+        return method
+        
+    def __shared(self, fninfo, auth):
+        """
+        Validate the method is either marked as I{shared}
+        or that the request was received on the method's
+        contributing plugin UUID.
+        @param fninfo: The decorated function info.
+        @type fninfo: L{Options}
+        @param auth: The request's I{auth} info.
+        @type auth: L{Options}
+        @raise NotShared: On sharing violation.
+        """
+        if fninfo.shared:
+            return
+        uuid = fninfo.plugin.getuuid()
+        if not uuid:
+            return
+        if auth.uuid == uuid:
+            return
+        raise NotShared(self.__cnfn())
+        
+    def __authorized(self, fninfo, auth):
+        """
+        Validate the method was decorated by specifying
+        a I{secret} and that if matches the I{secret}
+        passed with the request.
+        @param fninfo: The decorated function info.
+        @type fninfo: L{Options}
+        @param auth: The request's I{auth} info.
+        @type auth: L{Options}
+        @raise NotAuthorized: On secret specified and not matched.
+        """
+        if not fninfo.secret:
+            return
+        if auth.secret in fninfo.secret:
+            return
+        raise NotAuthorized(self.__cnfn())
+    
+    def __cnfn(self):
+        """
+        Get the I{classname} and I{function} specified in the request.
+        @return: (classname, function-name)
+        @rtype: tuple
+        """
+        return (self.request.classname,
+             self.request.method)
+
+    def __fn(self, method):
+        """
+        Return the method's function (if a method) or
+        the I{method} assuming it's a function.
+        @return: The function
+        @rtype: function
+        """
         if inspect.ismethod(method):
             fn = method.im_func
         else:
             fn = method
-        return ( hasattr(fn, 'remotepermitted') ) 
+        return fn
+    
+    def __fninfo(self, method):
+        """
+        Get the I{gofer} metadata embedded in the function
+        by the @remote decorator.
+        @param method: A called (resolved) method
+        @type method: function
+        @return: The I{gofer} attribute.
+        @rtype: L{Options}
+        """
+        try:
+            return self.__fn(method).gofer
+        except:
+            pass
 
     def __call__(self):
         """

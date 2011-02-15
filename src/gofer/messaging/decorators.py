@@ -17,6 +17,7 @@
 Provides decorator classes & funcitons.
 """
 
+from gofer.messaging import Options
 from gofer.collator import Collator
 
 
@@ -33,11 +34,16 @@ class Remote:
     @classmethod
     def purge(cls, mod):
         purged = []
-        for fn in cls.functions:
-            if fn.__module__ == mod:
-                purged.append(fn)
+        for fn in cls.find(mod):
+            purged.append(fn)
         for fn in purged:
             cls.functions.remove(fn)
+            
+    @classmethod
+    def find(cls, mod):
+        for fn in cls.functions:
+            if fn.__module__ == mod:
+                yield fn
     
     def collated(self):
         collated = []
@@ -50,12 +56,22 @@ class Remote:
         return collated
 
 
-def remote(fn):
+def remote(*args, **kwargs):
     """
-    Decorator used to register remotable classes.
-    @param fn: A method/function to register.
-    @type fn: function.
+    Remote method decorator
+    keywords:
+      - shared: method shared across plugins.
+      - secret: authorization secret.
     """
-    fn.remotepermitted = 1
-    Remote.add(fn)
-    return fn
+    shared = bool(kwargs.get('shared', 1))
+    secret = kwargs.get('secret',())
+    if not isinstance(secret, (list,tuple)):
+        secret = (secret,)
+    def df(fn):
+        fn.gofer = Options(shared=shared, secret=secret)
+        Remote.add(fn)
+        return fn
+    if args:
+        return df(args[0])
+    else:
+        return df

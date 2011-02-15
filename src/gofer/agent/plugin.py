@@ -337,6 +337,8 @@ class PluginLoader:
             path = os.path.join(self.ROOT, mod)
             mod = imp.load_source(syn, path)
             log.info('plugin "%s", imported as: "%s"', plugin, syn)
+            for fn in Remote.find(syn):
+                fn.gofer.plugin = p
             return p
         except:
             Remote.purge(syn)

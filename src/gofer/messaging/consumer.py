@@ -20,7 +20,7 @@ Provides AMQP message consumer classes.
 from gofer.messaging import *
 from gofer.messaging.endpoint import Endpoint
 from gofer.messaging.producer import Producer
-from gofer.messaging.dispatcher import Return
+from gofer.messaging.dispatcher import Request, Return
 from gofer.messaging.window import *
 from gofer.messaging.store import PendingQueue, PendingReceiver
 from qpid.messaging import Empty
@@ -148,6 +148,7 @@ class Consumer(Endpoint):
     def received(self, message):
         """
         Process received request.
+        Inject subject & destination.uuid.
         @param message: The received message.
         @type message: qpid.messaging.Message
         """
@@ -156,6 +157,7 @@ class Consumer(Endpoint):
         envelope.load(message.content)
         if subject:
             envelope.subject = subject
+        envelope.destination = Options(uuid=repr(self.destination))
         log.info('{%s} received:\n%s', self.id(), envelope)
         if self.valid(envelope):
             self.dispatch(envelope)
@@ -273,7 +275,11 @@ class RequestConsumer(Consumer):
         """
         try:
             self.checkwindow(envelope)
-            request = envelope.request
+            request = Request()
+            request.update(envelope.request)
+            request.auth = Options(
+                uuid=envelope.destination.uuid,
+                secret=envelope.secret,)
             self.sendstarted(envelope)
             result = self.dispatcher.dispatch(request)
         except WindowMissed:

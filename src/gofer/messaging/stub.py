@@ -102,12 +102,14 @@ class Stub:
                         self.__pid,
                         request,
                         window=opts.window,
+                        secret=opts.secret,
                         any=opts.any)
         else:
             return method.send(
                         self.__pid,
                         request,
                         window=opts.window,
+                        secret=opts.secret,
                         any=opts.any)
 
     def __getattr__(self, name):
