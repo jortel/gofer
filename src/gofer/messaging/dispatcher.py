@@ -272,6 +272,7 @@ class RMI(object):
         uuid = fninfo.plugin.getuuid()
         if not uuid:
             return
+        log.info('match uuid: "%s" = "%s"', auth.uuid, uuid)
         if auth.uuid == uuid:
             return
         raise NotShared(self.__cnfn())
@@ -280,16 +281,24 @@ class RMI(object):
         """
         Validate the method was decorated by specifying
         a I{secret} and that if matches the I{secret}
-        passed with the request.
+        passed with the request.  The secret may be I{callable} in
+        which case it is invoked and the returned value is tested against
+        the secret passed in the request.
         @param fninfo: The decorated function info.
         @type fninfo: L{Options}
         @param auth: The request's I{auth} info.
         @type auth: L{Options}
         @raise NotAuthorized: On secret specified and not matched.
         """
-        if not fninfo.secret:
+        secret = fninfo.secret
+        if not secret:
             return
-        if auth.secret in fninfo.secret:
+        if callable(secret):
+            secret = secret()
+        if not isinstance(secret, (list,tuple)):
+            secret = (secret,)
+        log.info('match secret: "%s" in "%s"', auth.secret, secret)
+        if auth.secret in secret:
             return
         raise NotAuthorized(self.__cnfn())
     

@@ -65,8 +65,6 @@ def remote(*args, **kwargs):
     """
     shared = bool(kwargs.get('shared', 1))
     secret = kwargs.get('secret',())
-    if not isinstance(secret, (list,tuple)):
-        secret = (secret,)
     def df(fn):
         fn.gofer = Options(shared=shared, secret=secret)
         Remote.add(fn)
