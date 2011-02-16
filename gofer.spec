@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.19
+Version: 0.20
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -123,6 +123,14 @@ fi
 %{ruby_sitelib}/%{name}/messaging/
 
 %changelog
+* Wed Feb 16 2011 Jeff Ortel <jortel@redhat.com> 0.20-1
+- shared in remote decorator may be callable. (jortel@redhat.com)
+- Update @remote to support (shared,secret). shared = (0|1): indicates method
+  may be shared with other plugins   and called via other uuid's. secret =
+  (None, str): A shared secret that must be presented by   the caller and
+  included in the RMI request for authentication. The defaults (shared=1,
+  secret=None). (jortel@redhat.com)
+
 * Thu Feb 10 2011 Jeff Ortel <jortel@redhat.com> 0.19-1
 - ruby: ruby & c++ API expect ttl as miliseconds. (jortel@redhat.com)
 - ruby: make non-durable queues auto_delete; make all queues exclusive.
