@@ -62,7 +62,7 @@ class ReceiverThread(Thread):
             try:
                 m = receiver.fetch(timeout=1)
                 self.consumer.received(m)
-                log.info('ready')
+                log.debug('ready')
             except Empty:
                 pass
             except:
