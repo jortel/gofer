@@ -55,7 +55,7 @@ class Producer(Endpoint):
         address = str(destination)
         sender = self.session().sender(address)
         sender.send(message);
-        log.info('{%s} sent (%s)\n%s', self.id(), address, envelope)
+        log.debug('{%s} sent (%s)\n%s', self.id(), address, envelope)
         return sn
 
     def broadcast(self, destinations, **body):

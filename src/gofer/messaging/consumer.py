@@ -158,7 +158,7 @@ class Consumer(Endpoint):
         if subject:
             envelope.subject = subject
         envelope.destination = Options(uuid=repr(self.destination))
-        log.info('{%s} received:\n%s', self.id(), envelope)
+        log.debug('{%s} received:\n%s', self.id(), envelope)
         if self.valid(envelope):
             self.dispatch(envelope)
         self.ack()
@@ -172,7 +172,7 @@ class Consumer(Endpoint):
         valid = True
         if envelope.version != version:
             valid = False
-            log.info('{%s} version mismatch (discarded):\n%s',
+            log.warn('{%s} version mismatch (discarded):\n%s',
                 self.id(), envelope)
         return valid
 
@@ -215,7 +215,7 @@ class Reader(Consumer):
             message = self.receiver.fetch(timeout=timeout)
             envelope = Envelope()
             envelope.load(message.content)
-            log.info('{%s} read next:\n%s', self.id(), envelope)
+            log.debug('{%s} read next:\n%s', self.id(), envelope)
             return envelope
         except Empty:
             pass
@@ -231,16 +231,16 @@ class Reader(Consumer):
         @return: The next envelope.
         @rtype: L{Envelope}
         """
-        log.info('{%s} searching for: sn=%s', self.id(), sn)
+        log.debug('{%s} searching for: sn=%s', self.id(), sn)
         while True:
             envelope = self.next(timeout)
             if not envelope:
                 return
             if sn == envelope.sn:
-                log.info('{%s} search found:\n%s', self.id(), envelope)
+                log.debug('{%s} search found:\n%s', self.id(), envelope)
                 return envelope
             else:
-                log.info('{%s} search discarding:\n%s', self.id(), envelope)
+                log.debug('{%s} search discarding:\n%s', self.id(), envelope)
                 self.ack()
 
 
