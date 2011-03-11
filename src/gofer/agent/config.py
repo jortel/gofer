@@ -25,6 +25,13 @@ from gofer.agent.logutil import getLogger
 log = getLogger(__name__)
 
 
+# makes x.y.z safe when section (y) not defined
+def _undefined(self, name):
+    return self
+
+Undefined.__getattr__ = _undefined
+
+
 def ndef(x):
     """
     Section/property not defined.
