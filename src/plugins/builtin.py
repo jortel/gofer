@@ -33,7 +33,7 @@ plugin = Plugin.find(__name__)
 
 class TestAction:
 
-    @action(minutes=10)
+    @action(hours=36)
     def hello(self):
         plugin = Plugin.find(__name__)
         log.info('Hello:\n%s', plugin.cfg())
