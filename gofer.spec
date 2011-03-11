@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.20
+Version: 0.21
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -123,6 +123,12 @@ fi
 %{ruby_sitelib}/%{name}/messaging/
 
 %changelog
+* Fri Mar 11 2011 Jeff Ortel <jortel@redhat.com> 0.21-1
+- URL not defined in builtin & main configurations. (jortel@redhat.com)
+- Test action every 36 hours. (jortel@redhat.com)
+- Start plugin monitor only when URL defined. (jortel@redhat.com)
+- Make references to properties on undefined sections safe. (jortel@redhat.com)
+
 * Wed Feb 16 2011 Jeff Ortel <jortel@redhat.com> 0.20-1
 - shared in remote decorator may be callable. (jortel@redhat.com)
 - Update @remote to support (shared,secret). shared = (0|1): indicates method
