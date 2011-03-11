@@ -121,6 +121,8 @@ class Agent:
         actionThread = ActionThread(actions)
         actionThread.start()
         for plugin in plugins:
+            if not plugin.geturl():
+                continue
             pt = PluginMonitorThread(plugin)
             pt.start()
         log.info('agent started.')

@@ -45,12 +45,8 @@ class Plugin(object):
     @type descriptor: str
     @cvar plugins: The dict of loaded plugins.
     @type plugins: dict
-    @cvar URL: The default URL.
-    @type URL: str
     """
     plugins = {}
-
-    URL = 'tcp://localhost:5672'
     
     @classmethod
     def add(cls, plugin):
@@ -142,7 +138,7 @@ class Plugin(object):
         """
         cfg = self.cfg()
         try:
-            return int(cfg.main.enabled)
+            return int(nvl(cfg.main.enabled, 0))
         except:
             return 0
         
@@ -158,6 +154,17 @@ class Plugin(object):
             return nvl(cfg.messaging.uuid)
         finally:
             self.unlock()
+            
+    def geturl(self):
+        """
+        Get the broker URL
+        @return: The broker URL
+        @rtype: str
+        """
+        main = Config()
+        cfg = self.cfg()
+        return nvl(cfg.messaging.url,
+               nvl(main.messaging.url))
     
     def getbroker(self):
         """
@@ -168,9 +175,7 @@ class Plugin(object):
         """
         cfg = self.cfg()
         main = Config()
-        url = nvl(cfg.messaging.url,
-              nvl(main.messaging.url, self.URL))
-        broker = Broker(URL(url))
+        broker = Broker(URL(self.geturl()))
         broker.cacert = \
             nvl(cfg.messaging.cacert,
             nvl(main.messaging.cacert))
