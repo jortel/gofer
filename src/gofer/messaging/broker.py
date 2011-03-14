@@ -20,6 +20,7 @@ Defined AMQP broker objects.
 from gofer import Singleton
 from gofer.messaging import *
 from qpid.messaging import Connection
+from threading import RLock
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -40,6 +41,15 @@ class Broker:
     @type clientcert: str
     """
     __metaclass__ = Singleton
+    __mutex = RLock()
+    
+    @classmethod
+    def __lock(cls):
+        cls.__mutex.acquire()
+        
+    @classmethod
+    def __unlock(cls):
+        cls.__mutex.release()
 
     def __init__(self, url):
         """
@@ -68,26 +78,36 @@ class Broker:
         @return: The AMQP connection object.
         @rtype: I{Connection}
         """
-        if self.connection is None:
-            url = self.url.simple()
-            transport = self.url.transport
-            log.info('connecting:\n%s', self)
-            con = Connection(url=url, reconnect=True, transport=transport)
-            con.attach()
-            log.info('{%s} connected to AMQP', self.id())
-            self.connection = con
-        else:
-            con = self.connection
-        return con
+        self.__lock()
+        try:
+            if self.connection is None:
+                url = self.url.simple()
+                transport = self.url.transport
+                log.info('connecting:\n%s', self)
+                con = Connection(url=url, reconnect=True, transport=transport)
+                con.attach()
+                log.info('{%s} connected to AMQP', self.id())
+                self.connection = con
+            else:
+                con = self.connection
+            return con
+        finally:
+            self.__unlock()
 
     def close(self):
         """
         Close the connection to the broker.
         """
+        self.__lock()
         try:
-            self.connection.close()
-        except:
-            log.exception(str(self))
+            try:
+                con = self.connection
+                self.connection = None
+                con.close()
+            except:
+                log.exception(str(self))
+        finally:
+            self.__unlock()
 
     def __str__(self):
         s = []
