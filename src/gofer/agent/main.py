@@ -16,7 +16,7 @@
 import sys
 import os
 import logging
-from getopt import getopt
+from getopt import getopt, GetoptError
 from gofer import *
 from gofer.agent import *
 from gofer.agent.action import Actions
@@ -110,6 +110,8 @@ class Agent:
     Starts (2) threads.  A thread to run actions and
     another to monitor/update plugin sessions on the bus.
     """
+    
+    WAIT = None
 
     def __init__(self, plugins, actions):
         """
@@ -126,7 +128,7 @@ class Agent:
             pt = PluginMonitorThread(plugin)
             pt.start()
         log.info('agent started.')
-        actionThread.join()
+        actionThread.join(self.WAIT)
 
 
 class AgentLock(Lock):
@@ -161,7 +163,6 @@ def start(daemon=True):
         actions = Actions()
         collated = actions.collated()
         agent = Agent(plugins, collated)
-        agent.close()
     finally:
         lock.release()
 
@@ -176,6 +177,8 @@ def usage():
     s.append('  -c, --console')
     s.append('      Run in the foreground and not as a daemon.')
     s.append('      default: 0')
+    s.append('  -p [seconds], --profile [seconds]')
+    s.append('      Run (foreground) and print code profiling statistics.')
     s.append('\n')
     print '\n'.join(s)
 
@@ -214,19 +217,44 @@ def setupLogging():
             logger.setLevel(L)
         except:
             pass
+        
+def profile(daemon=False):
+    import pstats
+    import cProfile
+    fn='/tmp/gofer.pf'
+    log.info('profile: %s', fn)
+    cProfile.runctx(
+        'start(0)',
+        globals(),
+        locals(),
+        filename=fn)
+    stats = pstats.Stats(fn)
+    stats.strip_dirs()
+    stats.sort_stats('cumulative')
+    stats.print_stats()
 
 def main():
     daemon = True
+    __start = start
     setupLogging()
-    opts, args = getopt(sys.argv[1:], 'hc', ['help','console'])
-    for opt,arg in opts:
-        if opt in ('-h', '--help'):
-            usage()
-            sys.exit(0)
-        if opt in ('-c', '--console'):
-            daemon = False
-            continue
-    start(daemon)
+    try:
+        opts, args = getopt(sys.argv[1:], 'hcp:', ['help','console','profile'])
+        for opt,arg in opts:
+            if opt in ('-h', '--help'):
+                usage()
+                sys.exit(0)
+            if opt in ('-c', '--console'):
+                daemon = False
+                continue
+            if opt in ('-p', '--profile'):
+                __start = profile
+                Agent.WAIT = int(arg)
+                daemon = False
+                continue
+        __start(daemon)
+    except GetoptError, e:
+        print e
+        usage()
 
 if __name__ == '__main__':
     main()
