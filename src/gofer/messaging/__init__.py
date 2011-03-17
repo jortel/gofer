@@ -33,6 +33,7 @@ class Options(dict):
           When specified, it implies all requests are asynchronous.
       - window : The request window.  See I{Window}.
           Default = any time.
+      - secret : A shared secret used for request authentication.
       - timeout : The synchronous timeout (seconds).
           Default = 90 seconds.
     """

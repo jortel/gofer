@@ -295,6 +295,8 @@ class RMI(object):
             return
         if callable(secret):
             secret = secret()
+        if not secret:
+            return
         if not isinstance(secret, (list,tuple)):
             secret = (secret,)
         log.info('match secret: "%s" in "%s"', auth.secret, secret)

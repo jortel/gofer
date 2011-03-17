@@ -45,6 +45,14 @@ class RepoLib:
     @remote
     def update(self):
         print 'Repo updated'
+        
+class Cat:
+    
+    @remote(secret='garfield')
+    def meow(self, words):
+        print 'Ruf %s' % words
+        return 'Yes master.  I will meow because that is what cats do. "%s"' % words
+
 
 class Dog:
     @remote

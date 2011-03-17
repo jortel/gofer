@@ -86,7 +86,7 @@ class Stub:
         @type options: dict
         """
         self.__pid = pid
-        self.__options = options
+        self.__options = Options(options.items())
 
     def _send(self, request, options):
         """

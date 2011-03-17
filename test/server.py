@@ -41,6 +41,14 @@ def demo(agent):
     
     print admin.hello()
     
+    cat = agent.Cat(secret='garfield')
+    print cat.meow('PUR')
+    try:
+        cat = agent.Cat()
+        cat.meow('hello')
+    except:
+        print 'Auth failed, damn cats.'
+    
     dog = agent.Dog()
     repolib = agent.RepoLib()
     print dog.bark('RUF')
