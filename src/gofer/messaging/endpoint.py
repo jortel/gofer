@@ -68,7 +68,7 @@ class Endpoint:
         """
         broker = Broker(self.url)
         con = broker.connect()
-        log.info('{%s} connected to AMQP' % self.id())
+        log.debug('{%s} connected to AMQP' % self.id())
         return con
 
     def session(self):

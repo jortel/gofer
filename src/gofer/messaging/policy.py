@@ -132,7 +132,7 @@ class Synchronous(RequestMethod):
         if envelope:
             self.reader.ack()
             if envelope.status:
-                log.info('request (%s), started', sn)
+                log.debug('request (%s), started', sn)
             else:
                 self.__onreply(envelope)
         else:
