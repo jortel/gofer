@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.23
+Version: 0.24
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -123,6 +123,12 @@ fi
 %{ruby_sitelib}/%{name}/messaging/
 
 %changelog
+* Fri Mar 18 2011 Jeff Ortel <jortel@redhat.com> 0.24-1
+- Update secret in options epydoc; fix options override in stub().
+  (jortel@redhat.com)
+- Add code profiling option. (jortel@redhat.com)
+- Add mutex to Broker. (jortel@redhat.com)
+
 * Fri Mar 11 2011 Jeff Ortel <jortel@redhat.com> 0.23-1
 - Change receiver READY message to debug. (jortel@redhat.com)
 
