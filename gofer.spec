@@ -26,7 +26,7 @@ Obsoletes: %{name}-lib
 BuildRequires: python
 Requires: python-simplejson
 Requires: python-qpid >= 0.7
-%if !0%{?fedora}
+%if 0%{?el5}
 Requires: python-uuid
 Requires: python-ssl
 %endif
