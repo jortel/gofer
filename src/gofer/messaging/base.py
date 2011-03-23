@@ -18,12 +18,11 @@ Agent base classes.
 """
 
 from gofer.messaging import *
-from gofer.messaging.stub import Stub
+from gofer.messaging.stub import Stub, Factory
 from gofer.messaging.decorators import Remote
 from gofer.messaging.dispatcher import Dispatcher
 from gofer.messaging.window import Window
 from gofer.messaging.policy import *
-from new import classobj
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -128,12 +127,13 @@ class Container:
     
     def __getattr__(self, name):
         """
-        Add stubs found in the I{stubs} dictionary.
-        Each is added as an attribute matching the dictionary key.
+        Get a stub by name.
+        @param name: The name of a stub class.
+        @type name: str
+        @return: A stub object.
+        @rtype: L{Stub}
         """
-        destination = self.__destination()
-        subclass = classobj(name, (Stub,), {})
-        return subclass(destination, self.__options)
+        return Factory.stub(name, self.__destination(), self.__options)
 
     def __str__(self):
         return '{%s} opt:%s' % (self.__id, str(self.__options))

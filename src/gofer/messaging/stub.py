@@ -19,6 +19,7 @@ Proxies (stubs) are the I{local} representation of I{remote}
 classes on which we invoke methods.
 """
 
+from new import classobj
 from gofer.messaging import *
 from gofer.messaging.dispatcher import Request
 from gofer.messaging.window import Window
@@ -134,3 +135,96 @@ class Stub:
         """
         self.__options.update(options)
         return self
+
+
+class MockStub:
+    """
+    Mock stub (wrapper).
+    Ensures that user defined (registered) stubs
+    have gofer stub characteristics.
+    """
+    
+    def __init__(self, stub):
+        """
+        @param stub: A stub to wrap.
+        @type stub: (class|object)
+        """
+        if callable(stub):
+            self.stub = stub()
+        else:
+            self.stub = stub
+        
+    def __call__(self, **options):
+        """
+        Simulated constructor.
+        @param options: keyword options.
+        @type options: dict
+        @return: self
+        @rtype: L{MockStub}
+        """
+        return self
+        
+    def __getattr__(self, name):
+        """
+        Passthru to wrapped object.
+        @param name: The attribute name.
+        @type name: str
+        @return: wrapped object attribute.
+        """
+        return getattr(self.stub, name)
+
+
+class Factory:
+    """
+    Stub factory
+    @cvar __registry: An override registry.
+    @type __registry: dict
+    """
+    
+    __registry = {}
+    
+    @classmethod
+    def register(cls, **stubs):
+        """
+        Register an I{entry} to be used instead of
+        creating a real stub.
+        """
+        cls.__registry.update(stubs)
+    
+    @classmethod
+    def stub(cls, name, destination, options):
+        """
+        Get a stub by name.  Seach the __registry for an override and
+        return that if found.  Else, make a new stub object.
+        @param name: The stub class (or module) name.
+        @type name: str
+        @param destination: The AMQP destination
+        @type destination: L{Destination}
+        @param options: A dict of gofer options
+        @param options: L{Options}
+        @return: A stub instance.
+        @rtype: L{Stub}
+        """
+        entry = cls.__registry.get(name)
+        if entry:
+            stub = MockStub(entry)
+        else:
+            stub = cls.__mkstub(name, destination, options)
+        return stub
+    
+    @classmethod
+    def __mkstub(cls, name, destination, options):
+        """
+        Get a stub by name.
+        @param name: The stub class (or module) name.
+        @type name: str
+        @param destination: The AMQP destination
+        @type destination: L{Destination}
+        @param options: A dict of gofer options
+        @param options: L{Options}
+        @return: A stub instance.
+        @rtype: L{Stub}
+        """
+        subclass = classobj(name, (Stub,), {})
+        inst = subclass(destination, options)
+        return inst
