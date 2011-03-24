@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.25
+Version: 0.26
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -123,6 +123,10 @@ fi
 %{ruby_sitelib}/%{name}/messaging/
 
 %changelog
+* Thu Mar 24 2011 Jeff Ortel <jortel@redhat.com> 0.26-1
+- close sender, huge performance gain. (jortel@redhat.com)
+- Add stub Factory. (jortel@redhat.com)
+
 * Tue Mar 22 2011 Jeff Ortel <jortel@redhat.com> 0.25-1
 - Use {el5} macro. (jortel@redhat.com)
 - Reduce log clutter. (jortel@redhat.com)
