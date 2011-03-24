@@ -21,6 +21,7 @@ from gofer.messaging import Queue
 from gofer.messaging.base import Container
 from gofer.messaging.producer import Producer
 from gofer.messaging.window import *
+from gofer.metrics import Timer
 from gofer.proxy import Agent
 from time import sleep
 from datetime import datetime as dt
@@ -104,7 +105,12 @@ def main():
     # synchronous
     print '(demo) synchronous'
     agent = Agent(uuid)
-    demo(agent)
+    timer = Timer()
+    for i in range(0,100):
+        print '========= DEMO:%d [%s] ========' % (i, timer)
+        timer.start()
+        demo(agent)
+        timer.stop()
     #agent.delete()
     agent = None
 
@@ -152,7 +158,7 @@ def main():
     agent = None
 
 if __name__ == '__main__':
-    for i in range(0,10):
+    for i in range(0,1000):
         print '======= %d ========' % i
         main()
     print 'finished.'

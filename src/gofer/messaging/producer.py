@@ -54,7 +54,8 @@ class Producer(Endpoint):
         message = Message(content=json, durable=True, ttl=ttl)
         address = str(destination)
         sender = self.session().sender(address)
-        sender.send(message);
+        sender.send(message)
+        sender.close()
         log.debug('{%s} sent (%s)\n%s', self.id(), address, envelope)
         return sn
 

@@ -39,6 +39,8 @@ class ReceiverThread(Thread):
         messages are read.
     @type consumer: L{Consumer}
     """
+    
+    WAIT = 3
 
     def __init__(self, consumer):
         """
@@ -56,17 +58,15 @@ class ReceiverThread(Thread):
         Messages are read from consumer.receiver and
         dispatched to the consumer.received().
         """
-        m = None
-        receiver = self.consumer.receiver
+        msg = None
         while self.__run:
             try:
-                m = receiver.fetch(timeout=1)
-                self.consumer.received(m)
+                msg = self.__fetch()
+                if msg:
+                    self.consumer.received(msg)
                 log.debug('ready')
-            except Empty:
-                pass
             except:
-                log.error('failed:\n%s', m, exc_info=True)
+                log.error('failed:\n%s', msg, exc_info=True)
 
     def stop(self):
         """
@@ -74,6 +74,24 @@ class ReceiverThread(Thread):
         the thread.
         """
         self.__run = False
+        
+    def __fetch(self):
+        """
+        Fetch the next message.
+        @return: The next message or None.
+        @rtype: Message
+        """
+        try:
+            return self.receiver.fetch(timeout=self.WAIT)
+        except Empty:
+            pass
+        except:
+            log.error('failed', exc_info=True)
+            sleep(self.WAIT)
+    
+    @property
+    def receiver(self):
+        return self.consumer.receiver
 
 
 class Consumer(Endpoint):
@@ -242,7 +260,7 @@ class Reader(Consumer):
             else:
                 log.debug('{%s} search discarding:\n%s', self.id(), envelope)
                 self.ack()
-
+                
 
 class RequestConsumer(Consumer):
     """
