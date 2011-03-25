@@ -17,6 +17,8 @@
 Provides AMQP message consumer classes.
 """
 
+from time import sleep
+from threading import Thread
 from gofer.messaging import *
 from gofer.messaging.endpoint import Endpoint
 from gofer.messaging.producer import Producer
@@ -24,8 +26,6 @@ from gofer.messaging.dispatcher import Request, Return
 from gofer.messaging.window import *
 from gofer.messaging.store import PendingQueue, PendingReceiver
 from qpid.messaging import Empty
-from time import sleep
-from threading import Thread
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -87,7 +87,7 @@ class ReceiverThread(Thread):
         except Empty:
             pass
         except:
-            log.error('failed', exc_info=True)
+            log.error(self.id(), exc_info=1)
             sleep(self.WAIT)
     
     @property
@@ -230,14 +230,12 @@ class Reader(Consumer):
         @return: The next envelope.
         @rtype: L{Envelope}
         """
-        try:
-            message = self.receiver.fetch(timeout=timeout)
+        msg = self.__fetch(timeout)
+        if msg:
             envelope = Envelope()
-            envelope.load(message.content)
+            envelope.load(msg.content)
             log.debug('{%s} read next:\n%s', self.id(), envelope)
             return envelope
-        except Empty:
-            pass
 
     def search(self, sn, timeout=90):
         """
@@ -261,6 +259,21 @@ class Reader(Consumer):
             else:
                 log.debug('{%s} search discarding:\n%s', self.id(), envelope)
                 self.ack()
+                
+    def __fetch(self, timeout):
+        """
+        Fetch the next message.
+        @param timeout: The read timeout.
+        @type timeout: int
+        @return: The next message, or (None).
+        @rtype: Message
+        """
+        try:
+            return self.receiver.fetch(timeout=timeout)
+        except Empty:
+            pass
+        except:
+            log.error(self.id(), exc_info=1)
                 
 
 class RequestConsumer(Consumer):
