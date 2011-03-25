@@ -24,6 +24,7 @@ from gofer.messaging.dispatcher import Request, Return
 from gofer.messaging.window import *
 from gofer.messaging.store import PendingQueue, PendingReceiver
 from qpid.messaging import Empty
+from time import sleep
 from threading import Thread
 from logging import getLogger
 
