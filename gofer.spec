@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.26
+Version: 0.27
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -123,6 +123,11 @@ fi
 %{ruby_sitelib}/%{name}/messaging/
 
 %changelog
+* Mon Mar 28 2011 Jeff Ortel <jortel@redhat.com> 0.27-1
+- Change to yappi profiler. (jortel@redhat.com)
+- factor Reader.__fetch() and catch/log fetch exceptions. (jortel@redhat.com)
+- Add missing import sleep(). (jortel@redhat.com)
+
 * Thu Mar 24 2011 Jeff Ortel <jortel@redhat.com> 0.26-1
 - close sender, huge performance gain. (jortel@redhat.com)
 - Add stub Factory. (jortel@redhat.com)
