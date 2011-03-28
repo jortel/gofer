@@ -27,6 +27,7 @@ from time import sleep
 from datetime import datetime as dt
 from datetime import timedelta as delta
 from logging import INFO, basicConfig, getLogger
+from threading import Thread
 from agent import MyError
 
 basicConfig(filename='/tmp/gofer/server.log', level=INFO)
@@ -93,8 +94,16 @@ def demo(agent):
 def later(**offset):
     return dt.utcnow()+delta(**offset)
 
-def main():
-    uuid = 'xyz'
+def threads(uuid, n=10):
+    for i in range(0,n):
+        agent = Agent(uuid)
+        name = 'Test%d' % i
+        t = Thread(name=name, target=main, args=(uuid,))
+        t.start()
+        print 'thread: %s, started' % t.getName()
+    return t
+
+def main(uuid):
     tag = 'XYZ'
 
     # TTL
@@ -107,10 +116,10 @@ def main():
     agent = Agent(uuid)
     timer = Timer()
     for i in range(0,100):
-        print '========= DEMO:%d [%s] ========' % (i, timer)
         timer.start()
         demo(agent)
         timer.stop()
+        print '========= DEMO:%d [%s] ========' % (i, timer)
     #agent.delete()
     agent = None
 
@@ -158,9 +167,17 @@ def main():
     agent = None
 
 if __name__ == '__main__':
+    uuid = 'xyz'
+    if len(sys.argv) > 1:
+        n = int(sys.argv[1])
+        print '======= RUNNING %d THREADS ============' % n
+        sleep(2)
+        last = threads(uuid, n)
+        last.join()
+        sys.exit(0)
     for i in range(0,1000):
         print '======= %d ========' % i
-        main()
+        main(uuid)
     print 'finished.'
 
 

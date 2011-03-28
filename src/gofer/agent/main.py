@@ -218,27 +218,23 @@ def setupLogging():
         except:
             pass
         
-def profile(daemon=False):
-    import pstats
-    import cProfile
-    fn='/tmp/gofer.pf'
-    log.info('profile: %s', fn)
-    cProfile.runctx(
-        'start(0)',
-        globals(),
-        locals(),
-        filename=fn)
-    stats = pstats.Stats(fn)
-    stats.strip_dirs()
-    stats.sort_stats('cumulative')
-    stats.print_stats()
+def profile():
+    """
+    Code profiler using YAPPI
+    http://code.google.com/p/yappi
+    """
+    import yappi
+    yappi.start()
+    start(False)
+    yappi.stop()
+    for pstat in yappi.get_stats(yappi.SORTTYPE_TSUB):
+        print pstat
 
 def main():
     daemon = True
-    __start = start
     setupLogging()
     try:
-        opts, args = getopt(sys.argv[1:], 'hcp:', ['help','console','profile'])
+        opts, args = getopt(sys.argv[1:], 'hcp:', ['help','console','prof'])
         for opt,arg in opts:
             if opt in ('-h', '--help'):
                 usage()
@@ -246,12 +242,12 @@ def main():
             if opt in ('-c', '--console'):
                 daemon = False
                 continue
-            if opt in ('-p', '--profile'):
+            if opt in ('-p', '--prof'):
                 __start = profile
                 Agent.WAIT = int(arg)
-                daemon = False
-                continue
-        __start(daemon)
+                profile()
+                return
+        start(daemon)
     except GetoptError, e:
         print e
         usage()
