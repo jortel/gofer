@@ -272,7 +272,7 @@ class RMI(object):
         uuid = fninfo.plugin.getuuid()
         if not uuid:
             return
-        log.info('match uuid: "%s" = "%s"', auth.uuid, uuid)
+        log.debug('match uuid: "%s" = "%s"', auth.uuid, uuid)
         if auth.uuid == uuid:
             return
         raise NotShared(self.__cnfn())
@@ -299,7 +299,7 @@ class RMI(object):
             return
         if not isinstance(secret, (list,tuple)):
             secret = (secret,)
-        log.info('match secret: "%s" in "%s"', auth.secret, secret)
+        log.debug('match secret: "%s" in "%s"', auth.secret, secret)
         if auth.secret in secret:
             return
         raise NotAuthorized(self.__cnfn())
