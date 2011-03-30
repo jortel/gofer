@@ -87,7 +87,7 @@ class ReceiverThread(Thread):
         except Empty:
             pass
         except:
-            log.error(self.id(), exc_info=1)
+            log.error(self.getName(), exc_info=1)
             sleep(self.WAIT)
     
     @property

@@ -269,9 +269,12 @@ class PluginDescriptor(Base):
             path = os.path.join(cls.ROOT, fn)
             if os.path.isdir(path):
                 continue
-            descriptor = cls(path)
-            descriptor.__dict__['__path__'] = path
-            lst.append((plugin, descriptor))
+            try:
+                inst = cls(path)
+                inst.__dict__['__path__'] = path
+                lst.append((plugin, inst))
+            except:
+                log.error(path, exc_info=1)
         return lst
     
     def write(self):
