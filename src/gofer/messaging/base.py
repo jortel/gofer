@@ -64,8 +64,6 @@ class Container:
     @type __id: str
     @ivar __producer: An AMQP producer.
     @type __producer: L{gofer.messaging.producer.Producer}
-    @ivar __stubs: A list of L{Stub} objects.
-    @type __stubs: [L{Stub},..]
     @ivar __options: Container options.
     @type __options: L{Options}
     """
@@ -81,7 +79,6 @@ class Container:
         """
         self.__id = uuid
         self.__options = Options(window=Window(), timeout=90)
-        self.__stubs = []
         self.__options.update(options)
         self.__setmethod(producer)
 
