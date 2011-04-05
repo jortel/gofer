@@ -59,7 +59,7 @@ class Agent:
         
 class Container:
     """
-    The stub container base
+    The stub container
     @ivar __id: The peer ID.
     @type __id: str
     @ivar __producer: An AMQP producer.
@@ -137,6 +137,13 @@ class Container:
 
 
 class MockContainer:
+    """
+    The (mock) stub container
+    @ivar __id: The peer ID.
+    @type __id: str
+    @ivar __options: Container options.
+    @type __options: L{Options}
+    """
     
     def __init__(self, uuid, producer=None, **options):
         """
