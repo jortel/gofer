@@ -177,11 +177,11 @@ class MockStub:
 class Factory:
     """
     Stub factory
-    @cvar __registry: An override registry.
-    @type __registry: dict
+    @cvar __stubs: The stub overrides.
+    @type __stubs: dict
     """
     
-    __registry = {}
+    __stubs = {}
     
     @classmethod
     def register(cls, **stubs):
@@ -189,12 +189,12 @@ class Factory:
         Register an I{entry} to be used instead of
         creating a real stub.
         """
-        cls.__registry.update(stubs)
+        cls.__stubs.update(stubs)
     
     @classmethod
     def stub(cls, name, destination, options):
         """
-        Get a stub by name.  Seach the __registry for an override and
+        Get a stub by name.  Seach the __stubs for an override and
         return that if found.  Else, make a new stub object.
         @param name: The stub class (or module) name.
         @type name: str
@@ -205,7 +205,7 @@ class Factory:
         @return: A stub instance.
         @rtype: L{Stub}
         """
-        entry = cls.__registry.get(name)
+        entry = cls.__stubs.get(name)
         if entry:
             stub = MockStub(entry)
         else:
