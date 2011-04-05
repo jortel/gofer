@@ -69,11 +69,6 @@ def demo(agent):
         log.info('failed:', exc_info=True)
         print e
     try:
-        print plugin.notdecorated()
-    except Exception, e:
-        log.info('failed:', exc_info=True)
-        print e
-    try:
         print dog.keyError('jeff')
     except KeyError, e:
         log.info('failed:', exc_info=True)

@@ -55,8 +55,8 @@ class Agent:
         Close and release all resources.
         """
         self.consumer.close()
-
-
+        
+        
 class Container:
     """
     The stub container base
@@ -131,6 +131,35 @@ class Container:
         @rtype: L{Stub}
         """
         return Factory.stub(name, self.__destination(), self.__options)
+
+    def __str__(self):
+        return '{%s} opt:%s' % (self.__id, str(self.__options))
+
+
+class MockContainer:
+    
+    def __init__(self, uuid, producer=None, **options):
+        """
+        @param uuid: The peer ID.
+        @type uuid: str
+        @param producer: An AMQP producer (unused).
+        @type producer: L{gofer.messaging.producer.Producer}
+        @param options: keyword options.
+        @type options: dict
+        """
+        self.__id = uuid
+        self.__options = Options()
+        self.__options.update(options)
+    
+    def __getattr__(self, name):
+        """
+        Get a stub by name.
+        @param name: The name of a stub class.
+        @type name: str
+        @return: A stub object.
+        @rtype: L{MockStub}
+        """
+        return Factory.mock(name)
 
     def __str__(self):
         return '{%s} opt:%s' % (self.__id, str(self.__options))

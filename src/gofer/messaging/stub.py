@@ -138,6 +138,21 @@ class Stub:
 
 
 class MockStub:
+    
+    def __init__(self):
+        self.history = []
+    
+    def __getattr__(self, name):
+        if name.startswith('__') and name.endswith('__'):
+            return self.__dict__[name]
+        def fn(*a,**k):
+            call = (name, a,k)
+            self.history.append(call)
+            return call
+        return fn
+
+
+class MockClass:
     """
     Mock stub (wrapper).
     Ensures that user defined (registered) stubs
@@ -160,7 +175,7 @@ class MockStub:
         @param options: keyword options.
         @type options: dict
         @return: self
-        @rtype: L{MockStub}
+        @rtype: L{MockClass}
         """
         return self
         
@@ -177,24 +192,24 @@ class MockStub:
 class Factory:
     """
     Stub factory
-    @cvar __stubs: The stub overrides.
-    @type __stubs: dict
+    @cvar __mocks: The stub overrides.
+    @type __mocks: dict
     """
     
-    __stubs = {}
+    __mocks = {}
     
     @classmethod
-    def register(cls, **stubs):
+    def register(cls, **mocks):
         """
-        Register an I{entry} to be used instead of
+        Register an I{mock} to be used instead of
         creating a real stub.
         """
-        cls.__stubs.update(stubs)
+        cls.__mocks.update(mocks)
     
     @classmethod
     def stub(cls, name, destination, options):
         """
-        Get a stub by name.  Seach the __stubs for an override and
+        Get a stub by name.  Seach the __mocks for an override and
         return that if found.  Else, make a new stub object.
         @param name: The stub class (or module) name.
         @type name: str
@@ -205,15 +220,29 @@ class Factory:
         @return: A stub instance.
         @rtype: L{Stub}
         """
-        entry = cls.__stubs.get(name)
-        if entry:
-            stub = MockStub(entry)
+        mock = cls.__mocks.get(name)
+        if mock:
+            stub = MockClass(mock)
         else:
-            stub = cls.__mkstub(name, destination, options)
+            stub = cls.__stub(name, destination, options)
         return stub
     
     @classmethod
-    def __mkstub(cls, name, destination, options):
+    def mock(cls, name):
+        """
+        Get registered stub.
+        @param name: The stub class (or module) name.
+        @type name: str
+        @return: A stub instance.
+        @rtype: L{MockClass}
+        """
+        mock = cls.__mocks.get(name)
+        if not mock:
+            mock = MockStub()
+        return MockClass(mock)
+    
+    @classmethod
+    def __stub(cls, name, destination, options):
         """
         Get a stub by name.
         @param name: The stub class (or module) name.
