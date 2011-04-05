@@ -152,7 +152,7 @@ def start(daemon=True):
     """
     lock = AgentLock()
     try:
-        lock.acquire(wait=False)
+        lock.acquire(0)
     except LockFailed, e:
         raise Exception('Agent already running')
     if daemon:
@@ -198,7 +198,7 @@ def daemonize(lock):
         os.dup(dn)
         os.dup(dn)
     else: # parent
-        lock.update(pid)
+        lock.setpid(pid)
         os.waitpid(pid, os.WNOHANG)
         os._exit(0)
         
