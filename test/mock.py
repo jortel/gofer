@@ -16,10 +16,10 @@
 # in this software or its documentation.
 #
 
-import gofer.proxy
-from gofer.messaging.base import MockContainer
-from gofer.messaging.stub import Factory
-gofer.proxy.Agent = MockContainer
+from gofer.messaging import mock
+
+mock.install()
+
 from server import main
 
 class BadDog:
@@ -33,13 +33,16 @@ class BadDog:
     def sleep(self, n):
         pass
     
-Factory.register(Dog=BadDog())
+mock.register(Dog=BadDog)
 
 if __name__ == '__main__':
     uuid = 'xyz'
-    for i in range(0,1000):
+    for i in range(0,10):
         print '======= %d ========' % i
         main(uuid)
+    h = mock.history()
+    for call in h.calls(uuid):
+        print call
     print 'finished.'
 
 

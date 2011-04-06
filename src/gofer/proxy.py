@@ -18,16 +18,45 @@
 
 from gofer.messaging.base import Container
 from gofer.messaging.producer import Producer
+from gofer.messaging.mock import Factory
 from logging import getLogger
 
 log = getLogger(__name__)
 
 
+def agent(uuid, **options):
+    """
+    Get a proxy for the remote Agent.
+    @param uuid: An agent ID.
+    @type uuid: str
+    @return: An agent (proxy).
+    @rtype: L{Container}
+    """
+    p = None
+    url = options.pop('url', None)
+    if url:
+        p = Producer(url=url)
+    return Agent(uuid, p, **options)
+
+        
+def delete(agent):
+    """
+    Delete associated AMQP resources.
+    @param agent: A gofer agent.
+    @type agent: L{Container}
+    """
+    if isinstance(agent, Container):
+        queue = agent._Container__destination()
+        method = agent._Container__options.method
+        session = method.producer.session()
+        queue.delete(session)
+    else:
+        pass
+
+
 class Agent(Container):
     """
-    A server-side proxy for the remote Agent.
-    @ivar __producer: The AMQP producer.
-    @type __producer: L{Producer}
+    A proxy for the remote Agent.
     """
 
     def __init__(self, uuid, producer=None, **options):
@@ -39,18 +68,4 @@ class Agent(Container):
         """
         if not producer:
             producer = Producer()
-        self.__producer = producer
-        Container.__init__(self, uuid, self.__producer, **options)
-
-    def delete(self):
-        """
-        Delete associated AMQP resources.
-        @return: self
-        @rtype: L{Agent}
-        """
-        queue = self._Container__destination()
-        if isinstance(queue, (list,tuple)):
-            raise Exception, 'not permitted'
-        session = self.__producer.session()
-        queue.delete(session)
-        return self
+        Container.__init__(self, uuid, producer, **options)

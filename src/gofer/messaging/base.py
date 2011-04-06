@@ -18,7 +18,8 @@ Agent base classes.
 """
 
 from gofer.messaging import *
-from gofer.messaging.stub import Stub, Factory
+from gofer.messaging.stub import Stub
+from gofer.messaging.mock import Factory
 from gofer.messaging.decorators import Remote
 from gofer.messaging.dispatcher import Dispatcher
 from gofer.messaging.window import Window
@@ -130,43 +131,16 @@ class Container:
         @return: A stub object.
         @rtype: L{Stub}
         """
-        return Factory.stub(name, self.__destination(), self.__options)
+        stub = Factory.stub(name)
+        if stub:
+            return stub
+        return Stub.stub(
+            name,
+            self.__destination(),
+            self.__options)
 
     def __str__(self):
         return '{%s} opt:%s' % (self.__id, str(self.__options))
-
-
-class MockContainer:
-    """
-    The (mock) stub container
-    @ivar __id: The peer ID.
-    @type __id: str
-    @ivar __options: Container options.
-    @type __options: L{Options}
-    """
     
-    def __init__(self, uuid, producer=None, **options):
-        """
-        @param uuid: The peer ID.
-        @type uuid: str
-        @param producer: An AMQP producer (unused).
-        @type producer: L{gofer.messaging.producer.Producer}
-        @param options: keyword options.
-        @type options: dict
-        """
-        self.__id = uuid
-        self.__options = Options()
-        self.__options.update(options)
-    
-    def __getattr__(self, name):
-        """
-        Get a stub by name.
-        @param name: The name of a stub class.
-        @type name: str
-        @return: A stub object.
-        @rtype: L{MockStub}
-        """
-        return Factory.mock(name)
-
-    def __str__(self):
-        return '{%s} opt:%s' % (self.__id, str(self.__options))
+    def __repr__(self):
+        return str(self)

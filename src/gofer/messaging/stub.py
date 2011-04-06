@@ -78,6 +78,23 @@ class Stub:
     @ivar __options: Stub options.
     @type __options: dict.
     """
+    
+    @classmethod
+    def stub(cls, name, destination, options):
+        """
+        Factory method.
+        @param name: The stub class (or module) name.
+        @type name: str
+        @param destination: The AMQP destination
+        @type destination: L{Destination}
+        @param options: A dict of gofer options
+        @param options: L{Options}
+        @return: A stub instance.
+        @rtype: L{Stub}
+        """
+        subclass = classobj(name, (Stub,), {})
+        inst = subclass(destination, options)
+        return inst
 
     def __init__(self, pid, options):
         """
@@ -135,125 +152,3 @@ class Stub:
         """
         self.__options.update(options)
         return self
-
-
-class MockStub:
-    
-    def __init__(self):
-        self.history = []
-    
-    def __getattr__(self, name):
-        if name.startswith('__') and name.endswith('__'):
-            return self.__dict__[name]
-        def fn(*a,**k):
-            call = (name, a,k)
-            self.history.append(call)
-            return call
-        return fn
-
-
-class MockClass:
-    """
-    Mock stub (wrapper).
-    Ensures that user defined (registered) stubs
-    have gofer stub characteristics.
-    """
-    
-    def __init__(self, stub):
-        """
-        @param stub: A stub to wrap.
-        @type stub: (class|object)
-        """
-        if callable(stub):
-            self.stub = stub()
-        else:
-            self.stub = stub
-        
-    def __call__(self, **options):
-        """
-        Simulated constructor.
-        @param options: keyword options.
-        @type options: dict
-        @return: self
-        @rtype: L{MockClass}
-        """
-        return self
-        
-    def __getattr__(self, name):
-        """
-        Passthru to wrapped object.
-        @param name: The attribute name.
-        @type name: str
-        @return: wrapped object attribute.
-        """
-        return getattr(self.stub, name)
-
-
-class Factory:
-    """
-    Stub factory
-    @cvar __mocks: The stub overrides.
-    @type __mocks: dict
-    """
-    
-    __mocks = {}
-    
-    @classmethod
-    def register(cls, **mocks):
-        """
-        Register an I{mock} to be used instead of
-        creating a real stub.
-        """
-        cls.__mocks.update(mocks)
-    
-    @classmethod
-    def stub(cls, name, destination, options):
-        """
-        Get a stub by name.  Seach the __mocks for an override and
-        return that if found.  Else, make a new stub object.
-        @param name: The stub class (or module) name.
-        @type name: str
-        @param destination: The AMQP destination
-        @type destination: L{Destination}
-        @param options: A dict of gofer options
-        @param options: L{Options}
-        @return: A stub instance.
-        @rtype: L{Stub}
-        """
-        mock = cls.__mocks.get(name)
-        if mock:
-            stub = MockClass(mock)
-        else:
-            stub = cls.__stub(name, destination, options)
-        return stub
-    
-    @classmethod
-    def mock(cls, name):
-        """
-        Get registered stub.
-        @param name: The stub class (or module) name.
-        @type name: str
-        @return: A stub instance.
-        @rtype: L{MockClass}
-        """
-        mock = cls.__mocks.get(name)
-        if not mock:
-            mock = MockStub()
-        return MockClass(mock)
-    
-    @classmethod
-    def __stub(cls, name, destination, options):
-        """
-        Get a stub by name.
-        @param name: The stub class (or module) name.
-        @type name: str
-        @param destination: The AMQP destination
-        @type destination: L{Destination}
-        @param options: A dict of gofer options
-        @param options: L{Options}
-        @return: A stub instance.
-        @rtype: L{Stub}
-        """
-        subclass = classobj(name, (Stub,), {})
-        inst = subclass(destination, options)
-        return inst

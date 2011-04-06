@@ -44,8 +44,8 @@ class Singleton(type):
     def __call__(self, *args, **kwargs):
         self.__lock()
         try:
-            key = (tuple(args),
-                   tuple(sorted(kwargs.items())))
+            key = (tuple(repr(args)),
+                   tuple(sorted(repr(kwargs.items()))))
             inst = self.__inst.get(key)
             if inst is None: 
                 inst = type.__call__(self, *args, **kwargs)

@@ -21,6 +21,7 @@ from gofer.messaging import Queue
 from gofer.messaging.base import Container
 from gofer.messaging.producer import Producer
 from gofer.messaging.window import *
+from gofer.messaging import mock
 from gofer.metrics import Timer
 from gofer.proxy import Agent
 from time import sleep
@@ -34,8 +35,17 @@ basicConfig(filename='/tmp/gofer/server.log', level=INFO)
 
 log = getLogger(__name__)
 
+class Donkey:
+    
+    def hello(self):
+        return 'Are we there yet?'
 
 def demo(agent):
+    
+    mock.register(Donkey=Donkey)
+    
+    donkey = agent.Donkey()
+    print donkey.hello()
 
     agent.__main__.echo('have a nice day')
     

@@ -251,7 +251,7 @@ class RMI(object):
         auth = self.request.auth
         fninfo = self.__fninfo(method)
         if fninfo is None:
-            NotPermitted(self.__cnfn())
+            raise NotPermitted(self.__cnfn())
         self.__shared(fninfo, auth)
         self.__authorized(fninfo, auth)
         return method
