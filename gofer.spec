@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.28
+Version: 0.29
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -123,6 +123,12 @@ fi
 %{ruby_sitelib}/%{name}/messaging/
 
 %changelog
+* Wed Apr 06 2011 Jeff Ortel <jortel@redhat.com> 0.29-1
+- Refactor mocks; fix NotPermitted. (jortel@redhat.com)
+- Mock enhancements. (jortel@redhat.com)
+- Fix lockfile. (jortel@redhat.com)
+- Stop logging shared secret at INFO. (jortel@redhat.com)
+
 * Wed Mar 30 2011 Jeff Ortel <jortel@redhat.com> 0.28-1
 - plugin descriptor & qpid error handling. (jortel@redhat.com)
 
