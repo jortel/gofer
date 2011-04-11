@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.29
+Version: 0.30
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -123,6 +123,10 @@ fi
 %{ruby_sitelib}/%{name}/messaging/
 
 %changelog
+* Mon Apr 11 2011 Jeff Ortel <jortel@redhat.com> 0.30-1
+- Fix @import of whole sections on machines w/ old versions of iniparse.
+  (jortel@redhat.com)
+
 * Wed Apr 06 2011 Jeff Ortel <jortel@redhat.com> 0.29-1
 - Refactor mocks; fix NotPermitted. (jortel@redhat.com)
 - Mock enhancements. (jortel@redhat.com)
