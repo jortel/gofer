@@ -324,7 +324,8 @@ class Import:
         for k in S:
             v = input[self.section][k]
             if self.properties.empty() or self.properties.isplain(k):
-                imported[self.section][k] = v
+                ts = getattr(imported, self.section)
+                setattr(ts, k, v)
             else:
                 var = self.properties.var(k)
                 if var:
