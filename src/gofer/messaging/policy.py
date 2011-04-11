@@ -95,7 +95,7 @@ class Synchronous(RequestMethod):
         @param producer: A queue producer.
         @type producer: L{gofer.messaging.producer.Producer}
         @param timeout: The request timeout (seconds).
-        @type timeout: tuple
+        @type timeout: (int|tuple)
         """
         if not isinstance(timeout, (list,tuple)):
             timeout = (timeout, timeout)
@@ -173,14 +173,19 @@ class Asynchronous(RequestMethod):
     The asynchronous request method.
     """
 
-    def __init__(self, producer, tag=None):
+    def __init__(self, producer, timeout=None, tag=None):
         """
         @param producer: A queue producer.
         @type producer: L{gofer.messaging.producer.Producer}
+        @param timeout: The request timeout (seconds).
+        @type timeout: int
         @param tag: A reply I{correlation} tag.
         @type tag: str
         """
         RequestMethod.__init__(self, producer)
+        if isinstance(timeout, (list,tuple)):
+            timeout = timeout[0]
+        self.timeout = timeout
         self.tag = tag
 
     def send(self, destination, request, **any):
@@ -197,6 +202,7 @@ class Asynchronous(RequestMethod):
         """
         sn = self.producer.send(
                 destination,
+                ttl=self.timeout,
                 replyto=self.__replyto(),
                 request=request,
                 **any)
@@ -214,6 +220,7 @@ class Asynchronous(RequestMethod):
         """
         sns = self.producer.broadcast(
                 destinations,
+                ttl=self.timeout,
                 replyto=self.__replyto(),
                 request=request,
                 **any)

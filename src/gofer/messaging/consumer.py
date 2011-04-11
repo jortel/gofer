@@ -157,6 +157,7 @@ class Consumer(Endpoint):
         """
         self.stop()
         self.receiver.close()
+        Endpoint.close(self)
 
     def join(self):
         """
@@ -384,4 +385,5 @@ class RequestConsumer(Consumer):
             self.pending.stop()
             self.pending.join(10)
         except:
-            pass
+            log.error('pending.stop(), failed', exc_info=True)
+        Consumer.__del__(self)

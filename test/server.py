@@ -110,6 +110,10 @@ def threads(uuid, n=10):
 
 def main(uuid):
     tag = 'XYZ'
+    
+    agent = Agent(uuid)
+    dog = agent.Dog(timeout=(3,10))
+    print dog.sleep(1)
 
     # TTL
     agent = Agent(uuid, timeout=10)

@@ -23,7 +23,6 @@ from gofer.messaging.mock import Factory
 from gofer.messaging.decorators import Remote
 from gofer.messaging.dispatcher import Dispatcher
 from gofer.messaging.window import Window
-from gofer.messaging.policy import *
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -79,23 +78,9 @@ class Container:
         @type options: dict
         """
         self.__id = uuid
-        self.__options = Options(window=Window(), timeout=90)
+        self.__producer = producer
+        self.__options = Options(window=Window(), timeout=(10,90))
         self.__options.update(options)
-        self.__setmethod(producer)
-
-    def __setmethod(self, producer):
-        """
-        Set the request method based on options.
-        The selected method is added to I{options}.
-        @param producer: An AMQP producer.
-        @type producer: L{gofer.messaging.producer.Producer}
-        """
-        if self.__async():
-            ctag = self.__options.ctag
-            self.__options.method = Asynchronous(producer, ctag)
-        else:
-            timeout = int(self.__options.timeout)
-            self.__options.method = Synchronous(producer, timeout)
 
     def __destination(self):
         """
@@ -110,18 +95,6 @@ class Container:
             return queues
         else:
             return Queue(self.__id)
-
-    def __async(self):
-        """
-        Get whether an I{asynchronous} request method
-        should be used based on selected options.
-        @return: True if async.
-        @rtype: bool
-        """
-        if ( self.__options.ctag
-             or self.__options.async ):
-            return True
-        return isinstance(self.__id, (list,tuple))
     
     def __getattr__(self, name):
         """
@@ -136,6 +109,7 @@ class Container:
             return stub
         return Stub.stub(
             name,
+            self.__producer,
             self.__destination(),
             self.__options)
 

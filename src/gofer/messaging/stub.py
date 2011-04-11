@@ -21,6 +21,7 @@ classes on which we invoke methods.
 
 from new import classobj
 from gofer.messaging import *
+from gofer.messaging.policy import *
 from gofer.messaging.dispatcher import Request
 from gofer.messaging.window import Window
 
@@ -73,14 +74,18 @@ class Method:
 class Stub:
     """
     The stub class for remote objects.
-    @ivar __pid: The peer ID.
-    @type __pid: str
+    @ivar __producer: An AMQP producer.
+    @type __producer: L{gofer.messaging.producer.Producer}
+    @ivar __destination: The AMQP destination
+    @type __destination: L{Destination}
     @ivar __options: Stub options.
-    @type __options: dict.
+    @type __options: L{Options}
+    @ivar __policy: The invocation policy.
+    @type __policy: L{Policy}
     """
     
     @classmethod
-    def stub(cls, name, destination, options):
+    def stub(cls, name, producer, destination, options):
         """
         Factory method.
         @param name: The stub class (or module) name.
@@ -93,38 +98,44 @@ class Stub:
         @rtype: L{Stub}
         """
         subclass = classobj(name, (Stub,), {})
-        inst = subclass(destination, options)
+        inst = subclass(producer, destination, options)
         return inst
 
-    def __init__(self, pid, options):
+    def __init__(self, producer, destination, options):
         """
-        @param pid: The peer ID.
-        @type pid: str
+        @param producer: An AMQP producer.
+        @type producer: L{gofer.messaging.producer.Producer}
+        @param destination: The AMQP destination
+        @type destination: L{Destination}
         @param options: Stub options.
-        @type options: dict
+        @type options: L{Options}
         """
-        self.__pid = pid
+        self.__producer = producer
+        self.__destination = destination
         self.__options = Options(options.items())
+        self.__policy = None
 
     def _send(self, request, options):
         """
         Send the request using the configured request method.
         @param request: An RMI request.
         @type request: str
+        @param options: Invocation options.
+        @type options: L{Options}
         """
         opts = Options(self.__options)
         opts.update(options)
-        method = self.__options.method
+        policy = self.__getpolicy()
         if isinstance(self.__pid, (list,tuple)):
-            return method.broadcast(
-                        self.__pid,
+            return policy.broadcast(
+                        self.__destination,
                         request,
                         window=opts.window,
                         secret=opts.secret,
                         any=opts.any)
         else:
-            return method.send(
-                        self.__pid,
+            return policy.send(
+                        self.__destination,
                         request,
                         window=opts.window,
                         secret=opts.secret,
@@ -152,3 +163,39 @@ class Stub:
         """
         self.__options.update(options)
         return self
+
+    def __getpolicy(self):
+        """
+        Get the request policy based on options.
+        The policy is cached for performance.
+        @return: The request policy.
+        @rtype: L{Policy}
+        """
+        if self.__policy is None:
+            self.__setpolicy()
+        return self.__policy
+    
+    def __setpolicy(self):
+        """
+        Set the request policy based on options.
+        """
+        if self.__async():
+            self.__policy = Asynchronous(
+                self.__producer,
+                timeout=self.__options.timeout,
+                ctag=self.__options.ctag)
+        else:
+            self.__policy = \
+                Synchronous(self.__producer, self.__options.timeout)
+
+    def __async(self):
+        """
+        Get whether an I{asynchronous} request method
+        should be used based on selected options.
+        @return: True if async.
+        @rtype: bool
+        """
+        if ( self.__options.ctag
+             or self.__options.async ):
+            return True
+        return isinstance(self.__id, (list,tuple))
