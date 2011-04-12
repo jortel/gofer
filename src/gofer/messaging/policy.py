@@ -90,16 +90,14 @@ class Synchronous(RequestMethod):
     @type reader: L{gofer.messaging.consumer.Reader}
     """
 
-    def __init__(self, producer, timeout):
+    def __init__(self, producer, options):
         """
         @param producer: A queue producer.
         @type producer: L{gofer.messaging.producer.Producer}
-        @param timeout: The request timeout (seconds).
-        @type timeout: (int|tuple)
+        @param options: Policy options.
+        @type options: dict
         """
-        if not isinstance(timeout, (list,tuple)):
-            timeout = (timeout, timeout)
-        self.timeout = timeout
+        self.timeout = self.__timeout(options)
         self.queue = Queue(getuuid(), durable=False)
         RequestMethod.__init__(self, producer)
         reader = Reader(self.queue, url=self.producer.url)
@@ -126,8 +124,30 @@ class Synchronous(RequestMethod):
             **any)
         self.__getstarted(sn)
         return self.__getreply(sn)
+    
+    def __timeout(self, options):
+        """
+        Extract (and default as necessary) the timeout option.
+        @param options: Policy options.
+        @type options: dict
+        @return: The timeout (<start>,<duration>)
+        @rtype: tuple
+        """
+        tm = options.timeout
+        if tm is None:
+            return (10,90)
+        if isinstance(tm, (list,tuple)):
+            return tm
+        return (tm, tm)
 
     def __getstarted(self, sn):
+        """
+        Get the STARTED reply matched by serial number.
+        @param sn: The request serial number.
+        @type sn: str
+        @return: The matched reply envelope.
+        @rtype: L{Envelope}
+        """
         envelope = self.reader.search(sn, self.timeout[0])
         if envelope:
             self.reader.ack()
@@ -173,20 +193,16 @@ class Asynchronous(RequestMethod):
     The asynchronous request method.
     """
 
-    def __init__(self, producer, timeout=None, tag=None):
+    def __init__(self, producer, options):
         """
         @param producer: A queue producer.
         @type producer: L{gofer.messaging.producer.Producer}
-        @param timeout: The request timeout (seconds).
-        @type timeout: int
-        @param tag: A reply I{correlation} tag.
-        @type tag: str
+        @param options: Policy options.
+        @type options: dict
         """
         RequestMethod.__init__(self, producer)
-        if isinstance(timeout, (list,tuple)):
-            timeout = timeout[0]
-        self.timeout = timeout
-        self.tag = tag
+        self.timeout = self.__timeout(options)
+        self.ctag = options.ctag
 
     def send(self, destination, request, **any):
         """
@@ -232,8 +248,20 @@ class Asynchronous(RequestMethod):
         @return: The replyto AMQP address.
         @rtype: str
         """
-        if self.tag:
-            queue = Queue(self.tag)
+        if self.ctag:
+            queue = Queue(self.ctag)
             return str(queue)
         else:
             return None
+        
+    def __timeout(self, options):
+        """
+        Extract (and default as necessary) the timeout option.
+        @param options: Policy options.
+        @type options: dict
+        @return: The timeout
+        @rtype: int
+        """
+        tm = options.timeout
+        if isinstance(tm, (list,tuple)):
+            return tm[0]

@@ -126,7 +126,7 @@ class Stub:
         opts = Options(self.__options)
         opts.update(options)
         policy = self.__getpolicy()
-        if isinstance(self.__pid, (list,tuple)):
+        if isinstance(self.__destination, (list,tuple)):
             return policy.broadcast(
                         self.__destination,
                         request,
@@ -180,13 +180,11 @@ class Stub:
         Set the request policy based on options.
         """
         if self.__async():
-            self.__policy = Asynchronous(
-                self.__producer,
-                timeout=self.__options.timeout,
-                ctag=self.__options.ctag)
+            self.__policy = \
+                Asynchronous(self.__producer, self.__options)
         else:
             self.__policy = \
-                Synchronous(self.__producer, self.__options.timeout)
+                Synchronous(self.__producer, self.__options)
 
     def __async(self):
         """
@@ -195,7 +193,7 @@ class Stub:
         @return: True if async.
         @rtype: bool
         """
-        if ( self.__options.ctag
-             or self.__options.async ):
+        if ( self.__options.ctag or
+             self.__options.async ):
             return True
-        return isinstance(self.__id, (list,tuple))
+        return isinstance(self.__destination, (list,tuple))

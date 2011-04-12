@@ -79,7 +79,7 @@ class Container:
         """
         self.__id = uuid
         self.__producer = producer
-        self.__options = Options(window=Window(), timeout=(10,90))
+        self.__options = Options(window=Window())
         self.__options.update(options)
 
     def __destination(self):
