@@ -111,6 +111,18 @@ def threads(uuid, n=10):
 def main(uuid):
     tag = 'XYZ'
     
+    N = 1000
+    agent = Agent(uuid)
+    dog = agent.Dog()
+    t = Timer()
+    t.start()
+    print 'measuring performance ...'
+    for i in range(0,N):
+        dog.bark('performance!')
+    t.stop()
+    print 'total=%s, percall=%f (ms)' % (t, (t.duration()/N)*1000)
+    sleep(10)
+    
     agent = Agent(uuid)
     dog = agent.Dog(timeout=(3,10))
     print dog.sleep(1)
