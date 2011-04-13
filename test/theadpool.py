@@ -22,13 +22,13 @@ from gofer.metrics import Timer
 from gofer.messaging.threadpool import ThreadPool
 
 def fn(s):
-    n = random()*5
+    n = random()*3
     print 'sleep(%d)' % n
-    sleep(n)
+    #sleep(n)
     return s.lower()
 
 if __name__ == '__main__':
-    pool = ThreadPool('test', 1,10)
+    pool = ThreadPool(1,10)
     N = 100
     print 'START'
     t = Timer()
@@ -40,5 +40,4 @@ if __name__ == '__main__':
         print pool.get()
     t.stop()
     print 'total: %s, per-call: %f' % (t, t.duration()/N)
-    for w in pool.getload():
-        print w
+    print repr(pool)

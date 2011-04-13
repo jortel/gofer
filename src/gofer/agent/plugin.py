@@ -148,12 +148,12 @@ class Plugin(object):
         @return: The plugin's messaging UUID.
         @rtype: str
         """
-        self.lock()
+        self.__lock()
         try:
             cfg = self.cfg()
             return nvl(cfg.messaging.uuid)
         finally:
-            self.unlock()
+            self.__unlock()
             
     def geturl(self):
         """
@@ -193,7 +193,7 @@ class Plugin(object):
         @param save: Save to plugin descriptor.
         @type save: bool
         """
-        self.lock()
+        self.__lock()
         try:
             cfg = self.cfg()
             if uuid:
@@ -203,7 +203,18 @@ class Plugin(object):
             if save:
                 cfg.write()
         finally:
-            self.unlock()
+            self.__unlock()
+            
+    def nthreads(self):
+        """
+        Get the number of theads in the plugin's pool.
+        @return: number of theads.
+        @rtype: int
+        """
+        cfg = self.cfg()
+        threads = nvl(cfg.messaging.threads, 1)
+        return int(threads)
+        
     
     def attach(self, uuid=None):
         """
@@ -211,13 +222,15 @@ class Plugin(object):
         @param uuid: The (optional) messaging UUID.
         @type uuid: str
         """
+        cfg = self.cfg()
         if not uuid:
             uuid = self.getuuid()
         broker = self.getbroker()
         url = broker.url
         queue = Queue(uuid)
         consumer = RequestConsumer(queue, url=url)
-        ssn = Session(consumer)
+        threads = self.nthreads()
+        ssn = Session(consumer, threads)
         self.session = ssn
     
     def detach(self):
@@ -234,10 +247,10 @@ class Plugin(object):
     def cfg(self):
         return self.descriptor
     
-    def lock(self):
+    def __lock(self):
         self.__mutex.acquire()
         
-    def unlock(self):
+    def __unlock(self):
         self.__mutex.release()
 
 

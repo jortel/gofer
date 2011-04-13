@@ -476,7 +476,7 @@ class ConcurrentDispatcher(Dispatcher):
     def __init__(self, min=1, max=10):
         Dispatcher.__init__(self)
         self.cb = None
-        self.pool = ThreadPool(__name__, min, max)
+        self.pool = ThreadPool(min, max)
         self.replythread = ReplyThread(self)
         self.replythread.start()
         

@@ -21,7 +21,7 @@ from gofer.messaging import *
 from gofer.messaging.stub import Stub
 from gofer.messaging.mock import Factory
 from gofer.messaging.decorators import Remote
-from gofer.messaging.dispatcher import Dispatcher
+from gofer.messaging.dispatcher import Dispatcher, ConcurrentDispatcher
 from gofer.messaging.window import Window
 from logging import getLogger
 
@@ -37,14 +37,20 @@ class Agent:
     @type consumer: L{gofer.messaging.Consumer}
     """
 
-    def __init__(self, consumer):
+    def __init__(self, consumer, threads=1):
         """
         Construct the L{Dispatcher} using the specified
         AMQP I{consumer} and I{start} the AMQP consumer.
         @param consumer: A qpid consumer.
         @type consumer: L{gofer.messaging.Consumer}
+        @param threads: The number of thread in the dispatcher.
+        @type threads: int
         """
-        dispatcher = Dispatcher()
+        assert(threads > 0)
+        if threads > 1:
+            dispatcher = ConcurrentDispatcher()
+        else:
+            dispatcher = Dispatcher()
         remote = Remote()
         dispatcher.register(*remote.collated())
         consumer.start(dispatcher)

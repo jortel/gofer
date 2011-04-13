@@ -94,21 +94,27 @@ def notdecorated():
         
 
 class Agent(Base):
-    def __init__(self, id):
+    def __init__(self, id, threads):
         queue = Queue(id)
         #url = 'ssl://localhost:5674'
         url = 'tcp://localhost:5672'
         broker = Broker(url)
         broker.cacert = '/etc/pki/qpid/ca/ca.crt'
         broker.clientcert = '/etc/pki/qpid/client/client.pem'
-        Base.__init__(self, RequestConsumer(queue, url=url))
+        Base.__init__(
+            self,
+            RequestConsumer(queue, url=url),
+            threads)
         while True:
             sleep(10)
             print 'Agent: sleeping...'
 
 if __name__ == '__main__':
     uuid = 'xyz'
+    threads = 1
     if len(sys.argv) > 1:
-        uuid = sys.argv[1]
-    print 'starting agent (%s)' % uuid
-    agent = Agent(uuid)
+        threads = int(sys.argv[1])
+    if len(sys.argv) > 2:
+        uuid = sys.argv[2]
+    print 'starting agent (%s), threads=%d' % (uuid, threads)
+    agent = Agent(uuid, threads)
