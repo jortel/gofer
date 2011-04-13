@@ -22,7 +22,7 @@ from threading import Thread
 from gofer.messaging import *
 from gofer.messaging.endpoint import Endpoint
 from gofer.messaging.producer import Producer
-from gofer.messaging.dispatcher import Request, Return
+from gofer.messaging.dispatcher import Return
 from gofer.messaging.window import *
 from gofer.messaging.store import PendingQueue, PendingReceiver
 from qpid.messaging import Empty
@@ -308,18 +308,24 @@ class RequestConsumer(Consumer):
         """
         try:
             self.checkwindow(envelope)
-            request = Request()
-            request.update(envelope.request)
-            request.auth = Options(
-                uuid=envelope.destination.uuid,
-                secret=envelope.secret,)
             self.sendstarted(envelope)
-            result = self.dispatcher.dispatch(request)
+            if self.concurrent():
+                self.dispatcher.dispatch(envelope, self.sendreply)
+                return
+            result = self.dispatcher.dispatch(envelope)
+            self.sendreply(envelope, result)
         except WindowMissed:
-            result = Return.exception()
+            self.sendreply(envelope, Return.exception())
         except WindowPending:
-            return
-        self.sendreply(envelope, result)
+            pass # ignored
+        
+    def concurrent(self):
+        """
+        Get whether the consumer is concurrent.
+        @return: based on dispatcher
+        @rtype: bool
+        """
+        return self.dispatcher.concurrent()
 
     def sendreply(self, envelope, result):
         """

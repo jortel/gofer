@@ -19,8 +19,9 @@ Provides RMI dispatcher classes.
 import sys
 import inspect
 import traceback as tb
+from threading import Thread
 from gofer.messaging import *
-from gofer.messaging.decorators import Remote
+from gofer.messaging.threadpool import ThreadPool
 from logging import getLogger
 
 
@@ -376,19 +377,6 @@ class Dispatcher:
         """
         self.classes = {}
 
-    def dispatch(self, request):
-        """
-        Dispatch the requested RMI.
-        @param request: A request.
-        @type request: L{Request}
-        @return: The result.
-        @rtype: any
-        """
-        request = Request(request)
-        rmi = RMI(request, self.classes)
-        log.info('dispatching:%s', rmi)
-        return rmi()
-
     def register(self, *classes):
         """
         Register classes exposed as RMI targets.
@@ -400,3 +388,127 @@ class Dispatcher:
         for cls in classes:
             self.classes[cls.__name__] = cls
         return self
+    
+    def concurrent(self):
+        """
+        Get whether the dispatcher is concurrent.
+        @return: False
+        @rtype: bool
+        """
+        return False
+
+    def dispatch(self, envelope):
+        """
+        Dispatch the requested RMI.
+        @param envelope: A request envelope.
+        @type envelope: L{Envelope}
+        @return: The result.
+        @rtype: any
+        """
+        request = Request()
+        request.update(envelope.request)
+        request.auth = Options(
+            uuid=envelope.destination.uuid,
+            secret=envelope.secret,)
+        rmi = RMI(request, self.classes)
+        log.info('dispatching:%s', rmi)
+        return rmi()
+
+
+class ReplyThread(Thread):
+    """
+    Dispatcher reply (worker) thread.
+    @ivar __run: The main run/read flag.
+    @type __run: bool
+    @ivar dispatcher: A dispatcher that is notified when
+        replies are received.
+    @type dispatcher: L{Dispatcher}
+    """
+
+    def __init__(self, dispatcher):
+        """
+        @param dispatcher: A dispatcher that is notified when
+            replies are read.
+        @type dispatcher: L{Dispatcher}
+        """
+        Thread.__init__(self, name='ReplyThread')
+        self.__run = True
+        self.dispatcher = dispatcher
+        self.setDaemon(True)
+
+    def run(self):
+        """
+        Replies are read from dispatcher.pool and
+        dispatched to the dispatcher.replied().
+        """
+        reply = None
+        while self.__run:
+            try:
+                reply = self.pool.get()
+                if reply:
+                    self.dispatcher.replied(reply)
+                log.debug('ready')
+            except:
+                log.error('failed:\n%s', reply, exc_info=True)
+
+    def stop(self):
+        """
+        Stop reading and terminate the thread.
+        """
+        self.__run = False
+    
+    @property
+    def pool(self):
+        return self.dispatcher.pool
+
+
+class ConcurrentDispatcher(Dispatcher):
+    """
+    The remote invocation dispatcher.
+    @ivar cb: The reply callback.
+    @type cb: callable
+    @ivar pool: Thread pool.
+    @type pool: L{ThreadPool}
+    @ivar replythread: The reply reader thread.
+    @type replythread: L{ReplyThread}
+    """
+    
+    def __init__(self, min=1, max=10):
+        Dispatcher.__init__(self)
+        self.cb = None
+        self.pool = ThreadPool(__name__, min, max)
+        self.replythread = ReplyThread(self)
+        self.replythread.start()
+        
+    def concurrent(self):
+        """
+        Get whether the dispatcher is concurrent.
+        @return: True
+        @rtype: bool
+        """
+        return True
+
+    def dispatch(self, envelope, cb):
+        """
+        Dispatch the requested RMI.
+        @param envelope: A request envelope.
+        @type envelope: L{Envelope}
+        @param cb: The reply callback.
+        @type cb: callable
+        """
+        self.cb = cb
+        self.pool.run(Dispatcher.dispatch, self, envelope)
+        
+    def replied(self, reply):
+        """
+        Reply from execution in thread pool.
+        @param reply: The reply (call, retval)
+        @type reply: tuple
+        """
+        if callable(self.cb):
+            call, result = reply
+            envelope = call[1][1]
+            self.cb(envelope, result)
+        else:
+            raise Exception,\
+                'callback: %s, not valid' % self.cb

@@ -54,7 +54,7 @@ def demo(agent):
     print admin.hello()
     
     cat = agent.Cat(secret='garfield')
-    print cat.meow('PUR')
+    print cat.meow('PUR, auth worked!')
     try:
         cat = agent.Cat()
         cat.meow('hello')
