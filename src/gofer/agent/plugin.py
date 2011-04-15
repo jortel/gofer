@@ -211,9 +211,12 @@ class Plugin(object):
         @return: number of theads.
         @rtype: int
         """
+        main = Config()
         cfg = self.cfg()
-        threads = nvl(cfg.messaging.threads, 1)
-        return int(threads)
+        nthreads = \
+            nvl(cfg.messaging.threads,
+            nvl(main.messaging.threads, 1))
+        return int(nthreads)
         
     
     def attach(self, uuid=None):
