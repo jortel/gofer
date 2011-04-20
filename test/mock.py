@@ -37,12 +37,13 @@ mock.register(Dog=BadDog)
 
 if __name__ == '__main__':
     uuid = 'xyz'
-    for i in range(0,10):
-        print '======= %d ========' % i
-        main(uuid)
+    main(uuid)
     h = mock.history()
-    for call in h.calls(uuid):
-        print call
+    print 'Call History:'
+    for stub, calls in h.calls(uuid).items():
+        print '%s:' % stub
+        for call in calls:
+            print '  %s' % str(call)
     print 'finished.'
 
 

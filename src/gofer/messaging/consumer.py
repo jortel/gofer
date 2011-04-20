@@ -130,7 +130,7 @@ class Consumer(Endpoint):
         """
         session = self.session()
         address = self.address()
-        log.info('{%s} opening %s', self.id(), address)
+        log.debug('{%s} opening %s', self.id(), address)
         receiver = session.receiver(address)
         self.receiver = receiver
 

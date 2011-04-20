@@ -45,7 +45,7 @@ def install():
     """
     from gofer import proxy
     proxy.Agent = MockAgent
-
+    
 
 class History:
     """
@@ -62,20 +62,27 @@ class History:
         """
         self.stubs = {}
     
-    def add(self, uuid, stub):
+    def add(self, uuid, name, stub):
         """
         Add a stub for tracking.
         @param uuid: A uuid.
         @type uuid: str
+        @param name: The stub (class) name.
+        @type name: str
         @param stub: A stub to be tracked.
         @type stub: L{MockStub}
         """
         self.__lock()
         try:
-            calls = self.calls(uuid)
+            calls = self.__calls(uuid)
             try:
-                calls.append(stub().__history__)
-            except:
+                lists = calls.get(name)
+                if lists is None:
+                    lists = []
+                    calls[name] = lists
+                lists.append(stub.__history__)
+            except AttributeError:
+                # not a candidate
                 pass
         finally:
             self.__unlock()
@@ -104,25 +111,59 @@ class History:
         Get call statistics.
         @param uuid: A uuid filter.
         @type uuid: str
-        @return: A list of call tuples
+        @return: A call statistic dict-like object containing
             (method, *arg, **kwargs)
-        @rtype: tuple
+        @rtype: L{Calls}
         """
         self.__lock()
         try:
-            calls = self.stubs.get(uuid)
-            if calls is None:
-                calls = []
-                self.stubs[uuid] = calls
+            calls = Calls()
+            calls.update(self.__calls(uuid))
             return calls
         finally:
             self.__unlock()
+            
+    def __calls(self, uuid):
+        calls = self.stubs.get(uuid)
+        if calls is None:
+            calls = {}
+            self.stubs[uuid] = calls
+        return calls
     
     def __lock(self):
         self.__mutex.acquire()
     
     def __unlock(self):
         self.__mutex.release()
+
+
+class Calls(dict):
+    """
+    Calls statistic object. 
+    """
+    
+    def items(self):
+        items = []
+        for k,v in dict.items(self):
+            v = self.__join(v)
+            items.append((k,v))
+        return items
+    
+    def __getitem__(self, x):
+        if hasattr(x, __name__):
+            x = x.__name__
+        try:
+            v = dict.__getitem__(self, x)
+            v = self.__join(v)
+        except KeyError:
+            v = []
+        return v
+    
+    def __join(self, lists):
+        joined = []
+        for lst in lists:
+            joined += lst
+        return joined
 
 
 class MockContainer:
@@ -157,7 +198,7 @@ class MockContainer:
         @rtype: L{MockStub}
         """
         stub = Factory.mock(name)
-        self.__history.add(self.__id, stub)
+        self.__history.add(self.__id, name, stub)
         return stub 
 
     def __str__(self):
@@ -181,7 +222,7 @@ class MockStub:
         @param __name: The stub (class) name.
         @type __name: str
         """
-        self.__name = name
+        self.__name__ = name
         self.__history__ = []
     
     def __getattr__(self, name):
@@ -198,7 +239,7 @@ class MockStub:
     
     def __str__(self):
         s = []
-        s.append(self.__name)
+        s.append(self.__name__)
         s.append(': ')
         s.append(str(self.__history__))
         return ''.join(s)
