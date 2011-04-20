@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.32
+Version: 0.33
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -123,6 +123,10 @@ fi
 %{ruby_sitelib}/%{name}/messaging/
 
 %changelog
+* Wed Apr 20 2011 Jeff Ortel <jortel@redhat.com> 0.33-1
+- Mock history enhancements. (jortel@redhat.com)
+- support 'threads' in agent.conf. (jortel@redhat.com)
+
 * Wed Apr 13 2011 Jeff Ortel <jortel@redhat.com> 0.32-1
 - Add messaging.theads (cfg) property. (jortel@redhat.com)
 - Add support for concurrent RMI dispatching. (jortel@redhat.com)
