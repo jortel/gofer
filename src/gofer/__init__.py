@@ -35,27 +35,33 @@ class Singleton(type):
     Singleton metaclass
     usage: __metaclass__ = Singleton
     """
+    
+    __inst = {}
+    __mutex = RLock()
 
-    def __init__(self, *args):
-        type.__init__(self, *args)
-        self.__inst = {}
-        self.__mutex = RLock()
-        
-    def __call__(self, *args, **kwargs):
-        self.__lock()
+    @classmethod
+    def reset(cls):
+        cls.__inst = {}
+
+    def __call__(cls, *args, **kwargs):
+        cls.__lock()
         try:
-            key = (tuple(repr(args)),
-                   tuple(sorted(repr(kwargs.items()))))
-            inst = self.__inst.get(key)
+            key = \
+               (cls.__name__,
+                tuple(repr(args)),
+                tuple(sorted(repr(kwargs.items()))))
+            inst = cls.__inst.get(key)
             if inst is None: 
-                inst = type.__call__(self, *args, **kwargs)
-                self.__inst[key] = inst
+                inst = type.__call__(cls, *args, **kwargs)
+                cls.__inst[key] = inst
             return inst
         finally:
-            self.__unlock()
-    
-    def __lock(self):
-        self.__mutex.acquire()
-        
-    def __unlock(self):
-        self.__mutex.release()
+            cls.__unlock()
+
+    @classmethod
+    def __lock(cls):
+        cls.__mutex.acquire()
+
+    @classmethod
+    def __unlock(cls):
+        cls.__mutex.release()

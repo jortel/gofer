@@ -39,7 +39,13 @@ def install():
     """
     from gofer import proxy
     proxy.Agent = MockAgent
-    
+
+def reset():
+    """
+    Reset (mock) container singletons.
+    """
+    MockContainer.reset()
+
 
 class MockContainer:
     """

@@ -91,17 +91,28 @@ mock.register(__main__=Main(),
 def test():
     a = proxy.agent('123')
     dogA = a.Dog()
-    dogA.bark('hello, you mangy dog')
-    print 'calls for dogA'
+    dogA.bark('hello')
+    dogA.wag(2)
+    print 'calls for dogA.bark()'
     for call in dogA.bark.history():
         print call
-    b = proxy.agent('99')
+    print 'calls for dogA.wag()'
+    for call in dogA.wag.history():
+        print call
+    b = proxy.agent('123b')
     dogB = b.Dog()
-    print 'calls for dogB'
     dogB.bark('foo')
+    dogB.bark('bar')
+    print 'calls for dogB.bark()'
     for call in dogB.bark.history():
         print call
-    
+    print 'reset B'
+    mock.reset()
+    b = proxy.agent('123b')
+    dogB = b.Dog()
+    print 'calls for dogB'
+    for call in dogB.bark.history():
+        print call
 
 if __name__ == '__main__':
     test()
