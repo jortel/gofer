@@ -21,7 +21,6 @@ from gofer.messaging import Queue
 from gofer.messaging.base import Container
 from gofer.messaging.producer import Producer
 from gofer.messaging.window import *
-from gofer.messaging import mock
 from gofer.metrics import Timer
 from gofer.proxy import Agent
 from time import sleep
@@ -35,17 +34,8 @@ basicConfig(filename='/tmp/gofer/server.log', level=INFO)
 
 log = getLogger(__name__)
 
-class Donkey:
-    
-    def hello(self):
-        return 'Are we there yet?'
 
 def demo(agent):
-    
-    mock.register(Donkey=Donkey)
-    
-    donkey = agent.Donkey()
-    print donkey.hello()
 
     agent.__main__.echo('have a nice day')
     
@@ -108,9 +98,7 @@ def threads(uuid, n=10):
         print 'thread: %s, started' % t.getName()
     return t
 
-def main(uuid):
-    tag = 'XYZ'
-    
+def perftest(uuid):
     N = 1000
     agent = Agent(uuid)
     dog = agent.Dog()
@@ -122,7 +110,10 @@ def main(uuid):
     t.stop()
     print 'total=%s, percall=%f (ms)' % (t, (t.duration()/N)*1000)
     sleep(10)
-    
+
+def main(uuid):
+    tag = 'XYZ'
+
     agent = Agent(uuid)
     dog = agent.Dog(timeout=(3,10))
     print dog.sleep(1)
@@ -199,6 +190,7 @@ if __name__ == '__main__':
     for i in range(0,1000):
         print '======= %d ========' % i
         main(uuid)
+    perftest(uuid)
     print 'finished.'
 
 

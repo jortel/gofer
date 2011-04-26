@@ -32,11 +32,7 @@ def agent(uuid, **options):
     @return: An agent (proxy).
     @rtype: L{Container}
     """
-    p = None
-    url = options.pop('url', None)
-    if url:
-        p = Producer(url=url)
-    return Agent(uuid, p, **options)
+    return Agent(uuid, **options)
 
         
 def delete(agent):
@@ -59,13 +55,14 @@ class Agent(Container):
     A proxy for the remote Agent.
     """
 
-    def __init__(self, uuid, producer=None, **options):
+    def __init__(self, uuid, **options):
         """
         @param uuid: The agent ID.
         @type uuid: str
-        @param producer: The AMQP producer.
-        @type producer: L{Producer}
         """
-        if not producer:
-            producer = Producer()
-        Container.__init__(self, uuid, producer, **options)
+        url = options.pop('url', None)
+        if url:
+            p = Producer(url=url)
+        else:
+            p = Producer()
+        Container.__init__(self, uuid, p, **options)

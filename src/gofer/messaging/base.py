@@ -19,7 +19,6 @@ Agent base classes.
 
 from gofer.messaging import *
 from gofer.messaging.stub import Stub
-from gofer.messaging.mock import Factory
 from gofer.messaging.decorators import Remote
 from gofer.messaging.dispatcher import Dispatcher, ConcurrentDispatcher
 from gofer.messaging.window import Window
@@ -110,9 +109,6 @@ class Container:
         @return: A stub object.
         @rtype: L{Stub}
         """
-        stub = Factory.stub(name)
-        if stub:
-            return stub
         return Stub.stub(
             name,
             self.__producer,

@@ -81,6 +81,11 @@ class Dog:
 
     def notpermitted(self):
         print 'not permitted.'
+        
+        
+@remote
+def echo(s):
+    return s
 
 
 class Agent(Base):

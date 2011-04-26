@@ -85,6 +85,8 @@ class MockContainer:
         stub = self.__stubs.get(name)
         if stub is None:
             stub = Factory.stub(name)
+            if not stub:
+                raise AttributeError(name)
             self.__stubs[name] = stub
         return stub
 
@@ -247,7 +249,10 @@ class Factory:
         @rtype: L{Stub}
         """
         stub = cls.mocks.get(name)
-        return Stub(stub)
+        if stub:
+            return Stub(stub)
+        else:
+            return None
 
 
 class MockAgent(MockContainer):
