@@ -52,7 +52,8 @@ class MetaContainer(Singleton):
     Mock container singleton by uuid only.
     """
 
-    def _key(cls, t, d):
+    @classmethod
+    def key(cls, t, d):
         if t:
             return t[0]
         else:

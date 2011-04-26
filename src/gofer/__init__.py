@@ -42,22 +42,9 @@ class Singleton(type):
     @classmethod
     def reset(cls):
         cls.__inst = {}
-
-    def __call__(cls, *args, **kwargs):
-        cls.__lock()
-        try:
-            key = (cls.__name__,
-                   cls._key(args, kwargs))
-            inst = cls.__inst.get(key)
-            if inst is None: 
-                inst = type.__call__(cls, *args, **kwargs)
-                cls.__inst[key] = inst
-            return inst
-        finally:
-            cls.__unlock()
             
     @classmethod
-    def _key(cls, t, d):
+    def key(cls, t, d):
         key = []
         for x in t:
             if isinstance(x, (str,int,float)):
@@ -67,6 +54,27 @@ class Singleton(type):
             if isinstance(v, (str,int,float)):
                 key.append((k,v))
         return repr(key)
+    
+    def __call__(cls, *args, **kwargs):
+        cls.__lock()
+        try:
+            key = (cls.__name__,
+                   cls.key(args, kwargs))
+            inst = cls.__inst.get(key)
+            if inst is None: 
+                inst = type.__call__(cls, *args, **kwargs)
+                cls.__inst[key] = inst
+            return inst
+        finally:
+            cls.__unlock()
+    
+    @classmethod   
+    def __len__(cls):
+        cls.__lock()
+        try:
+            return len(cls.__inst)
+        finally:
+            cls.__unlock()
 
     @classmethod
     def __lock(cls):
