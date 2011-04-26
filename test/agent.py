@@ -81,17 +81,7 @@ class Dog:
 
     def notpermitted(self):
         print 'not permitted.'
-        
 
-@remote
-def echo(something):
-    print something
-    return something
-
-
-def notdecorated():
-    pass
-        
 
 class Agent(Base):
     def __init__(self, id, threads):

@@ -16,34 +16,101 @@
 # in this software or its documentation.
 #
 
+from time import sleep
 from gofer.messaging import mock
+from gofer.messaging.dispatcher import NotPermitted
 
 mock.install()
 
 from server import main
+from gofer import proxy
 
-class BadDog:
-    
+
+class MyError(Exception):
+    def __init__(self, a, b):
+        Exception.__init__(self, a)
+        self.b = b
+
+class Admin:
+
+    def hello(self):
+        s = []
+        s.append('[mock]: Hello, I am gofer agent.')
+        s.append('Status: ready')
+        return '\n'.join(s)
+
+class RepoLib:
+
+    def update(self):
+        print '[mock]: Repo updated'
+        
+class Cat:
+
+    def meow(self, words):
+        print '[mock]: Ruf %s' % words
+        return '[mock]: Yes master.  I will meow because that is what cats do. "%s"' % words
+
+
+class Dog:
+
     def bark(self, words):
-        return 'I will not bark for you!'
-    
+        print '[mock]:  Ruf %s' % words
+        return '[mock]: Yes master.  I will bark because that is what dogs do. "%s"' % words
+
     def wag(self, n):
-        return 'I will not wag for you!'
-    
+        for i in range(0, n):
+            print '[mock]:  wag'
+        return '[mock]: Yes master.  I will wag my tail because that is what dogs do.'
+
+    def keyError(self, key):
+        raise KeyError, key
+
+    def myError(self):
+        raise MyError('[mock]: This is myerror.', 23)
+
     def sleep(self, n):
-        pass
+        sleep(n)
+        return '[mock]: Good morning, master!'
+
+    def notpermitted(self):
+        print '[mock]: not permitted.'
+        raise NotPermitted(('Dog','notpermitted'))
+
+class Main:
+
+    def echo(self, x):
+        return x
+
     
-mock.register(Dog=BadDog)
+mock.register(__main__=Main(),
+              Admin=Admin,
+              Dog=Dog,
+              Cat=Cat,
+              RepoLib=RepoLib(),)
+
+def test():
+    a = proxy.agent('123')
+    dogA = a.Dog()
+    dogA.bark('hello, you mangy dog')
+    print 'calls for dogA'
+    for call in dogA.bark.history():
+        print call
+    b = proxy.agent('99')
+    dogB = b.Dog()
+    print 'calls for dogB'
+    dogB.bark('foo')
+    for call in dogB.bark.history():
+        print call
+    
 
 if __name__ == '__main__':
+    test()
     uuid = 'xyz'
     main(uuid)
-    h = mock.history()
-    print 'Call History:'
-    for stub, calls in h.calls(uuid).items():
-        print '%s:' % stub
-        for call in calls:
-            print '  %s' % str(call)
+    agent = proxy.agent(uuid)
+    d = agent.Dog()
+    for x in d.bark.history():
+        print x
     print 'finished.'
 
 

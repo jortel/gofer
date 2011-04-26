@@ -13,18 +13,12 @@
 # in this software or its documentation.
 #
 
-
+import inspect
 from gofer import Singleton
 from gofer.messaging import Options
 from gofer.messaging.stub import Stub
 from threading import RLock
 
-
-def history():
-    """
-    Get (mock) call history object
-    """
-    return History()
 
 def register(**mocks):
     """
@@ -47,125 +41,6 @@ def install():
     proxy.Agent = MockAgent
     
 
-class History:
-    """
-    Mock call history 
-    """
-    
-    __metaclass__ = Singleton
-    __mutex = RLock()
-    
-    def __init__(self):
-        """
-        @ivar stubs: A dict of mock stubs by uuid.
-        @type stubs: dict
-        """
-        self.stubs = {}
-    
-    def add(self, uuid, name, stub):
-        """
-        Add a stub for tracking.
-        @param uuid: A uuid.
-        @type uuid: str
-        @param name: The stub (class) name.
-        @type name: str
-        @param stub: A stub to be tracked.
-        @type stub: L{MockStub}
-        """
-        self.__lock()
-        try:
-            calls = self.__calls(uuid)
-            try:
-                lists = calls.get(name)
-                if lists is None:
-                    lists = []
-                    calls[name] = lists
-                lists.append(stub.__history__)
-            except AttributeError:
-                # not a candidate
-                pass
-        finally:
-            self.__unlock()
-        
-    def purge(self, uuids=()):
-        """
-        Purge statistics.
-        @param uuids: A list of uuids to purge.
-            Empty list purges ALL.
-        @type uuids: list
-        """
-        self.__lock()
-        try:
-            if not uuids:
-                self.stubs = {}
-            for uuid in uuids:
-                try:
-                    del self.stubs[uuid]
-                except:
-                    pass
-        finally:
-            self.__unlock()
-
-    def calls(self, uuid):
-        """
-        Get call statistics.
-        @param uuid: A uuid filter.
-        @type uuid: str
-        @return: A call statistic dict-like object containing
-            (method, *arg, **kwargs)
-        @rtype: L{Calls}
-        """
-        self.__lock()
-        try:
-            calls = Calls()
-            calls.update(self.__calls(uuid))
-            return calls
-        finally:
-            self.__unlock()
-            
-    def __calls(self, uuid):
-        calls = self.stubs.get(uuid)
-        if calls is None:
-            calls = {}
-            self.stubs[uuid] = calls
-        return calls
-    
-    def __lock(self):
-        self.__mutex.acquire()
-    
-    def __unlock(self):
-        self.__mutex.release()
-
-
-class Calls(dict):
-    """
-    Calls statistic object. 
-    """
-    
-    def items(self):
-        items = []
-        for k,v in dict.items(self):
-            v = self.__join(v)
-            items.append((k,v))
-        return items
-    
-    def __getitem__(self, x):
-        if hasattr(x, __name__):
-            x = x.__name__
-        try:
-            v = dict.__getitem__(self, x)
-            v = self.__join(v)
-        except KeyError:
-            v = []
-        return v
-    
-    def __join(self, lists):
-        joined = []
-        for lst in lists:
-            joined += lst
-        return joined
-
-
 class MockContainer:
     """
     The (mock) stub container
@@ -173,7 +48,11 @@ class MockContainer:
     @type __id: str
     @ivar __options: Container options.
     @type __options: L{Options}
+    @ivar __stubs: A cache of stubs.
+    @type __stubs: dict
     """
+    
+    __metaclass__ = Singleton
     
     def __init__(self, uuid, producer=None, **options):
         """
@@ -187,7 +66,7 @@ class MockContainer:
         self.__id = uuid
         self.__options = Options()
         self.__options.update(options)
-        self.__history = History()
+        self.__stubs = {}
     
     def __getattr__(self, name):
         """
@@ -197,9 +76,11 @@ class MockContainer:
         @return: A stub object.
         @rtype: L{MockStub}
         """
-        stub = Factory.mock(name)
-        self.__history.add(self.__id, name, stub)
-        return stub 
+        stub = self.__stubs.get(name)
+        if stub is None:
+            stub = Factory.stub(name)
+            self.__stubs[name] = stub
+        return stub
 
     def __str__(self):
         return '{%s} opt:%s' % (self.__id, str(self.__options))
@@ -207,101 +88,133 @@ class MockContainer:
     def __repr__(self):
         return str(self)
     
-    
-class MockStub:
-    """
-    Mock stub object.
-    @ivar __name: The stub (class) name.
-    @type __name: str
-    @ivar __history__: The call history.
-    @type __history__: list
-    """
-    
-    def __init__(self, name):
-        """
-        @param __name: The stub (class) name.
-        @type __name: str
-        """
-        self.__name__ = name
-        self.__history__ = []
-    
-    def __getattr__(self, name):
-        if name.startswith('__') and name.endswith('__'):
-            builtin = self.__dict__.get(name)
-            if builtin is None:
-                raise AttributeError(name)
-            return builtin
-        def fn(*A,**K):
-            call = (name, A, K)
-            self.__history__.append(call)
-            return call
-        return fn
-    
-    def __str__(self):
-        s = []
-        s.append(self.__name__)
-        s.append(': ')
-        s.append(str(self.__history__))
-        return ''.join(s)
-    
-    def __repr__(self):
-        return str(self)
-    
-    def __nonzero__(self):
-        return True
 
-
-class MockClass:
+class Stub:
     """
-    Mock stub (wrapper).
-    Ensures that user defined (registered) stubs
-    have gofer stub characteristics.
+    Mock stub.
     """
+    
+    @classmethod
+    def __instrumented(cls, inst):
+        for m in inspect.getmembers(inst, inspect.ismethod):
+            setattr(inst, m[0], Method(m[1]))
+        return inst
     
     def __init__(self, stub):
-        """
-        @param stub: A stub to wrap.
-        @type stub: (class|object)
-        """
-        if callable(stub):
-            self.__stub = stub()
-        else:
-            self.__stub = stub
-        
+        if inspect.isclass(stub):
+            stub = stub()
+        self.__inst = self.__instrumented(stub)
+    
     def __call__(self, **options):
-        """
-        Simulated constructor.
-        @param options: keyword options.
-        @type options: dict
-        @return: self
-        @rtype: L{MockClass}
-        """
-        return self.__stub
-        
+        return self.__inst
+    
     def __getattr__(self, name):
-        """
-        Passthru to wrapped object.
-        @param name: The attribute name.
-        @type name: str
-        @return: wrapped object attribute.
-        """
-        return getattr(self.__stub, name)
-
+        return getattr(self.__inst, name)
+    
     def __str__(self):
-        return str(self.__stub.__class__)
+        return str(self.__inst)
     
     def __repr__(self):
-        return str(self)
+        return repr(self.__inst)
+
+
+class Method:
+    """
+    Method wrapper.
+    @ivar __method: The (wrapped) method.
+    @type __method: instancemethod
+    @ivar __history: The call history
+    @type __history: list
+    @ivar __mutex: The object mutex
+    @type __mutex: RLock 
+    """
+    
+    def __init__(self, method):
+        """
+        @param method: A (wrapped) method.
+        @type method: instancemethod
+        """
+        self.__method = [method]
+        self.__history = []
+        self.__mutex = RLock()
+        
+    def __call__(self, *args, **options):
+        self.__lock()
+        try:
+            call = (args, options)
+            self.__history.append(call)
+            method = self.pop()
+            return method(*args, **options)
+        finally:
+            self.__unlock()
+            
+    def push(self, method):
+        """
+        Push a function, exception to be evaluated on next call.
+        @param method: A function/exception
+        @type method: function/exception
+        """
+        self.__lock()
+        try:
+            self.__method.append(method)
+        finally:
+            self.__unlock()
+            
+    def pop(self):
+        """
+        Pop the next method to be executed.
+        It could be an exception in which case, it is raised.
+        @return: The next method.
+        @rtype: callable
+        """
+        self.__lock()
+        try:
+            method = self.__method[0]
+            if len(self.__method) > 1:
+                method = self.__method.pop()
+                if isinstance(method, Exception):
+                    raise method
+            return method
+        finally:
+            self.__unlock()
+            
+    def purge(self):
+        """
+        Purge the call history.
+        """
+        self.__lock()
+        try:
+            self.__history = []
+        finally:
+            self.__unlock()
+            
+    def history(self):
+        """
+        Get the call history.
+        @return: A list of tuple: (args, kwargs)
+        @rtype: list
+        """
+        self.__lock()
+        try:
+            return self.__history[:]
+        finally:
+            self.__unlock()
+
+    def __lock(self):
+        self.__mutex.acquire()
+        
+    def __unlock(self):
+        self.__mutex.release()
 
 
 class Factory:
     """
     Stub factory
-    @cvar __mocks: The stub overrides.
-    @type __mocks: dict
+    @cvar mocks: The registered stubs.
+    @type mocks: dict
     """
     
-    __mocks = {}
+    mocks = {}
     
     @classmethod
     def register(cls, **mocks):
@@ -309,14 +222,14 @@ class Factory:
         Register an I{mock} to be used instead of
         creating a real stub.
         """
-        cls.__mocks.update(mocks)
+        cls.mocks.update(mocks)
         
     @classmethod
     def purge(cls):
         """
         purge registered mocks.
         """
-        __mocks = {}
+        mocks = {}
     
     @classmethod
     def stub(cls, name):
@@ -327,26 +240,8 @@ class Factory:
         @return: A stub instance.
         @rtype: L{Stub}
         """
-        mock = cls.__mocks.get(name)
-        if mock:
-            return MockClass(mock)
-        else:
-            return None
-    
-    @classmethod
-    def mock(cls, name):
-        """
-        Get a (mock) stub by name.  If none registered, a
-        MockStub is created and returned.
-        @param name: The stub class (or module) name.
-        @type name: str
-        @return: A stub instance.
-        @rtype: L{MockClass}
-        """
-        mock = cls.__mocks.get(name)
-        if not mock:
-            mock = MockStub(name)
-        return MockClass(mock)
+        stub = cls.mocks.get(name)
+        return Stub(stub)
 
 
 class MockAgent(MockContainer):
