@@ -46,10 +46,8 @@ class Singleton(type):
     def __call__(cls, *args, **kwargs):
         cls.__lock()
         try:
-            key = \
-               (cls.__name__,
-                tuple(repr(args)),
-                tuple(sorted(repr(kwargs.items()))))
+            key = (cls.__name__,
+                   cls._key(args, kwargs))
             inst = cls.__inst.get(key)
             if inst is None: 
                 inst = type.__call__(cls, *args, **kwargs)
@@ -57,6 +55,18 @@ class Singleton(type):
             return inst
         finally:
             cls.__unlock()
+            
+    @classmethod
+    def _key(cls, t, d):
+        key = []
+        for x in t:
+            if isinstance(x, (str,int,float)):
+                key.append(x)
+        for k in sorted(d.keys()):
+            v = d[k]
+            if isinstance(v, (str,int,float)):
+                key.append((k,v))
+        return repr(key)
 
     @classmethod
     def __lock(cls):

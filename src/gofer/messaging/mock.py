@@ -45,6 +45,18 @@ def reset():
     Reset (mock) container singletons.
     """
     MockContainer.reset()
+    
+    
+class MetaContainer(Singleton):
+    """
+    Mock container singleton by uuid only.
+    """
+
+    def _key(cls, t, d):
+        if t:
+            return t[0]
+        else:
+            return None
 
 
 class MockContainer:
@@ -58,7 +70,7 @@ class MockContainer:
     @type __stubs: dict
     """
     
-    __metaclass__ = Singleton
+    __metaclass__ = MetaContainer
     
     def __init__(self, uuid, producer=None, **options):
         """
@@ -91,7 +103,10 @@ class MockContainer:
         return stub
 
     def __str__(self):
-        return '{%s} opt:%s' % (self.__id, str(self.__options))
+        return '{%s/%s} opt:%s' % \
+            (id(self), 
+             self.__id, 
+             repr(self.__options))
     
     def __repr__(self):
         return str(self)
