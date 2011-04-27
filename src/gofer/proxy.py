@@ -18,11 +18,14 @@
 
 from gofer.messaging.base import Container
 from gofer.messaging.producer import Producer
-from gofer.messaging.mock import Factory
 from logging import getLogger
 
 log = getLogger(__name__)
 
+
+def Agent(uuid, **options):
+    """ backwards compat """
+    return agent(uuid, **options)
 
 def agent(uuid, **options):
     """
@@ -32,8 +35,12 @@ def agent(uuid, **options):
     @return: An agent (proxy).
     @rtype: L{Container}
     """
-    return Agent(uuid, **options)
-
+    url = options.pop('url', None)
+    if url:
+        p = Producer(url=url)
+    else:
+        p = Producer()
+    return Container(uuid, p, **options)
         
 def delete(agent):
     """
@@ -48,21 +55,3 @@ def delete(agent):
         queue.delete(session)
     else:
         pass
-
-
-class Agent(Container):
-    """
-    A proxy for the remote Agent.
-    """
-
-    def __init__(self, uuid, **options):
-        """
-        @param uuid: The agent ID.
-        @type uuid: str
-        """
-        url = options.pop('url', None)
-        if url:
-            p = Producer(url=url)
-        else:
-            p = Producer()
-        Container.__init__(self, uuid, p, **options)

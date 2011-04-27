@@ -14,11 +14,22 @@
 #
 
 import inspect
+from gofer import proxy
 from gofer import Singleton
 from gofer.messaging import Options
 from gofer.messaging.stub import Stub
 from threading import RLock
 
+
+def agent(uuid, **options):
+    """
+    Get a (mock) proxy for the remote Agent.
+    @param uuid: An agent ID.
+    @type uuid: str
+    @return: A (mock) agent proxy.
+    @rtype: L{MockContainer}
+    """
+    return MockContainer(uuid, None, **options)
 
 def register(**mocks):
     """
@@ -37,8 +48,8 @@ def install():
     Install the mock agent.
     @param mocks: <name>:<mock>
     """
-    from gofer import proxy
-    proxy.Agent = MockAgent
+    proxy.Agent = agent
+    proxy.agent = agent
 
 def reset():
     """
@@ -269,10 +280,3 @@ class Factory:
             return Stub(stub)
         else:
             return None
-
-
-class MockAgent(MockContainer):
-    """
-    A (mock) proxy for the remote Agent.
-    """
-    pass
