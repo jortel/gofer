@@ -155,8 +155,11 @@ class Consumer(Endpoint):
         """
         Stop the worker thread and clean up resources.
         """
-        self.stop()
-        self.receiver.close()
+        try:
+            self.stop()
+            self.receiver.close()
+        except AttributeError:
+            pass
         Endpoint.close(self)
 
     def join(self):
