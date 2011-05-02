@@ -56,6 +56,14 @@ def reset():
     Reset (mock) container singletons.
     """
     MockContainer.reset()
+
+def all():
+    """
+    Get all mock container instances.
+    @return: A list of mock container instances.
+    @rtype: L{MockContainer}
+    """
+    return MockContainer.all()
     
     
 class MetaContainer(Singleton):

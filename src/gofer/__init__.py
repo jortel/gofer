@@ -55,6 +55,14 @@ class Singleton(type):
                 key.append((k,v))
         return repr(key)
     
+    @classmethod   
+    def all(cls):
+        cls.__lock()
+        try:
+            return cls.__inst.values()
+        finally:
+            cls.__unlock()
+    
     def __call__(cls, *args, **kwargs):
         cls.__lock()
         try:
