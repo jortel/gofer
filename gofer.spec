@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.33
+Version: 0.34
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -123,6 +123,18 @@ fi
 %{ruby_sitelib}/%{name}/messaging/
 
 %changelog
+* Mon May 02 2011 Jeff Ortel <jortel@redhat.com> 0.34-1
+- More robust (receiver) management. (jortel@redhat.com)
+- Support getting a list of all mock agent (proxies). (jortel@redhat.com)
+- proxy.Agent deprecated. (jortel@redhat.com)
+- close() called by __del__() can have AttributeError when consumer never
+  started. (jortel@redhat.com)
+- Provide means to detect number of proxies. (jortel@redhat.com)
+- Singleton enhancements. (jortel@redhat.com)
+- Move url translated into producer to proxy.Agent. (jortel@redhat.com)
+- add mock.reset(). (jortel@redhat.com)
+- Revised and simplified mocks. (jortel@redhat.com)
+
 * Wed Apr 20 2011 Jeff Ortel <jortel@redhat.com> 0.33-1
 - Mock history enhancements. (jortel@redhat.com)
 - support 'threads' in agent.conf. (jortel@redhat.com)
