@@ -106,6 +106,7 @@ class Consumer(Endpoint):
         @type destination: L{Destination}
         """
         self.destination = destination
+        self.receiver = None
         Endpoint.__init__(self, **other)
 
     def id(self):
@@ -155,11 +156,10 @@ class Consumer(Endpoint):
         """
         Stop the worker thread and clean up resources.
         """
-        try:
-            self.stop()
+        self.stop()
+        if self.receiver is not None:
             self.receiver.close()
-        except AttributeError:
-            pass
+            self.receiver = None
         Endpoint.close(self)
 
     def join(self):
