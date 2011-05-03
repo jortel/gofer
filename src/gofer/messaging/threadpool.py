@@ -51,7 +51,6 @@ class Worker(Thread):
             if not call:
                 return
             try:
-                self.queue.task_done()
                 fn, args, kwargs = call
                 retval = fn(*args,**kwargs)
                 self.pool.queue.put((call, retval))
