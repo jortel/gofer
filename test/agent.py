@@ -23,7 +23,7 @@ from gofer.messaging.base import Agent as Base
 from gofer.messaging.decorators import *
 from gofer.messaging.consumer import RequestConsumer
 from gofer.messaging.broker import Broker
-from logging import INFO, basicConfig
+from logging import INFO, DEBUG, basicConfig
 
 basicConfig(filename='/tmp/gofer/agent.log', level=INFO)
 
@@ -91,7 +91,8 @@ def echo(s):
 class Agent(Base):
     def __init__(self, id, threads):
         queue = Queue(id)
-        #url = 'ssl://localhost:5674'
+        url = 'ssl://localhost:5674'
+        url = 'tcp://50.17.201.180:5672'
         url = 'tcp://localhost:5672'
         broker = Broker(url)
         broker.cacert = '/etc/pki/qpid/ca/ca.crt'

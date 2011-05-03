@@ -101,7 +101,7 @@ class Synchronous(RequestMethod):
         self.queue = Queue(getuuid(), durable=False)
         RequestMethod.__init__(self, producer)
         reader = Reader(self.queue, url=self.producer.url)
-        reader.start()
+        reader.open()
         self.reader = reader
 
     def send(self, destination, request, **any):

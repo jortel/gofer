@@ -17,11 +17,12 @@
 AMQP endpoint base classes.
 """
 
+from time import sleep
+from threading import RLock
 from gofer.messaging import *
 from gofer.messaging.broker import Broker
 from gofer.messaging.transport import SSLTransport
 from qpid.messaging import Connection
-from time import sleep
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -50,7 +51,7 @@ class Endpoint:
         self.uuid = uuid
         self.url = url
         self.__session = None
-        self.open()
+        self.__mutex = RLock()
 
     def id(self):
         """
@@ -77,10 +78,14 @@ class Endpoint:
         @return: An open session.
         @rtype: qpid.messaging.Session
         """
-        if self.__session is None:
-            con = self.connection()
-            self.__session = con.session()
-        return self.__session
+        self._lock()
+        try:
+            if self.__session is None:
+                con = self.connection()
+                self.__session = con.session()
+            return self.__session
+        finally:
+            self._unlock()
 
     def ack(self):
         """
@@ -101,14 +106,20 @@ class Endpoint:
         """
         Close (shutdown) the endpoint.
         """
-        if not self.__session:
-            return
+        self._lock()
         try:
-            session = self.__session
+            if self.__session is None:
+                return
+            self.__session.close()
             self.__session = None
-            session.close()
-        except:
-            log.error(self.uuid, exc_info=1)
+        finally:
+            self._unlock()
+            
+    def _lock(self):
+        self.__mutex.acquire()
+        
+    def _unlock(self):
+        self.__mutex.release()
 
     def __parsedurl(self):
         urlpart = self.url.split('://', 1)
@@ -118,7 +129,10 @@ class Endpoint:
             return (urlpart[0], urlpart[1])
 
     def __del__(self):
-        self.close()
+        try:
+            self.close()
+        except:
+            log.error(self.uuid, exc_info=1)
 
     def __str__(self):
         return 'Endpoint id:%s broker @ %s' % (self.id(), self.url)

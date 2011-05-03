@@ -127,7 +127,7 @@ def main(uuid):
     print '(demo) synchronous'
     agent = Agent(uuid)
     timer = Timer()
-    for i in range(0,100):
+    for i in range(0,10):
         timer.start()
         demo(agent)
         timer.stop()

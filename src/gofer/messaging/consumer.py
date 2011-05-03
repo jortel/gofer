@@ -33,81 +33,110 @@ log = getLogger(__name__)
 
 class ReceiverThread(Thread):
     """
-    Consumer (worker) thread.
-    @ivar __run: The main run/read flag.
+    Message consumer thread.
+    @cvar WAIT: How long (seconds) to wait for messages.
+    @type WAIT: int
+    @ivar __run: The main run latch.
     @type __run: bool
-    @ivar consumer: A consumer that is notified when
-        messages are read.
-    @type consumer: L{Consumer}
+    @ivar __consumer: The (target) consumer.
+    @type __consumer: L{Consumer}
     """
-    
+
     WAIT = 3
 
     def __init__(self, consumer):
         """
-        @param consumer: A consumer that is notified when
-            messages are read.
+        @param consumer: The (target) consumer that is notified
+            when messages are fetched.
         @type consumer: L{Consumer}
         """
         self.__run = True
-        self.consumer = consumer
+        self.__consumer = consumer
         Thread.__init__(self, name=consumer.id())
         self.setDaemon(True)
 
     def run(self):
         """
-        Messages are read from consumer.receiver and
-        dispatched to the consumer.received().
+        Thread main().
+        Consumer messages and forward to the (target) consumer.
         """
         msg = None
+        receiver = self.__open()
         while self.__run:
             try:
-                msg = self.__fetch()
+                msg = self.__fetch(receiver)
                 if msg:
-                    self.consumer.received(msg)
+                    self.__consumer.received(msg)
                 log.debug('ready')
             except:
                 log.error('failed:\n%s', msg, exc_info=True)
-
+        receiver.close()
+                
     def stop(self):
         """
-        Stop reading the receiver and terminate
-        the thread.
+        Stop the thread.
         """
         self.__run = False
-        
-    def __fetch(self):
+
+    def __open(self):
         """
-        Fetch the next message.
-        @return: The next message or None.
-        @rtype: Message
+        Open the AMQP receiver.
+        @return: The opened receiver.
+        @rtype: Receiver
+        """
+        addr = self.__consumer.address()
+        ssn = self.__consumer.session()
+        log.debug('open %s', addr)
+        return ssn.receiver(addr)
+        
+    def __fetch(self, receiver):
+        """
+        Fetch the next available message.
+        @param receiver: An AMQP receiver.
+        @type receiver: Receiver
         """
         try:
-            return self.receiver.fetch(timeout=self.WAIT)
+            return receiver.fetch(timeout=self.WAIT)
         except Empty:
+            # normal
             pass
         except:
-            log.error(self.getName(), exc_info=1)
             sleep(self.WAIT)
-    
-    @property
-    def receiver(self):
-        return self.consumer.receiver
-
+            raise
+        
 
 class Consumer(Endpoint):
     """
     An AMQP (abstract) consumer.
+    The received() method needs to be overridden.
+    @ivar __started: Indicates that start() has been called.
+    @type __started: bool
+    @ivar __destination: The AMQP destination to consume.
+    @type __destination: L{Destination}
+    @ivar __thread: The receiver thread.
+    @type __thread: L{ReceiverThread}
     """
+    
+    @classmethod
+    def subject(cls, message):
+        """
+        Extract the message subject.
+        @param message: The received message.
+        @type message: qpid.messaging.Message
+        @return: The message subject
+        @rtype: str
+        """
+        return message.properties.get('qpid.subject')
 
-    def __init__(self, destination, **other):
+    def __init__(self, destination, **options):
         """
         @param destination: The destination to consumer.
         @type destination: L{Destination}
         """
-        self.destination = destination
-        self.receiver = None
-        Endpoint.__init__(self, **other)
+        Endpoint.__init__(self, **options)
+        self.__started = False
+        self.__destination = destination
+        self.__thread = ReceiverThread(self)
 
     def id(self):
         """
@@ -115,7 +144,11 @@ class Consumer(Endpoint):
         @return: The destination (simple) address.
         @rtype: str
         """
-        return repr(self.destination)
+        self._lock()
+        try:
+            return repr(self.__destination)
+        finally:
+            self._unlock()
 
     def address(self):
         """
@@ -123,50 +156,44 @@ class Consumer(Endpoint):
         @return: The AMQP address.
         @rtype: str
         """
-        return str(self.destination)
-
-    def open(self):
-        """
-        Open and configure the consumer.
-        """
-        session = self.session()
-        address = self.address()
-        log.debug('{%s} opening %s', self.id(), address)
-        receiver = session.receiver(address)
-        self.receiver = receiver
+        self._lock()
+        try:
+            return str(self.__destination)
+        finally:
+            self._unlock()
 
     def start(self):
         """
         Start processing messages on the queue.
         """
-        self.thread = ReceiverThread(self)
-        self.thread.start()
+        self._lock()
+        try:
+            if self.__started:
+                return
+            self.__thread.start()
+            self.__started = True
+        finally:
+            self._unlock()
 
     def stop(self):
         """
         Stop processing requests.
         """
+        self._lock()
         try:
-            self.thread.stop()
-            self.thread.join(90)
-        except:
-            pass
-
-    def close(self):
-        """
-        Stop the worker thread and clean up resources.
-        """
-        self.stop()
-        if self.receiver is not None:
-            self.receiver.close()
-            self.receiver = None
-        Endpoint.close(self)
+            if not self.__started:
+                return
+            self.__thread.stop()
+            self.__thread.join(90)
+            self.__started = False
+        finally:
+            self._unlock()
 
     def join(self):
         """
         Join the worker thread.
         """
-        self.thread.join()
+        self.__thread.join()
 
     def received(self, message):
         """
@@ -175,16 +202,11 @@ class Consumer(Endpoint):
         @param message: The received message.
         @type message: qpid.messaging.Message
         """
-        envelope = Envelope()
-        subject = self.__subject(message)
-        envelope.load(message.content)
-        if subject:
-            envelope.subject = subject
-        envelope.destination = Options(uuid=repr(self.destination))
-        log.debug('{%s} received:\n%s', self.id(), envelope)
-        if self.valid(envelope):
-            self.dispatch(envelope)
-        self.ack()
+        self._lock()
+        try:
+            self.__received(message)
+        finally:
+            self._unlock()
 
     def valid(self, envelope):
         """
@@ -206,25 +228,79 @@ class Consumer(Endpoint):
         @type envelope: qpid.messaging.Message
         """
         pass
-
-    def __subject(self, message):
+    
+    def __received(self, message):
         """
-        Extract the message subject.
+        Process received request.
+        Inject subject & destination.uuid.
         @param message: The received message.
         @type message: qpid.messaging.Message
-        @return: The message subject
-        @rtype: str
         """
-        return message.properties.get('qpid.subject')
+        envelope = Envelope()
+        subject = self.subject(message)
+        envelope.load(message.content)
+        if subject:
+            envelope.subject = subject
+        envelope.destination = Options(uuid=repr(self.id()))
+        log.debug('{%s} received:\n%s', self.id(), envelope)
+        if self.valid(envelope):
+            self.dispatch(envelope)
+        self.ack()
 
 
-class Reader(Consumer):
-
-    def start(self):
-        pass
-
-    def stop(self):
-        pass
+class Reader(Endpoint):
+    """
+    An AMQP message reader.
+    @ivar __opened: Indicates that open() has been called.
+    @type __opened: bool
+    @ivar __receiver: An AMQP receiver to read.
+    @type __receiver: Receiver
+    @ivar __destination: The AMQP destination to read.
+    @type __destination: L{Destination}
+    """
+    
+    def __init__(self, destination, **options):
+        """
+        @param destination: The destination to consumer.
+        @type destination: L{Destination}
+        @param options: Options passed to Endpoint.
+        @type options: dict
+        """
+        self.__opened = False
+        self.__receiver = None
+        self.__destination = destination
+        Endpoint.__init__(self, **options)
+    
+    def open(self):
+        """
+        Open the reader.
+        """
+        self._lock()
+        try:
+            if self.__opened:
+                return
+            Endpoint.open(self)
+            ssn = self.session()
+            addr = self.address()
+            log.debug('{%s} open %s', self.id(), addr)
+            self.__receiver = ssn.receiver(addr)
+            self.__opened = True
+        finally:
+            self._unlock()
+    
+    def close(self):
+        """
+        Close the reader.
+        """
+        self._lock()
+        try:
+            if not self.__opened:
+                return
+            Endpoint.close(self)
+            self.__receiver.close()
+            self.__opened = False
+        finally:
+            self._unlock()
 
     def next(self, timeout=90):
         """
@@ -264,6 +340,18 @@ class Reader(Consumer):
                 log.debug('{%s} search discarding:\n%s', self.id(), envelope)
                 self.ack()
                 
+    def address(self):
+        """
+        Get the AMQP address for this endpoint.
+        @return: The AMQP address.
+        @rtype: str
+        """
+        self._lock()
+        try:
+            return str(self.__destination)
+        finally:
+            self._unlock()
+                
     def __fetch(self, timeout):
         """
         Fetch the next message.
@@ -273,21 +361,41 @@ class Reader(Consumer):
         @rtype: Message
         """
         try:
-            return self.receiver.fetch(timeout=timeout)
+            self.open()
+            return self.__receiver.fetch(timeout=timeout)
         except Empty:
+            # normal
             pass
         except:
             log.error(self.id(), exc_info=1)
-                
+
 
 class RequestConsumer(Consumer):
     """
     An AMQP request consumer.
-    @ivar producer: A reply producer.
-    @type producer: L{gofer.messaging.producer.Producer}
-    @ivar dispatcher: An RMI dispatcher.
-    @type dispatcher: L{gofer.messaging.dispatcher.Dispatcher}
+    @ivar __pending: The pending (delayed) message queue.
+    @type __pending: L{PendingReceiver}
+    @ivar __producer: A reply producer.
+    @type __producer: L{gofer.messaging.producer.Producer}
+    @ivar __started: Indicates that start() has been called.
+    @type __started: bool
+    @ivar __dispatcher: An RMI dispatcher.
+    @type __dispatcher: L{gofer.messaging.dispatcher.Dispatcher}
     """
+    
+    def __init__(self, destination, **options):
+        """
+        @param destination: The destination to consumer.
+        @type destination: L{Destination}
+        @param options: Options passed to Consumer.__init__().
+        @type options: dict
+        """
+        Consumer.__init__(self, destination, **options)
+        q = PendingQueue(self.id())
+        self.__pending = PendingReceiver(q, self)
+        self.__producer = Producer(url=self.url)
+        self.__started = False
+        self.__dispatcher = None
 
     def start(self, dispatcher):
         """
@@ -296,12 +404,31 @@ class RequestConsumer(Consumer):
         @param dispatcher: An RMI dispatcher.
         @type dispatcher: L{gofer.messaging.Dispatcher}
         """
-        q = PendingQueue(self.id())
-        self.pending = PendingReceiver(q, self)
-        self.dispatcher = dispatcher
-        self.producer = Producer(url=self.url)
-        Consumer.start(self)
-        self.pending.start()
+        self._lock()
+        try:
+            if self.__started:
+                return
+            self.__dispatcher = dispatcher
+            self.__pending.start()
+            self.__started = True
+            Consumer.start(self)
+        finally:
+            self._unlock()
+        
+    def stop(self):
+        """
+        Stop processing requests.
+        """
+        self._lock()
+        try:
+            if not self.__started:
+                return
+            self.__pending.stop()
+            self.__pending.join(10)
+            self.__started = False
+            Consumer.stop(self)
+        finally:
+            self._unlock()
 
     def dispatch(self, envelope):
         """
@@ -309,27 +436,24 @@ class RequestConsumer(Consumer):
         @param envelope: The received envelope.
         @type envelope: L{Envelope}
         """
+        self._lock()
         try:
-            self.checkwindow(envelope)
-            self.sendstarted(envelope)
-            if self.concurrent():
-                self.dispatcher.dispatch(envelope, self.sendreply)
-                return
-            result = self.dispatcher.dispatch(envelope)
-            self.sendreply(envelope, result)
-        except WindowMissed:
-            self.sendreply(envelope, Return.exception())
-        except WindowPending:
-            pass # ignored
-        
+            return self.__dispatch(envelope)
+        finally:
+            self._unlock()
+
     def concurrent(self):
         """
         Get whether the consumer is concurrent.
         @return: based on dispatcher
         @rtype: bool
         """
-        return self.dispatcher.concurrent()
-
+        self._lock()
+        try:
+            return self.__dispatcher.concurrent()
+        finally:
+            self._unlock()
+            
     def sendreply(self, envelope, result):
         """
         Send the reply if requested.
@@ -344,7 +468,7 @@ class RequestConsumer(Consumer):
         if not replyto:
             return
         try:
-            self.producer.send(
+            self.__send(
                 replyto,
                 sn=sn,
                 any=any,
@@ -364,35 +488,62 @@ class RequestConsumer(Consumer):
         if not replyto:
             return
         try:
-            self.producer.send(
+            self.__send(
                 replyto,
                 sn=sn,
                 any=any,
                 status='started')
         except:
             log.error('send (started), failed', exc_info=True)
-
-    def checkwindow(self, envelope):
+            
+    def __dispatch(self, envelope):
+        """
+        Dispatch received request.
+        @param envelope: The received envelope.
+        @type envelope: L{Envelope}
+        """
+        try:
+            self.__checkwindow(envelope)
+            self.sendstarted(envelope)
+            if self.concurrent():
+                self.__dispatcher.dispatch(envelope, self.sendreply)
+                return
+            result = self.__dispatcher.dispatch(envelope)
+            self.sendreply(envelope, result)
+        except WindowMissed:
+            self.sendreply(envelope, Return.exception())
+        except WindowPending:
+            pass # ignored
+        
+    def __checkwindow(self, envelope):
         """
         Check the window.
         @param envelope: The received envelope.
         @type envelope: L{Envelope}
+        @raise WindowPending: when window in the future.
+        @raise WindowMissed: when window missed.
         """
         w = envelope.window
         if not isinstance(w, dict):
             return
         window = Window(w)
         if window.future():
-            pending = self.pending.queue
+            pending = self.__pending.queue
             pending.add(envelope)
             raise WindowPending(envelope.sn)
         if window.past():
             raise WindowMissed(envelope.sn)
-
-    def __del__(self):
+            
+    def __send(self, destination, **options):
+        """
+        Send an AMQP message.
+        @param destination: The destination to consumer.
+        @type destination: L{Destination}
+        @param options: Options passed to Producer.send().
+        @type options: dict
+        """
+        self._lock()
         try:
-            self.pending.stop()
-            self.pending.join(10)
-        except:
-            log.error('pending.stop(), failed', exc_info=True)
-        Consumer.__del__(self)
+            self.__producer.send(destination, **options)
+        finally:
+            self._unlock()

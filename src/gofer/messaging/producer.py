@@ -30,12 +30,6 @@ class Producer(Endpoint):
     An AMQP (abstract) message producer.
     """
 
-    def open(self):
-        """
-        Open and configure the producer.
-        """
-        pass
-
     def send(self, destination, ttl=None, **body):
         """
         Send a message.
