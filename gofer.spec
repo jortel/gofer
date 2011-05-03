@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.34
+Version: 0.35
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -123,6 +123,11 @@ fi
 %{ruby_sitelib}/%{name}/messaging/
 
 %changelog
+* Tue May 03 2011 Jeff Ortel <jortel@redhat.com> 0.35-1
+- Additional concurrency protection; move qpid receiver to ReceiverThread.
+  (jortel@redhat.com)
+- python 2.4 compat: Queue. (jortel@redhat.com)
+
 * Mon May 02 2011 Jeff Ortel <jortel@redhat.com> 0.34-1
 - More robust (receiver) management. (jortel@redhat.com)
 - Support getting a list of all mock agent (proxies). (jortel@redhat.com)
