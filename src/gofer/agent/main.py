@@ -211,9 +211,8 @@ def setupLogging():
         if not level:
             continue
         try:
-            name = 'gofer.%s' % p
             L = getattr(logging, level.upper())
-            logger = logging.getLogger(name)
+            logger = logging.getLogger(p)
             logger.setLevel(L)
         except:
             pass
