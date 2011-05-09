@@ -130,7 +130,52 @@ class MockContainer:
     
     def __repr__(self):
         return str(self)
+
+
+class Call:
+    """
+    Call object.
+    @ivar call: The call tuple (args,kwargs)
+    @type call: tuple
+    """
     
+    def __init__(self, call):
+        """
+        @param call: The call tuple.
+        @type call: tuple
+        """
+        self.call = call
+    
+    @property
+    def args(self):
+        """
+        Get the call argument list.
+        @return: The argument list
+        @rtype: list
+        """
+        return self.call[0]
+    
+    @property
+    def kwargs(self):
+        """
+        Get the keyword arguments.
+        @return: The keyword arguments
+        @rtype: dict
+        """
+        return self.call[1]
+    
+    def __getitem__(self, n):
+        return self.call[n]
+    
+    def __iter__(self):
+        return iter(self.call)
+    
+    def __str__(self):
+        return str(self.call)
+    
+    def __repr__(self):
+        return repr(self.call)
+
 
 class Stub:
     """
@@ -234,12 +279,15 @@ class Method:
     def history(self):
         """
         Get the call history.
-        @return: A list of tuple: (args, kwargs)
+        @return: A list of L{Call}
         @rtype: list
         """
         self.__lock()
         try:
-            return self.__history[:]
+            history = []
+            for h in self.__history:
+                history.append(Call(h))
+            return history
         finally:
             self.__unlock()
 
