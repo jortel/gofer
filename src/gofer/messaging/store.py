@@ -232,12 +232,13 @@ class PendingReceiver(Thread):
         Main receiver (thread).
         Read and dispatch envelopes.
         """
-        log.info('{%s} started', self.getName())
+        log.info('started')
         while self.__run:
             envelope = self.queue.next(3)
             if envelope:
                 self.dispatch(envelope)
                 self.queue.commit()
+        log.info('stopped')
 
     def dispatch(self, envelope):
         """
@@ -255,4 +256,3 @@ class PendingReceiver(Thread):
         Stop the receiver.
         """
         self.__run = False
-        log.info('{%s} stopping', self.getName())

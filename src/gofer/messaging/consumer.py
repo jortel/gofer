@@ -25,7 +25,7 @@ from gofer.messaging.producer import Producer
 from gofer.messaging.dispatcher import Return
 from gofer.messaging.window import *
 from gofer.messaging.store import PendingQueue, PendingReceiver
-from qpid.messaging import Empty
+from qpid.messaging import LinkError, Empty
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -68,9 +68,13 @@ class ReceiverThread(Thread):
                 if msg:
                     self.__consumer.received(msg)
                 log.debug('ready')
+            except LinkError:
+                log.error('aborting', exc_info=1)
+                return
             except:
-                log.error('failed:\n%s', msg, exc_info=True)
+                log.error('failed:\n%s', msg, exc_info=1)
         receiver.close()
+        log.info('stopped')
                 
     def stop(self):
         """
@@ -188,6 +192,18 @@ class Consumer(Endpoint):
             self.__started = False
         finally:
             self._unlock()
+            
+    def close(self):
+        """
+        Close the consumer.
+        Stop the receiver thread.
+        """
+        self._lock()
+        try:
+            self.stop()
+        finally:
+            self._unlock()
+        Endpoint.close(self)
 
     def join(self):
         """
