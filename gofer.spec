@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.35
+Version: 0.36
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -123,6 +123,8 @@ fi
 %{ruby_sitelib}/%{name}/messaging/
 
 %changelog
+* Mon May 09 2011 Jeff Ortel <jortel@redhat.com> 0.36-1
+- Stop receiver thread before closing session. (jortel@redhat.com)
 * Tue May 03 2011 Jeff Ortel <jortel@redhat.com> 0.35-1
 - Additional concurrency protection; move qpid receiver to ReceiverThread.
   (jortel@redhat.com)
