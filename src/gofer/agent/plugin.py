@@ -25,7 +25,7 @@ from gofer import *
 from gofer.messaging import Queue
 from gofer.collator import Collator
 from gofer.agent.config import Base, Config, nvl
-from gofer.messaging.broker import Broker, URL
+from gofer.messaging.broker import Broker
 from gofer.messaging.base import Agent as Session
 from gofer.messaging.consumer import RequestConsumer
 from gofer.messaging.decorators import Remote
@@ -175,7 +175,7 @@ class Plugin(object):
         """
         cfg = self.cfg()
         main = Config()
-        broker = Broker(URL(self.geturl()))
+        broker = Broker(self.geturl())
         broker.cacert = \
             nvl(cfg.messaging.cacert,
             nvl(main.messaging.cacert))

@@ -26,6 +26,19 @@ from logging import getLogger
 log = getLogger(__name__)
 
 
+class MetaBroker(Singleton):
+    """
+    Broker MetaClass.
+    Singleton by simple url.
+    """
+
+    @classmethod
+    def key(cls, t, d):
+        url = t[0]
+        if not isinstance(url, URL):
+            url = URL(url)
+        return url.simple()
+
 class Broker:
     """
     Represents an AMQP broker.
@@ -40,7 +53,7 @@ class Broker:
         the private key & certificate used for client authentication.
     @type clientcert: str
     """
-    __metaclass__ = Singleton
+    __metaclass__ = MetaBroker
     __mutex = RLock()
     
     @classmethod

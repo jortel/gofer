@@ -17,8 +17,8 @@
 Contains custom QPID transport classes.
 """
 
+import ssl
 from gofer.messaging.broker import Broker
-from ssl import wrap_socket, CERT_NONE, CERT_REQUIRED
 from qpid.messaging.transports import connect, TRANSPORTS, tls
 from logging import getLogger
 
@@ -38,10 +38,10 @@ class SSLTransport(tls):
         url = broker.url
         self.socket = connect(url.host, url.port)
         if broker.cacert:
-            reqcert = CERT_REQUIRED
+            reqcert = ssl.CERT_REQUIRED
         else:
-            reqcert = CERT_NONE
-        self.tls = wrap_socket(
+            reqcert = ssl.CERT_NONE
+        self.tls = ssl.wrap_socket(
                 self.socket,
                 cert_reqs=reqcert,
                 ca_certs = broker.cacert,
