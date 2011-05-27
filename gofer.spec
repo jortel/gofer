@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.37
+Version: 0.38
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -123,6 +123,10 @@ fi
 %{ruby_sitelib}/%{name}/messaging/
 
 %changelog
+* Fri May 27 2011 Jeff Ortel <jortel@redhat.com> 0.38-1
+- Skip comments when processing config macros. (jortel@redhat.com)
+- Queue exceptions caught in the threadpool. (jortel@redhat.com)
+
 * Fri May 13 2011 Jeff Ortel <jortel@redhat.com> 0.37-1
 - Fix broker singleton lookup. (jortel@redhat.com)
 - Mock call object enhancements. (jortel@redhat.com)
