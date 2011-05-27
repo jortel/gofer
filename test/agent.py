@@ -56,7 +56,9 @@ class Cat:
 
 class Dog:
     @remote
-    def bark(self, words):
+    def bark(self, words, wait=0):
+        if wait:
+            sleep(wait)
         print 'Ruf %s' % words
         return 'Yes master.  I will bark because that is what dogs do. "%s"' % words
 

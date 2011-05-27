@@ -431,6 +431,8 @@ class Reader:
         @return: The line w/ vars replaced.
         @rtype: str
         """
+        if ln.startswith('#'):
+            return ln
         for k,v in self.MACROS.items()+self.vdict.items():
             if k in ln:
                 if callable(v):

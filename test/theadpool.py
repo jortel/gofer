@@ -24,11 +24,17 @@ from gofer.messaging.threadpool import ThreadPool
 def fn(s):
     n = random()*3
     print 'sleep(%d)' % n
-    #sleep(n)
+    sleep(n)
+    raise Exception(s)
     return s.lower()
 
-if __name__ == '__main__':
-    pool = ThreadPool(1,10)
+def exfn(s):
+    n = random()*3
+    print 'sleep(%d)' % n
+    sleep(n)
+    raise Exception(s)
+
+def test(pool, fn):
     N = 100
     print 'START'
     t = Timer()
@@ -41,3 +47,8 @@ if __name__ == '__main__':
     t.stop()
     print 'total: %s, per-call: %f' % (t, t.duration()/N)
     print repr(pool)
+
+if __name__ == '__main__':
+    pool = ThreadPool(1,10)
+    test(pool, fn)
+    test(pool, exfn)

@@ -55,7 +55,7 @@ class Worker(Thread):
                 retval = fn(*args,**kwargs)
                 self.pool.queue.put((call, retval))
             except Exception, e:
-                print e
+                self.pool.queue.put((call, e))
             self.pool.free(self)
 
     def enqueue(self, call):
