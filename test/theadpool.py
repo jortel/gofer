@@ -18,8 +18,23 @@
 
 from random import random
 from time import sleep
+from threading import Thread
 from gofer.metrics import Timer
 from gofer.messaging.threadpool import ThreadPool
+
+class ReplyReader(Thread):
+    
+    def __init__(self, pool, n):
+        Thread.__init__(self)
+        self.reply = []
+        self.pool = pool
+        self.limit = n
+    
+    def run(self):
+        for i in range(0, self.limit):
+            r = pool.get()
+            self.reply.append(r)
+
 
 def fn(s):
     n = random()*3
@@ -39,12 +54,15 @@ def test(pool, fn):
     print 'START'
     t = Timer()
     t.start()
+    reader = ReplyReader(pool, N)
+    reader.start()
     for i in range(0,N):
         request = 'REQUEST-%d' % i
         pool.run(fn, request)
-    for i in range(0,N):
-        print pool.get()
+    reader.join()
     t.stop()
+    for r in reader.reply:
+        print r
     print 'total: %s, per-call: %f' % (t, t.duration()/N)
     print repr(pool)
 
