@@ -75,12 +75,6 @@ class RequestMethod:
         """
         pass
 
-    def close(self):
-        """
-        Close and release all resources.
-        """
-        self.producer.close()
-
 
 class Synchronous(RequestMethod):
     """
@@ -100,9 +94,6 @@ class Synchronous(RequestMethod):
         self.timeout = self.__timeout(options)
         self.queue = Queue(getuuid(), durable=False)
         RequestMethod.__init__(self, producer)
-        reader = Reader(self.queue, url=self.producer.url)
-        reader.open()
-        self.reader = reader
 
     def send(self, destination, request, **any):
         """
@@ -122,8 +113,13 @@ class Synchronous(RequestMethod):
             replyto=str(self.queue),
             request=request,
             **any)
-        self.__getstarted(sn)
-        return self.__getreply(sn)
+        reader = Reader(self.queue, url=self.producer.url)
+        reader.open()
+        try:
+            self.__getstarted(sn, reader)
+            return self.__getreply(sn, reader)
+        finally:
+            reader.close()
     
     def __timeout(self, options):
         """
@@ -140,17 +136,19 @@ class Synchronous(RequestMethod):
             return tm
         return (tm, tm)
 
-    def __getstarted(self, sn):
+    def __getstarted(self, sn, reader):
         """
         Get the STARTED reply matched by serial number.
         @param sn: The request serial number.
         @type sn: str
+        @param reader: A reader.
+        @type reader: L{Reader}
         @return: The matched reply envelope.
         @rtype: L{Envelope}
         """
-        envelope = self.reader.search(sn, self.timeout[0])
+        envelope = reader.search(sn, self.timeout[0])
         if envelope:
-            self.reader.ack()
+            reader.ack()
             if envelope.status:
                 log.debug('request (%s), started', sn)
             else:
@@ -158,17 +156,19 @@ class Synchronous(RequestMethod):
         else:
             raise RequestTimeout(sn)
 
-    def __getreply(self, sn):
+    def __getreply(self, sn, reader):
         """
         Get the reply matched by serial number.
         @param sn: The request serial number.
         @type sn: str
+        @param reader: A reader.
+        @type reader: L{Reader}
         @return: The matched reply envelope.
         @rtype: L{Envelope}
         """
-        envelope = self.reader.search(sn, self.timeout[1])
+        envelope = reader.search(sn, self.timeout[1])
         if envelope:
-            self.reader.ack()
+            reader.ack()
             return self.__onreply(envelope)
         else:
             raise RequestTimeout(sn)

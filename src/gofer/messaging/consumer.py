@@ -291,11 +291,11 @@ class Reader(Endpoint):
         """
         Open the reader.
         """
+        Endpoint.open(self)
         self._lock()
         try:
             if self.__opened:
                 return
-            Endpoint.open(self)
             ssn = self.session()
             addr = self.address()
             log.debug('{%s} open %s', self.id(), addr)
@@ -312,11 +312,11 @@ class Reader(Endpoint):
         try:
             if not self.__opened:
                 return
-            Endpoint.close(self)
             self.__receiver.close()
             self.__opened = False
         finally:
             self._unlock()
+        Endpoint.close(self)
 
     def next(self, timeout=90):
         """
