@@ -113,6 +113,7 @@ class Synchronous(RequestMethod):
             replyto=str(self.queue),
             request=request,
             **any)
+        log.info('sent (%s):\n%s', repr(destination), request)
         reader = Reader(self.queue, url=self.producer.url)
         reader.open()
         try:
@@ -222,6 +223,7 @@ class Asynchronous(RequestMethod):
                 replyto=self.__replyto(),
                 request=request,
                 **any)
+        log.info('sent (%s):\n%s', repr(destination), request)
         return sn
 
     def broadcast(self, destinations, request, **any):
@@ -240,6 +242,7 @@ class Asynchronous(RequestMethod):
                 replyto=self.__replyto(),
                 request=request,
                 **any)
+        log.info('sent (%s):\n%s', destinations, request)
         return sns
 
     def __replyto(self):
