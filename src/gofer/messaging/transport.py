@@ -25,49 +25,38 @@ from logging import getLogger
 log = getLogger(__name__)
 
 
-class SSLTransport(tls):
+class SSL(tls):
     """
     SSL Transport.
+    Extends L{tls} to support client certificates.
     """
 
-    def __init__(self, broker):
+    def __init__(self, *args):
         """
-        @param broker: An amqp broker.
-        @type broker: L{Broker}
+        @param args: The argument list.
+        Using arglist for compatability with many versions
+        For <= 0.8  passed (host, port)
+        For 0.10 (el6) passed (con, host, port)
+        @type args: list
         """
-        url = broker.url
-        self.socket = connect(url.host, url.port)
+        host, port = args[-2:]
+        url = ':'.join((host,str(port)))
+        broker = Broker(url)
         if broker.cacert:
             reqcert = ssl.CERT_REQUIRED
         else:
             reqcert = ssl.CERT_NONE
-        self.tls = ssl.wrap_socket(
+        self.socket = connect(host, port)
+        self.tls = \
+            ssl.wrap_socket(
                 self.socket,
                 cert_reqs=reqcert,
-                ca_certs = broker.cacert,
-                certfile = broker.clientcert)
+                ca_certs=broker.cacert,
+                certfile=broker.clientcert)
         self.socket.setblocking(0)
         self.state = None
-
-
-class SSLFactory:
-    """
-    Factory used to create a transport.
-    """
-
-    def __call__(self, host, port):
-        """
-        @param host: A host or IP.
-        @type host: str
-        @param port: A tcp port.
-        @type port: int
-        """
-        url = '%s:%d' % (host, port)
-        broker = Broker(url)
-        transport = SSLTransport(broker)
-        return transport
-
+        
 #
 # Install the transport.
 #
-TRANSPORTS['ssl'] = SSLFactory()
+TRANSPORTS['ssl'] = SSL
