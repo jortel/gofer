@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.41
+Version: 0.42
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -123,6 +123,9 @@ fi
 %{ruby_sitelib}/%{name}/messaging/
 
 %changelog
+* Wed Jun 22 2011 Jeff Ortel <jortel@redhat.com> 0.42-1
+- Simplified thread pool. (jortel@redhat.com)
+
 * Thu Jun 16 2011 Jeff Ortel <jortel@redhat.com> 0.41-1
 - python-qpid 0.10 API compat. Specifically on EL6, the Transport.__init__()
   constructor/factory gets called with (con, host, port) instead of (host,
