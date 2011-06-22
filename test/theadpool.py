@@ -65,6 +65,8 @@ def test(pool, fn):
     print repr(pool)
 
 if __name__ == '__main__':
+    pool = ThreadPool(5,10)
+    del pool
     pool = ThreadPool(1,10)
     test(pool, fn)
     test(pool, exfn)

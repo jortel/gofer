@@ -25,22 +25,25 @@ from time import sleep
 class Worker(Thread):
     """
     Pool (worker) thread.
-    @ivar pool: The containing pool.
-    @type pool: L{ThreadPool}
-    @ivar queue: The input queue.
-    @type queue: L{Queue}
+    @ivar pending: The worker pending queue.
+    @type pending: L{Queue}
+    @ivar result: The worker result queue.
+    @type result: L{Queue}
     """
     
-    def __init__(self, name, pool):
+    def __init__(self, number, pending, result):
         """
-        @param name: The thread name.
-        @type name: str
-        @param pool: The containing pool.
-        @type pool: L{ThreadPool}
+        @param number: The thread number in the pool.
+        @type number: int
+        @param pending: The pending queue.
+        @type pending: L{Queue}
+        @param result: The result queue.
+        @type result: L{Queue}
         """
+        name = 'worker-%d' % number
         Thread.__init__(self, name=name)
-        self.pool = pool
-        self.queue = Queue()
+        self.pending = pending
+        self.result = result
         self.setDaemon(True)
         
     def run(self):
@@ -48,33 +51,19 @@ class Worker(Thread):
         Main run loop; processes input queue.
         """
         while True:
-            call = self.queue.get()
+            call = self.pending.get()
             if not call:
+                # exit requested
                 return
             try:
-                fn, args, kwargs = call
-                retval = fn(*args,**kwargs)
-                self.pool.queue.put((call, retval))
+                fn = call[0]
+                args = call[1]
+                options = call[2]
+                retval = fn(*args,**options)
             except Exception, e:
-                self.pool.queue.put((call, e))
-            self.pool.free(self)
-
-    def enqueue(self, call):
-        """
-        Enqueue a call.
-        @param call: A call to enqueue:
-            (fn, *args, **kwargs)
-        @type call: tuple
-        """
-        self.queue.put(call)
-            
-    def backlog(self):
-        """
-        Get the number of queued calls.
-        @return: The qsize()
-        @rtype: int
-        """
-        return self.queue.qsize()
+                retval = e
+            result = (call, retval)
+            self.result.put(result)
 
 
 class ThreadPool:
@@ -84,13 +73,12 @@ class ThreadPool:
     @type min: int
     @ivar max: The max # of threads.
     @type max: int
-    @ivar queue: The worker result queue.
-    @type queue: L{Queue}
+    @ivar __pending: The worker pending queue.
+    @type __pending: L{Queue}
+    @ivar __result: The worker result queue.
+    @type __result: L{Queue}
     @ivar __threads: The list of threads
     @type __threads: list
-    @ivar __weight: The thread queue loading used for
-        load distribution {id:[backlog,total]}
-    @type __weight: dict
     @ivar __mutex: The pool mutex.
     @type __mutex: RLock
     """
@@ -106,13 +94,13 @@ class ThreadPool:
         assert(max >= min)
         self.min = min
         self.max = max
-        self.queue = Queue()
+        self.__pending = Queue()
+        self.__result = Queue()
         self.__threads = []
-        self.__weight = {}
         self.__mutex = RLock()
         self.add(min)
         
-    def run(self, fn, *args, **kwargs):
+    def run(self, fn, *args, **options):
         """
         Run request.
         @param fn: A function/method to execute.
@@ -122,122 +110,24 @@ class ThreadPool:
         @param kwargs: The keyword args passed fn()
         @type kwargs: dict
         """
-        self.__lock()
-        try:
-            thread = self.next()
-            self.busy(thread)
-        finally:
-            self.__unlock()
-        call = (fn, args, kwargs)
-        thread.enqueue(call)
-            
-    def busy(self, thread):
-        """
-        Increment the threads loading.
-        @param thread: A worker thread
-        @type thread: L{Worker}
-        """
-        self.__lock()
-        try:
-            key = id(thread)
-            W = self.__weight[key]
-            W[0] += 1
-            W[1] += 1
-            self.__weight[key] = W
-        finally:
-            self.__unlock()
-            
-    def free(self, thread):
-        """
-        Decrement the threads loading.
-        @param thread: A worker thread
-        @type thread: L{Worker}
-        """
-        self.__lock()
-        try:
-            key = id(thread)
-            W = self.__weight[key]
-            W[0] -= 1
-            self.__weight[key] = W
-        finally:
-            self.__unlock()
-            
-    def shutdown(self):
-        """
-        Shutdown the pool and stop all threads.
-        """
-        self.__lock()
-        try:
-            for t in self.__threads:
-                t.enqueue(0)
-        finally:
-            self.__unlock()
+        call = (fn, args, options)
+        self.__pending.put(call)
+        self.__grow()
             
     def get(self, blocking=True, timeout=None):
         """
         Get the results of I{calls} executed in the pool.
         @param blocking: Block when queue is empty.
         @type blocking: bool
-        @param timeout: The time (seconds) to block
-            when the queue is empty.
+        @param timeout: The time (seconds) to block when empty.
         @return: Call result: (call, result)
         @rtype: tuple
         """
         try:
-            return self.queue.get(blocking, timeout)
+            return self.__result.get(blocking, timeout)
         except Empty:
             # normal
             pass
-        
-    def next(self):
-        """
-        Get the next thread to used for a call.
-        The thread with the lowest weight (read backlog)
-        is returned.  However, if that thread has a weight
-        greater than 1, an attempt is made to add a new thread
-        to the pool.  If added, the new thread is returned.
-        @return: The lowest loaded thread.
-        @rtype: L{Worker}
-        """
-        self.__lock()
-        try:
-            next = self.__threads[0]
-            for t in self.__threads:
-                if self.weight(t) < self.weight(next):
-                    next = t
-            if self.weight(next):
-                added = self.add()
-                if added:
-                    return added[0]
-            return next
-        finally:
-            self.__unlock()
-            
-    def weight(self, thread):
-        """
-        Get the weight (loading) of the specified thread.
-        @param thread: A worker thread.
-        @type thread: L{Worker}
-        @return: The thread's current loading.
-        @rtype: int
-        """
-        self.__lock()
-        try:
-            return self.__weight[id(thread)][0]
-        finally:
-            self.__unlock()
-            
-    def getload(self):
-        """
-        Get the loading (weight) of all threads.
-        @return: list of: (tid, [weight,total]).
-        @rtype: tuple
-        """
-        self.__lock()
-        try:
-            return self.__weight.items()
-        finally:
-            self.__unlock()
     
     def add(self, n=1):
         """
@@ -245,24 +135,30 @@ class ThreadPool:
         The number added is limited by self.max.
         @param n: The number of threads to add.
         @type n: int
-        @return: The list of added threads.
-        @rtype: list
         """
         self.__lock()
         try:
-            added = []
-            for i in range(0, n):
-                cnt = len(self.__threads)
-                if cnt < self.max:
-                    name = '-'.join(('worker', str(cnt)))
-                    t = Worker(name, self)
-                    self.__threads.append(t)
-                    self.__weight[id(t)] = [0,0]
-                    t.start()
-                    added.append(t)
-                else:
-                    break
-            return added
+            cnt = len(self.__threads)
+            while n > 0 and cnt < self.max:
+                t = Worker(cnt, self.__pending, self.__result)
+                self.__threads.append(t)
+                t.start()
+                cnt += 1
+                n -= 1
+        finally:
+            self.__unlock()
+            
+    def __grow(self):
+        """
+        Grow the pool based on needed capacity.
+        """
+        self.__lock()
+        try:
+            need = self.__pending.qsize()
+            capacity = len(self.__threads)
+            n = ( need - capacity )
+            if n > 0:
+                self.add(n)
         finally:
             self.__unlock()
     
@@ -271,20 +167,17 @@ class ThreadPool:
 
     def __unlock(self):
         self.__mutex.release()
-        
-    def __str__(self):
+    
+    def __len__(self):
         self.__lock()
         try:
-            s = []
-            s.append('ThreadPool (%s): ' % id(self))
-            s.append('min=%d' % self.min)
-            s.append(', max=%d\n' % self.max)
-            for t in self.__threads:
-                w = self.__weight[id(t)]
-                s.append('%s' % t.getName().ljust(10))
-                s.append(' %s\n' % w)
-            return ''.join(s)
+            return len(self.__threads)
         finally:
             self.__unlock()
         
+    def __del__(self):
+        n = len(self.__threads)
+        while n > 0:
+            self.__pending.put(0)
+            n -= 1
         
