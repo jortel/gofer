@@ -46,7 +46,6 @@ def purge():
 def install():
     """
     Install the mock agent.
-    @param mocks: <name>:<mock>
     """
     proxy.Agent = agent
     proxy.agent = agent
@@ -150,8 +149,6 @@ class Call:
     def args(self):
         """
         Get the call argument list.
-        @return: The argument list
-        @rtype: list
         """
         return self.call[0]
     
@@ -159,8 +156,6 @@ class Call:
     def kwargs(self):
         """
         Get the keyword arguments.
-        @return: The keyword arguments
-        @rtype: dict
         """
         return self.call[1]
     

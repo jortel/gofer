@@ -98,7 +98,7 @@ class SessionPool:
         The session is acknowledge to purge it of stale transactions.
         @param pool: A pool (free,busy).
         @type pool: tuple
-        @rtype: The popped session
+        @return: The popped session
         @rtype: qpid.messaging.Session
         """
         while pool[0]:

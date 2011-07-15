@@ -107,8 +107,8 @@ class ThreadPool:
         @type fn: callable
         @param args: The args passed to fn()
         @type args: list
-        @param kwargs: The keyword args passed fn()
-        @type kwargs: dict
+        @param options: The keyword args passed fn()
+        @type options: dict
         """
         call = (fn, args, options)
         self.__pending.put(call)

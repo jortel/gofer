@@ -37,7 +37,7 @@ class LockFile:
     @ivar path: The absolute path to the lock file.
     @type path: str
     @ivar __fp: The I{file pointer} to the lock file.
-    @ivar __fp: I{file-like} pointer.
+    @type __fp: I{file-like} pointer.
     """
 
     def __init__(self, path):
