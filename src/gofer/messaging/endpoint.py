@@ -17,6 +17,7 @@
 AMQP endpoint base classes.
 """
 
+import atexit
 from time import sleep
 from threading import RLock
 from gofer.messaging import *
@@ -164,6 +165,7 @@ class Endpoint:
         self.url = url
         self.__mutex = RLock()
         self.__session = None
+        atexit.register(self.close)
 
     def id(self):
         """
