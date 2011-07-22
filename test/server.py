@@ -48,6 +48,18 @@ def demo(agent):
         cat.meow('hello')
     except:
         print 'Auth failed, damn cats.'
+
+    try:
+        # test bad return
+        print cat.returnObject()
+    except Exception, e:
+        print e
+        
+    try:
+        # test raise bad exception
+        print cat.badException()
+    except Exception, e:
+        print e
     
     dog = agent.Dog()
     repolib = agent.RepoLib()

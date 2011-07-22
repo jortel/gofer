@@ -25,6 +25,10 @@ from logging import INFO, DEBUG, basicConfig
 
 basicConfig(filename='/tmp/gofer/agent.log', level=INFO)
 
+class BadException(Exception):
+    def __init__(self):
+        self.cat = Cat()
+
 class MyError(Exception):
     def __init__(self, a, b):
         Exception.__init__(self, a)
@@ -50,6 +54,14 @@ class Cat:
     def meow(self, words):
         print 'Ruf %s' % words
         return 'Yes master.  I will meow because that is what cats do. "%s"' % words
+    
+    @remote
+    def returnObject(self):
+        return self
+    
+    @remote
+    def badException(self):
+        raise BadException()
 
 
 class Dog:

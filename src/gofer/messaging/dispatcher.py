@@ -131,7 +131,9 @@ class Return(Envelope):
         @return: A return envelope.
         @rtype: L{Return}
         """
-        return Return(retval=x)
+        inst = Return(retval=x)
+        inst.dump() # validate
+        return inst
 
     @classmethod
     def exception(cls):
@@ -140,22 +142,10 @@ class Return(Envelope):
         @return: A return envelope.
         @rtype: L{Return}
         """
-        info = sys.exc_info()
-        inst = info[1]
-        xclass = inst.__class__
-        exval = '\n'.join(tb.format_exception(*info))
-        mod = inspect.getmodule(xclass)
-        if mod:
-            mod = mod.__name__
-        args = None
-        if issubclass(xclass, Exception):
-            args = inst.args
-        state = inst.__dict__
-        return Return(exval=exval,
-                      xmodule=mod,
-                      xclass=xclass.__name__,
-                      xstate=state,
-                      xargs=args)
+        try:
+            return cls.__exception()
+        except TypeError:
+            return cls.__exception()
 
     def succeeded(self):
         """
@@ -172,6 +162,32 @@ class Return(Envelope):
         @rtype: bool
         """
         return ( not self.succeeded() )
+    
+    @classmethod
+    def __exception(cls):
+        """
+        Return raised exception.
+        @return: A return envelope.
+        @rtype: L{Return}
+        """
+        info = sys.exc_info()
+        inst = info[1]
+        xclass = inst.__class__
+        exval = '\n'.join(tb.format_exception(*info))
+        mod = inspect.getmodule(xclass)
+        if mod:
+            mod = mod.__name__
+        args = None
+        if issubclass(xclass, Exception):
+            args = inst.args
+        state = inst.__dict__
+        inst = Return(exval=exval,
+                      xmodule=mod,
+                      xclass=xclass.__name__,
+                      xstate=state,
+                      xargs=args)
+        inst.dump() # validate
+        return inst
 
 
 class Request(Envelope):
