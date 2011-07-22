@@ -13,7 +13,7 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-
+import string
 from uuid import uuid4
 import simplejson as json
 
@@ -23,6 +23,13 @@ version = '0.2'
 def getuuid():
     return str(uuid4())
 
+def squash(s):
+    sq = []
+    for c in s:
+        if c in string.whitespace:
+            continue
+        sq.append(c)
+    return ''.join(sq)
 
 class Options(dict):
     """
@@ -139,16 +146,22 @@ class Topic(Destination):
         @return: The topic address.
         @rtype: str
         """
-        s = []
-        s.append(self.topic)
+        fmt = squash("""
+        %s;{
+          create:always,
+          node:{type:topic},
+          link:{
+            x-declare:{
+              auto-delete:True,
+              arguments:{no-local:True}
+            }
+          }
+        }
+        """)
+        topic = self.topic
         if self.subject:
-            s.append('/%s' % self.subject)
-        s.append(';{')
-        s.append('create:always')
-        s.append(',node:{type:topic,durable:True}')
-        s.append(',link:{durable:True,x-declare:{arguments:{no-local:True}}}')
-        s.append('}')
-        return ''.join(s)
+            topic = '/'.join((topic, self.subject))
+        return fmt % topic
 
     def queuedAddress(self):
         """
@@ -157,19 +170,28 @@ class Topic(Destination):
         @return: The topic address.
         @rtype: str
         """
-        s = []
-        s.append(self.name)
-        s.append(';{')
-        s.append('create:always')
-        s.append(',node:{type:topic,durable:True}')
-        s.append(',link:{durable:True')
-        s.append(',x-bindings:[')
-        s.append('{exchange:%s' % self.topic)
+        fmt = squash("""
+        %s;{
+          create:always,
+          node:{type:topic,durable:True},
+          link:{
+            durable:True,
+            x-declare:{
+              arguments:{no-local:True}
+            },
+            x-bindings:[
+              {exchange:%s
+               %s}
+            ]
+          }
+        }
+        """)
+        topic = self.topic
         if self.subject:
-            s.append(',key:%s' % self.subject)
-        s.append('}]')
-        s.append('}}')
-        return ''.join(s)
+            key = ',key:%s' % self.subject
+        else:
+            key = ''
+        return fmt % (self.name, self.topic, key)
 
     def __str__(self):
         if self.name:
@@ -204,14 +226,17 @@ class Queue(Destination):
         @return: The queue address.
         @rtype: str
         """
-        s = []
-        s.append(self.name)
-        s.append(';{')
-        s.append('create:always')
-        s.append(',node:{type:queue,durable:True}')
-        s.append(',link:{durable:True,x-subscribe:{exclusive:True}}')
-        s.append('}')
-        return ''.join(s)
+        fmt = squash("""
+        %s;{
+          create:always,
+          node:{type:queue,durable:True},
+          link:{
+            durable:True,
+            x-subscribe:{exclusive:True}
+          }
+        }
+        """)
+        return fmt % self.name
 
     def tmpAddress(self):
         """
@@ -220,14 +245,18 @@ class Queue(Destination):
         @return: The queue address.
         @rtype: str
         """
-        s = []
-        s.append(self.name)
-        s.append(';{')
-        s.append('create:always,delete:receiver')
-        s.append(',node:{type:queue}')
-        s.append(',link:{durable:True,x-subscribe:{exclusive:True}}')
-        s.append('}')
-        return ''.join(s)
+        fmt = squash("""
+        %s;{
+          create:always,
+          delete:receiver,
+          node:{type:queue},
+          link:{
+            durable:True,
+            x-subscribe:{exclusive:True}
+          }
+        }
+        """)
+        return fmt % self.name
 
     def __str__(self):
         if self.durable:
