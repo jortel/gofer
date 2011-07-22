@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.42
+Version: 0.43
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -123,6 +123,14 @@ fi
 %{ruby_sitelib}/%{name}/messaging/
 
 %changelog
+* Fri Jul 22 2011 Jeff Ortel <jortel@redhat.com> 0.43-1
+- Propigate json exception of return and raised exception values back to
+  caller. (jortel@redhat.com)
+- Fix topic queue leak that causes: Enqueue capacity threshold exceeded on
+  queue. (jortel@redhat.com)
+- Add atexit hook to close endpoints. (jortel@redhat.com)
+- Fix epydocs. (jortel@redhat.com)
+
 * Wed Jun 22 2011 Jeff Ortel <jortel@redhat.com> 0.42-1
 - Simplified thread pool. (jortel@redhat.com)
 
