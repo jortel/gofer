@@ -18,9 +18,15 @@
 Provides async AMQP message consumer classes.
 """
 
+from time import sleep, time
+from threading import Thread
+from gofer import Singleton
 from gofer.messaging import *
 from gofer.messaging.dispatcher import Return, RemoteException
+from gofer.messaging.policy import RequestTimeout
 from gofer.messaging.consumer import Consumer
+from gofer.messaging.producer import Producer
+from gofer.messaging.store import Journal
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -31,16 +37,21 @@ class ReplyConsumer(Consumer):
     A request, reply consumer.
     @ivar listener: An reply listener.
     @type listener: any
+    @ivar watchdog: An (optional) watchdog.
+    @type watchdog: L{WatchDog}
     """
 
-    def start(self, listener):
+    def start(self, listener, watchdog=None):
         """
         Start processing messages on the queue and
         forward to the listener.
         @param listener: A reply listener.
         @type listener: L{Listener}
+        @param watchdog: An (optional) watchdog.
+        @type watchdog: L{WatchDog}
         """
         self.listener = listener
+        self.watchdog = watchdog
         Consumer.start(self)
 
     def dispatch(self, envelope):
@@ -50,12 +61,37 @@ class ReplyConsumer(Consumer):
         @type envelope: L{Envelope}
         """
         try:
+            self.__notifywatchdog(envelope)
             reply = self.__getreply(envelope)
             reply.notify(self.listener)
-        except Exception, e:
-            log.exception(e)
+        except Exception:
+            log.error(envelope, exc_info=1)
+            
+    def __notifywatchdog(self, envelope):
+        """
+        Notify the watchdog that a proper reply has been
+        received.  The effective timeout is incremented.
+        @param envelope: The received envelope.
+        @type envelope: L{Envelope}
+        """
+        if envelope.watchdog:
+            return # sent by watchdog
+        if self.watchdog is None:
+            return
+        try:
+            self.watchdog.hack(envelope.sn)
+        except Exception:
+            log.error(envelope, exc_info=1)
+        
 
     def __getreply(self, envelope):
+        """
+        Get the appropriate reply object.
+        @param envelope: The received envelope.
+        @type envelope: L{Envelope}
+        @return: A reply object based on the recived envelope.
+        @rtype: L{AsyncReply}
+        """
         if envelope.status:
             return Status(envelope)
         result = Return(envelope.result)
@@ -254,3 +290,141 @@ class Listener:
         @type reply: L{Status}.
         """
         pass
+
+
+class WatchDog(Thread):
+    """
+    A watchdog thread used to track asynchronous messages
+    by serial number.  Tracking is persisted using journal files.
+    @ivar url: The AMQP broker URL.
+    @type url: str
+    @ivar __jnl: A journal use for persistence.
+    @type __jnl: L{Journal}
+    @ivar __producer: An AMQP message producer.
+    @type __producer: L{Producer}
+    @ivar __run: Run flag.
+    @type __run: bool
+    """
+    
+    __metaclass__ = Singleton
+ 
+    URL = Producer.LOCALHOST
+
+    def __init__(self, url=URL):
+        """
+        @param url: The (optional) broker URL.
+        @type url: str
+        """
+        Thread.__init__(self, name='watchdog')
+        self.url = url
+        self.__jnl = Journal()
+        self.__producer = None
+        self.__run = True
+        self.setDaemon(True)
+
+    def run(self):
+        """
+        Begin tracking.
+        """
+        while True:
+            try:
+                self.process()
+                sleep(1)
+            except:
+                log.error(self.getName(), exc_info=1)
+                sleep(3)
+    
+    def stop(self):
+        """
+        Stop the thread.
+        """
+        self.__run = False
+    
+    def track(self, sn, replyto, any, timeout):
+        """
+        Add a request by serial number for tacking.
+        @param sn: A serial number.
+        @type sn: str
+        @param replyto: An AMQP address.
+        @type replyto: str
+        @param any: User defined data.
+        @type any: any
+        @param timeout: A timeout (start,complete)
+        @type timeout: tuple(2)
+        """
+        now = time()
+        ts = (now+timeout[0], now+timeout[1])
+        je = self.__jnl.write(sn, replyto, any, ts)
+        log.info('tracking: %s', je)
+            
+    def hack(self, sn):
+        """
+        Timeout is a tuple of: (start,complete).
+        Hack (increment) the index because a propery reply has been received.
+        When the last timeout has been I{hacked}, the journal entry is
+        removed from the list of I{tracked} messages.
+        @param sn: An entry serial number.
+        @type sn: str
+        """
+        log.info(sn)
+        je = self.__jnl.find(sn)
+        if not je:
+            return
+        je.idx += 1
+        if je.idx < len(je.ts):
+            je = self.__jnl.update(sn, idx=je.idx)
+        else:
+            self.__jnl.delete(sn)
+
+    def process(self):
+        """
+        Process all I{outstanding} journal entries.
+        When a journal entry (timeout) is detected, a L{RequestTimeout}
+        exception is raised and sent to the I{replyto} AMQP address.
+        The journal entry is deleted.
+        """
+        sent = []
+        now = time()
+        if self.__producer is None:
+            self.__producer = Producer(url=self.url)
+        for sn,je in self.__jnl.load().items():
+            if now > je.ts[je.idx]:
+                sent.append(sn)
+                try:
+                    raise RequestTimeout(sn, je.idx)
+                except:
+                    self.__overdue(je)
+        for sn in sent:
+            self.__jnl.delete(sn)
+    
+    def __overdue(self, je):
+        """
+        Send the (timeout) reply to the I{replyto} AMQP address
+        specified in the journal entry.
+        @param je: A journal entry.
+        @type je: Entry
+        """
+        log.info('sn:%s timeout detected', je.sn)
+        try:
+            self.__sendreply(je)
+        except:
+            log.error(str(je), exc_info=1)
+        
+    def __sendreply(self, je):
+        """
+        Send the (timeout) reply to the I{replyto} AMQP address
+        specified in the journal entry.
+        @param je: A journal entry.
+        @type je: Entry
+        """
+        sn = je.sn
+        replyto = je.replyto
+        any = je.any
+        result = Return.exception()
+        log.info('send (timeout) for sn:%s to:%s', sn, replyto)
+        self.__producer.send(
+            replyto,
+            sn=sn,
+            any=any,
+            result=result,
+            watchdog=self.__producer.uuid)

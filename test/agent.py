@@ -93,6 +93,10 @@ class Dog:
 
     def notpermitted(self):
         print 'not permitted.'
+    
+    @remote
+    def __str__(self):
+        return 'REMOTE:Dog'
         
         
 @remote

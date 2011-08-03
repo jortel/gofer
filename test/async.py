@@ -19,13 +19,13 @@ sys.path.append('../../')
 
 from time import sleep
 from gofer.messaging import Queue
-from gofer.messaging.async import ReplyConsumer
+from gofer.messaging.async import *
 from logging import INFO, basicConfig
 
-basicConfig(filename='/tmp/messaging.log', level=INFO)
+basicConfig(filename='/tmp/gofer/async.log', level=INFO)
 
 
-def callback(reply):
+def onReply(reply):
     print 'CB:\n%s' % reply
 
 
@@ -44,9 +44,11 @@ class Listener:
 if __name__ == '__main__':
     tag = 'XYZ'
     print 'starting, uuid=%s' % tag
-    c = ReplyConsumer(Queue(tag))
+    w = WatchDog()
+    queue = Queue(tag)
+    c = ReplyConsumer(queue)
     #c.start(Listener())
-    c.start(callback)
+    c.start(onReply, watchdog=w)
     while True:
         #print 'ReplyListener: sleeping...'
         sleep(10)

@@ -25,18 +25,39 @@ from logging import getLogger
 log = getLogger(__name__)
 
 
+def timeout(options, none=(None,None)):
+    """
+    Extract (and default as necessary) the timeout option.
+    @param options: Policy options.
+    @type options: dict
+    @return: The timeout (<start>,<duration>)
+    @rtype: tuple
+    """
+    tm = options.timeout
+    if tm is None:
+        return none
+    if isinstance(tm, (list,tuple)):
+        return tm
+    return (tm, tm)
+
 
 class RequestTimeout(Exception):
     """
     Request timeout.
     """
 
-    def __init__(self, sn):
+    def __init__(self, sn, index):
         """
         @param sn: The request serial number.
         @type sn: str
         """
-        Exception.__init__(self, sn)
+        Exception.__init__(self, sn, index)
+        
+    def sn(self):
+        return self.args[0]
+    
+    def index(self):
+        return self.args[1]
         
 
 class RequestMethod:
@@ -45,7 +66,7 @@ class RequestMethod:
     @ivar producer: A queue producer.
     @type producer: L{gofer.messaging.producer.Producer}
     """
-
+    
     def __init__(self, producer):
         """
         @param producer: A queue producer.
@@ -83,6 +104,8 @@ class Synchronous(RequestMethod):
     @ivar reader: A queue reader used to read the reply.
     @type reader: L{gofer.messaging.consumer.Reader}
     """
+    
+    TIMEOUT = (10, 90)
 
     def __init__(self, producer, options):
         """
@@ -91,7 +114,7 @@ class Synchronous(RequestMethod):
         @param options: Policy options.
         @type options: dict
         """
-        self.timeout = self.__timeout(options)
+        self.timeout = timeout(options, self.TIMEOUT)
         self.queue = Queue(getuuid(), durable=False)
         RequestMethod.__init__(self, producer)
 
@@ -121,21 +144,6 @@ class Synchronous(RequestMethod):
             return self.__getreply(sn, reader)
         finally:
             reader.close()
-    
-    def __timeout(self, options):
-        """
-        Extract (and default as necessary) the timeout option.
-        @param options: Policy options.
-        @type options: dict
-        @return: The timeout (<start>,<duration>)
-        @rtype: tuple
-        """
-        tm = options.timeout
-        if tm is None:
-            return (10,90)
-        if isinstance(tm, (list,tuple)):
-            return tm
-        return (tm, tm)
 
     def __getstarted(self, sn, reader):
         """
@@ -155,7 +163,7 @@ class Synchronous(RequestMethod):
             else:
                 self.__onreply(envelope)
         else:
-            raise RequestTimeout(sn)
+            raise RequestTimeout(sn, 0)
 
     def __getreply(self, sn, reader):
         """
@@ -172,7 +180,7 @@ class Synchronous(RequestMethod):
             reader.ack()
             return self.__onreply(envelope)
         else:
-            raise RequestTimeout(sn)
+            raise RequestTimeout(sn, 1)
         
     def __onreply(self, envelope):
         """
@@ -202,8 +210,9 @@ class Asynchronous(RequestMethod):
         @type options: dict
         """
         RequestMethod.__init__(self, producer)
-        self.timeout = self.__timeout(options)
         self.ctag = options.ctag
+        self.timeout = timeout(options)
+        self.watchdog = options.watchdog
 
     def send(self, destination, request, **any):
         """
@@ -217,13 +226,15 @@ class Asynchronous(RequestMethod):
         @return: The request serial number.
         @rtype: str
         """
+        replyto = self.__replyto()
         sn = self.producer.send(
                 destination,
-                ttl=self.timeout,
-                replyto=self.__replyto(),
+                ttl=self.timeout[0],
+                replyto=replyto,
                 request=request,
                 **any)
         log.info('sent (%s):\n%s', repr(destination), request)
+        self.__notifywatchdog(sn, replyto, any)
         return sn
 
     def broadcast(self, destinations, request, **any):
@@ -238,7 +249,7 @@ class Asynchronous(RequestMethod):
         """
         sns = self.producer.broadcast(
                 destinations,
-                ttl=self.timeout,
+                ttl=self.timeout[0],
                 replyto=self.__replyto(),
                 request=request,
                 **any)
@@ -256,15 +267,26 @@ class Asynchronous(RequestMethod):
             return str(queue)
         else:
             return None
+
+    def __notifywatchdog(self, sn, replyto, any):
+        """
+        Add the request to the I{watchdog} for tacking.
+        @param sn: A serial number.
+        @type sn: str
+        @param replyto: An AMQP address.
+        @type replyto: str
+        @param any: User defined data.
+        @type any: any
+        """
+        any = Envelope(any)
+        if replyto and \
+           self.ctag and \
+           self.timeout[0] is not None and \
+           self.timeout[1] is not None and \
+           self.watchdog is not None:
+            self.watchdog.track(
+                sn, 
+                replyto,
+                any.any,
+                self.timeout)
         
-    def __timeout(self, options):
-        """
-        Extract (and default as necessary) the timeout option.
-        @param options: Policy options.
-        @type options: dict
-        @return: The timeout
-        @rtype: int
-        """
-        tm = options.timeout
-        if isinstance(tm, (list,tuple)):
-            return tm[0]

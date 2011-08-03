@@ -19,6 +19,7 @@ from gofer.messaging import Queue
 from gofer.messaging.base import Container
 from gofer.messaging.producer import Producer
 from gofer.messaging.window import *
+from gofer.messaging.async import ReplyConsumer, WatchDog
 from gofer.metrics import Timer
 from gofer.proxy import Agent
 from time import sleep
@@ -32,6 +33,12 @@ basicConfig(filename='/tmp/gofer/server.log', level=INFO)
 
 log = getLogger(__name__)
 
+# asynchronous RMI timeout watchdog
+watchdog = WatchDog()
+watchdog.start()
+
+def onReply(reply):
+    print 'CB (local):\n%s' % reply
 
 def demo(agent):
 
@@ -120,9 +127,17 @@ def perftest(uuid):
     t.stop()
     print 'total=%s, percall=%f (ms)' % (t, (t.duration()/N)*1000)
     sleep(10)
+    
+def demoWatchdog(uuid):
+    tag = uuid.upper()
+    print '(watchdog) asynchronous'
+    agent = Agent(uuid, ctag=tag)
+    dog = agent.Dog(watchdog=watchdog, timeout=3, any='jeff')
+    dog.bark('who you calling a watchdog?')
+    dog.sleep(4)
 
 def main(uuid):
-    tag = 'XYZ'
+    tag = uuid.upper()
 
     agent = Agent(uuid)
     dog = agent.Dog(timeout=(3,10))
@@ -186,10 +201,18 @@ def main(uuid):
     print dog.wag(3)
     print dog.bark('hello again')
 
-    agent = None
+    # watchdog
+    print '(watchdog) asynchronous'
+    agent = Agent(uuid, ctag=tag)
+    dog = agent.Dog(watchdog=watchdog, timeout=3, any='jeff')
+    dog.bark('who you calling a watchdog?')
+    dog.sleep(4)
+
 
 if __name__ == '__main__':
     uuid = 'xyz'
+    rcon = ReplyConsumer(Queue(uuid.upper()))
+    rcon.start(onReply, watchdog=watchdog)
     if len(sys.argv) > 1:
         n = int(sys.argv[1])
         print '======= RUNNING %d THREADS ============' % n
@@ -197,7 +220,7 @@ if __name__ == '__main__':
         last = threads(uuid, n)
         last.join()
         sys.exit(0)
-    for i in range(0,1000):
+    for i in range(0,100):
         print '======= %d ========' % i
         main(uuid)
     perftest(uuid)

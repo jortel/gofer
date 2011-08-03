@@ -75,6 +75,7 @@ mkdir -p %{buildroot}/etc/%{name}/plugins
 mkdir -p %{buildroot}/etc/%{name}/conf.d
 mkdir -p %{buildroot}/etc/init.d
 mkdir -p %{buildroot}/var/log/%{name}
+mkdir -p %{buildroot}/var/lib/%{name}/journal
 mkdir -p %{buildroot}/usr/lib/%{name}/plugins
 
 cp bin/%{name}d %{buildroot}/usr/bin
@@ -113,6 +114,7 @@ fi
 %doc
 %{python_sitelib}/%{name}/*.py*
 %{python_sitelib}/%{name}/messaging/
+%attr(777, root, root) /var/lib/%{name}/journal
 
 %files -n ruby-%{name}
 %defattr(-,root,root,-)
@@ -121,6 +123,7 @@ fi
 %{ruby_sitelib}/%{name}.rb*
 %{ruby_sitelib}/%{name}/*.rb*
 %{ruby_sitelib}/%{name}/messaging/
+%attr(777, root, root) /var/lib/%{name}/journal
 
 %changelog
 * Fri Jul 22 2011 Jeff Ortel <jortel@redhat.com> 0.43-1
