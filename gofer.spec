@@ -26,7 +26,7 @@ Obsoletes: %{name}-lib
 BuildRequires: python
 Requires: python-simplejson
 Requires: python-qpid >= 0.7
-%if 0%{?el5}
+%if 0%{?rhel} && 0%{?rhel} < 6
 Requires: python-uuid
 Requires: python-ssl
 %endif
