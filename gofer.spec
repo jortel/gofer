@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.43
+Version: 0.44
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -126,6 +126,11 @@ fi
 %attr(777, root, root) /var/lib/%{name}/journal
 
 %changelog
+* Wed Aug 03 2011 Jeff Ortel <jortel@redhat.com> 0.44-1
+- Fix RHEL (python 2.4) macro. (jortel@redhat.com)
+- Add watchdog plugin. (jortel@redhat.com)
+- Add journal & watchdog. (jortel@redhat.com)
+
 * Fri Jul 22 2011 Jeff Ortel <jortel@redhat.com> 0.43-1
 - Propigate json exception of return and raised exception values back to
   caller. (jortel@redhat.com)
