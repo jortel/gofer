@@ -82,9 +82,11 @@ class Task:
             self.commit(envelope.sn)
             self.sendreply(envelope, result)
         except Expired:
-            log.info('expired:\n', envelope)
             self.commit(envelope.sn)
+            log.info('expired:\n%s', envelope)
         except WindowMissed:
+            self.commit(envelope.sn)
+            log.info('window missed:\n%s', envelope)
             self.sendreply(envelope, Return.exception())
         except WindowPending:
             pass # ignored
