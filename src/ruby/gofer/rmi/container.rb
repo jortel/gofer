@@ -13,10 +13,9 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-
+require 'gofer/rmi/policy'
+require 'gofer/rmi/stub'
 require 'gofer/messaging/pkg'
-require 'gofer/messaging/policy'
-require 'gofer/messaging/stub'
 require 'gofer/messaging/producer'
 
 

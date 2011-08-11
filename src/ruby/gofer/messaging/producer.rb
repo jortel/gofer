@@ -28,17 +28,19 @@ class Producer < Endpoint
   def send(destination, body={}, ttl=nil)
     sn = getuuid()
     ssn = self.session()
+    address = destination.to_s()
+    routing = [self.id, address.split(';')[0]]
     envelope = {
         :sn=>sn,
         :version=>Gofer::VERSION,
-        :origin=>self.id()
+        :routing=>routing
     }
     unless ttl.nil?
       ttl = ttl*1000
     end
     envelope.update(body)
     json = JSON.pretty_generate(envelope)
-    address = destination.to_s()
+    
     dp = ssn.delivery_properties(:routing_key=>address, :ttl=>ttl)
     mp = ssn.message_properties(:content_type=>"text/plain")
     msg = Qpid::Message.new(dp, mp, json)

@@ -58,10 +58,14 @@ rm -rf %{buildroot}
 pushd src
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
 pushd ruby
+mkdir -p %{buildroot}/%{ruby_sitelib}/%{name}/rmi
 mkdir -p %{buildroot}/%{ruby_sitelib}/%{name}/messaging
 cp %{name}.rb %{buildroot}/%{ruby_sitelib}
 pushd %{name}
 cp *.rb %{buildroot}/%{ruby_sitelib}/%{name}
+pushd rmi
+cp *.rb %{buildroot}/%{ruby_sitelib}/%{name}/rmi
+popd
 pushd messaging
 cp *.rb %{buildroot}/%{ruby_sitelib}/%{name}/messaging
 popd
@@ -123,6 +127,7 @@ fi
 %{ruby_sitelib}/%{name}
 %{ruby_sitelib}/%{name}.rb*
 %{ruby_sitelib}/%{name}/*.rb*
+%{ruby_sitelib}/%{name}/rmi/
 %{ruby_sitelib}/%{name}/messaging/
 %attr(777, root, root) /var/lib/%{name}/journal
 

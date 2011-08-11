@@ -21,7 +21,7 @@ require 'logger'
 
 module Gofer
 
-  VERSION = "0.2"
+  VERSION = "0.3"
   
   @@logger = Logger.new('/tmp/ruby-gofer.log')
   

@@ -13,9 +13,9 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
+require 'gofer/rmi/dispatcher'
 require 'gofer/messaging/pkg'
 require 'gofer/messaging/consumer'
-require 'gofer/messaging/dispatcher'
 
 class RequestTimeout < Exception ; end
 

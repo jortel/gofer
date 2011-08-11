@@ -13,8 +13,8 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
+require 'gofer/rmi/dispatcher'
 require 'gofer/messaging/consumer'
-require 'gofer/messaging/dispatcher'
 
 class ReplyConsumer < Consumer
   

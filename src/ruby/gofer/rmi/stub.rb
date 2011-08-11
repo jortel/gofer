@@ -13,8 +13,8 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
+require 'gofer/rmi/dispatcher'
 require 'gofer/messaging/pkg'
-require 'gofer/messaging/dispatcher'
 
 module Gofer
 

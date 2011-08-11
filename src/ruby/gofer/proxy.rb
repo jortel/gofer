@@ -13,7 +13,7 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-require 'gofer/messaging/base'
+require 'gofer/rmi/container'
 require 'gofer/messaging/producer'
 
 module Gofer
