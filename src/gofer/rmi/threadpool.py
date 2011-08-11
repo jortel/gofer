@@ -29,21 +29,32 @@ class Worker(Thread):
     @type pending: L{Queue}
     @ivar result: The worker result queue.
     @type result: L{Queue}
+    @ivar busy: mark busy function.
+    @type busy: callable
+    @ivar free: mark free function.
+    @type free: callable
     """
     
-    def __init__(self, number, pending, result):
+    def __init__(self, id, pending, result, busy, free):
         """
-        @param number: The thread number in the pool.
-        @type number: int
+        @param id: The thread id in the pool.
+        @type id: int
         @param pending: The pending queue.
         @type pending: L{Queue}
         @param result: The result queue.
         @type result: L{Queue}
+        @param busy: mark busy function.
+        @type busy: callable
+        @param free: mark free function.
+        @type free: callable
         """
-        name = 'worker-%d' % number
+        name = 'worker-%d' % id
         Thread.__init__(self, name=name)
+        self.id = id
         self.pending = pending
         self.result = result
+        self.busy = busy
+        self.free = free
         self.setDaemon(True)
         
     def run(self):
@@ -56,6 +67,7 @@ class Worker(Thread):
                 # exit requested
                 return
             try:
+                self.busy(self.id)
                 fn = call[0]
                 args = call[1]
                 options = call[2]
@@ -64,6 +76,7 @@ class Worker(Thread):
                 retval = e
             result = (call, retval)
             self.result.put(result)
+            self.free(self.id)
 
 
 class ThreadPool:
@@ -79,6 +92,8 @@ class ThreadPool:
     @type __result: L{Queue}
     @ivar __threads: The list of threads
     @type __threads: list
+    @ivar __busy: The set of busy thread ids.
+    @type __busy: set
     @ivar __mutex: The pool mutex.
     @type __mutex: RLock
     """
@@ -97,8 +112,10 @@ class ThreadPool:
         self.__pending = Queue()
         self.__result = Queue()
         self.__threads = []
+        self.__busy = set()
         self.__mutex = RLock()
-        self.add(min)
+        for x in range(0, min):
+            self.__add()
         
     def run(self, fn, *args, **options):
         """
@@ -110,9 +127,9 @@ class ThreadPool:
         @param options: The keyword args passed fn()
         @type options: dict
         """
+        self.__grow()
         call = (fn, args, options)
         self.__pending.put(call)
-        self.__grow()
             
     def get(self, blocking=True, timeout=None):
         """
@@ -129,22 +146,48 @@ class ThreadPool:
             # normal
             pass
     
-    def add(self, n=1):
+    def __add(self):
         """
-        Add the specified number of threads to the pool.
-        The number added is limited by self.max.
-        @param n: The number of threads to add.
-        @type n: int
+        Add a thread to the pool.
         """
         self.__lock()
         try:
-            cnt = len(self.__threads)
-            while n > 0 and cnt < self.max:
-                t = Worker(cnt, self.__pending, self.__result)
-                self.__threads.append(t)
-                t.start()
-                cnt += 1
-                n -= 1
+            total = len(self.__threads)
+            if total == self.max:
+                return
+            thread = Worker(
+                total,
+                self.__pending,
+                self.__result,
+                self.__markbusy,
+                self.__markfree)
+            self.__threads.append(thread)
+            thread.start()
+        finally:
+            self.__unlock()
+            
+    def __markbusy(self, id):
+        """
+        Mark a worker thread I{busy}.
+        @param id: A worker thread id.
+        @type id: str
+        """
+        self.__lock()
+        try:
+            self.__busy.add(id)
+        finally:
+            self.__unlock()
+            
+    def __markfree(self, id):
+        """
+        Mark a worker thread I{free}.
+        @param id: A worker thread id.
+        @type id: str
+        """
+        self.__lock()
+        try:
+            if id in self.__busy:
+                self.__busy.remove(id)
         finally:
             self.__unlock()
             
@@ -154,11 +197,12 @@ class ThreadPool:
         """
         self.__lock()
         try:
-            need = self.__pending.qsize()
-            capacity = len(self.__threads)
-            n = ( need - capacity )
-            if n > 0:
-                self.add(n)
+            backlog = self.__pending.qsize()
+            total = len(self.__threads)
+            busy = len(self.__busy)
+            capacity = (total-busy)
+            if capacity == 0:
+                self.__add()
         finally:
             self.__unlock()
     
@@ -180,4 +224,21 @@ class ThreadPool:
         while n > 0:
             self.__pending.put(0)
             n -= 1
-        
+
+
+class Immediate:
+    """
+    Run (immediate) pool.
+    """
+    
+    def run(self, fn, *args, **options):
+        """
+        Run request.
+        @param fn: A function/method to execute.
+        @type fn: callable
+        @param args: The args passed to fn()
+        @type args: list
+        @param options: The keyword args passed fn()
+        @type options: dict
+        """
+        return fn(*args, **options)

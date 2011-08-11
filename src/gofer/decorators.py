@@ -14,5 +14,5 @@
 #
 
 from gofer.agent.action import action
-from gofer.messaging.decorators import remote
+from gofer.rmi.decorators import remote
 

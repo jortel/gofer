@@ -24,6 +24,7 @@ from gofer.agent.plugin import PluginLoader, Plugin
 from gofer.agent.lock import Lock, LockFailed
 from gofer.agent.config import Config, nvl
 from gofer.agent.logutil import getLogger
+from gofer.agent.rmi import Scheduler
 from time import sleep
 from threading import Thread
 
@@ -122,6 +123,8 @@ class Agent:
         """
         actionThread = ActionThread(actions)
         actionThread.start()
+        scheduler = Scheduler(plugins)
+        scheduler.start()
         for plugin in plugins:
             if not plugin.geturl():
                 continue

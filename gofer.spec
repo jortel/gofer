@@ -113,6 +113,7 @@ fi
 %defattr(-,root,root,-)
 %doc
 %{python_sitelib}/%{name}/*.py*
+%{python_sitelib}/%{name}/rmi/
 %{python_sitelib}/%{name}/messaging/
 %attr(777, root, root) /var/lib/%{name}/journal
 

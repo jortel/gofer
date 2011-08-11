@@ -42,11 +42,12 @@ class Producer(Endpoint):
         @rtype: str
         """
         sn = getuuid()
-        envelope = Envelope(sn=sn, version=version, origin=self.id())
+        address = str(destination)
+        routing = (self.id(), address.split(';')[0])
+        envelope = Envelope(sn=sn, version=version, routing=routing)
         envelope.update(body)
         json = envelope.dump()
         message = Message(content=json, durable=True, ttl=ttl)
-        address = str(destination)
         sender = self.session().sender(address)
         sender.send(message)
         sender.close()

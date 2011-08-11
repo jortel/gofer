@@ -17,7 +17,7 @@ import inspect
 from gofer import proxy
 from gofer import Singleton
 from gofer.messaging import Options
-from gofer.messaging.stub import Stub
+from gofer.rmi.stub import Stub
 from threading import RLock
 
 

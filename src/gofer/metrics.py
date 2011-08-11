@@ -23,9 +23,9 @@ from math import modf
 
 class Timer:
 
-    def __init__(self):
-        self.started = 0
-        self.stopped = 0
+    def __init__(self, started=0, stopped=0):
+        self.started = started
+        self.stopped = stopped
 
     def start(self):
         self.started = time.time()

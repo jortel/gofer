@@ -13,30 +13,26 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-from gofer.decorators import *
-from gofer.agent.plugin import Plugin
-from gofer.rmi.async import WatchDog as Impl
+from gofer.rmi.store import PendingQueue
+from gofer.messaging.consumer import Consumer
 from logging import getLogger
 
 log = getLogger(__name__)
-plugin = Plugin.find(__name__)
 
 
-class WatchDog:
-    
-    def __init__(self):
-        self.__impl = Impl()
-    
-    @remote
-    def track(self, sn, replyto, any, timeout):
-        return self.__impl.track(sn, replyto, any, timeout)
-    
-    @remote
-    def hack(self, sn):
-        return self.__impl.hack(sn)
-    
-    @remote
-    @action(seconds=1)
-    def process(self):
-        self.__impl.process()
+class RequestConsumer(Consumer):
+    """
+    Reply consumer.
+    Reads messages from AMQP and writes to
+    local pending queue to be consumed by the scheduler.
+    """
 
+    def dispatch(self, envelope):
+        """
+        Dispatch received request.
+        @param envelope: The received envelope.
+        @type envelope: L{Envelope}
+        """
+        url = str(self.url)
+        pending = PendingQueue()
+        pending.add(url, envelope)

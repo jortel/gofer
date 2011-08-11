@@ -19,7 +19,7 @@ sys.path.append('../../')
 
 from time import sleep
 from gofer.messaging import Queue
-from gofer.messaging.async import *
+from gofer.rmi.async import *
 from logging import INFO, basicConfig
 
 basicConfig(filename='/tmp/gofer/async.log', level=INFO)

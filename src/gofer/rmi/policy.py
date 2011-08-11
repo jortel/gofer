@@ -18,7 +18,7 @@ Contains request delivery policies.
 """
 
 from gofer.messaging import *
-from gofer.messaging.dispatcher import *
+from gofer.rmi.dispatcher import *
 from gofer.messaging.consumer import Reader
 from logging import getLogger
 

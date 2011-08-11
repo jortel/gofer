@@ -13,7 +13,7 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-from gofer.messaging.base import Container
+from gofer.rmi.container import Container
 from gofer.messaging.producer import Producer
 from logging import getLogger
 

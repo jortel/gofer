@@ -22,13 +22,13 @@ import sys
 import imp
 from threading import RLock
 from gofer import *
-from gofer.messaging import Queue
-from gofer.collator import Collator
+from gofer.rmi.dispatcher import Dispatcher
+from gofer.rmi.threadpool import Immediate, ThreadPool
+from gofer.rmi.consumer import RequestConsumer
+from gofer.rmi.decorators import Remote
 from gofer.agent.config import Base, Config, nvl
+from gofer.messaging import Queue
 from gofer.messaging.broker import Broker
-from gofer.messaging.base import Agent as Session
-from gofer.messaging.consumer import RequestConsumer
-from gofer.messaging.decorators import Remote
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -117,8 +117,10 @@ class Plugin(object):
             if syn == name:
                 continue
             self.synonyms.append(syn)
-        self.session = None
         self.__mutex = RLock()
+        self.__pool = None
+        self.dispatcher = None
+        self.consumer = None
         
     def names(self):
         """
@@ -185,6 +187,16 @@ class Plugin(object):
         log.info('broker (qpid) configured: %s', broker)
         return broker
     
+    def getpool(self):
+        """
+        Get the plugin's thread pool.
+        @return: ThreadPool.
+        """
+        if self.__pool is None:
+            n = self.nthreads()
+            self.__pool = ThreadPool(1, n)
+        return self.__pool
+    
     def setuuid(self, uuid, save=False):
         """
         Set the plugin's UUID.
@@ -213,12 +225,13 @@ class Plugin(object):
         """
         main = Config()
         cfg = self.cfg()
-        nthreads = \
+        value = \
             nvl(cfg.messaging.threads,
             nvl(main.messaging.threads, 1))
-        return int(nthreads)
-        
-    
+        value = int(value)
+        assert(value >= 1)
+        return value
+
     def attach(self, uuid=None):
         """
         Attach (connect) to AMQP broker using the specified uuid.
@@ -232,23 +245,28 @@ class Plugin(object):
         url = broker.url
         queue = Queue(uuid)
         consumer = RequestConsumer(queue, url=url)
-        threads = self.nthreads()
-        ssn = Session(consumer, threads)
-        self.session = ssn
+        consumer.start()
+        self.consumer = consumer
     
     def detach(self):
         """
         Detach (disconnect) from AMQP broker (if connected).
         """
-        if self.session:
-            self.session.close()
-            self.session = None
+        if self.consumer:
+            self.consumer.close()
+            self.consumer = None
             return True
         else:
             return False
         
     def cfg(self):
         return self.descriptor
+    
+    def dispatch(self, request):
+        return self.dispatcher.dispatch(request)
+    
+    def provides(self, classname):
+        return self.dispatcher.provides(classname)
     
     def __lock(self):
         self.__mutex.acquire()
@@ -353,6 +371,7 @@ class PluginLoader:
         @return: The loaded module.
         @rtype: Module
         """
+        Remote.clear()
         syn = self.__mangled(plugin)
         p = Plugin(plugin, cfg, (syn,))
         Plugin.add(p)
@@ -363,9 +382,10 @@ class PluginLoader:
             log.info('plugin "%s", imported as: "%s"', plugin, syn)
             for fn in Remote.find(syn):
                 fn.gofer.plugin = p
+            collated = Remote.collated()
+            p.dispatcher = Dispatcher(collated)
             return p
         except:
-            Remote.purge(syn)
             Plugin.delete(p)
             log.error(
                 'plugin "%s", import failed',

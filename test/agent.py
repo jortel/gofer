@@ -14,16 +14,30 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
+import os
 import sys
 from time import sleep
 from gofer.messaging import Queue
-from gofer.messaging.base import Agent as Base
-from gofer.messaging.decorators import *
-from gofer.messaging.consumer import RequestConsumer
+from gofer.rmi.decorators import *
+from gofer.rmi.consumer import RequestConsumer
 from gofer.messaging.broker import Broker
-from logging import INFO, DEBUG, basicConfig
+from gofer.agent.plugin import PluginDescriptor, PluginLoader
+from gofer.agent.action import Actions
+from gofer.agent.main import ActionThread
+from gofer.agent.rmi import Scheduler
+from logging import getLogger, INFO, DEBUG, basicConfig
 
-basicConfig(filename='/tmp/gofer/agent.log', level=INFO)
+log = getLogger(__name__)
+
+DESCRIPTOR = \
+"""
+[main]
+enabled=1
+
+[messaging]
+uuid=%s
+threads=%s
+"""
 
 class BadException(Exception):
     def __init__(self):
@@ -104,8 +118,29 @@ def echo(s):
     return s
 
 
-class Agent(Base):
+def install(uuid, threads=1):
+    descriptor = DESCRIPTOR % (uuid, threads)
+    PluginDescriptor.ROOT = '/tmp/gofer/plugins'
+    PluginLoader.ROOT = '/tmp/gofer/lib/plugins'
+    for path in (PluginDescriptor.ROOT, PluginLoader.ROOT):
+        if not os.path.exists(path):
+            os.makedirs(path)
+    path = os.path.join(PluginDescriptor.ROOT, 'agent.conf')
+    f = open(path, 'w')
+    f.write(descriptor)
+    f.close()
+    f = open(__file__)
+    s = f.read()
+    f.close()
+    path = os.path.join(PluginLoader.ROOT, 'agent.py')
+    f = open(path, 'w')
+    f.write(s)
+    f.close()
+    
+
+class Agent:
     def __init__(self, id, threads):
+        install(id, threads)
         queue = Queue(id)
         url = 'ssl://localhost:5674'
         url = 'tcp://50.17.201.180:5672'
@@ -113,10 +148,15 @@ class Agent(Base):
         broker = Broker(url)
         broker.cacert = '/etc/pki/qpid/ca/ca.crt'
         broker.clientcert = '/etc/pki/qpid/client/client.pem'
-        Base.__init__(
-            self,
-            RequestConsumer(queue, url=url),
-            threads)
+        rq = RequestConsumer(queue, url=url)
+        rq.start()
+        pl = PluginLoader()
+        plugins = pl.load()
+        sched = Scheduler(plugins)
+        sched.start()
+        actions = Actions()
+        at = ActionThread(actions.collated())
+        at.start()
         while True:
             sleep(10)
             print 'Agent: sleeping...'
@@ -124,9 +164,11 @@ class Agent(Base):
 if __name__ == '__main__':
     uuid = 'xyz'
     threads = 1
+    basicConfig(filename='/tmp/gofer/agent.log', level=INFO)
     if len(sys.argv) > 1:
         threads = int(sys.argv[1])
     if len(sys.argv) > 2:
         uuid = sys.argv[2]
+    log.info('started')
     print 'starting agent (%s), threads=%d' % (uuid, threads)
     agent = Agent(uuid, threads)

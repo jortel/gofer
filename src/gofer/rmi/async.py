@@ -18,15 +18,15 @@
 Provides async AMQP message consumer classes.
 """
 
+import os
 from time import sleep, time
 from threading import Thread
-from gofer import Singleton
+from gofer import NAME, Singleton
 from gofer.messaging import *
-from gofer.messaging.dispatcher import Return, RemoteException
-from gofer.messaging.policy import RequestTimeout
+from gofer.rmi.dispatcher import Return, RemoteException
+from gofer.rmi.policy import RequestTimeout
 from gofer.messaging.consumer import Consumer
 from gofer.messaging.producer import Producer
-from gofer.messaging.store import Journal
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -119,7 +119,7 @@ class AsyncReply:
         @type envelope: L{Envelope}
         """
         self.sn = envelope.sn
-        self.origin = envelope.origin
+        self.origin = envelope.routing[0]
         self.any = envelope.any
 
     def notify(self, listener):
@@ -428,3 +428,171 @@ class WatchDog(Thread):
             any=any,
             result=result,
             watchdog=self.__producer.uuid)
+
+
+class Journal:
+    """
+    Async message journal
+    Entry:
+      - sn: serial number
+      - replyto: reply to amqp address.
+      - any: user data
+      - timeout: (start<ctime>, complte<ctime>)
+      - idx: current timout index.
+    """
+    
+    ROOT = '/var/lib/%s/journal' % NAME
+    
+    def __init__(self, root=ROOT):
+        """
+        @param ctag: A correlation tag.
+        @type ctag: str
+        """
+        self.root = root
+        self.__mkdir()
+        
+    def load(self):
+        """
+        Load all journal entries.
+        @return: A dict of journal entries.
+        @rtype: dict
+        """
+        entries = {}
+        for fn in os.listdir(self.root):
+            path = os.path.join(self.root, fn)
+            je = self.__read(path)
+            if not je:
+                continue
+            entries[je.sn] = je
+        return entries
+        
+    def write(self, sn, replyto, any, ts):
+        """
+        Write a new journal entry.
+        @param sn: A serial number.
+        @type sn: str
+        @param replyto: An AMQP address.
+        @type replyto: str
+        @param any: User defined data.
+        @type any: any
+        @param ts: A timeout (start<ctime>,complete<ctime>)
+        @type ts: tuple(2)
+        """
+        je = Envelope(
+            sn=sn,
+            replyto=replyto,
+            any=any,
+            ts=ts,
+            idx=0)
+        self.__write(je)
+        return je
+            
+    def update(self, sn, **property):
+        """
+        Update a journal entry for the specified I{sn}.
+        @param sn: An entry serial number.
+        @type sn: str
+        @param property: properties to update.
+        @type property: dict
+        @return: The updated journal entry
+        @rtype: Entry
+        @raise KeyError: On invalid key.
+        """
+        je = self.find(sn)
+        if not je:
+            return None
+        for k,v in property.items():
+            if k in ('sn',):
+                continue
+            if k in je:
+                je[k] = v
+            else:
+                raise KeyError(k)
+        self.__write(je)
+        return je
+        
+    def delete(self, sn):
+        """
+        Delete a journal entry by serial number.
+        @param sn: An entry serial number.
+        @type sn: str
+        """
+        fn = self.__fn(sn)
+        path = os.path.join(self.root, fn)
+        self.__unlink(path)
+        
+    def find(self, sn):
+        """
+        Find a journal entry my serial number.
+        @param sn: An entry serial number.
+        @type sn: str
+        @return: The journal entry.
+        @rtype: Entry
+        """
+        try:
+            fn = self.__fn(sn)
+            path = os.path.join(self.root, fn)
+            return self.__read(path)
+        except OSError:
+            log.error(sn)
+    
+    def __fn(self, sn):
+        """
+        File name.
+        @param sn: An entry serial number.
+        @type sn: str
+        @return: The journal file name by serial number.
+        @rtype: str
+        """
+        return '%s.jnl' % sn
+    
+    def __read(self, path):
+        """
+        Read the journal file at the specified I{path}.
+        @param path: A journal file path.
+        @type path: str
+        @return: A journal entry.
+        @rtype: Entry
+        """
+        f = open(path)
+        try:
+            try:
+                je = Envelope()
+                je.load(f.read())
+                return je
+            except:
+                log.error(path, exc_info=1)
+                self.__unlink(path)
+        finally:
+            f.close()
+            
+    def __write(self, je):
+        """
+        Write the specified journal entry.
+        @param je: A journal entry
+        @type je: Entry
+        """
+        path = os.path.join(self.root, self.__fn(je.sn))
+        f = open(path, 'w')
+        try:
+            f.write(je.dump())
+        finally:
+            f.close 
+    
+    def __unlink(self, path):
+        """
+        Unlink (delete) the journal file at the specified I{path}.
+        @param path: A journal file path.
+        @type path: str
+        """
+        try:
+            os.unlink(path)
+        except OSError:
+            log.error(path, exc_info=1)
+    
+    def __mkdir(self):
+        """
+        Ensure the directory exists.
+        """
+        if not os.path.exists(self.root):
+            os.makedirs(self.root)

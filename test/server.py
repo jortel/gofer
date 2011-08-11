@@ -15,14 +15,13 @@
 #
 
 import sys
+from time import sleep
 from gofer.messaging import Queue
-from gofer.messaging.base import Container
 from gofer.messaging.producer import Producer
-from gofer.messaging.window import *
-from gofer.messaging.async import ReplyConsumer, WatchDog
+from gofer.rmi.window import *
+from gofer.rmi.async import ReplyConsumer, WatchDog
 from gofer.metrics import Timer
 from gofer.proxy import Agent
-from time import sleep
 from datetime import datetime as dt
 from datetime import timedelta as delta
 from logging import INFO, basicConfig, getLogger
@@ -34,40 +33,24 @@ basicConfig(filename='/tmp/gofer/server.log', level=INFO)
 log = getLogger(__name__)
 
 # asynchronous RMI timeout watchdog
-watchdog = WatchDog()
-watchdog.start()
+#watchdog = WatchDog()
+#watchdog.start()
+watchdog = Agent('xyz').WatchDog()
+
 
 def onReply(reply):
-    print 'CB (local):\n%s' % reply
+    print 'REPLY [%s]\n%s' % (dt.now(), reply)
 
 def demo(agent):
 
-    agent.__main__.echo('have a nice day')
-    
+    # module function
+    agent.agent_plugin.echo('have a nice day')
+
+    # admin hello
     admin = agent.Admin()
-    
     print admin.hello()
     
-    cat = agent.Cat(secret='garfield')
-    print cat.meow('PUR, auth worked!')
-    try:
-        cat = agent.Cat()
-        cat.meow('hello')
-    except:
-        print 'Auth failed, damn cats.'
-
-    try:
-        # test bad return
-        print cat.returnObject()
-    except Exception, e:
-        print e
-        
-    try:
-        # test raise bad exception
-        print cat.badException()
-    except Exception, e:
-        print e
-    
+    # misc synchronous
     dog = agent.Dog()
     repolib = agent.RepoLib()
     print dog.bark('RUF')
@@ -75,16 +58,45 @@ def demo(agent):
     print dog.wag(3)
     print dog.bark('hello again')
     print repolib.update()
+    
+    # test auth
+    cat = agent.Cat(secret='garfield')
+    print cat.meow('PUR, auth worked!')
+    
+    # test auth failed
+    try:
+        cat = agent.Cat()
+        cat.meow('hello')
+    except:
+        print 'Auth failed, damn cats.'
+
+    # bad return
+    try:
+        print cat.returnObject()
+    except Exception, e:
+        print e
+        
+    # raise bad exception
+    try:
+        print cat.badException()
+    except Exception, e:
+        print e
+
+    # test MethodNotFound
     try:
         print repolib.updated()
     except Exception, e:
         log.info('failed:', exc_info=True)
         print e
+
+    # test NotPermitted
     try:
         print dog.notpermitted()
     except Exception, e:
         log.info('failed:', exc_info=True)
         print e
+
+    # test KeyError raised in plugin
     try:
         print dog.keyError('jeff')
     except KeyError, e:
@@ -93,6 +105,8 @@ def demo(agent):
     except Exception, e:
         log.info('failed:', exc_info=True)
         print e
+
+    # test custom Exception
     try:
         print dog.myError()
     except MyError, e:
@@ -111,6 +125,7 @@ def threads(uuid, n=10):
         agent = Agent(uuid)
         name = 'Test%d' % i
         t = Thread(name=name, target=main, args=(uuid,))
+        t.setDaemon(True)
         t.start()
         print 'thread: %s, started' % t.getName()
     return t
@@ -126,7 +141,24 @@ def perftest(uuid):
         dog.bark('performance!')
     t.stop()
     print 'total=%s, percall=%f (ms)' % (t, (t.duration()/N)*1000)
-    sleep(10)
+    sys.exit(0)
+    
+def demoperftest(uuid, n=50):
+    benchmarks = []
+    print 'measuring performance using demo() ...'
+    agent = Agent(uuid)
+    timer = Timer()
+    for i in range(0,n):
+        timer.start()
+        demo(agent)
+        timer.stop()
+        benchmarks.append(str(timer))
+        print '========= DEMO:%d [%s] ========' % (i, timer)
+    print 'benchmarks:'
+    for t in benchmarks:
+        print t
+    del agent
+    sys.exit(0)
     
 def demoWatchdog(uuid):
     tag = uuid.upper()
@@ -135,10 +167,25 @@ def demoWatchdog(uuid):
     dog = agent.Dog(watchdog=watchdog, timeout=3, any='jeff')
     dog.bark('who you calling a watchdog?')
     dog.sleep(4)
+    
+def demoWindow(uuid):
+    tag = uuid.upper()
+    print 'demo window, +10, +10min seconds'
+    begin = later(seconds=10)
+    window = Window(begin=begin, minutes=10)
+    agent = Agent(uuid, ctag=tag)
+    dog = agent.Dog(window=window, any='demo')
+    print dt.now()
+    print dog.bark('hello, after 10 seconds')
+    print dog.wag(3)
+    print dog.bark('hello again, after 10 seconds')
+    sleep(12)
+    sys.exit(0)
 
 def main(uuid):
     tag = uuid.upper()
 
+    # test timeout (not expired)
     agent = Agent(uuid)
     dog = agent.Dog(timeout=(3,10))
     print dog.sleep(1)
@@ -151,14 +198,7 @@ def main(uuid):
     # synchronous
     print '(demo) synchronous'
     agent = Agent(uuid)
-    timer = Timer()
-    for i in range(0,10):
-        timer.start()
-        demo(agent)
-        timer.stop()
-        print '========= DEMO:%d [%s] ========' % (i, timer)
-    #agent.delete()
-    agent = None
+    demo(agent)
 
     # asynchronous (fire and forget)
     print '(demo) asynchronous fire-and-forget'
@@ -211,8 +251,11 @@ def main(uuid):
 
 if __name__ == '__main__':
     uuid = 'xyz'
+    #perftest(uuid)
+    #demoperftest(uuid)
     rcon = ReplyConsumer(Queue(uuid.upper()))
     rcon.start(onReply, watchdog=watchdog)
+    #demoWindow(uuid)
     if len(sys.argv) > 1:
         n = int(sys.argv[1])
         print '======= RUNNING %d THREADS ============' % n

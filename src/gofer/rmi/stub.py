@@ -20,10 +20,11 @@ classes on which we invoke methods.
 """
 
 from new import classobj
+from threading import RLock
 from gofer.messaging import *
-from gofer.messaging.policy import *
-from gofer.messaging.dispatcher import Request
-from gofer.messaging.window import Window
+from gofer.rmi.policy import *
+from gofer.rmi.dispatcher import Request
+from gofer.rmi.window import Window
 
 
 class Method:
@@ -80,6 +81,8 @@ class Stub:
     @type __destination: L{Destination}
     @ivar __options: Stub options.
     @type __options: L{Options}
+    @ivar __mutex: The object mutex.
+    @type __mutex: RLock
     @ivar __policy: The invocation policy.
     @type __policy: L{Policy}
     """
@@ -113,9 +116,24 @@ class Stub:
         self.__producer = producer
         self.__destination = destination
         self.__options = Options(options.items())
+        self.__mutex = RLock()
         self.__policy = None
 
     def _send(self, request, options):
+        """
+        Send the request using the configured request method.
+        @param request: An RMI request.
+        @type request: str
+        @param options: Invocation options.
+        @type options: L{Options}
+        """
+        self.__lock()
+        try:
+            return self.__send(request, options)
+        finally:
+            self.__unlock()
+            
+    def __send(self, request, options):
         """
         Send the request using the configured request method.
         @param request: An RMI request.
@@ -197,3 +215,9 @@ class Stub:
              self.__options.async ):
             return True
         return isinstance(self.__destination, (list,tuple))
+    
+    def __lock(self):
+        self.__mutex.acquire()
+        
+    def __unlock(self):
+        self.__mutex.release()

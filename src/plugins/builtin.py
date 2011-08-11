@@ -21,7 +21,7 @@ import socket
 from uuid import uuid4
 from gofer.decorators import *
 from gofer.collator import Collator
-from gofer.messaging.decorators import Remote
+from gofer.rmi.decorators import Remote
 from gofer.agent.plugin import Plugin
 from gofer.agent.action import Actions
 from gofer.agent.config import Config

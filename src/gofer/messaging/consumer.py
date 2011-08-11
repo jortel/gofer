@@ -22,10 +22,6 @@ from time import sleep
 from threading import Thread
 from gofer.messaging import *
 from gofer.messaging.endpoint import Endpoint
-from gofer.messaging.producer import Producer
-from gofer.messaging.dispatcher import Return
-from gofer.messaging.window import *
-from gofer.messaging.store import PendingQueue, PendingReceiver
 from qpid.messaging import LinkError, Empty
 from logging import getLogger
 
@@ -254,11 +250,9 @@ class Consumer(Endpoint):
         @type message: qpid.messaging.Message
         """
         envelope = Envelope()
-        subject = self.subject(message)
         envelope.load(message.content)
-        if subject:
-            envelope.subject = subject
-        envelope.destination = Options(uuid=repr(self.id()))
+        envelope.subject = self.subject(message)
+        envelope.ttl = message.ttl
         log.debug('{%s} received:\n%s', self.id(), envelope)
         if self.valid(envelope):
             self.dispatch(envelope)
@@ -385,182 +379,3 @@ class Reader(Endpoint):
             pass
         except:
             log.error(self.id(), exc_info=1)
-
-
-class RequestConsumer(Consumer):
-    """
-    An AMQP request consumer.
-    @ivar __pending: The pending (delayed) message queue.
-    @type __pending: L{PendingReceiver}
-    @ivar __producer: A reply producer.
-    @type __producer: L{gofer.messaging.producer.Producer}
-    @ivar __started: Indicates that start() has been called.
-    @type __started: bool
-    @ivar __dispatcher: An RMI dispatcher.
-    @type __dispatcher: L{gofer.messaging.dispatcher.Dispatcher}
-    """
-    
-    def __init__(self, destination, **options):
-        """
-        @param destination: The destination to consumer.
-        @type destination: L{Destination}
-        @param options: Options passed to Consumer.__init__().
-        @type options: dict
-        """
-        Consumer.__init__(self, destination, **options)
-        q = PendingQueue(self.id())
-        self.__pending = PendingReceiver(q, self)
-        self.__producer = Producer(url=self.url)
-        self.__started = False
-        self.__dispatcher = None
-
-    def start(self, dispatcher):
-        """
-        Start processing messages on the queue using the
-        specified dispatcher.
-        @param dispatcher: An RMI dispatcher.
-        @type dispatcher: L{gofer.messaging.Dispatcher}
-        """
-        self._lock()
-        try:
-            if self.__started:
-                return
-            self.__dispatcher = dispatcher
-            self.__pending.start()
-            self.__started = True
-            Consumer.start(self)
-        finally:
-            self._unlock()
-        
-    def stop(self):
-        """
-        Stop processing requests.
-        """
-        self._lock()
-        try:
-            if not self.__started:
-                return
-            self.__pending.stop()
-            self.__pending.join(10)
-            self.__started = False
-            Consumer.stop(self)
-        finally:
-            self._unlock()
-
-    def dispatch(self, envelope):
-        """
-        Dispatch received request.
-        @param envelope: The received envelope.
-        @type envelope: L{Envelope}
-        """
-        self._lock()
-        try:
-            return self.__dispatch(envelope)
-        finally:
-            self._unlock()
-
-    def concurrent(self):
-        """
-        Get whether the consumer is concurrent.
-        @return: based on dispatcher
-        @rtype: bool
-        """
-        self._lock()
-        try:
-            return self.__dispatcher.concurrent()
-        finally:
-            self._unlock()
-            
-    def sendreply(self, envelope, result):
-        """
-        Send the reply if requested.
-        @param envelope: The received envelope.
-        @type envelope: L{Envelope}
-        @param result: The request result.
-        @type result: object
-        """
-        sn = envelope.sn
-        any = envelope.any
-        replyto = envelope.replyto
-        if not replyto:
-            return
-        try:
-            self.__send(
-                replyto,
-                sn=sn,
-                any=any,
-                result=result)
-        except:
-            log.error('send failed:\n%s', result, exc_info=True)
-
-    def sendstarted(self, envelope):
-        """
-        Send the a status update if requested.
-        @param envelope: The received envelope.
-        @type envelope: L{Envelope}
-        """
-        sn = envelope.sn
-        any = envelope.any
-        replyto = envelope.replyto
-        if not replyto:
-            return
-        try:
-            self.__send(
-                replyto,
-                sn=sn,
-                any=any,
-                status='started')
-        except:
-            log.error('send (started), failed', exc_info=True)
-            
-    def __dispatch(self, envelope):
-        """
-        Dispatch received request.
-        @param envelope: The received envelope.
-        @type envelope: L{Envelope}
-        """
-        try:
-            self.__checkwindow(envelope)
-            self.sendstarted(envelope)
-            if self.concurrent():
-                self.__dispatcher.dispatch(envelope, self.sendreply)
-                return
-            result = self.__dispatcher.dispatch(envelope)
-            self.sendreply(envelope, result)
-        except WindowMissed:
-            self.sendreply(envelope, Return.exception())
-        except WindowPending:
-            pass # ignored
-        
-    def __checkwindow(self, envelope):
-        """
-        Check the window.
-        @param envelope: The received envelope.
-        @type envelope: L{Envelope}
-        @raise WindowPending: when window in the future.
-        @raise WindowMissed: when window missed.
-        """
-        w = envelope.window
-        if not isinstance(w, dict):
-            return
-        window = Window(w)
-        if window.future():
-            pending = self.__pending.queue
-            pending.add(envelope)
-            raise WindowPending(envelope.sn)
-        if window.past():
-            raise WindowMissed(envelope.sn)
-            
-    def __send(self, destination, **options):
-        """
-        Send an AMQP message.
-        @param destination: The destination to consumer.
-        @type destination: L{Destination}
-        @param options: Options passed to Producer.send().
-        @type options: dict
-        """
-        self._lock()
-        try:
-            self.__producer.send(destination, **options)
-        finally:
-            self._unlock()

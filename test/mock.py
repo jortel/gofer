@@ -15,8 +15,8 @@
 #
 
 from time import sleep
-from gofer.messaging import mock
-from gofer.messaging.dispatcher import NotPermitted
+from gofer.rmi import mock
+from gofer.rmi.dispatcher import NotPermitted
 
 mock.install()
 

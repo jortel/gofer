@@ -19,49 +19,12 @@ Agent base classes.
 """
 
 from gofer.messaging import *
-from gofer.messaging.stub import Stub
-from gofer.messaging.decorators import Remote
-from gofer.messaging.dispatcher import Dispatcher, ConcurrentDispatcher
-from gofer.messaging.window import Window
+from gofer.rmi.stub import Stub
+from gofer.rmi.window import Window
 from logging import getLogger
 
 log = getLogger(__name__)
 
-
-
-class Agent:
-    """
-    The agent base provides a dispatcher and automatic
-    registration of methods based on decorators.
-    @ivar consumer: A qpid consumer.
-    @type consumer: L{gofer.messaging.Consumer}
-    """
-
-    def __init__(self, consumer, threads=1):
-        """
-        Construct the L{Dispatcher} using the specified
-        AMQP I{consumer} and I{start} the AMQP consumer.
-        @param consumer: A qpid consumer.
-        @type consumer: L{gofer.messaging.Consumer}
-        @param threads: The number of thread in the dispatcher.
-        @type threads: int
-        """
-        assert(threads > 0)
-        if threads > 1:
-            dispatcher = ConcurrentDispatcher()
-        else:
-            dispatcher = Dispatcher()
-        remote = Remote()
-        dispatcher.register(*remote.collated())
-        consumer.start(dispatcher)
-        self.consumer = consumer
-
-    def close(self):
-        """
-        Close and release all resources.
-        """
-        self.consumer.close()
-        
         
 class Container:
     """

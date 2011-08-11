@@ -45,11 +45,16 @@ class Remote:
         for fn in cls.functions:
             if fn.__module__ == mod:
                 yield fn
+                
+    @classmethod
+    def clear(cls):
+        cls.functions = []
     
-    def collated(self):
+    @classmethod
+    def collated(cls):
         collated = []
         c = Collator()
-        classes, functions = c.collate(self.functions)
+        classes, functions = c.collate(cls.functions)
         for c in classes.keys():
             collated.append(c)
         for m in functions.keys():
