@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.44
+Version: 0.45
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
@@ -132,6 +132,15 @@ fi
 %attr(777, root, root) /var/lib/%{name}/journal
 
 %changelog
+* Fri Aug 12 2011 Jeff Ortel <jortel@redhat.com> 0.45-1
+- ruby: align with python impl. (jortel@redhat.com)
+- Rework dispatcher flow. Move most of the RMI modules to a new (rmi) package.
+  Dispatch everything to the PendingQueue which has been greatly optimized. Fix
+  ThreadPool worker allocation. Add scheduler to process PendingQueue and queue
+  messages to appropriate plugin's thread pool. Add TTL processing throughout
+  the dispatch flow. Commit individual messages grabbed off the PendingQueue.
+  (jortel@redhat.com)
+
 * Wed Aug 03 2011 Jeff Ortel <jortel@redhat.com> 0.44-1
 - Fix RHEL (python 2.4) macro. (jortel@redhat.com)
 - Add watchdog plugin. (jortel@redhat.com)
