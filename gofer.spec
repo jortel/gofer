@@ -6,7 +6,7 @@ Version: 0.45
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent.
 Group:   Development/Languages
-License: GPLv2
+License: LGPLv2
 URL: https://fedorahosted.org/gofer/
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -95,7 +95,6 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-%doc
 %dir %{_sysconfdir}/%{name}/conf.d/
 %{python_sitelib}/%{name}/agent/
 %{_bindir}/%{name}d
@@ -103,6 +102,7 @@ rm -rf %{buildroot}
 %config(noreplace) %{_sysconfdir}/%{name}/agent.conf
 %config %{_sysconfdir}/%{name}/plugins/*.conf
 /usr/lib/%{name}/plugins/
+%doc LICENSE
 
 %post
 chkconfig --add %{name}d
@@ -115,21 +115,21 @@ fi
 
 %files -n python-%{name}
 %defattr(-,root,root,-)
-%doc
 %{python_sitelib}/%{name}/*.py*
 %{python_sitelib}/%{name}/rmi/
 %{python_sitelib}/%{name}/messaging/
 %attr(777, root, root) /var/lib/%{name}/journal
+%doc LICENSE
 
 %files -n ruby-%{name}
 %defattr(-,root,root,-)
-%doc
 %{ruby_sitelib}/%{name}
 %{ruby_sitelib}/%{name}.rb*
 %{ruby_sitelib}/%{name}/*.rb*
 %{ruby_sitelib}/%{name}/rmi/
 %{ruby_sitelib}/%{name}/messaging/
 %attr(777, root, root) /var/lib/%{name}/journal
+%doc LICENSE
 
 %changelog
 * Fri Aug 12 2011 Jeff Ortel <jortel@redhat.com> 0.45-1
