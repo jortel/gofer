@@ -74,19 +74,19 @@ popd
 popd
 
 mkdir -p %{buildroot}/usr/bin
-mkdir -p %{buildroot}/etc/%{name}
-mkdir -p %{buildroot}/etc/%{name}/plugins
-mkdir -p %{buildroot}/etc/%{name}/conf.d
-mkdir -p %{buildroot}/etc/init.d
+mkdir -p %{buildroot}/%{_sysconfdir}/%{name}
+mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/plugins
+mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/conf.d
+mkdir -p %{buildroot}/%{_sysconfdir}/init.d
 mkdir -p %{buildroot}/var/log/%{name}
 mkdir -p %{buildroot}/var/lib/%{name}/journal
-mkdir -p %{buildroot}/usr/lib/%{name}/plugins
+mkdir -p %{buildroot}/%{_libdir}/%{name}/plugins
 
 cp bin/%{name}d %{buildroot}/usr/bin
-cp etc/init.d/%{name}d %{buildroot}/etc/init.d
-cp etc/%{name}/*.conf %{buildroot}/etc/%{name}
-cp etc/%{name}/plugins/*.conf %{buildroot}/etc/%{name}/plugins
-cp src/plugins/*.py %{buildroot}/usr/lib/%{name}/plugins
+cp %{_sysconfdir}/init.d/%{name}d %{buildroot}/%{_sysconfdir}/init.d
+cp %{_sysconfdir}/%{name}/*.conf %{buildroot}/%{_sysconfdir}/%{name}
+cp %{_sysconfdir}/%{name}/plugins/*.conf %{buildroot}/%{_sysconfdir}/%{name}/plugins
+cp src/plugins/*.py %{buildroot}/%{_libdir}/%{name}/plugins
 
 rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
 
@@ -101,7 +101,7 @@ rm -rf %{buildroot}
 %attr(755,root,root) %{_sysconfdir}/init.d/%{name}d
 %config(noreplace) %{_sysconfdir}/%{name}/agent.conf
 %config %{_sysconfdir}/%{name}/plugins/*.conf
-/usr/lib/%{name}/plugins/
+%{_libdir}/%{name}/plugins/
 %doc LICENSE
 
 %post
