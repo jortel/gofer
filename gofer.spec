@@ -4,7 +4,7 @@
 Name: gofer
 Version: 0.45
 Release: 1%{?dist}
-Summary: A lightweight, extensible python agent.
+Summary: A lightweight, extensible python agent
 Group:   Development/Languages
 License: LGPLv2
 URL: https://fedorahosted.org/gofer/
@@ -20,7 +20,7 @@ Requires: python-%{name} = %{version}
 Gofer provides a lightweight, extensible python agent.
 
 %package -n python-%{name}
-Summary: Gofer python lib modules.
+Summary: Gofer python lib modules
 Group: Development/Languages
 Obsoletes: %{name}-lib
 BuildRequires: python
@@ -35,7 +35,7 @@ Requires: python-ssl
 Contains gofer python lib modules.
 
 %package -n ruby-%{name}
-Summary: Gofer ruby lib modules.
+Summary: Gofer ruby lib modules
 Group: Development/Languages
 BuildRequires: ruby
 Requires: ruby-qpid
@@ -315,7 +315,7 @@ fi
 * Tue Jan 04 2011 Jeff Ortel <jortel@redhat.com> 0.11-1
 - Quiet logged Endpoint.close() not checking for already closed.
   (jortel@redhat.com)
-- Replace builtin variables with macros (format=%{macro}). (jortel@redhat.com)
+- Replace builtin variables with macros (format=%%{macro}). (jortel@redhat.com)
 - make Config a singleton; Make PluginDescriptor a 'Base' config.
   (jortel@redhat.com)
 - Add support for @import directive. (jortel@redhat.com)
