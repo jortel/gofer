@@ -102,6 +102,7 @@ rm -rf %{buildroot}
 %config(noreplace) %{_sysconfdir}/%{name}/agent.conf
 %config %{_sysconfdir}/%{name}/plugins/*.conf
 %{_libdir}/%{name}/plugins/
+/var/log/%{name}
 %doc LICENSE
 
 %post
