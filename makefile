@@ -20,10 +20,12 @@ SPEC = $(PKG).spec
 SETUP = setup.py
 DOCTAR = gofer-docs.tar.gz
 FEDORAPEOPLE = jortel@fedorapeople.org
+FEDORAHOSTEDGOFER = fedorahosted.org:gofer
 TITODIR = /tmp/tito
 
 release : rpm rdocs
-	scp `find $(TITODIR) -name \*.rpm` fedorahosted.org:gofer
+	scp `find $(TITODIR) -name \*$(PKG)\*.rpm` $(FEDORAHOSTEDGOFER)
+	scp `find $(TITODIR) -name \*$(PKG)\*.tar.gz|grep -v git` $(FEDORAHOSTEDGOFER)
 
 rpm	:
 	rm -rf $(TITODIR)

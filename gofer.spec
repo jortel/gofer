@@ -8,7 +8,7 @@ Summary: A lightweight, extensible python agent
 Group:   Development/Languages
 License: LGPLv2
 URL: https://fedorahosted.org/gofer/
-Source0: %{name}-%{version}.tar.gz
+Source0: https://fedorahosted.org/releases/g/o/gofer/%{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch: noarch
 BuildRequires: python2-devel
