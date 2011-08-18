@@ -124,9 +124,8 @@ fi
 
 %files -n ruby-%{name}
 %defattr(-,root,root,-)
-%{ruby_sitelib}/%{name}
-%{ruby_sitelib}/%{name}.rb*
-%{ruby_sitelib}/%{name}/*.rb*
+%{ruby_sitelib}/%{name}.rb
+%{ruby_sitelib}/%{name}/*.rb
 %{ruby_sitelib}/%{name}/rmi/
 %{ruby_sitelib}/%{name}/messaging/
 %attr(777, root, root) /var/lib/%{name}/journal
