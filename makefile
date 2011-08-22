@@ -26,6 +26,7 @@ TITODIR = /tmp/tito
 release : rpm rdocs
 	scp `find $(TITODIR) -name \*$(PKG)\*.rpm` $(FEDORAHOSTEDGOFER)
 	scp `find $(TITODIR) -name \*$(PKG)\*.tar.gz|grep -v git` $(FEDORAHOSTEDGOFER)
+	scp $(SPEC) $(FEDORAHOSTEDGOFER)
 
 rpm	:
 	rm -rf $(TITODIR)
