@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.45
+Version: 0.46
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -132,6 +132,14 @@ fi
 %doc LICENSE
 
 %changelog
+* Mon Aug 22 2011 Jeff Ortel <jortel@redhat.com> 0.46-1
+- Fix duplicate ruby files. (jortel@redhat.com)
+- Add /var/log/gofer to %files. (jortel@redhat.com)
+- Fix rpmlink complaints. (jortel@redhat.com)
+- Point Source0: at fedorahosted. (jortel@redhat.com)
+- Fix rpmlint complaints. (jortel@redhat.com)
+- Add LICENSE and reference in %doc. (jortel@redhat.com)
+
 * Fri Aug 12 2011 Jeff Ortel <jortel@redhat.com> 0.45-1
 - ruby: align with python impl. (jortel@redhat.com)
 - Rework dispatcher flow. Move most of the RMI modules to a new (rmi) package.
