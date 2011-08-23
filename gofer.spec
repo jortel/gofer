@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.46
+Version: 0.47
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -132,6 +132,12 @@ fi
 %doc LICENSE
 
 %changelog
+* Tue Aug 23 2011 Jeff Ortel <jortel@redhat.com> 0.47-1
+- Fix macros in changelog. (jortel@redhat.com)
+- Fix cp etc/xx replaced with macro my mistake in build section of spec.
+  (jortel@redhat.com)
+- upload spec file. (jortel@redhat.com)
+
 * Mon Aug 22 2011 Jeff Ortel <jortel@redhat.com> 0.46-1
 - Fix duplicate ruby files. (jortel@redhat.com)
 - Add /var/log/gofer to %%files. (jortel@redhat.com)
