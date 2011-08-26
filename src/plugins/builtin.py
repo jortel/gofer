@@ -18,10 +18,9 @@ Demo plugin.
 """
 import os
 import socket
+import inspect
 from uuid import uuid4
 from gofer.decorators import *
-from gofer.collator import Collator
-from gofer.rmi.decorators import Remote
 from gofer.agent.plugin import Plugin
 from gofer.agent.action import Actions
 from gofer.agent.config import Config
@@ -29,6 +28,14 @@ from logging import getLogger
 
 log = getLogger(__name__)
 plugin = Plugin.find(__name__)
+
+
+def indent(v, n, *args):
+    s = []
+    for n in range(0,n):
+        s.append(' ')
+    s.append(str(v) % args)
+    return ''.join(s)
 
 
 class TestAction:
@@ -55,20 +62,38 @@ class Admin:
         s = []
         s.append('Plugins:')
         for p in Plugin.all():
+            # plugin
+            s.append('')
             if p.synonyms:
-                s.append('  %s %s' % (p.name, p.synonyms))
+                s.append(indent('<plugin> %s %s', 2, p.name, p.synonyms))
             else:
-                s.append('  %s' % p.name)
+                s.append(indent('<plugin> %s', 2, p.name))
+            # classes
+            s.append(indent('Classes:', 4))
+            for n,v in p.dispatcher.classes.items():
+                if inspect.ismodule(v):
+                    continue
+                s.append(indent('<class> %s', 6, n))
+                s.append(indent('methods:', 8))
+                for n,v in inspect.getmembers(v, inspect.ismethod):
+                    fn = v.im_func
+                    if not hasattr(fn, 'gofer'):
+                        continue
+                    s.append(indent(self.__signature(n, fn), 10))
+            # functions
+            s.append(indent('Functions:', 4))
+            for n,v in p.dispatcher.classes.items():
+                if not inspect.ismodule(v):
+                    continue
+                for n,v in inspect.getmembers(v, inspect.isfunction):
+                    fn = v
+                    if not hasattr(fn, 'gofer'):
+                        continue
+                    s.append(indent(self.__signature(n, fn), 6))
+        s.append('')
         s.append('Actions:')
         for a in self.__actions():
             s.append('  %s %s' % a)
-        methods, functions = self.__remote()
-        s.append('Methods:')
-        for m in methods:
-            s.append('  %s.%s()' % m)
-        s.append('Functions:')
-        for m in functions:
-            s.append('  %s.%s()' % m)
         return '\n'.join(s)
     
     def __actions(self):
@@ -77,20 +102,21 @@ class Admin:
             actions.append((a.name(), a.interval))
         return actions
     
-    def __remote(self):
-        methods = []
-        funclist = []
-        c = Collator()
-        classes, functions = c.collate(Remote.functions)
-        for n,v in classes.items():
-            for m,d in v:
-                methods.append((n.__name__, m.__name__))
-        for n,v in functions.items():
-            for f,d in v:
-                funclist.append((n.__name__, f.__name__))
-        methods.sort()
-        funclist.sort()
-        return (methods, funclist)
+    def __signature(self, n, fn):
+        s = []
+        s.append(n)
+        s.append('(')
+        spec = inspect.getargspec(fn)
+        if 'self' in spec[0]:
+            spec[0].remove('self')
+        if spec[1]:
+            spec[0].append('*%s' % spec[1])
+        if spec[2]:
+            spec[0].append('**%s' % spec[2])
+        s.append(', '.join(spec[0]))
+        s.append(')')
+        return ''.join(s)
+            
 
 
 class Shell:

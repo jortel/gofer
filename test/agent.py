@@ -76,6 +76,10 @@ class Cat:
     @remote
     def badException(self):
         raise BadException()
+    
+    @remote
+    def superMethod(self, a, *names, **opts):
+        pass
 
 
 class Dog:
