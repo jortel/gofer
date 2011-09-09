@@ -1,5 +1,5 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%{!?ruby_sitelib: %define ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
+%{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
 Version: 0.47
@@ -17,7 +17,13 @@ BuildRequires: rpm-python
 Requires: python-%{name} = %{version}
 
 %description
-Gofer provides a lightweight, extensible python agent.
+Gofer provides an extensible, light weight, universal python agent.
+The gofer core agent is a python daemon (service) that provides
+infrastructure for exposing a remote API and for running Recurring
+Actions. The APIs contributed by plug-ins are accessible by Remote
+Method Invocation (RMI). The transport for RMI is AMQP using the
+QPID message broker. Actions are also provided by plug-ins and are
+executed at the specified interval.
 
 %package -n python-%{name}
 Summary: Gofer python lib modules
@@ -78,8 +84,8 @@ mkdir -p %{buildroot}/%{_sysconfdir}/%{name}
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/plugins
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/conf.d
 mkdir -p %{buildroot}/%{_sysconfdir}/init.d
-mkdir -p %{buildroot}/var/log/%{name}
-mkdir -p %{buildroot}/var/lib/%{name}/journal
+mkdir -p %{buildroot}/%{_var}/log/%{name}
+mkdir -p %{buildroot}/%{_var}/lib/%{name}/journal
 mkdir -p %{buildroot}/%{_libdir}/%{name}/plugins
 
 cp bin/%{name}d %{buildroot}/usr/bin
@@ -102,7 +108,7 @@ rm -rf %{buildroot}
 %config(noreplace) %{_sysconfdir}/%{name}/agent.conf
 %config %{_sysconfdir}/%{name}/plugins/*.conf
 %{_libdir}/%{name}/plugins/
-/var/log/%{name}
+%{_var}/log/%{name}
 %doc LICENSE
 
 %post
@@ -119,7 +125,7 @@ fi
 %{python_sitelib}/%{name}/*.py*
 %{python_sitelib}/%{name}/rmi/
 %{python_sitelib}/%{name}/messaging/
-%attr(777, root, root) /var/lib/%{name}/journal
+%attr(777, root, root) %{_var}/lib/%{name}/journal
 %doc LICENSE
 
 %files -n ruby-%{name}
@@ -128,7 +134,7 @@ fi
 %{ruby_sitelib}/%{name}/*.rb
 %{ruby_sitelib}/%{name}/rmi/
 %{ruby_sitelib}/%{name}/messaging/
-%attr(777, root, root) /var/lib/%{name}/journal
+%attr(777, root, root) %{_var}/lib/%{name}/journal
 %doc LICENSE
 
 %changelog

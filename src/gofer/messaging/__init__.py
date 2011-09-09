@@ -42,8 +42,8 @@ class Options(dict):
       - window : The request window.  See I{Window}.
           Default = any time.
       - secret : A shared secret used for request authentication.
-      - timeout : The synchronous timeout (seconds).
-          Default = 90 seconds.
+      - timeout : The request timeout (seconds).
+          Default = (10,90) seconds.
     """
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__

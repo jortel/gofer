@@ -23,6 +23,7 @@ from threading import RLock
 #   /etc/<NAME>/plugins
 #   /var/lib/<NAME>
 #   /var/lib/<NAME>/messaging
+#   /var/lib/<NAME>/journal
 #   /usr/lib/<NAME>/<plugin>
 #   /var/run/<NAME>d.pid
 #   /var/log/<NAME>/agent.log
