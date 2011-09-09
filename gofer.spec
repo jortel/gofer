@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.47
+Version: 0.48
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -138,6 +138,11 @@ fi
 %doc LICENSE
 
 %changelog
+* Fri Sep 09 2011 Jeff Ortel <jortel@redhat.com> 0.48-1
+- Use rpm _var macro; use global instead of define rpm macro; fix perms on
+  agent.conf. (jortel@redhat.com)
+- Fix builtin.Admin.help(). (jortel@redhat.com)
+
 * Tue Aug 23 2011 Jeff Ortel <jortel@redhat.com> 0.47-1
 - Fix macros in changelog. (jortel@redhat.com)
 - Fix cp etc/xx replaced with macro my mistake in build section of spec.
