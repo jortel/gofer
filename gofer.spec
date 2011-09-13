@@ -138,6 +138,9 @@ fi
 %doc LICENSE
 
 %changelog
+* Tue Sep 13 2011 Jeff Ortel <jortel@redhat.com> 0.48-3
+- Fix tito tagging problem. (jortel@redhat.com)
+
 * Tue Sep 13 2011 Jeff Ortel <jortel@redhat.com> 0.48-2
 - bump to release: 2. (jortel@redhat.com)
 - Move journal to /usr/share; hunt for plugins in path: /usr/lib/gofer/plugins,
