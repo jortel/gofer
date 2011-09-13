@@ -85,7 +85,7 @@ mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/plugins
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/conf.d
 mkdir -p %{buildroot}/%{_sysconfdir}/init.d
 mkdir -p %{buildroot}/%{_var}/log/%{name}
-mkdir -p %{buildroot}/%{_var}/lib/%{name}/journal
+mkdir -p %{buildroot}/%{_datadir}/%{name}/journal
 mkdir -p %{buildroot}/%{_libdir}/%{name}/plugins
 
 cp bin/%{name}d %{buildroot}/usr/bin
@@ -106,7 +106,7 @@ rm -rf %{buildroot}
 %{_bindir}/%{name}d
 %attr(755,root,root) %{_sysconfdir}/init.d/%{name}d
 %config(noreplace) %{_sysconfdir}/%{name}/agent.conf
-%config %{_sysconfdir}/%{name}/plugins/*.conf
+%config(noreplace) %{_sysconfdir}/%{name}/plugins/*.conf
 %{_libdir}/%{name}/plugins/
 %{_var}/log/%{name}
 %doc LICENSE
@@ -125,7 +125,7 @@ fi
 %{python_sitelib}/%{name}/*.py*
 %{python_sitelib}/%{name}/rmi/
 %{python_sitelib}/%{name}/messaging/
-%attr(777, root, root) %{_var}/lib/%{name}/journal
+%attr(777, root, root) %{_datadir}/%{name}/journal
 %doc LICENSE
 
 %files -n ruby-%{name}
@@ -134,7 +134,7 @@ fi
 %{ruby_sitelib}/%{name}/*.rb
 %{ruby_sitelib}/%{name}/rmi/
 %{ruby_sitelib}/%{name}/messaging/
-%attr(777, root, root) %{_var}/lib/%{name}/journal
+%attr(777, root, root) %{_datadir}/%{name}/journal
 %doc LICENSE
 
 %changelog

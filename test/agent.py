@@ -125,8 +125,8 @@ def echo(s):
 def install(uuid, threads=1):
     descriptor = DESCRIPTOR % (uuid, threads)
     PluginDescriptor.ROOT = '/tmp/gofer/plugins'
-    PluginLoader.ROOT = '/tmp/gofer/lib/plugins'
-    for path in (PluginDescriptor.ROOT, PluginLoader.ROOT):
+    PluginLoader.PATH = ['/tmp/gofer/lib/plugins']
+    for path in (PluginDescriptor.ROOT, PluginLoader.PATH[0]):
         if not os.path.exists(path):
             os.makedirs(path)
     path = os.path.join(PluginDescriptor.ROOT, 'agent.conf')
@@ -136,7 +136,7 @@ def install(uuid, threads=1):
     f = open(__file__)
     s = f.read()
     f.close()
-    path = os.path.join(PluginLoader.ROOT, 'agent.py')
+    path = os.path.join(PluginLoader.PATH[0], 'agent.py')
     f = open(path, 'w')
     f.write(s)
     f.close()

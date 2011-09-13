@@ -441,7 +441,7 @@ class Journal:
       - idx: current timout index.
     """
     
-    ROOT = '/var/lib/%s/journal' % NAME
+    ROOT = '/usr/share/%s/journal' % NAME
     
     def __init__(self, root=ROOT):
         """

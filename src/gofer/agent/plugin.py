@@ -325,11 +325,11 @@ class PluginLoader:
     @type plugins: dict
     """
 
-    ROOT = '/usr/lib/%s/plugins' % NAME
-
-    def __init__(self):
-        if not os.path.exists(self.ROOT):
-            os.makedirs(self.ROOT)
+    PATH = [
+        '/usr/lib/%s/plugins' % NAME,
+        '/usr/lib64/%s/plugins' % NAME,
+        '/opt/%s/plugins' % NAME,
+    ]
 
     def load(self):
         """
@@ -376,8 +376,7 @@ class PluginLoader:
         p = Plugin(plugin, cfg, (syn,))
         Plugin.add(p)
         try:
-            mod = '%s.py' % plugin
-            path = os.path.join(self.ROOT, mod)
+            path = self.__findplugin(plugin)
             mod = imp.load_source(syn, path)
             log.info('plugin "%s", imported as: "%s"', plugin, syn)
             for fn in Remote.find(syn):
@@ -387,10 +386,25 @@ class PluginLoader:
             return p
         except:
             Plugin.delete(p)
-            log.error(
-                'plugin "%s", import failed',
-                plugin, 
-                exc_info=True)
+            log.exception('plugin "%s", import failed', plugin)
+            
+    def __findplugin(self, plugin):
+        """
+        Find a plugin module.
+        @param plugin: The plugin name.
+        @type plugin: str
+        @return: The fully qualified path to the plugin module.
+        @rtype: str
+        @raise Exception: When not found.
+        """
+        mod = '%s.py' % plugin
+        for root in self.PATH:
+            path = os.path.join(root, mod)
+            if os.path.exists(path):
+                log.info('using: %s', path)
+                return path
+        raise Exception('%s, not found in:%s', mod, self.PATH)
+        
             
     def __mangled(self, plugin):
         """
