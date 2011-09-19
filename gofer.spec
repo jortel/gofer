@@ -126,7 +126,6 @@ fi
 %{python_sitelib}/%{name}/*.py*
 %{python_sitelib}/%{name}/rmi/
 %{python_sitelib}/%{name}/messaging/
-%attr(777, root, root) %{_var}/lib/%{name}/journal
 %doc LICENSE
 
 %files -n ruby-%{name}
@@ -135,7 +134,6 @@ fi
 %{ruby_sitelib}/%{name}/*.rb
 %{ruby_sitelib}/%{name}/rmi/
 %{ruby_sitelib}/%{name}/messaging/
-%attr(777, root, root) %{_var}/lib/%{name}/journal
 %doc LICENSE
 
 %changelog

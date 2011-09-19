@@ -19,7 +19,7 @@ from time import sleep
 from gofer.messaging import Queue
 from gofer.messaging.producer import Producer
 from gofer.rmi.window import *
-from gofer.rmi.async import ReplyConsumer, WatchDog
+from gofer.rmi.async import ReplyConsumer, WatchDog, Journal
 from gofer.metrics import Timer
 from gofer.proxy import Agent
 from datetime import datetime as dt
@@ -33,9 +33,10 @@ basicConfig(filename='/tmp/gofer/server.log', level=INFO)
 log = getLogger(__name__)
 
 # asynchronous RMI timeout watchdog
-#watchdog = WatchDog()
-#watchdog.start()
-watchdog = Agent('xyz').WatchDog()
+WatchDog.LOCATION = '/tmp/gofer/watchdog/journal'
+watchdog = WatchDog()
+watchdog.start()
+#watchdog = Agent('xyz').WatchDog()
 
 
 def onReply(reply):
@@ -277,7 +278,7 @@ def main(uuid):
 
 if __name__ == '__main__':
     uuid = 'xyz'
-    demopam(uuid)
+    #demopam(uuid)
     #perftest(uuid)
     #demoperftest(uuid)
     rcon = ReplyConsumer(Queue(uuid.upper()))

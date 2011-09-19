@@ -309,6 +309,7 @@ class WatchDog(Thread):
     __metaclass__ = Singleton
  
     URL = Producer.LOCALHOST
+    LOCATION = '/var/lib/%s/watchdog/journal' % NAME
 
     def __init__(self, url=URL):
         """
@@ -317,7 +318,7 @@ class WatchDog(Thread):
         """
         Thread.__init__(self, name='watchdog')
         self.url = url
-        self.__jnl = Journal()
+        self.__jnl = Journal(self.LOCATION)
         self.__producer = None
         self.__run = True
         self.setDaemon(True)
@@ -443,12 +444,12 @@ class Journal:
     
     ROOT = '/var/lib/%s/journal' % NAME
     
-    def __init__(self, root=ROOT):
+    def __init__(self, root=None):
         """
         @param ctag: A correlation tag.
         @type ctag: str
         """
-        self.root = root
+        self.root = root or self.ROOT
         self.__mkdir()
         
     def load(self):
