@@ -292,9 +292,9 @@ class Listener:
         pass
 
 
-class WatchDog(Thread):
+class WatchDog:
     """
-    A watchdog thread used to track asynchronous messages
+    A watchdog object used to track asynchronous messages
     by serial number.  Tracking is persisted using journal files.
     @ivar url: The AMQP broker URL.
     @type url: str
@@ -310,36 +310,34 @@ class WatchDog(Thread):
  
     URL = Producer.LOCALHOST
     LOCATION = '/var/lib/%s/watchdog/journal' % NAME
+    
+    @classmethod
+    def journal(cls, location):
+        """
+        Set the global journalling location.
+        @param location: The path to the journalling directory.
+        @type location: str
+        """
+        cls.LOCATION = location
 
     def __init__(self, url=URL):
         """
         @param url: The (optional) broker URL.
         @type url: str
         """
-        Thread.__init__(self, name='watchdog')
         self.url = url
         self.__jnl = Journal(self.LOCATION)
         self.__producer = None
-        self.__run = True
-        self.setDaemon(True)
-
-    def run(self):
+        
+    def start(self):
         """
-        Begin tracking.
+        Start a watchdog thread.
+        @return: The started thread.
+        @rtype: L{WatchDogThread}
         """
-        while True:
-            try:
-                self.process()
-                sleep(1)
-            except:
-                log.error(self.getName(), exc_info=1)
-                sleep(3)
-    
-    def stop(self):
-        """
-        Stop the thread.
-        """
-        self.__run = False
+        thread = WatchDogThread(self)
+        thread.start()
+        return thread
     
     def track(self, sn, replyto, any, timeout):
         """
@@ -429,6 +427,32 @@ class WatchDog(Thread):
             any=any,
             result=result,
             watchdog=self.__producer.uuid)
+        
+        
+class WatchDogThread(Thread):
+    """
+    Watchdog thread.
+    """
+
+    def __init__(self, watchdog):
+        Thread.__init__(self, name='watchdog')
+        self.watchdog = watchdog
+        self.__run = True
+        self.setDaemon(True)
+
+    def run(self):
+        watchdog = self.watchdog
+        while self.__run:
+            try:
+                watchdog.process()
+                sleep(1)
+            except:
+                log.error(self.getName(), exc_info=1)
+                sleep(3)
+                
+    def stop(self):
+        self.__run = False
+        return self
 
 
 class Journal:

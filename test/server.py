@@ -33,10 +33,10 @@ basicConfig(filename='/tmp/gofer/server.log', level=INFO)
 log = getLogger(__name__)
 
 # asynchronous RMI timeout watchdog
-WatchDog.LOCATION = '/tmp/gofer/watchdog/journal'
-watchdog = WatchDog()
-watchdog.start()
-#watchdog = Agent('xyz').WatchDog()
+#WatchDog.journal('/tmp/gofer/watchdog/journal')
+#watchdog = WatchDog()
+#watchdog.start()
+watchdog = Agent('xyz').WatchDog()
 
 
 def onReply(reply):
