@@ -46,9 +46,13 @@ class Query:
 class PAM:
     """
     PAM object used for authentication.
+    @cvar SERVICE: The default service
+    @type SERVICE: str
     """
+    
+    SERVICE = 'passwd'
 
-    def authenticate(self, user, password, service='su'):
+    def authenticate(self, user, password, service=SERVICE):
         """
         Authenticate the specified user.
         @param user: A user name.

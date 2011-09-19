@@ -18,6 +18,7 @@ import os
 import logging
 from getopt import getopt, GetoptError
 from gofer import *
+from gofer.pam import PAM
 from gofer.agent import *
 from gofer.agent.action import Actions
 from gofer.agent.plugin import PluginLoader, Plugin
@@ -121,10 +122,15 @@ class Agent:
         @param actions: A list of loaded actions.
         @type actions: list
         """
+        # pam setup
+        PAM.SERVICE = nvl(cfg.pam.service, PAM.SERVICE)
+        # action(s) setup
         actionThread = ActionThread(actions)
         actionThread.start()
+        # scheduler setup
         scheduler = Scheduler(plugins)
         scheduler.start()
+        # load plugins
         for plugin in plugins:
             if not plugin.geturl():
                 continue

@@ -24,7 +24,7 @@ from gofer.decorators import *
 from gofer.agent.plugin import Plugin
 from gofer.agent.action import Actions
 from gofer.agent.config import Config
-from gofer.rmi.pam import PAM
+from gofer.pam import PAM
 from logging import getLogger
 
 log = getLogger(__name__)

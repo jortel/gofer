@@ -22,7 +22,7 @@ import inspect
 import traceback as tb
 from gofer import NAME
 from gofer.messaging import *
-from gofer.rmi.pam import PAM
+from gofer.pam import PAM
 from logging import getLogger
 
 
