@@ -32,6 +32,7 @@ Obsoletes: %{name}-lib
 BuildRequires: python
 Requires: python-simplejson
 Requires: python-qpid >= 0.7
+Requires: PyPAM
 %if 0%{?rhel} && 0%{?rhel} < 6
 Requires: python-uuid
 Requires: python-ssl
@@ -108,7 +109,7 @@ rm -rf %{buildroot}
 %config(noreplace) %{_sysconfdir}/%{name}/agent.conf
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/*.conf
 %{_libdir}/%{name}/plugins/
-%{_var}/log/%{name}
+%attr(700,root,root) %{_var}/log/%{name}
 %doc LICENSE
 
 %post
