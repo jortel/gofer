@@ -1,6 +1,8 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
+
+# main package
 Name: gofer
 Version: 0.48
 Release: 3%{?dist}
@@ -15,7 +17,6 @@ BuildRequires: python2-devel
 BuildRequires: python-setuptools
 BuildRequires: rpm-python
 Requires: python-%{name} = %{version}
-
 %description
 Gofer provides an extensible, light weight, universal python agent.
 The gofer core agent is a python daemon (service) that provides
@@ -25,6 +26,8 @@ Method Invocation (RMI). The transport for RMI is AMQP using the
 QPID message broker. Actions are also provided by plug-ins and are
 executed at the specified interval.
 
+
+# python lib
 %package -n python-%{name}
 Summary: Gofer python lib modules
 Group: Development/Languages
@@ -41,6 +44,8 @@ Requires: python-ssl
 %description -n python-%{name}
 Contains gofer python lib modules.
 
+
+# ruby lib
 %package -n ruby-%{name}
 Summary: Gofer ruby lib modules
 Group: Development/Languages
@@ -51,6 +56,44 @@ Requires: rubygem(json)
 
 %description -n ruby-%{name}
 Contains gofer ruby lib modules.
+
+
+# plugin: system
+%package -n gofer-system
+Summary: The system plug-in
+Group: Development/Languages
+BuildRequires: python
+Requires: %{name} >= %{version}
+
+%description -n gofer-system
+Contains the system plug-in.
+The system plug-in provides system functionality.
+
+
+# plugin: watchdog
+%package -n gofer-watchdog
+Summary: The watchdog plug-in
+Group: Development/Languages
+BuildRequires: python
+Requires: %{name} >= %{version}
+
+%description -n gofer-watchdog
+Contains the watchdog plug-in.
+This plug-in is used to support time out
+for asynchronous RMI calls.
+
+
+# plugin: virt
+%package -n gofer-virt
+Summary: The virtualization plugin
+Group: Development/Languages
+BuildRequires: python
+Requires: %{name} >= %{version}
+
+%description -n gofer-virt
+Contains the virtualization plugin.
+This plug-in provides RMI access to libvirt functionality.
+
 
 %prep
 %setup -q
@@ -100,6 +143,7 @@ rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
 %clean
 rm -rf %{buildroot}
 
+# main package
 %files
 %defattr(-,root,root,-)
 %dir %{_sysconfdir}/%{name}/conf.d/
@@ -107,8 +151,8 @@ rm -rf %{buildroot}
 %{_bindir}/%{name}d
 %attr(755,root,root) %{_sysconfdir}/init.d/%{name}d
 %config(noreplace) %{_sysconfdir}/%{name}/agent.conf
-%config(noreplace) %{_sysconfdir}/%{name}/plugins/*.conf
-%{_libdir}/%{name}/plugins/
+%config(noreplace) %{_sysconfdir}/%{name}/plugins/builtin.conf
+%{_libdir}/%{name}/plugins/builtin.*
 %attr(700,root,root) %{_var}/log/%{name}
 %doc LICENSE
 
@@ -121,6 +165,8 @@ if [ $1 = 0 ] ; then
    /sbin/chkconfig --del %{name}d
 fi
 
+
+# python lib
 %files -n python-%{name}
 %defattr(-,root,root,-)
 %{python_sitelib}/%{name}/*.py*
@@ -128,6 +174,8 @@ fi
 %{python_sitelib}/%{name}/messaging/
 %doc LICENSE
 
+
+# ruby lib
 %files -n ruby-%{name}
 %defattr(-,root,root,-)
 %{ruby_sitelib}/%{name}.rb
@@ -135,6 +183,32 @@ fi
 %{ruby_sitelib}/%{name}/rmi/
 %{ruby_sitelib}/%{name}/messaging/
 %doc LICENSE
+
+
+# plugin: system
+%files -n gofer-system
+%defattr(-,root,root,-)
+%config(noreplace) %{_sysconfdir}/%{name}/plugins/system.conf
+%{_libdir}/%{name}/plugins/system.*
+%doc LICENSE
+
+
+
+# plugin: watchdog
+%files -n gofer-watchdog
+%defattr(-,root,root,-)
+%config(noreplace) %{_sysconfdir}/%{name}/plugins/watchdog.conf
+%{_libdir}/%{name}/plugins/watchdog.*
+%doc LICENSE
+
+
+# plugin: virt
+%files -n gofer-virt
+%defattr(-,root,root,-)
+%config(noreplace) %{_sysconfdir}/%{name}/plugins/virt.conf
+%{_libdir}/%{name}/plugins/virt.*
+%doc LICENSE
+
 
 %changelog
 * Tue Sep 13 2011 Jeff Ortel <jortel@redhat.com> 0.48-3
