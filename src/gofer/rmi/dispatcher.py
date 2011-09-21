@@ -39,7 +39,7 @@ class ClassNotFound(DispatchError):
     """
 
     def __init__(self, classname):
-        Exception.__init__(self, classname)
+        DispatchError.__init__(self, classname)
 
 
 class MethodNotFound(DispatchError):
@@ -49,7 +49,7 @@ class MethodNotFound(DispatchError):
 
     def __init__(self, classname, method):
         message = '%s.%s(), not found' % (classname, method)
-        Exception.__init__(self, message)
+        DispatchError.__init__(self, message)
 
 
 class NotPermitted(DispatchError):
@@ -59,29 +59,57 @@ class NotPermitted(DispatchError):
 
     def __init__(self, cnfn):
         message = '%s.%s(), not permitted' % cnfn
-        Exception.__init__(self, message)
+        DispatchError.__init__(self, message)
         
         
-class NotShared(DispatchError):
+class NotAuthorized(DispatchError):
+    """
+    Not authorized.
+    """
+    pass
+        
+        
+class NotShared(NotAuthorized):
     """
     Method not shared between UUIDs.
     """
 
     def __init__(self, cnfn):
         message = '%s.%s(), not shared' % cnfn
-        Exception.__init__(self, message)
+        NotAuthorized.__init__(self, message)
 
 
-class NotAuthorized(DispatchError):
+class SecretRequired(NotAuthorized):
     """
-    Not authorized, secret not matched.
+    Shared secret required and not passed.
     """
 
     def __init__(self, cnfn):
-        message = '%s.%s(), not authorized' % cnfn
-        Exception.__init__(self, message)
+        message = '%s.%s(), secret required' % cnfn
+        NotAuthorized.__init__(self, message)
         
-class NotAuthenticated(DispatchError):
+        
+class UserRequired(NotAuthorized):
+    """
+    User (name)  required and not passed.
+    """
+
+    def __init__(self, cnfn):
+        message = '%s.%s(), user (name) required' % cnfn
+        NotAuthorized.__init__(self, message)
+        
+        
+class PasswordRequired(NotAuthorized):
+    """
+    Password required and not passed.
+    """
+
+    def __init__(self, cnfn):
+        message = '%s.%s(), password required' % cnfn
+        NotAuthorized.__init__(self, message)
+
+
+class NotAuthenticated(NotAuthorized):
     """
     Not authenticated, user/password failed
     PAM authentication.
@@ -90,7 +118,35 @@ class NotAuthenticated(DispatchError):
     def __init__(self, cnfn, user):
         message = '%s.%s(), user "%s" not authenticted'\
             % (cnfn[0], cnfn[1], user)
-        Exception.__init__(self, message)
+        NotAuthorized.__init__(self, message)
+        
+
+class UserNotAuthorized(NotAuthorized):
+    """
+    The specified user is not authorized to invoke the RMI.
+    """
+
+    def __init__(self, cnfn, expected, passed):
+        message = '%s.%s(), user must be: %s, passed: %s'\
+            % (cnfn[0],
+               cnfn[1],
+               expected,
+               passed)
+        NotAuthorized.__init__(self, message)
+        
+
+class SecretNotMatched(NotAuthorized):
+    """
+    Specified secret, not matched.
+    """
+
+    def __init__(self, cnfn, expected, passed):
+        message = '%s.%s(), secret: %s not in: %s' \
+            % (cnfn[0],
+               cnfn[1],
+               passed,
+               expected)
+        NotAuthorized.__init__(self, message)
         
         
 class RemoteException(Exception):
@@ -318,21 +374,24 @@ class RMI(object):
         @type fninfo: L{Options}
         @param auth: The request's I{auth} info.
         @type auth: L{Options}
-        @raise NotAuthorized: On secret specified and not matched.
+        @raise SecretRequired: On secret required and not passed.
+        @raise SecretNotMatched: On not matched.
         """
         secret = fninfo.secret
         if not secret:
-            return
+            return # secret not required
         if callable(secret):
             secret = secret()
         if not secret:
             return
         if not isinstance(secret, (list,tuple)):
             secret = (secret,)
-        log.debug('match secret: "%s" in "%s"', auth.secret, secret)
-        if auth.secret in secret:
+        passed = auth.secret
+        if not passed:
+            raise SecretRequired(self.__cnfn())
+        if passed in secret:
             return
-        raise NotAuthorized(self.__cnfn())
+        raise SecretNotMatched(self.__cnfn(), secret, passed)
     
     def __pam(self, fninfo, auth):
         """
@@ -341,14 +400,24 @@ class RMI(object):
         @type fninfo: L{Options}
         @param auth: The request's I{auth} info.
         @type auth: L{Options}
-        @raise NotAuthorized: On secret specified and not matched.
+        @raise UserRequired: On user required and not passed.
+        @raise PasswordRequired: On password required and not passed.
+        @raise UserNotAuthorized: On user not authorized.
+        @raise NotAuthenticated: On PAM auth failed.
         """
         pam = fninfo.pam
         if not pam:
-            return
-        passed = Options(auth.pam)
+            return # pam not required
+        if auth.pam:
+            passed = Options(auth.pam)
+        else:
+            passed = Options()
+        if not passed.user:
+            raise UserRequired(self.__cnfn())
+        if not passed.password:
+            raise PasswordRequired(self.__cnfn())
         if pam.user != passed.user:
-            raise NotAuthorized(self.__cnfn())
+            raise UserNotAuthorized(self.__cnfn(), pam.user, passed.user)
         auth = PAM()
         try:
             auth.authenticate(
