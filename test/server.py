@@ -19,6 +19,7 @@ from time import sleep
 from gofer.messaging import Queue
 from gofer.messaging.producer import Producer
 from gofer.rmi.window import *
+from gofer.rmi.dispatcher import *
 from gofer.rmi.async import ReplyConsumer, WatchDog, Journal
 from gofer.metrics import Timer
 from gofer.proxy import Agent
@@ -169,7 +170,7 @@ def demoWatchdog(uuid):
     dog.bark('who you calling a watchdog?')
     dog.sleep(4)
     
-def demoWindow(uuid):
+def demoWindow(uuid, exit=0):
     tag = uuid.upper()
     print 'demo window, +10, +10min seconds'
     begin = later(seconds=10)
@@ -181,33 +182,92 @@ def demoWindow(uuid):
     print dog.wag(3)
     print dog.bark('hello again, after 10 seconds')
     sleep(12)
-    sys.exit(0)
+    if exit:
+        sys.exit(0)
     
-def demopam(uuid):
+def demopam(uuid, yp, exit=0):
     agent = Agent(uuid)
     # form 1
-    dog = agent.Dog(user='jortel', password='xxx')
+    dog = agent.Dog(user='jortel', password=yp['jortel'])
     print dog.testpam()
     # form 2
-    pam = dict(user='jortel', password='xxx')
+    pam = dict(user='jortel', password=yp['jortel'])
     dog = agent.Dog(pam=pam)
     print dog.testpam()
     # form 3
-    pam = dict(user='jortel', password='xxx', service='login')
+    pam = dict(user='jortel', password=yp['jortel'], service='login')
     dog = agent.Dog(pam=pam)
     print dog.testpam()
     # form 4
-    pam = ('jortel', 'xxx',)
+    pam = ('jortel', yp['jortel'],)
     dog = agent.Dog(pam=pam)
     print dog.testpam()
     # form 5
-    pam = ('jortel', 'xxx','login')
+    pam = ('jortel', yp['jortel'],'login')
     dog = agent.Dog(pam=pam)
     print dog.testpam()
     # using form 1, the @user synonym
-    dog = agent.Dog(user='root', password='yyy')
+    dog = agent.Dog(user='root', password=yp['root'])
     print dog.testpam2()
-    sys.exit(0)
+    # no user
+    try:
+        dog = agent.Dog()
+        dog.testpam()
+        raise Exception('Exception (UserRequired) expected')
+    except UserRequired:
+        print 'no user, OK'
+    # no password
+    try:
+        dog = agent.Dog(user='jortel')
+        dog.testpam()
+        raise Exception('Exception (PasswordRequired) expected')
+    except PasswordRequired:
+        print 'no password, OK'
+    # wrong user
+    try:
+        dog = agent.Dog(user='xx', password='xx')
+        dog.testpam()
+        raise Exception('Exception (UserNotAuthorized) expected')
+    except UserNotAuthorized:
+        print 'wrong user, OK'
+    # PAM failed
+    try:
+        dog = agent.Dog(user='jortel', password='xx')
+        dog.testpam()
+        raise Exception('Exception (NotAuthenticated) expected')
+    except NotAuthenticated:
+        print 'PAM not authenticated, OK'
+    if exit:
+        sys.exit(0)
+        
+def demosecret(uuid, exit=0):
+    agent = Agent(uuid)
+    # success
+    cat = agent.Cat(secret='garfield')
+    print cat.meow('secret, OK')
+    # no secret
+    try:
+        cat = agent.Cat()
+        cat.meow('secret, OK')
+        raise Exception('Exception (SecretRequired) expected')
+    except SecretRequired:
+        print 'secret required, OK'
+    # wrong secret
+    try:
+        cat = agent.Cat(secret='foo')
+        cat.meow('secret, OK')
+        raise Exception('Exception (SecretNotMatched) expected')
+    except SecretNotMatched:
+        print 'secret not matched, OK'
+    if exit:
+        sys.exit(0)
+        
+def demoauth(uuid, yp, exit=0):
+    demosecret(uuid)
+    demopam(uuid, yp)
+    if exit:
+        sys.exit(0)
+    
 
 def main(uuid):
     tag = uuid.upper()
@@ -278,7 +338,10 @@ def main(uuid):
 
 if __name__ == '__main__':
     uuid = 'xyz'
-    #demopam(uuid)
+    yp = {}
+    yp['root'] = sys.argv[1]
+    yp['jortel'] = sys.argv[2]
+    demoauth(uuid, yp, 1)
     #perftest(uuid)
     #demoperftest(uuid)
     rcon = ReplyConsumer(Queue(uuid.upper()))
