@@ -24,6 +24,7 @@ from gofer.decorators import *
 from gofer.agent.plugin import Plugin
 from gofer.agent.action import Actions
 from gofer.agent.config import Config
+from gofer.rmi.pam import PAM
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -122,15 +123,24 @@ class Admin:
 class Shell:
 
     @remote
-    def run(self, cmd):
+    def run(self, cmd, user, password):
         """
         Run a shell command.
+        The command is executed as: "su - <user> -c <cmd>" and the
+        user/password is authenticated using PAM.
         @param cmd: The command & arguments.
         @type cmd: str
+        @param user: A user name.
+        @type user: str
+        @param password: The password.
+        @type password: str
         @return: The command output.
         @rtype: str
         """
-        f = os.popen(cmd)
+        auth = PAM()
+        auth.authenticate(user, password)
+        command = 'su - %s -c "%s"' % (user, cmd)
+        f = os.popen(command)
         try:
             return f.read()
         finally:

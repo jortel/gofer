@@ -181,6 +181,32 @@ def demoWindow(uuid):
     print dog.bark('hello again, after 10 seconds')
     sleep(12)
     sys.exit(0)
+    
+def demopam(uuid):
+    agent = Agent(uuid)
+    # form 1
+    dog = agent.Dog(user='jortel', password='xxx')
+    print dog.testpam()
+    # form 2
+    pam = dict(user='jortel', password='xxx')
+    dog = agent.Dog(pam=pam)
+    print dog.testpam()
+    # form 3
+    pam = dict(user='jortel', password='xxx', service='login')
+    dog = agent.Dog(pam=pam)
+    print dog.testpam()
+    # form 4
+    pam = ('jortel', 'xxx',)
+    dog = agent.Dog(pam=pam)
+    print dog.testpam()
+    # form 5
+    pam = ('jortel', 'xxx','login')
+    dog = agent.Dog(pam=pam)
+    print dog.testpam()
+    # using form 1, the @user synonym
+    dog = agent.Dog(user='root', password='yyy')
+    print dog.testpam2()
+    sys.exit(0)
 
 def main(uuid):
     tag = uuid.upper()
@@ -251,6 +277,7 @@ def main(uuid):
 
 if __name__ == '__main__':
     uuid = 'xyz'
+    demopam(uuid)
     #perftest(uuid)
     #demoperftest(uuid)
     rcon = ReplyConsumer(Queue(uuid.upper()))

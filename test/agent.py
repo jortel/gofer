@@ -111,6 +111,16 @@ class Dog:
 
     def notpermitted(self):
         print 'not permitted.'
+        
+    @remote
+    @pam(user='jortel')
+    def testpam(self):
+        return 'PAM is happy!'
+    
+    @remote
+    @user(name='root')
+    def testpam2(self):
+        return 'PAM (2) is happy!'
     
     @remote
     def __str__(self):

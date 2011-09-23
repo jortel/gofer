@@ -150,6 +150,7 @@ class Stub:
                         request,
                         window=opts.window,
                         secret=opts.secret,
+                        pam=self.__getpam(opts),
                         any=opts.any)
         else:
             return policy.send(
@@ -157,7 +158,39 @@ class Stub:
                         request,
                         window=opts.window,
                         secret=opts.secret,
+                        pam=self.__getpam(opts),
                         any=opts.any)
+            
+    def __getpam(self, opts):
+        """
+        Get PAM options.
+        Can be:
+          - pam = (<user>,<password>,<service>)
+          - pam = [<user>,<password>,<service>]
+          - pam = {'user':<user>,'password':<password>,'service':<service>}
+          - user = <user>
+          - password = <password>
+          - None
+        """
+        pam = opts.pam
+        if isinstance(pam, dict):
+            return Options(
+                user=pam['user'],
+                password=pam['password'],
+                service=pam.get('service'))
+        if isinstance(pam, (tuple,list)):
+            opt = Options(
+                user=pam[0],
+                password=pam[1])
+            if len(pam) > 2:
+                opt.service = pam[2]
+            return opt
+        user = opts.user
+        if user:
+            return Options(
+                user=user,
+                password=opts.password)
+        return None
 
     def __getattr__(self, name):
         """

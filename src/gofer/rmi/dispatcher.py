@@ -20,7 +20,9 @@ Provides RMI dispatcher classes.
 import sys
 import inspect
 import traceback as tb
+from gofer import NAME
 from gofer.messaging import *
+from gofer.rmi.pam import PAM
 from logging import getLogger
 
 
@@ -77,6 +79,17 @@ class NotAuthorized(DispatchError):
 
     def __init__(self, cnfn):
         message = '%s.%s(), not authorized' % cnfn
+        Exception.__init__(self, message)
+        
+class NotAuthenticated(DispatchError):
+    """
+    Not authenticated, user/password failed
+    PAM authentication.
+    """
+
+    def __init__(self, cnfn, user):
+        message = '%s.%s(), user "%s" not authenticted'\
+            % (cnfn[0], cnfn[1], user)
         Exception.__init__(self, message)
         
         
@@ -270,6 +283,7 @@ class RMI(object):
             raise NotPermitted(self.__cnfn())
         self.__shared(fninfo, auth)
         self.__authorized(fninfo, auth)
+        self.__pam(fninfo, auth)
         return method
         
     def __shared(self, fninfo, auth):
@@ -320,6 +334,30 @@ class RMI(object):
             return
         raise NotAuthorized(self.__cnfn())
     
+    def __pam(self, fninfo, auth):
+        """
+        Perform PAM authentication.
+        @param fninfo: The decorated function info.
+        @type fninfo: L{Options}
+        @param auth: The request's I{auth} info.
+        @type auth: L{Options}
+        @raise NotAuthorized: On secret specified and not matched.
+        """
+        pam = fninfo.pam
+        if not pam:
+            return
+        passed = Options(auth.pam)
+        if pam.user != passed.user:
+            raise NotAuthorized(self.__cnfn())
+        auth = PAM()
+        try:
+            auth.authenticate(
+                passed.user,
+                passed.password,
+                passed.service or 'su')
+        except Exception:
+            raise NotAuthenticated(self.__cnfn(), passed.user)
+
     def __cnfn(self):
         """
         Get the I{classname} and I{function} specified in the request.
@@ -352,7 +390,7 @@ class RMI(object):
         @rtype: L{Options}
         """
         try:
-            return self.__fn(method).gofer
+            return getattr(self.__fn(method), NAME)
         except:
             pass
 
@@ -409,7 +447,8 @@ class Dispatcher:
         request.update(envelope.request)
         request.auth = Options(
             uuid=envelope.routing[-1],
-            secret=envelope.secret,)
+            secret=envelope.secret,
+            pam=envelope.pam,)
         rmi = RMI(request, self.classes)
         log.info('dispatching:%s', rmi)
         return rmi()

@@ -18,6 +18,7 @@
 Provides decorator classes & funcitons.
 """
 
+from gofer import NAME
 from gofer.messaging import Options
 from gofer.collator import Collator
 
@@ -60,11 +61,26 @@ class Remote:
         for m in functions.keys():
             collated.append(m)
         return collated
+    
+def __options(fn):
+    """
+    Ensure funtion has the gofer options attribute
+    and return it.
+    @param fn: A function
+    @return: The funtion options object.
+    @rtype: L{Options}
+    """
+    if not hasattr(fn, NAME):
+        opt = Options()
+        setattr(fn, NAME, opt)
+    else:
+        opt = getattr(fn, NAME)
+    return opt
 
 
 def remote(*args, **kwargs):
     """
-    Remote method decorator
+    Remote method decorator.
     keywords:
       - shared: method shared across plugins.
       - secret: authorization secret.
@@ -72,10 +88,43 @@ def remote(*args, **kwargs):
     shared = bool(kwargs.get('shared', 1))
     secret = kwargs.get('secret',())
     def df(fn):
-        fn.gofer = Options(shared=shared, secret=secret)
+        opt = __options(fn)
+        opt.shared = shared
+        opt.secret = secret
         Remote.add(fn)
         return fn
     if args:
         return df(args[0])
     else:
         return df
+    
+    
+def pam(*args, **kwargs):
+    """
+    PAM authentication method decorator.
+    keywords:
+      - user: user name.
+      - service: (optional) PAM service.
+    """
+    user = kwargs.get('user')
+    service = kwargs.get('service')
+    if not user:
+        raise Exception('(user) must be specified')
+    def df(fn):
+        opt = __options(fn)
+        opt.pam = Options(user=user, service=service)
+        return fn
+    if args:
+        return df(args[0])
+    else:
+        return df
+
+
+def user(*args, **kwargs):
+    """
+    user (PAM) authentication method decorator.
+    keywords:
+      - name: user name.
+    """
+    name = kwargs.get('name')
+    return pam(user=name)
