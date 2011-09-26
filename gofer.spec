@@ -201,6 +201,7 @@ for asynchronous RMI calls.
 Summary: The virtualization plugin
 Group: Development/Languages
 BuildRequires: python
+Requires: libvirt-python
 Requires: %{name} >= %{version}
 
 %description -n gofer-virt

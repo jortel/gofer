@@ -50,18 +50,19 @@ class Virt:
     def listDomains(self):
         """
         Get a list of domains.
-        @return: List of tuples: (ID, name, isActive)
+        @return: List of dict: {id, name, active}
         @rtype: list
         """
         con = self.open()
         try:
             domains = []
-            for id in con.listDomainIDs():
-                domain = self.domain(id)
+            for id in con.listDomainsID():
+                domain = con.lookupByID(id)
                 d = dict(id=id,
                          name=domain.name(),
                          active=domain.isActive())
                 domains.append(d)
+            return domains
         finally:
             con.close()
             
@@ -82,6 +83,7 @@ class Virt:
             con.close()
             
     @remote
+    @pam(user='root')
     def start(self, id):
         """
         Start (create) a domain.
@@ -96,6 +98,7 @@ class Virt:
             con.close()
         
     @remote
+    @pam(user='root')
     def shutdown(self, id):
         """
         Shutdown a domain.
