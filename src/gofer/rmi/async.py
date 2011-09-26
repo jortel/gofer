@@ -309,16 +309,7 @@ class WatchDog:
     __metaclass__ = Singleton
  
     URL = Producer.LOCALHOST
-    LOCATION = '/var/lib/%s/watchdog/journal' % NAME
-    
-    @classmethod
-    def journal(cls, location):
-        """
-        Set the global journalling location.
-        @param location: The path to the journalling directory.
-        @type location: str
-        """
-        cls.LOCATION = location
+    DOMAIN = 'watchdog'
 
     def __init__(self, url=URL):
         """
@@ -326,7 +317,7 @@ class WatchDog:
         @type url: str
         """
         self.url = url
-        self.__jnl = Journal(self.LOCATION)
+        self.__jnl = Journal(self.DOMAIN)
         self.__producer = None
         
     def start(self):
@@ -468,12 +459,12 @@ class Journal:
     
     ROOT = '/var/lib/%s/journal' % NAME
     
-    def __init__(self, root=None):
+    def __init__(self, domain):
         """
-        @param ctag: A correlation tag.
-        @type ctag: str
+        @param domain: A journal domain (subdir).
+        @type domain: str
         """
-        self.root = root or self.ROOT
+        self.root = os.path.join(self.ROOT, domain)
         self.__mkdir()
         
     def load(self):

@@ -17,6 +17,9 @@
 import os
 import sys
 from time import sleep
+from gofer.agent.config import Config
+Config.PATH = '/tmp/gofer/agent.conf'
+Config.CNFD = '/tmp/gofer/conf.d'
 from gofer.messaging import Queue
 from gofer.rmi.decorators import *
 from gofer.rmi.consumer import RequestConsumer

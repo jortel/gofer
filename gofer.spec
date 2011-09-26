@@ -129,7 +129,7 @@ mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/plugins
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/conf.d
 mkdir -p %{buildroot}/%{_sysconfdir}/init.d
 mkdir -p %{buildroot}/%{_var}/log/%{name}
-mkdir -p %{buildroot}/%{_var}/lib/%{name}/journal
+mkdir -p %{buildroot}/%{_var}/lib/%{name}/journal/watchdog
 mkdir -p %{buildroot}/%{_libdir}/%{name}/plugins
 
 cp bin/%{name}d %{buildroot}/usr/bin
@@ -172,6 +172,7 @@ fi
 %{python_sitelib}/%{name}/*.py*
 %{python_sitelib}/%{name}/rmi/
 %{python_sitelib}/%{name}/messaging/
+%{_var}/lib/%{name}/journal/watchdog
 %doc LICENSE
 
 
@@ -208,6 +209,12 @@ fi
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/virt.conf
 %{_libdir}/%{name}/plugins/virt.*
 %doc LICENSE
+
+
+# the journal directory needs to be writable
+# by any user yet owned by gofer.
+%post -n python-%{name}
+setfacl -m other::rwx %{_var}/lib/%{name}/journal/watchdog
 
 
 %changelog

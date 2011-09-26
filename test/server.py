@@ -34,10 +34,9 @@ basicConfig(filename='/tmp/gofer/server.log', level=INFO)
 log = getLogger(__name__)
 
 # asynchronous RMI timeout watchdog
-#WatchDog.journal('/tmp/gofer/watchdog/journal')
-#watchdog = WatchDog()
-#watchdog.start()
-watchdog = Agent('xyz').WatchDog()
+watchdog = WatchDog()
+watchdog.start()
+#watchdog = Agent('xyz').WatchDog()
 
 
 def onReply(reply):
@@ -341,14 +340,14 @@ if __name__ == '__main__':
     yp = {}
     yp['root'] = sys.argv[1]
     yp['jortel'] = sys.argv[2]
-    demoauth(uuid, yp, 1)
+    demoauth(uuid, yp, 0)
     #perftest(uuid)
     #demoperftest(uuid)
     rcon = ReplyConsumer(Queue(uuid.upper()))
     rcon.start(onReply, watchdog=watchdog)
     #demoWindow(uuid)
-    if len(sys.argv) > 1:
-        n = int(sys.argv[1])
+    if len(sys.argv) > 3:
+        n = int(sys.argv[3])
         print '======= RUNNING %d THREADS ============' % n
         sleep(2)
         last = threads(uuid, n)
