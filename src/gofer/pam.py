@@ -52,7 +52,7 @@ class PAM:
     
     SERVICE = 'passwd'
 
-    def authenticate(self, user, password, service=SERVICE):
+    def authenticate(self, user, password, service=None):
         """
         Authenticate the specified user.
         @param user: A user name.
@@ -63,6 +63,8 @@ class PAM:
         @type service: str
         @raise Exception: when authentication fails.
         """
+        if not service:
+            service = self.SERVICE
         q = Query(user, password)
         auth = _PAM.pam()
         auth.start(service, user, q)
