@@ -1,8 +1,6 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
-
-# main package
 Name: gofer
 Version: 0.48
 Release: 3%{?dist}
@@ -25,75 +23,6 @@ Actions. The APIs contributed by plug-ins are accessible by Remote
 Method Invocation (RMI). The transport for RMI is AMQP using the
 QPID message broker. Actions are also provided by plug-ins and are
 executed at the specified interval.
-
-
-# python lib
-%package -n python-%{name}
-Summary: Gofer python lib modules
-Group: Development/Languages
-Obsoletes: %{name}-lib
-BuildRequires: python
-Requires: python-simplejson
-Requires: python-qpid >= 0.7
-Requires: PyPAM
-%if 0%{?rhel} && 0%{?rhel} < 6
-Requires: python-uuid
-Requires: python-ssl
-%endif
-
-%description -n python-%{name}
-Contains gofer python lib modules.
-
-
-# ruby lib
-%package -n ruby-%{name}
-Summary: Gofer ruby lib modules
-Group: Development/Languages
-BuildRequires: ruby
-Requires: ruby-qpid
-Requires: rubygems
-Requires: rubygem(json)
-
-%description -n ruby-%{name}
-Contains gofer ruby lib modules.
-
-
-# plugin: system
-%package -n gofer-system
-Summary: The system plug-in
-Group: Development/Languages
-BuildRequires: python
-Requires: %{name} >= %{version}
-
-%description -n gofer-system
-Contains the system plug-in.
-The system plug-in provides system functionality.
-
-
-# plugin: watchdog
-%package -n gofer-watchdog
-Summary: The watchdog plug-in
-Group: Development/Languages
-BuildRequires: python
-Requires: %{name} >= %{version}
-
-%description -n gofer-watchdog
-Contains the watchdog plug-in.
-This plug-in is used to support time out
-for asynchronous RMI calls.
-
-
-# plugin: virt
-%package -n gofer-virt
-Summary: The virtualization plugin
-Group: Development/Languages
-BuildRequires: python
-Requires: %{name} >= %{version}
-
-%description -n gofer-virt
-Contains the virtualization plugin.
-This plug-in provides RMI access to libvirt functionality.
-
 
 %prep
 %setup -q
@@ -143,7 +72,6 @@ rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
 %clean
 rm -rf %{buildroot}
 
-# main package
 %files
 %defattr(-,root,root,-)
 %dir %{_sysconfdir}/%{name}/conf.d/
@@ -166,7 +94,26 @@ if [ $1 = 0 ] ; then
 fi
 
 
+###############################################################################
 # python lib
+###############################################################################
+
+%package -n python-%{name}
+Summary: Gofer python lib modules
+Group: Development/Languages
+Obsoletes: %{name}-lib
+BuildRequires: python
+Requires: python-simplejson
+Requires: python-qpid >= 0.7
+Requires: PyPAM
+%if 0%{?rhel} && 0%{?rhel} < 6
+Requires: python-uuid
+Requires: python-ssl
+%endif
+
+%description -n python-%{name}
+Contains gofer python lib modules.
+
 %files -n python-%{name}
 %defattr(-,root,root,-)
 %{python_sitelib}/%{name}/*.py*
@@ -175,8 +122,25 @@ fi
 %{_var}/lib/%{name}/journal/watchdog
 %doc LICENSE
 
+%post -n python-%{name}
+setfacl -m other::rwx %{_var}/lib/%{name}/journal/watchdog
 
+
+###############################################################################
 # ruby lib
+###############################################################################
+
+%package -n ruby-%{name}
+Summary: Gofer ruby lib modules
+Group: Development/Languages
+BuildRequires: ruby
+Requires: ruby-qpid
+Requires: rubygems
+Requires: rubygem(json)
+
+%description -n ruby-%{name}
+Contains gofer ruby lib modules.
+
 %files -n ruby-%{name}
 %defattr(-,root,root,-)
 %{ruby_sitelib}/%{name}.rb
@@ -186,7 +150,20 @@ fi
 %doc LICENSE
 
 
+###############################################################################
 # plugin: system
+###############################################################################
+
+%package -n gofer-system
+Summary: The system plug-in
+Group: Development/Languages
+BuildRequires: python
+Requires: %{name} >= %{version}
+
+%description -n gofer-system
+Contains the system plug-in.
+The system plug-in provides system functionality.
+
 %files -n gofer-system
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/system.conf
@@ -194,8 +171,21 @@ fi
 %doc LICENSE
 
 
-
+###############################################################################
 # plugin: watchdog
+###############################################################################
+
+%package -n gofer-watchdog
+Summary: The watchdog plug-in
+Group: Development/Languages
+BuildRequires: python
+Requires: %{name} >= %{version}
+
+%description -n gofer-watchdog
+Contains the watchdog plug-in.
+This plug-in is used to support time out
+for asynchronous RMI calls.
+
 %files -n gofer-watchdog
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/watchdog.conf
@@ -203,7 +193,20 @@ fi
 %doc LICENSE
 
 
+###############################################################################
 # plugin: virt
+###############################################################################
+
+%package -n gofer-virt
+Summary: The virtualization plugin
+Group: Development/Languages
+BuildRequires: python
+Requires: %{name} >= %{version}
+
+%description -n gofer-virt
+Contains the virtualization plugin.
+This plug-in provides RMI access to libvirt functionality.
+
 %files -n gofer-virt
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/virt.conf
@@ -211,10 +214,6 @@ fi
 %doc LICENSE
 
 
-# the journal directory needs to be writable
-# by any user yet owned by gofer.
-%post -n python-%{name}
-setfacl -m other::rwx %{_var}/lib/%{name}/journal/watchdog
 
 
 %changelog
