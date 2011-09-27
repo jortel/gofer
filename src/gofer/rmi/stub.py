@@ -164,31 +164,15 @@ class Stub:
     def __getpam(self, opts):
         """
         Get PAM options.
-        Can be:
-          - pam = (<user>,<password>,<service>)
-          - pam = [<user>,<password>,<service>]
-          - pam = {'user':<user>,'password':<password>,'service':<service>}
-          - user = <user>
-          - password = <password>
-          - None
+        @param opts: options dict.
+        @type opts: dict
+        @return: pam options
+        @rtype: L{Options}
         """
-        pam = opts.pam
-        if isinstance(pam, dict):
-            return Options(
-                user=pam['user'],
-                password=pam['password'],
-                service=pam.get('service'))
-        if isinstance(pam, (tuple,list)):
-            opt = Options(
-                user=pam[0],
-                password=pam[1])
-            if len(pam) > 2:
-                opt.service = pam[2]
-            return opt
         user = opts.user
-        if user:
+        if opts.user:
             return Options(
-                user=user,
+                user=opts.user,
                 password=opts.password)
         return None
 

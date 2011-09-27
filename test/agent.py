@@ -126,6 +126,16 @@ class Dog:
         return 'PAM (2) is happy!'
     
     @remote
+    @pam(user='jortel', service='su')
+    def testpam3(self):
+        return 'PAM (3) is happy!'
+    
+    @remote
+    @pam(user='jortel', service='xx')
+    def testpam4(self):
+        return 'PAM (4) is happy!'
+    
+    @remote
     def __str__(self):
         return 'REMOTE:Dog'
         

@@ -420,7 +420,7 @@ class RMI(object):
             raise UserNotAuthorized(self.__cnfn(), pam.user, passed.user)
         auth = PAM()
         try:
-            auth.authenticate(passed.user, passed.password, passed.service)
+            auth.authenticate(passed.user, passed.password, pam.service)
         except Exception:
             raise NotAuthenticated(self.__cnfn(), passed.user)
 

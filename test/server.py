@@ -186,28 +186,15 @@ def demoWindow(uuid, exit=0):
     
 def demopam(uuid, yp, exit=0):
     agent = Agent(uuid)
-    # form 1
+    # basic success
     dog = agent.Dog(user='jortel', password=yp['jortel'])
     print dog.testpam()
-    # form 2
-    pam = dict(user='jortel', password=yp['jortel'])
-    dog = agent.Dog(pam=pam)
-    print dog.testpam()
-    # form 3
-    pam = dict(user='jortel', password=yp['jortel'], service='login')
-    dog = agent.Dog(pam=pam)
-    print dog.testpam()
-    # form 4
-    pam = ('jortel', yp['jortel'],)
-    dog = agent.Dog(pam=pam)
-    print dog.testpam()
-    # form 5
-    pam = ('jortel', yp['jortel'],'login')
-    dog = agent.Dog(pam=pam)
-    print dog.testpam()
-    # using form 1, the @user synonym
+    # @user synonym
     dog = agent.Dog(user='root', password=yp['root'])
     print dog.testpam2()
+    # the @pam with specified service
+    dog = agent.Dog(user='jortel', password=yp['jortel'])
+    print dog.testpam3()
     # no user
     try:
         dog = agent.Dog()
@@ -236,6 +223,13 @@ def demopam(uuid, yp, exit=0):
         raise Exception('Exception (NotAuthenticated) expected')
     except NotAuthenticated:
         print 'PAM not authenticated, OK'
+    # PAM failed, invalid service
+    try:
+        dog = agent.Dog(user='jortel', password='xx')
+        dog.testpam4()
+        raise Exception('Exception (NotAuthenticated) expected')
+    except NotAuthenticated:
+        print 'PAM not authenticated, invalid service, OK'
     if exit:
         sys.exit(0)
         
