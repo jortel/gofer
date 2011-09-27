@@ -325,6 +325,7 @@ class Reader(Endpoint):
         if msg:
             envelope = Envelope()
             envelope.load(msg.content)
+            envelope.subject = Consumer.subject(msg)
             log.debug('{%s} read next:\n%s', self.id(), envelope)
             return envelope
 
