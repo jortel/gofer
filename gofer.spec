@@ -219,6 +219,9 @@ This plug-in provides RMI access to libvirt functionality.
 
 
 %changelog
+* Tue Sep 27 2011 Jeff Ortel <jortel@redhat.com> 0.49-2
+- mitigate rpmlint perms error on /var/log/gofer. (jortel@redhat.com)
+
 * Tue Sep 27 2011 Jeff Ortel <jortel@redhat.com> 0.49-1
 - Reader inject subject into the envelope like Consumer. (jortel@redhat.com)
 - Make installed plugins, enabled. (jortel@redhat.com)
