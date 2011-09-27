@@ -2,8 +2,8 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.48
-Release: 3%{?dist}
+Version: 0.49
+Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
 License: LGPLv2
@@ -218,6 +218,26 @@ This plug-in provides RMI access to libvirt functionality.
 
 
 %changelog
+* Tue Sep 27 2011 Jeff Ortel <jortel@redhat.com> 0.49-1
+- Reader inject subject into the envelope like Consumer. (jortel@redhat.com)
+- Make installed plugins, enabled. (jortel@redhat.com)
+- Fix default PAM service. (jortel@redhat.com)
+- Fix virt plugin; add libvirt dep. (jortel@redhat.com)
+- Organize spec by pacakge/subpackage. (jortel@redhat.com)
+- set facl on journal/watchdog. (jortel@redhat.com)
+- Add authentication/authorization unit tests. (jortel@redhat.com)
+- Finer grained auth exceptions. (jortel@redhat.com)
+- package plugins; split shell into system plugin. (jortel@redhat.com)
+- Split watchdog and thread objects for better performance. (jortel@redhat.com)
+- Create watchdog journal directory on-demand. (jortel@redhat.com)
+- Add PyPAM dep; change perms /var/log/gofer/ to 700. (jortel@redhat.com)
+- Make default PAM service configurable. (jortel@redhat.com)
+- Add PAM authentication and decorators; change Shell.run() to run as
+  authenticated user. (jortel@redhat.com)
+- FHS guidelines, move the journal back to /var/lib/gofer/journal. See: http://
+  www.pathname.com/fhs/pub/fhs-2.3.html#USRSHAREARCHITECTUREINDEPENDENTDATA
+  (jortel@redhat.com)
+
 * Tue Sep 13 2011 Jeff Ortel <jortel@redhat.com> 0.48-3
 - Fix tito tagging problem. (jortel@redhat.com)
 
