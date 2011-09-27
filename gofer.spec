@@ -3,7 +3,7 @@
 
 Name: gofer
 Version: 0.49
-Release: 1%{?dist}
+Release: 2%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
 License: LGPLv2
@@ -81,11 +81,12 @@ rm -rf %{buildroot}
 %config(noreplace) %{_sysconfdir}/%{name}/agent.conf
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/builtin.conf
 %{_libdir}/%{name}/plugins/builtin.*
-%attr(700,root,root) %{_var}/log/%{name}
+%{_var}/log/%{name}
 %doc LICENSE
 
 %post
 chkconfig --add %{name}d
+setfacl -m other::--- %{_var}/log/%{name}
 
 %preun
 if [ $1 = 0 ] ; then
