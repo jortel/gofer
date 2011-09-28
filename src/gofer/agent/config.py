@@ -275,7 +275,7 @@ class Properties:
 class Import:
     """
     Represents an import directive.
-    @import:<path>:<section>:<property>,
+    @@import:<path>:<section>:<property>,
     where <property> is: <name>|<name>(<variable>).
     When the <variable> form is used, a variable is assigned the value 
     to be used as $(var) in the conf rather than imported.

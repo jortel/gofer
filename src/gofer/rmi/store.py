@@ -51,10 +51,6 @@ class PendingQueue:
     ROOT = '/var/lib/%s/messaging/pending' % NAME
 
     def __init__(self):
-        """
-        @param id: The queue id.
-        @type id: str
-        """
         self.__pending = []
         self.__uncommitted = {}
         self.__mutex = RLock()

@@ -208,8 +208,6 @@ class Scheduler(PendingThread):
         """
         Dispatch the specified envelope to plugin that
         provides the specified class.
-        @param url: The URL of the broker the request was received.
-        @type url: str
         @param envelope: A gofer messaging envelope.
         @type envelope: L{Envelope}
         """
