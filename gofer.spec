@@ -2,8 +2,8 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.49
-Release: 3%{?dist}
+Version: 0.50
+Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
 License: LGPLv2
@@ -219,6 +219,9 @@ This plug-in provides RMI access to libvirt functionality.
 
 
 %changelog
+* Fri Sep 30 2011 Jeff Ortel <jortel@redhat.com> 0.50-1
+- Fix epydocs. (jortel@redhat.com)
+
 * Tue Sep 27 2011 Jeff Ortel <jortel@redhat.com> 0.49-3
 - Discontinue 'pam' option and just go with user=, password=.
   (jortel@redhat.com)
