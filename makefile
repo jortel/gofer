@@ -39,7 +39,7 @@ rdocs : docs
 docs :
 	rm -rf doc
 	rm -f /tmp/$(DOCTAR)
-	epydoc -vo doc `find src/gofer -name "*.py"`
+	epydoc -vo doc `find src/gofer src/plugins -name "*.py"`
 	tar czvf /tmp/$(DOCTAR) doc
 
 pdf :

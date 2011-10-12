@@ -16,7 +16,7 @@
 System plugin.
 """
 
-import os
+from subprocess import Popen, PIPE
 from gofer.decorators import *
 from gofer.agent.plugin import Plugin
 from gofer.pam import PAM
@@ -59,14 +59,17 @@ class Shell:
         @type user: str
         @param password: The password.
         @type password: str
-        @return: The command output.
-        @rtype: str
+        @return: tuple (status, output)
+        @rtype: tuple
         """
         auth = PAM()
         auth.authenticate(user, password)
-        command = 'su - %s -c "%s"' % (user, cmd)
-        f = os.popen(command)
+        command = ('su', '-', user, '-c', cmd)
+        p = Popen(command, stdout=PIPE)
         try:
-            return f.read()
-        finally:
-            f.close()
+            result = p.stdout.read()
+            p.stdout.close()
+            status = p.wait()
+            return (status, result)
+        except OSError, e:
+            return (-1, str(e))
