@@ -216,6 +216,27 @@ This plug-in provides RMI access to libvirt functionality.
 %doc LICENSE
 
 
+###############################################################################
+# plugin: package
+###############################################################################
+
+%package -n gofer-package
+Summary: The package (RPM) plugin
+Group: Development/Languages
+BuildRequires: python
+Requires: yum
+Requires: %{name} >= %{version}
+
+%description -n gofer-package
+Contains the package plugin.
+This plug-in provides RMI access to package (RPM) management.
+
+%files -n gofer-package
+%defattr(-,root,root,-)
+%config(noreplace) %{_sysconfdir}/%{name}/plugins/package.conf
+%{_libdir}/%{name}/plugins/package.*
+%doc LICENSE
+
 
 
 %changelog
