@@ -17,18 +17,16 @@
 import os
 import sys
 from time import sleep
-from gofer.agent.config import Config
+from gofer.agent.config import Config, nvl
 Config.PATH = '/tmp/gofer/agent.conf'
 Config.CNFD = '/tmp/gofer/conf.d'
 from gofer.messaging import Queue
-from gofer.rmi.decorators import *
+from gofer.decorators import *
 from gofer.rmi.consumer import RequestConsumer
 from gofer.messaging.broker import Broker
 from gofer.agent.plugin import PluginDescriptor, PluginLoader
-from gofer.agent.action import Actions
-from gofer.agent.main import ActionThread
-from gofer.agent.rmi import Scheduler
-from logging import getLogger, INFO, DEBUG, basicConfig
+from gofer.agent.main import Agent, eager
+from logging import getLogger, INFO, DEBUG
 
 log = getLogger(__name__)
 
@@ -144,6 +142,10 @@ class Dog:
 def echo(s):
     return s
 
+@action(minutes=5)
+def testAction():
+    log.info('Testing')
+
 
 def install(uuid, threads=1):
     descriptor = DESCRIPTOR % (uuid, threads)
@@ -165,7 +167,7 @@ def install(uuid, threads=1):
     f.close()
     
 
-class Agent:
+class TestAgent:
     def __init__(self, id, threads):
         install(id, threads)
         queue = Queue(id)
@@ -178,12 +180,9 @@ class Agent:
         rq = RequestConsumer(queue, url=url)
         rq.start()
         pl = PluginLoader()
-        plugins = pl.load()
-        sched = Scheduler(plugins)
-        sched.start()
-        actions = Actions()
-        at = ActionThread(actions.collated())
-        at.start()
+        plugins = pl.load(eager())
+        agent = Agent(plugins)
+        agent.start(False)
         while True:
             sleep(10)
             print 'Agent: sleeping...'
@@ -191,11 +190,10 @@ class Agent:
 if __name__ == '__main__':
     uuid = 'xyz'
     threads = 1
-    basicConfig(filename='/tmp/gofer/agent.log', level=INFO)
     if len(sys.argv) > 1:
         threads = int(sys.argv[1])
     if len(sys.argv) > 2:
         uuid = sys.argv[2]
     log.info('started')
     print 'starting agent (%s), threads=%d' % (uuid, threads)
-    agent = Agent(uuid, threads)
+    agent = TestAgent(uuid, threads)

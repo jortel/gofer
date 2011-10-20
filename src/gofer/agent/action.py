@@ -32,10 +32,15 @@ class Actions:
     """
     functions = {}
     
-    def collated(self):
+    @classmethod
+    def add(cls, fn, interval):
+        cls.functions[fn] = interval
+    
+    @classmethod
+    def collated(cls):
         collated = []
         c = Collator()
-        classes, functions = c.collate(self.functions)
+        classes, functions = c.collate(cls.functions)
         for c,m in classes.items():
             inst = c()
             for m,d in m:
@@ -47,6 +52,13 @@ class Actions:
                 action = Action(f, **d)
                 collated.append(action)
         return collated
+    
+    @classmethod
+    def clear(cls):
+        """
+        Clear the list of actions.
+        """
+        cls.functions = {}
 
 
 def action(**interval):
@@ -54,7 +66,7 @@ def action(**interval):
     Action decorator.
     """
     def decorator(fn):
-        Actions.functions[fn] = interval
+        Actions.add(fn, interval)
         return fn
     return decorator
 

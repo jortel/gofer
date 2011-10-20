@@ -498,8 +498,8 @@ class Dispatcher:
         for c in classes:
             self.classes[c.__name__] = c
         
-    def provides(self, classname):
-        return ( classname in self.classes )
+    def provides(self, name):
+        return ( name in self.classes )
 
     def dispatch(self, envelope):
         """

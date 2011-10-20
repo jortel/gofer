@@ -26,7 +26,9 @@ from gofer.rmi.dispatcher import Dispatcher
 from gofer.rmi.threadpool import Immediate, ThreadPool
 from gofer.rmi.consumer import RequestConsumer
 from gofer.rmi.decorators import Remote
+from gofer.agent.deplist import DepList
 from gofer.agent.config import Base, Config, nvl
+from gofer.agent.action import Actions
 from gofer.messaging import Queue
 from gofer.messaging.broker import Broker
 from logging import getLogger
@@ -119,7 +121,9 @@ class Plugin(object):
             self.synonyms.append(syn)
         self.__mutex = RLock()
         self.__pool = None
-        self.dispatcher = None
+        self.impl = None
+        self.actions = []
+        self.dispatcher = Dispatcher([])
         self.consumer = None
         
     def names(self):
@@ -260,13 +264,45 @@ class Plugin(object):
             return False
         
     def cfg(self):
+        """
+        Get the plugin descriptor.
+        @return: The plugin descriptor
+        @rtype: L{Config}
+        """
         return self.descriptor
     
     def dispatch(self, request):
+        """
+        Dispatch (invoke) the specified RMI request.
+        @param request: An RMI request
+        @type request: L{Envelope}
+        @return: The RMI returned.
+        """
         return self.dispatcher.dispatch(request)
     
-    def provides(self, classname):
-        return self.dispatcher.provides(classname)
+    def provides(self, name):
+        """
+        Get whether a plugin provides the specified class.
+        @param name: A class (or module) name.
+        @type name: str
+        @return: True if provides.
+        @rtype: bool
+        """
+        return self.dispatcher.provides(name)
+    
+    def __getitem__(self, name):
+        """
+        Get an object defined in the plugin (module).
+        @param name: A name (class|function)
+        @type name: str
+        @return: The named item.
+        @rtype: (class|function)
+        @raise KeyError: when not found
+        """
+        try:
+            return getattr(self.impl, name)
+        except AttributeError:
+            raise KeyError(name)
     
     def __lock(self):
         self.__mutex.acquire()
@@ -294,24 +330,70 @@ class PluginDescriptor(Base):
         @return: A list of descriptors.
         @rtype: list
         """
-        lst = []
+        unsorted = []
         cls.__mkdir()
-        for fn in os.listdir(cls.ROOT):
+        for name, path in cls.__list():
+            try:
+                inst = cls(path)
+                inst.__dict__['__path__'] = path
+                unsorted.append((name, inst))
+            except:
+                log.exception(path)
+        return cls.__sort(unsorted)
+    
+    @classmethod
+    def __list(cls):
+        files = os.listdir(cls.ROOT)
+        for fn in sorted(files):
             plugin,ext = fn.split('.',1)
             if not ext in ('.conf'):
                 continue
             path = os.path.join(cls.ROOT, fn)
             if os.path.isdir(path):
                 continue
-            try:
-                inst = cls(path)
-                inst.__dict__['__path__'] = path
-                lst.append((plugin, inst))
-            except:
-                log.error(path, exc_info=1)
-        return lst
+            yield (plugin, path)
+    
+    @classmethod
+    def __sort(cls, descriptors):
+        """
+        Sort descriptors based on defined dependencies.
+        Dependencies defined by [main].requires
+        @param descriptors: A list of descriptor tuples (name,descriptor)
+        @type descriptors: list
+        @return: The sorted list
+        @rtype: list
+        """
+        index = {}
+        for d in descriptors:
+            index[d[0]] = d
+        L = DepList()
+        for n,d in descriptors:
+            r = (n, d.__requires())
+            L.add(r)
+        sorted = []
+        for name in [x[0] for x in L.sort()]:
+            d = index[name]
+            sorted.append(d)
+        return sorted
+
+    def __requires(self):
+        """
+        Get the list of declared required plugins.
+        @return: A list of plugin names.
+        @rtype: list
+        """
+        required = []
+        declared = nvl(self.main.requires)
+        if declared:
+            plugins =  declared.split(',')
+            required = [s.strip() for s in plugins]
+        return tuple(required)
     
     def write(self):
+        """
+        Write the descriptor to the filesystem
+        Written to: __path__.
+        """
         path = self.__dict__['__path__']
         f = open(path, 'w')
         f.write(str(self))
@@ -331,35 +413,25 @@ class PluginLoader:
         '/opt/%s/plugins' % NAME,
     ]
 
-    def load(self):
+    def load(self, eager=True):
         """
         Load the plugins.
+        @param eager: Load disabled plugins.
+        @type eager: bool
         @return: A list of loaded plugins
         @rtype: list
         """
         loaded = []
         for plugin, cfg in PluginDescriptor.load():
-            enabled = self.__enabled(cfg)
-            if not enabled:
+            if not eager and not plugin.enabled():
                 continue
             p = self.__import(plugin, cfg)
             if not p:
-                continue
+                continue # load failed
+            if not p.enabled():
+                log.warn('plugin: %s, DISABLED', p.name)
             loaded.append(p)
         return loaded
-                
-    def __enabled(self, cfg):
-        """
-        Safely validate the plugin is enabled.
-        @param cfg: A plugin descriptor.
-        @type cfg: L{PluginDescriptor}
-        @return: True if enabled.
-        @rtype: bool
-        """
-        try:
-            return int(cfg.main.enabled)
-        except:
-            return False
 
     def __import(self, plugin, cfg):
         """
@@ -372,17 +444,21 @@ class PluginLoader:
         @rtype: Module
         """
         Remote.clear()
+        Actions.clear()
         syn = self.__mangled(plugin)
         p = Plugin(plugin, cfg, (syn,))
         Plugin.add(p)
         try:
             path = self.__findplugin(plugin)
             mod = imp.load_source(syn, path)
+            p.impl = mod
             log.info('plugin "%s", imported as: "%s"', plugin, syn)
             for fn in Remote.find(syn):
                 fn.gofer.plugin = p
-            collated = Remote.collated()
-            p.dispatcher = Dispatcher(collated)
+            if p.enabled():
+                collated = Remote.collated()
+                p.dispatcher = Dispatcher(collated)
+                p.actions = Actions.collated()
             return p
         except:
             Plugin.delete(p)
@@ -403,7 +479,7 @@ class PluginLoader:
             if os.path.exists(path):
                 log.info('using: %s', path)
                 return path
-        raise Exception('%s, not found in:%s', mod, self.PATH)
+        raise Exception('%s, not found in:%s' % (mod, self.PATH))
         
             
     def __mangled(self, plugin):
