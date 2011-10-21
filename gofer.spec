@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.50
+Version: 0.51
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -240,6 +240,17 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Fri Oct 21 2011 Jeff Ortel <jortel@redhat.com> 0.51-1
+- Better semantics: replace Plugin.__getitem__() w/ Plugin.export().
+  (jortel@redhat.com)
+- Optional plugins disabled by default. (jortel@redhat.com)
+- Provide for plugin inheritance.   - add [loader].eager property   - switched
+  to model where disabled plugins loaded but not started to support sharing.
+  - add support for plugin load order specified by [main].requires.   - actions
+  stored on plugins. (jortel@redhat.com)
+- Add the package plugin. (jortel@redhat.com)
+- Change system plugin to use subprocess. (jortel@redhat.com)
+
 * Fri Sep 30 2011 Jeff Ortel <jortel@redhat.com> 0.50-1
 - Fix epydocs. (jortel@redhat.com)
 
