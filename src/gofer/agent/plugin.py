@@ -290,19 +290,19 @@ class Plugin(object):
         """
         return self.dispatcher.provides(name)
     
-    def __getitem__(self, name):
+    def export(self, name):
         """
-        Get an object defined in the plugin (module).
+        Export an object defined in the plugin (module).
         @param name: A name (class|function)
         @type name: str
         @return: The named item.
         @rtype: (class|function)
-        @raise KeyError: when not found
+        @raise NameError: when not found
         """
         try:
             return getattr(self.impl, name)
         except AttributeError:
-            raise KeyError(name)
+            raise NameError(name)
     
     def __lock(self):
         self.__mutex.acquire()
