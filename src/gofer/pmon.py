@@ -107,9 +107,3 @@ class PathMonitor(Thread):
         
     def __unlock(self):
         self.__mutex.release()
-
-def cb(path): print '%s, changed' % path
-
-pm = PathMonitor()
-pm.add('/tmp/cert', cb)
-pm.join()
