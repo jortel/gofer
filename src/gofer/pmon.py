@@ -18,31 +18,27 @@ Provides path and process monitoring classes.
 
 import os
 from time import sleep
-from gofer import Singleton
 from threading import Thread, RLock
 from logging import getLogger
 
 log = getLogger(__name__)
 
 
-class PathMonitor(Thread):
+class PathMonitor:
     """
     Path monitor.
+    @ivar __paths: A list of paths to monitor.
+    @type __paths: dict (path, cb)
+    @ivar __mutex: The mutex.
+    @type __mutex: RLock
+    @ivar __thread: The optional thread.  see: start().
+    @type __thread: Thread
     """
-    
-    __metaclass__ = Singleton
 
-    def __init__(self, precision=1):
-        """
-        @param precision: The precision (how often to check).
-        @type precision: float
-        """
-        Thread.__init__(self, name='PathMonitor%s' % precision)
-        self.__precision = precision
+    def __init__(self):
         self.__paths = {}
         self.__mutex = RLock()
-        self.setDaemon(True)
-        self.start()
+        self.__thread = None
         
     def add(self, path, cb):
         """
@@ -72,23 +68,48 @@ class PathMonitor(Thread):
                 pass
         finally:
             self.__unlock()
+            
+    def start(self, precision=1):
+        """
+        Start the monitor thread.
+        @param precision: The precision (how often to check).
+        @type precision: float
+        @return: self
+        @rtype: L{PathMonitor}
+        """
+        self.__lock()
+        try:
+            if self.__thread:
+                raise Exception, 'already started'
+            thread = MonitorThread(self, precision)
+            thread.start()
+            self.__thread = thread
+            return self
+        finally:
+            self.__unlock()
+    
+    def join(self):
+        """
+        Join the monitoring thread.
+        """
+        if not self.__thread:
+            raise Exception, 'not started'
+        self.__thread.join()
 
-    def run(self):
+    def check(self):
         """
-        Thread main run().
+        Check paths and notify.
         """
-        while True:
-            self.__lock()
-            try:
-                paths = self.__paths.items()
-            finally:
-                self.__unlock()
-            for k,v in paths:
-                mtime = self.__mtime(k)
-                if mtime != v[0]:
-                    self.__notify(k, v[1])
-                    v[0] = mtime
-            sleep(self.__precision)
+        self.__lock()
+        try:
+            paths = self.__paths.items()
+        finally:
+            self.__unlock()
+        for k,v in paths:
+            mtime = self.__mtime(k)
+            if mtime != v[0]:
+                self.__notify(k, v[1])
+                v[0] = mtime
     
     def __notify(self, path, cb):
         try:
@@ -107,3 +128,34 @@ class PathMonitor(Thread):
         
     def __unlock(self):
         self.__mutex.release()
+
+
+class MonitorThread(Thread):
+    """
+    Monitor thread.
+    @ivar monitor: A monitor object.
+    @type monitor: Monitor
+    @ivar precision: The level of percision (seconds).
+    @type precision: float
+    """
+    
+    def __init__(self, monitor, precision):
+        """
+        @param monitor: A monitor object.
+        @type monitor: Monitor
+        @param precision: The level of percision (seconds).
+        @type precision: float
+        """
+        Thread.__init__(self, name='PathMonitor%s' % precision)
+        self.monitor = monitor
+        self.precision = precision
+        self.setDaemon(True)
+        
+    def run(self):
+        """
+        Thread main run().
+        """
+        monitor = self.monitor
+        while True:
+            monitor.check()
+            sleep(self.precision)
