@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.53
+Version: 0.54
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -240,6 +240,9 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Thu Oct 27 2011 Jeff Ortel <jortel@redhat.com> 0.54-1
+- Refactor pmon, separate threading. (jortel@redhat.com)
+
 * Thu Oct 27 2011 Jeff Ortel <jortel@redhat.com> 0.53-1
 - Remove testing code in pmon.py left in by mistake. (jortel@redhat.com)
 
