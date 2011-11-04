@@ -27,7 +27,7 @@ from datetime import datetime as dt
 from datetime import timedelta as delta
 from logging import INFO, basicConfig, getLogger
 from threading import Thread
-from agent import MyError
+from plugins import *
 
 basicConfig(filename='/tmp/gofer/server.log', level=INFO)
 
@@ -45,7 +45,7 @@ def onReply(reply):
 def demo(agent):
 
     # module function
-    agent.agent_plugin.echo('have a nice day')
+    agent.testplugin.echo('have a nice day')
 
     # admin hello
     admin = agent.Admin()

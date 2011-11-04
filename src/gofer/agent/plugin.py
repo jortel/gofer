@@ -20,6 +20,7 @@ Plugin classes.
 import os
 import sys
 import imp
+import inspect
 from threading import RLock
 from gofer import *
 from gofer.rmi.dispatcher import Dispatcher
@@ -293,6 +294,7 @@ class Plugin(object):
     def export(self, name):
         """
         Export an object defined in the plugin (module).
+        The name must reference a class or function object.
         @param name: A name (class|function)
         @type name: str
         @return: The named item.
@@ -300,7 +302,11 @@ class Plugin(object):
         @raise NameError: when not found
         """
         try:
-            return getattr(self.impl, name)
+            obj = getattr(self.impl, name)
+            valid = inspect.isclass(obj) or inspect.isfunction(obj)
+            if valid:
+                return obj
+            raise TypeError, '(%s) must be class|function' % name
         except AttributeError:
             raise NameError(name)
     
