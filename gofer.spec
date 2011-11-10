@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.55
+Version: 0.56
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -240,6 +240,10 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Thu Nov 10 2011 Jeff Ortel <jortel@redhat.com> 0.56-1
+- Impl plugin: Package.update(). (jortel@redhat.com)
+- Impl plugin: system.shutdown() & reboot(). (jortel@redhat.com)
+
 * Thu Nov 10 2011 Jeff Ortel <jortel@redhat.com> 0.55-1
 - change to 'importkeys' semantics; add importkeys to group installs.
   (jortel@redhat.com)
