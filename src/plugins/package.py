@@ -43,20 +43,20 @@ class Package:
     """
     @remote
     @pam(user='root')
-    def install(self, names, permissive=True):
+    def install(self, names, importkeys=False):
         """
         Install packages by name.
         @param names: A list of package names.
         @type names: [str,]
-        @param permissive: Assume YES to YUM prompts.
-        @type permissive: bool
+        @param importkeys: Allow YUM to import GPG keys.
+        @type importkeys: bool
         @return: A list of installed packages
         @rtype: list
         """
         installed = []
         yb = YumBase()
+        yb.conf.assumeyes = importkeys
         try:
-            yb.conf.assumeyes = permissive
             for info in names:
                 yb.install(pattern=info)
             if len(yb.tsInfo):
@@ -100,16 +100,19 @@ class PackageGroup:
 
     @remote
     @pam(user='root')
-    def install(self, names):
+    def install(self, names, importkeys=False):
         """
         Install package groups by name.
         @param names: A list of package group names.
         @type names: list
+        @param importkeys: Allow YUM to install GPG keys.
+        @type importkeys: bool
         @return: A dict of packages that were installed by group.
         @rtype: dict 
         """
         installed = {}
         yb = YumBase()
+        yb.conf.assumeyes = importkeys
         try:
             for name in names:
                 packages = yb.selectGroup(name)
