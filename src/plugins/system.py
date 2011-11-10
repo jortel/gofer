@@ -30,33 +30,43 @@ class System:
     
     @remote
     @pam(user='root')
-    def shutdown(self, when=1):
+    def halt(self, when=1):
         """
-        Shutdown the system.
+        Halt the system.
         @param when: When to perform the shutdown.
           One of:
-            - now   : immediately
+            - now   : immediate.  note: reply not sent.
             - +m    : where m is minutes.
             - hh:mm : time (hours:minutes) 24hr clock.
         @type when: str
+        @see: shutdown(8)
         """
-        command = 'shutdown -h %s &' % TIME
+        command = 'shutdown -h %s &' % when
         call(command, shell=1)
-    
+
     @remote
     @pam(user='root')
-    def reboot(self):
+    def reboot(self, when=1):
         """
         Reboot the system.
         @param when: When to perform the reboot.
           One of:
-            - now   : immediately
+            - now   : immediate.  note: reply not sent.
             - +m    : where m is minutes.
             - hh:mm : time (hours:minutes) 24hr clock.
         @type when: str
+        @see: shutdown(8)
         """
-        command = 'shutdown -r %s &' % TIME
+        command = 'shutdown -r %s &' % when
         call(command, shell=1)
+        
+    @remote
+    @pam(user='root')
+    def cancel(self):
+        """
+        Cancel a scheduled shutdown; halt() or reboot().
+        """
+        call('shutdown -c', shell=1)
 
 
 class Shell:
