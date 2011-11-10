@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.56
+Version: 0.57
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -240,6 +240,10 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Thu Nov 10 2011 Jeff Ortel <jortel@redhat.com> 0.57-1
+- Impl plugin: System, rename shutdown() to: halt(); add cancel().
+  (jortel@redhat.com)
+
 * Thu Nov 10 2011 Jeff Ortel <jortel@redhat.com> 0.56-1
 - Impl plugin: Package.update(). (jortel@redhat.com)
 - Impl plugin: system.shutdown() & reboot(). (jortel@redhat.com)
