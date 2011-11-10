@@ -41,6 +41,7 @@ class Package:
     """
     Package management.
     """
+
     @remote
     @pam(user='root')
     def install(self, names, importkeys=False):
@@ -91,6 +92,39 @@ class Package:
             return erased
         finally:
             ybcleanup(yb)
+            
+    @remote
+    @pam(user='root')
+    def update(self, names=None, importkeys=False):
+        """
+        Update installed packages.
+        When (names) is not specified, all packages are updated.
+        @param names: A list of package names.
+        @type names: [str,]
+        @param importkeys: Allow YUM to import GPG keys.
+        @type importkeys: bool
+        @return: A list of updated packages
+        @rtype: list
+        """
+        updated = []
+        yb = YumBase()
+        yb.conf.assumeyes = importkeys
+        try:
+            if names:
+                for info in names:
+                    yb.update(pattern=info)
+            else:
+                yb.update()
+            if len(yb.tsInfo):
+                for t in yb.tsInfo:
+                    if not t.updates:
+                        continue
+                    updated.append(str(t.po))
+                yb.resolveDeps()
+                yb.processTransaction()
+        finally:
+            ybcleanup(yb)
+        return updated
 
 
 class PackageGroup:
