@@ -16,7 +16,7 @@
 System plugin.
 """
 
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, call
 from gofer.decorators import *
 from gofer.agent.plugin import Plugin
 from gofer.pam import PAM
@@ -30,19 +30,33 @@ class System:
     
     @remote
     @pam(user='root')
-    def shutdown(self):
+    def shutdown(self, when=1):
         """
         Shutdown the system.
+        @param when: When to perform the shutdown.
+          One of:
+            - now   : immediately
+            - +m    : where m is minutes.
+            - hh:mm : time (hours:minutes) 24hr clock.
+        @type when: str
         """
-        pass # TBD
+        command = 'shutdown -h %s &' % TIME
+        call(command, shell=1)
     
     @remote
     @pam(user='root')
     def reboot(self):
         """
         Reboot the system.
+        @param when: When to perform the reboot.
+          One of:
+            - now   : immediately
+            - +m    : where m is minutes.
+            - hh:mm : time (hours:minutes) 24hr clock.
+        @type when: str
         """
-        pass # TBD
+        command = 'shutdown -r %s &' % TIME
+        call(command, shell=1)
 
 
 class Shell:
