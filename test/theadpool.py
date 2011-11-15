@@ -20,6 +20,7 @@ from threading import Thread
 from gofer.metrics import Timer
 from gofer.messaging.threadpool import ThreadPool
 
+
 class ReplyReader(Thread):
     
     def __init__(self, pool, n):
