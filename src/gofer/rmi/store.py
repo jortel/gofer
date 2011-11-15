@@ -146,11 +146,9 @@ class PendingQueue:
         pending = []
         for fn in os.listdir(path):
             path = os.path.join(self.ROOT, fn)
-            envelope = Envelope()
-            f = open(path)
-            s = f.read()
-            f.close()
-            envelope.load(s)
+            envelope = self.__import(path)
+            if not envelope:
+                continue
             ctime = self.__created(path)
             pending.append((ctime, envelope))
         pending.sort()
@@ -159,6 +157,24 @@ class PendingQueue:
             self.__pending = [p[1] for p in pending]
         finally:
             self.__unlock()
+            
+    def __import(self, path):
+        """
+        Import a stored envelpoe.
+        @param path: An absolute file path.
+        @type path: str
+        @return: An imported envelope.
+        @rtype: L{Envelope}
+        """
+        try:
+            s = self.__read(path)
+            envelope = Envelope()
+            envelope.load(s)
+            return envelope
+        except:
+            log.exception(path)
+            log.error('%s, discarded', path)
+            os.unlink(path)
             
     def __get(self, wait=1):
         """
@@ -289,6 +305,13 @@ class PendingQueue:
             return collection[:]
         finally:
             self.__unlock()
+
+    def __read(self, path):
+        f = open(path)
+        try:
+            return f.read()
+        finally:
+            f.close()
 
     def __lock(self):
         self.__mutex.acquire()
