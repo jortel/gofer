@@ -429,7 +429,7 @@ class PluginLoader:
         """
         loaded = []
         for plugin, cfg in PluginDescriptor.load():
-            if not eager and not plugin.enabled():
+            if self.__noload(cfg, eager):
                 continue
             p = self.__import(plugin, cfg)
             if not p:
@@ -438,6 +438,22 @@ class PluginLoader:
                 log.warn('plugin: %s, DISABLED', p.name)
             loaded.append(p)
         return loaded
+    
+    def __noload(self, cfg, eager):
+        """
+        Determine whether the plugin should be loaded.
+        @param cfg: A plugin descriptor.
+        @type cfg: L{PluginDescriptor}
+        @param eager: The I{eager} load flag.
+        @type eager: bool
+        @return: True when not loaded.
+        @rtype: bool
+        """
+        try:
+            return not ( eager or int(cfg.main.enabled) )
+        except:
+            return False
+
 
     def __import(self, plugin, cfg):
         """
