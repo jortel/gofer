@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.57
+Version: 0.58
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -240,6 +240,13 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Wed Nov 16 2011 Jeff Ortel <jortel@redhat.com> 0.58-1
+- Add 'apply' flag on Pacakge.update(); handle obsoletes; better return info.
+  (jortel@redhat.com)
+- Test commit for SSH key changed. (jortel@redhat.com)
+- Better handling of corrupted files in pending store. (jortel@redhat.com)
+- Fix bug in non-eager plugin loading. (jortel@redhat.com)
+
 * Thu Nov 10 2011 Jeff Ortel <jortel@redhat.com> 0.57-1
 - Impl plugin: System, rename shutdown() to: halt(); add cancel().
   (jortel@redhat.com)
