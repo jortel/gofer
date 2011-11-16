@@ -105,7 +105,7 @@ class Package:
         @type importkeys: bool
         @param apply: Apply the update.
         @type apply: bool
-        @return: A list of updates (pkg,{updates:,obsoletes:})
+        @return: A list of updates (pkg,{updates=[],obsoletes=[]})
         @rtype: list
         """
         updated = []
@@ -134,7 +134,7 @@ class Package:
         Description of an update transaction.
         @param t: A yum transaction.
         @type t: Transaction
-        @return: A tuple (pkg,{updates:,obsoletes})
+        @return: A tuple (pkg,{updates=[],obsoletes=[]})
         """
         p = str(t.po)
         u = [str(u) for u in t.updates]
