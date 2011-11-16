@@ -60,9 +60,9 @@ class Package:
         try:
             for info in names:
                 yb.install(pattern=info)
-            if len(yb.tsInfo):
-                for t in yb.tsInfo:
-                    installed.append(str(t.po))
+            for t in yb.tsInfo:
+                installed.append(str(t.po))
+            if installed:
                 yb.resolveDeps()
                 yb.processTransaction()
         finally:
@@ -84,9 +84,9 @@ class Package:
         try:
             for info in names:
                 yb.remove(pattern=info)
-            if len(yb.tsInfo):
-                for t in yb.tsInfo:
-                    erased.append(str(t.po))
+            for t in yb.tsInfo:
+                erased.append(str(t.po))
+            if erased:
                 yb.resolveDeps()
                 yb.processTransaction()
             return erased
@@ -95,7 +95,7 @@ class Package:
             
     @remote
     @pam(user='root')
-    def update(self, names=None, importkeys=False):
+    def update(self, names=None, importkeys=False, apply=True):
         """
         Update installed packages.
         When (names) is not specified, all packages are updated.
@@ -103,7 +103,9 @@ class Package:
         @type names: [str,]
         @param importkeys: Allow YUM to import GPG keys.
         @type importkeys: bool
-        @return: A list of updated packages
+        @param apply: Apply the update.
+        @type apply: bool
+        @return: A list of updates (pkg,{updates:,obsoletes:})
         @rtype: list
         """
         updated = []
@@ -115,16 +117,33 @@ class Package:
                     yb.update(pattern=info)
             else:
                 yb.update()
-            if len(yb.tsInfo):
-                for t in yb.tsInfo:
-                    if not t.updates:
-                        continue
-                    updated.append(str(t.po))
+            for t in yb.tsInfo:
+                u = self.updinfo(t)
+                if not u:
+                    continue
+                updated.append(u)
+            if updated and apply:
                 yb.resolveDeps()
                 yb.processTransaction()
         finally:
             ybcleanup(yb)
         return updated
+    
+    def updinfo(self, t):
+        """
+        Description of an update transaction.
+        @param t: A yum transaction.
+        @type t: Transaction
+        @return: A tuple (pkg,{updates:,obsoletes})
+        """
+        p = str(t.po)
+        u = [str(u) for u in t.updates]
+        o = [str(o) for o in t.obsoletes]
+        if u or o:
+            d = dict(updates=u, obsoletes=o)
+            return (p, d)
+        else:
+            return None
 
 
 class PackageGroup:
