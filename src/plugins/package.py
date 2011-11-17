@@ -14,6 +14,7 @@
 #
 
 from yum import YumBase
+from yum.plugins import TYPE_CORE, TYPE_INTERACTIVE
 from gofer.decorators import *
 from gofer.agent.plugin import Plugin
 from logging import getLogger
@@ -22,20 +23,35 @@ log = getLogger(__name__)
 plugin = Plugin.find(__name__)
 
 
-def ybcleanup(yb):
+def ybinit():
     """
-    Needed to clean up resources leaked by yum.
+    Create and initialize yum object.
+    @return: A yum object.
+    @rtype: YumBase
+    """
+    yb = YumBase()
+    try:
+        yb.doConfigSetup(plugin_types=(TYPE_CORE, TYPE_INTERACTIVE))
+    except:
+        ybclean(yb)
+        raise
+    return yb
+
+def ybclean(yb):
+    """
+    Clean up resources leaked by yum.
     """
     try:
-        # close rpm db
         yb.closeRpmDB()
-        # hack!  prevent file descriptor leak
         yl = getLogger('yum.filelogging')
         for h in yl.handlers:
             yl.removeHandler(h)
     except Exception, e:
         log.exception(e)
-        
+
+#
+# API
+#
 
 class Package:
     """
@@ -55,7 +71,7 @@ class Package:
         @rtype: list
         """
         installed = []
-        yb = YumBase()
+        yb = ybinit()
         yb.conf.assumeyes = importkeys
         try:
             for info in names:
@@ -66,7 +82,7 @@ class Package:
                 yb.resolveDeps()
                 yb.processTransaction()
         finally:
-            ybcleanup(yb)
+            ybclean(yb)
         return installed
 
     @remote
@@ -80,7 +96,7 @@ class Package:
         @rtype: list
         """
         erased = []
-        yb = YumBase()
+        yb = ybinit()
         try:
             for info in names:
                 yb.remove(pattern=info)
@@ -91,7 +107,7 @@ class Package:
                 yb.processTransaction()
             return erased
         finally:
-            ybcleanup(yb)
+            ybclean(yb)
             
     @remote
     @pam(user='root')
@@ -109,7 +125,7 @@ class Package:
         @rtype: list
         """
         updated = []
-        yb = YumBase()
+        yb = ybinit()
         yb.conf.assumeyes = importkeys
         try:
             if names:
@@ -126,7 +142,7 @@ class Package:
                 yb.resolveDeps()
                 yb.processTransaction()
         finally:
-            ybcleanup(yb)
+            ybclean(yb)
         return updated
     
     def updinfo(self, t):
@@ -164,7 +180,7 @@ class PackageGroup:
         @rtype: dict 
         """
         installed = {}
-        yb = YumBase()
+        yb = ybinit()
         yb.conf.assumeyes = importkeys
         try:
             for name in names:
@@ -175,7 +191,7 @@ class PackageGroup:
                 yb.resolveDeps()
                 yb.processTransaction()
         finally:
-            ybcleanup(yb)
+            ybclean(yb)
         return installed
 
     @remote
@@ -189,7 +205,7 @@ class PackageGroup:
         @rtype: list
         """
         removed = {}
-        yb = YumBase()
+        yb = ybinit()
         try:
             for name in names:
                 packages = yb.groupRemove(name)
@@ -200,4 +216,4 @@ class PackageGroup:
                 yb.processTransaction()
             return removed
         finally:
-            ybcleanup(yb)
+            ybclean(yb)
