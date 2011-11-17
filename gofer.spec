@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.58
+Version: 0.59
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -240,6 +240,9 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Wed Nov 16 2011 Jeff Ortel <jortel@redhat.com> 0.59-1
+- plugin: package; Initialize yum plugins. (jortel@redhat.com)
+
 * Wed Nov 16 2011 Jeff Ortel <jortel@redhat.com> 0.58-1
 - Add 'apply' flag on Pacakge.update(); handle obsoletes; better return info.
   (jortel@redhat.com)
