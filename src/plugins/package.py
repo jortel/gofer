@@ -17,38 +17,52 @@ from yum import YumBase
 from yum.plugins import TYPE_CORE, TYPE_INTERACTIVE
 from gofer.decorators import *
 from gofer.agent.plugin import Plugin
-from logging import getLogger
+from logging import getLogger, Logger
 
 log = getLogger(__name__)
 plugin = Plugin.find(__name__)
 
 
-def ybinit():
+class Yum(YumBase):
     """
-    Create and initialize yum object.
-    @return: A yum object.
-    @rtype: YumBase
+    Provides custom configured yum object.
     """
-    yb = YumBase()
-    try:
-        yb.doConfigSetup(plugin_types=(TYPE_CORE, TYPE_INTERACTIVE))
-    except:
-        ybclean(yb)
-        raise
-    return yb
 
-def ybclean(yb):
-    """
-    Clean up resources leaked by yum.
-    """
-    try:
-        yb.closeRpmDB()
-        yl = getLogger('yum.filelogging')
-        for h in yl.handlers:
-            yl.removeHandler(h)
-    except Exception, e:
-        log.exception(e)
+    def __init__(self, importkeys=False):
+        """
+        @param importkeys: Allow the import of GPG keys.
+        @type importkeys: bool
+        """
+        YumBase.__init__(self)
+        self.preconf.plugin_types = (TYPE_CORE, TYPE_INTERACTIVE)
+        self.conf.assumeyes = importkeys
 
+    def registerCommand(self, command):
+        """
+        Implemented so TYPE_INTERACTIVE can be loaded.
+        Commands ignored.
+        """
+        pass
+    
+    def cleanLoggers(self):
+        """
+        Clean handlers leaked by yum.
+        """
+        for n,lg in Logger.manager.loggerDict.items():
+            if not n.startswith('yum.'):
+                continue
+            for h in lg.handlers:
+                lg.removeHandler(h)
+    
+    def close(self):
+        """
+        This should be handled by __del__() but YumBase
+        objects never seem to completely go out of scope and
+        garbage collected.
+        """
+        YumBase.close(self)
+        self.closeRpmDB()
+        self.cleanLoggers()
 #
 # API
 #
@@ -57,32 +71,39 @@ class Package:
     """
     Package management.
     """
+    
+    def __init__(self, apply=True, importkeys=False):
+        """
+        @param apply: Apply changes (not dry-run).
+        @type apply: bool
+        @param importkeys: Allow the import of GPG keys.
+        @type importkeys: bool
+        """
+        self.apply = apply
+        self.importkeys = importkeys
 
     @remote
     @pam(user='root')
-    def install(self, names, importkeys=False):
+    def install(self, names):
         """
         Install packages by name.
         @param names: A list of package names.
         @type names: [str,]
-        @param importkeys: Allow YUM to import GPG keys.
-        @type importkeys: bool
         @return: A list of installed packages
         @rtype: list
         """
         installed = []
-        yb = ybinit()
-        yb.conf.assumeyes = importkeys
+        yb = Yum(self.importkeys)
         try:
             for info in names:
                 yb.install(pattern=info)
             for t in yb.tsInfo:
                 installed.append(str(t.po))
-            if installed:
+            if installed and self.apply:
                 yb.resolveDeps()
                 yb.processTransaction()
         finally:
-            ybclean(yb)
+            yb.close()
         return installed
 
     @remote
@@ -96,37 +117,32 @@ class Package:
         @rtype: list
         """
         erased = []
-        yb = ybinit()
+        yb = Yum()
         try:
             for info in names:
                 yb.remove(pattern=info)
             for t in yb.tsInfo:
                 erased.append(str(t.po))
-            if erased:
+            if erased and self.apply:
                 yb.resolveDeps()
                 yb.processTransaction()
-            return erased
         finally:
-            ybclean(yb)
+            yb.close()
+        return erased
             
     @remote
     @pam(user='root')
-    def update(self, names=None, importkeys=False, apply=True):
+    def update(self, names=None):
         """
         Update installed packages.
         When (names) is not specified, all packages are updated.
         @param names: A list of package names.
         @type names: [str,]
-        @param importkeys: Allow YUM to import GPG keys.
-        @type importkeys: bool
-        @param apply: Apply the update.
-        @type apply: bool
         @return: A list of updates (pkg,{updates=[],obsoletes=[]})
         @rtype: list
         """
         updated = []
-        yb = ybinit()
-        yb.conf.assumeyes = importkeys
+        yb = Yum(self.importkeys)
         try:
             if names:
                 for info in names:
@@ -138,11 +154,11 @@ class Package:
                 if not u:
                     continue
                 updated.append(u)
-            if updated and apply:
+            if updated and self.apply:
                 yb.resolveDeps()
                 yb.processTransaction()
         finally:
-            ybclean(yb)
+            yb.close()
         return updated
     
     def updinfo(self, t):
@@ -166,32 +182,39 @@ class PackageGroup:
     """
     PackageGroup management.
     """
+    
+    def __init__(self, apply=True, importkeys=False):
+        """
+        @param apply: Apply changes (not dry-run).
+        @type apply: bool
+        @param importkeys: Allow the import of GPG keys.
+        @type importkeys: bool
+        """
+        self.apply = apply
+        self.importkeys = importkeys
 
     @remote
     @pam(user='root')
-    def install(self, names, importkeys=False):
+    def install(self, names):
         """
         Install package groups by name.
         @param names: A list of package group names.
         @type names: list
-        @param importkeys: Allow YUM to install GPG keys.
-        @type importkeys: bool
         @return: A dict of packages that were installed by group.
         @rtype: dict 
         """
         installed = {}
-        yb = ybinit()
-        yb.conf.assumeyes = importkeys
+        yb = Yum(self.importkeys)
         try:
             for name in names:
                 packages = yb.selectGroup(name)
                 if packages:
                     installed[name] = [str(t.po) for t in packages]
-            if installed:
+            if installed and self.apply:
                 yb.resolveDeps()
                 yb.processTransaction()
         finally:
-            ybclean(yb)
+            yb.close()
         return installed
 
     @remote
@@ -205,15 +228,15 @@ class PackageGroup:
         @rtype: list
         """
         removed = {}
-        yb = ybinit()
+        yb = Yum()
         try:
             for name in names:
                 packages = yb.groupRemove(name)
                 if packages:
                     removed[name] = [str(t.po) for t in packages]
-            if removed:
+            if removed and self.apply:
                 yb.resolveDeps()
                 yb.processTransaction()
-            return removed
         finally:
-            ybclean(yb)
+            yb.close()
+        return removed
