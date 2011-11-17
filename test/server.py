@@ -41,6 +41,11 @@ watchdog.start()
 
 def onReply(reply):
     print 'REPLY [%s]\n%s' % (dt.now(), reply)
+    
+def isAsync(agent):
+    options = agent._Container__options
+    return (options.async or options.ctag)
+
 
 def demo(agent):
 
@@ -260,6 +265,24 @@ def demoauth(uuid, yp, exit=0):
     demopam(uuid, yp)
     if exit:
         sys.exit(0)
+        
+
+def democonst(uuid, exit=0):
+    agent = Agent(uuid)
+    cowboy = agent.Cowboy()
+    for name,age in (('jeff',10),('bart',45),):
+        cowboy(name, age=age)
+        print cowboy.howdy()
+        assert(cowboy.name() == name)
+        assert(cowboy.age() == age)
+    try:
+        cowboy = agent.Cowboy()
+        print cowboy.howdy()
+        raise Exception, 'Cowboy() should have failed.'
+    except TypeError, e:
+        pass
+    if exit:
+        sys.exit(0)
     
 
 def main(uuid):
@@ -335,6 +358,7 @@ if __name__ == '__main__':
     yp['root'] = sys.argv[1]
     yp['jortel'] = sys.argv[2]
     demoauth(uuid, yp, 0)
+    democonst(uuid)
     #perftest(uuid)
     #demoperftest(uuid)
     rcon = ReplyConsumer(Queue(uuid.upper()))

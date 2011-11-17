@@ -116,6 +116,7 @@ class Stub:
         self.__producer = producer
         self.__destination = destination
         self.__options = Options(options.items())
+        self.__called = (0, None)
         self.__mutex = RLock()
         self.__policy = None
 
@@ -143,6 +144,7 @@ class Stub:
         """
         opts = Options(self.__options)
         opts.update(options)
+        request.cntr = self.__called[1]
         policy = self.__getpolicy()
         if isinstance(self.__destination, (list,tuple)):
             return policy.broadcast(
@@ -188,15 +190,23 @@ class Stub:
         cn = self.__class__.__name__
         return Method(cn, name, self)
 
-    def __call__(self, **options):
+    def __call__(self, *args, **options):
         """
         Simulated constructor.
+        The 1st call updates stub options.
+        The 2nd call updates remote object constructor
+        parameters which are passed on RMI calls.
         @param options: keyword options.
         @type options: dict
         @return: self
         @rtype: L{Stub}
         """
-        self.__options.update(options)
+        if not self.__called[0]:
+            self.__called = (1, None)
+            self.__options.update(options)
+        else:
+            n = self.__called[0]
+            self.__called = (n+1, (args, options))
         return self
 
     def __getpolicy(self):

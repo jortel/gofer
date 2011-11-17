@@ -305,7 +305,8 @@ class RMI(object):
         if inst is None:
             raise ClassNotFound(key)
         if inspect.isclass(inst):
-            return inst()
+            args,keywords = self.__constructor()
+            return inst(*args, **keywords)
         else:
             return inst
 
@@ -459,6 +460,16 @@ class RMI(object):
             return getattr(self.__fn(method), NAME)
         except:
             pass
+        
+    def __constructor(self):
+        """
+        Get (optional) constructor arguments.
+        @return: cntr: ([],{})
+        """
+        cntr = self.request.cntr
+        if not cntr:
+            cntr = ([],{})
+        return cntr
 
     def __call__(self):
         """

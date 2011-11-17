@@ -123,6 +123,28 @@ class Dog:
     @remote
     def __str__(self):
         return 'REMOTE:Dog'
+
+
+class Cowboy:
+    
+    def __init__(self, name, age=0):
+        self.__name = name
+        self.__age = age
+    
+    @remote
+    def howdy(self):
+        n = self.name()
+        a = self.age()
+        return 'Howdy, name=%s; age=%d' % (n, a)
+    
+    @remote
+    def name(self):
+        return self.__name
+    
+    @remote
+    def age(self):
+        return self.__age
+
     
 @remote
 def echo(s):
