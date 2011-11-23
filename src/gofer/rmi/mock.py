@@ -188,7 +188,7 @@ class Stub:
             stub = stub()
         self.__inst = self.__instrumented(stub)
     
-    def __call__(self, **options):
+    def __call__(self, *args, **options):
         return self.__inst
     
     def __getattr__(self, name):
