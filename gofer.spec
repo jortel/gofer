@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.60
+Version: 0.61
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -240,6 +240,11 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Wed Nov 23 2011 Jeff Ortel <jortel@redhat.com> 0.61-1
+- mocks: add support for mock constructors. (jortel@redhat.com)
+- plugin: package; Fix problem of yum interactive plugins accessing contributed
+  options. (jortel@redhat.com)
+
 * Fri Nov 18 2011 Jeff Ortel <jortel@redhat.com> 0.60-1
 - plugin: package; revise API for constructors; add Yum wrapper class.
   (jortel@redhat.com)
