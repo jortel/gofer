@@ -14,6 +14,7 @@
 #
 
 from yum import YumBase
+from optparse import OptionParser
 from yum.plugins import TYPE_CORE, TYPE_INTERACTIVE
 from gofer.decorators import *
 from gofer.agent.plugin import Plugin
@@ -34,12 +35,23 @@ class Yum(YumBase):
         @type importkeys: bool
         """
         YumBase.__init__(self)
+        self.preconf.optparser = OptionParser()
         self.preconf.plugin_types = (TYPE_CORE, TYPE_INTERACTIVE)
         self.conf.assumeyes = importkeys
+        
+    def doPluginSetup(self, *args, **kwargs):
+        """
+        Set command line arguments.
+        Support TYPE_INTERACTIVE plugins.
+        """
+        YumBase.doPluginSetup(self, *args, **kwargs)
+        p = self.__parser()
+        options, args = p.parse_args([])
+        self.plugins.setCmdLine(options, args)
 
     def registerCommand(self, command):
         """
-        Implemented so TYPE_INTERACTIVE can be loaded.
+        Support TYPE_INTERACTIVE plugins.
         Commands ignored.
         """
         pass
@@ -63,6 +75,10 @@ class Yum(YumBase):
         YumBase.close(self)
         self.closeRpmDB()
         self.cleanLoggers()
+        
+    def __parser(self):
+        return self.preconf.optparser
+
 #
 # API
 #
