@@ -34,8 +34,11 @@ class Yum(YumBase):
         @param importkeys: Allow the import of GPG keys.
         @type importkeys: bool
         """
+        parser = OptionParser()
+        parser.parse_args([])
+        self.__parser = parser
         YumBase.__init__(self)
-        self.preconf.optparser = OptionParser()
+        self.preconf.optparser = self.__parser
         self.preconf.plugin_types = (TYPE_CORE, TYPE_INTERACTIVE)
         self.conf.assumeyes = importkeys
         
@@ -45,7 +48,7 @@ class Yum(YumBase):
         Support TYPE_INTERACTIVE plugins.
         """
         YumBase.doPluginSetup(self, *args, **kwargs)
-        p = self.__parser()
+        p = self.__parser
         options, args = p.parse_args([])
         self.plugins.setCmdLine(options, args)
 
@@ -75,9 +78,6 @@ class Yum(YumBase):
         YumBase.close(self)
         self.closeRpmDB()
         self.cleanLoggers()
-        
-    def __parser(self):
-        return self.preconf.optparser
 
 #
 # API
