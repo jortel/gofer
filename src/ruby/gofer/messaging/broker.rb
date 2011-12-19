@@ -15,7 +15,6 @@
 
 require 'rubygems'
 require 'qpid'
-require 'socket'
 
 class Broker
 
@@ -48,9 +47,8 @@ class Broker
   
   def connect()
     if @connection.nil?
-      s = TCPSocket.new(@url.host(), @url.port())
-      @connection = Qpid::Connection.new(s)
-      @connection.start(10)
+      @connection = Qpid::Messaging::Connection.new(:url=>@url.to_s)
+      @connection.open()
     end
     return @connection
   end
@@ -133,7 +131,7 @@ class URL
   end
   
   def to_s()
-    return '%s://%s:%d' %
+    return '%s:%s:%d' %
       [@transport,
        @host,
        @port]    

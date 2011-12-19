@@ -14,7 +14,6 @@
 #
 
 require 'pp'
-require 'timeout'
 require 'rubygems'
 require 'qpid'
 require 'json'
@@ -41,14 +40,12 @@ class ReceiverThread
   
   def run()
     while true
-      incoming = @consumer.incoming()
-      begin
-        Timeout::timeout(1) do
-          m = incoming.get(true)
-          @log.info("message: \"#{m.body}\" received")
-          @consumer.received(m)
-        end
-      rescue Timeout::Error ;
+      receiver = @consumer.receiver()
+      timeout = Qpid::Messaging::Duration.new(1000)
+      m = receiver.fetch(10)
+      unless m.nil?
+        @log.info("message: \"#{m.body}\" received")
+        @consumer.received(m)
       end
     end
   end
@@ -66,7 +63,7 @@ class Consumer < Endpoint
   
   def initialize(destination, uuid=nil, url=nil)
     @thread = nil
-    @incoming = nil
+    @receiver = nil
     @destination = destination
     super(uuid, url)
   end
@@ -77,24 +74,17 @@ class Consumer < Endpoint
   
   def open()
     session = self.session()
-    @destination.create(session)
     @log.info("{#{self.id}} opening: #{@destination}")
-    session.message_subscribe(
-      :destination=>@uuid,
-      :queue=>@destination.to_s,
-      :accept_mode=>session.message_accept_mode.none)
-    @incoming = session.incoming(@uuid)
+    @receiver = session.create_receiver(@destination.to_s)
   end
   
   def start()
-    @incoming.start()
     @thread = ReceiverThread.new(self)
     @thread.start()    
   end
   
   def stop()
     begin
-      @incoming.stop()
       @thread.stop()
       @thread.join(90)
     end
@@ -132,28 +122,22 @@ class Consumer < Endpoint
 end
 
 
-class Reader < Consumer
-
-  def start()
-    @incoming.start()
-  end
-
-  def stop()
-    begin
-      @incoming.stop()
-    end
+class Reader < Endpoint
+  
+  def initialize(destination, uuid=nil, url=nil)
+    super(uuid, url)
+    session = self.session()
+    @receiver = session.create_receiver(destination.to_s)
   end
 
   def next(timeout=0)
-    begin
-      Timeout::timeout(timeout) do
-        m = @incoming.get(true)
-        @log.info("message: \"#{m.body}\" received")
-        envelope = JSON.parse(m.body, :symbolize_names=>true)
-        @log.debug("#{self.id} read next:\n#{envelope.inspect}")
-        return envelope
-      end
-    rescue Timeout::Error ;
+    duration = Qpid::Messaging::Duration.new(timeout*1000)
+    m = @receiver.fetch(duration)
+    unless m.nil?
+      @log.info("message: \"#{m.content}\" received")
+      envelope = JSON.parse(m.content, :symbolize_names=>true)
+      @log.debug("#{self.id} read next:\n#{envelope.inspect}")
+      return envelope
     end
   end
   
@@ -171,6 +155,10 @@ class Reader < Consumer
       @log.debug("#{self.id} search found:\n#{envelope.inspect}")
       self.ack()
     end
+  end
+  
+  def close()
+    @receiver.close()
   end
     
 end

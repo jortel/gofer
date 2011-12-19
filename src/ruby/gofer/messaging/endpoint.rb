@@ -42,17 +42,17 @@ class Endpoint
     return con
   end
   
-  def session
+  def session()
     if @session.nil?
       con = self.connection()
-      @session = con.session(@uuid)      
+      @session = con.create_session(:name=>@uuid)   
     end
     return @session
   end
   
   def ack()
     begin
-      #@session.ack()
+      #@session.commit()
     end
   end
   

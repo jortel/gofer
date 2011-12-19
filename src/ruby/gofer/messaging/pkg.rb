@@ -21,7 +21,7 @@ require 'logger'
 
 module Gofer
 
-  VERSION = "0.3"
+  VERSION = "0.4"
   
   @@logger = Logger.new('/tmp/ruby-gofer.log')
   
@@ -37,10 +37,6 @@ module Gofer
     
     def address()
       abstract_method    
-    end
-    
-    def create(ssn)
-      abstract_method
     end
     
     def delete()
@@ -64,36 +60,24 @@ module Gofer
     
     def initialize(name, durable=false)
       @name = name
+      @subject = ""
       @durable = durable
-      @created = false
     end
     
     def id()
       return "queue:#{@name}"    
     end
     
-    def address()
+    def to_s()
       s = ''
       s << @name
       s << ';{'
       s << 'create:always'
+      s << ',delete:receiver'
       s << ',node:{type:queue,durable:True}'
       s << ',link:{durable:True,x-subscribe:{exclusive:True}}'
       s << '}'
       return s    
-    end
-  
-    def create(ssn)
-      # TODO: create as temp when !@durable
-      if !@created
-        ssn.queue_declare(@name, :exclusive=>true, :auto_delete=>!@durable)
-        ssn.exchange_declare(@name, :type=>"direct")
-        @created = true
-      end
-    end
-    
-    def to_s()
-      return @name
     end
     
   end

@@ -40,11 +40,11 @@ class Producer < Endpoint
     end
     envelope.update(body)
     json = JSON.pretty_generate(envelope)
-    
-    dp = ssn.delivery_properties(:routing_key=>address, :ttl=>ttl)
-    mp = ssn.message_properties(:content_type=>"text/plain")
-    msg = Qpid::Message.new(dp, mp, json)
-    ssn.message_transfer(:message=>msg)
+    msg = Qpid::Messaging::Message.new(:content=>json)
+    msg.content = json
+    sender = ssn.create_sender(address)
+    sender.send(msg, ttl=>ttl)
+    sender.close()
     @log.info("#{self.id} sent (#{address})\n#{envelope.inspect}")
     return sn
   end

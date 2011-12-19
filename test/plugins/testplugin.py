@@ -71,11 +71,15 @@ class Cat:
 
 
 class Dog:
+    
+    def __init__(self, name='chance'):
+        self.name = name
+    
     @remote
     def bark(self, words, wait=0):
         if wait:
             sleep(wait)
-        print 'Ruf %s' % words
+        print '[%s] Ruf %s' % (self.name, words)
         return 'Yes master.  I will bark because that is what dogs do. "%s"' % words
 
     @remote

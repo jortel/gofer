@@ -36,18 +36,27 @@ class RequestMethod
   def close()
     @producer.close()
   end
+  
+  def timeout(options, none=[nil,nil])
+    tm = options[:timeout]
+    if tm.nil?
+      return none
+    end
+    return tm.is_a?(Array) ? tm : [tm, tm]
+  end
 
 end
 
 
 class Synchronous < RequestMethod
   
-  def initialize(producer, timeout)
+  @@TIMEOUT = [10,90]
+  
+  def initialize(producer, options)
     super(producer)
-    @timeout = (timeout.is_a?(Array) ? timeout : [timeout])
+    @timeout = timeout(options, @@TIMEOUT)
     @queue = Gofer::Queue.new(getuuid(), false)
     @reader = Reader.new(@queue, nil, producer.url)
-    @reader.start()
   end
   
   def send(destination, request, any={})
@@ -104,26 +113,31 @@ end
 
 class Asynchronous < RequestMethod
 
-  def initialize(producer, tag)
+  def initialize(producer, options)
     super(producer)
-    @tag = tag
+    @timeout = timeout(options)
+    @tag = options[:ctag]
   end
   
-  def send(destination, request, any={})
-    sn = @producer.send(
-      destination,
+  def send(destination, request, options={})
+    body = {
       :replyto=>replyto(),
       :request=>request,
-      :any=>any)
+    }
+    body.update(options)
+    ttl = @timeout[0]
+    sn = @producer.send(destination, body, ttl=ttl)
     return sn
   end
   
-  def broadcast(destinations, request, any={})
-    sns = @producer.send(
-      destinations,
+  def broadcast(destinations, request, options={})
+    body = {
       :replyto=>replyto(),
       :request=>request,
-      :any=>any)
+    }
+    body.update(options)
+    ttl = @timeout[0]
+    sns = @producer.send(destinations, body, ttl)
     return sns
   end
   

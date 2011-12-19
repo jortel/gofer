@@ -68,14 +68,14 @@ class StubFactory
   
   private
   
-  def stubmethod(opts)
+  def stubmethod(options)
+    method = nil
     if async()
-      ctag = opts[:ctag]
-      return Asynchronous.new(@producer, ctag)
+      method = Asynchronous.new(@producer, options)
     else
-      timeout = opts[:timeout]
-      return Synchronous.new(@producer, timeout)
+      method = Synchronous.new(@producer, options)
     end
+    return method
   end
   
   def async()

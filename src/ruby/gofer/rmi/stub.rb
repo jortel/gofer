@@ -19,12 +19,19 @@ require 'gofer/messaging/pkg'
 module Gofer
 
   class Stub
+    
+    def new(*args)
+      @cntr = [args,{}]
+      return self
+    end
   
     def initialize(pid, classname, opts={})
       @log = Gofer::logger()
       @pid = pid
       @classname = classname
+      @cntr = [[],{}]
       @opts = opts
+      @called = false
     end
     
     def send(name, *args, &block)
@@ -36,6 +43,7 @@ module Gofer
         @log.info("invoke: #{@classname}.#{sym}(#{args})")
         request = {
           :classname=>@classname,
+          :cntr=>@cntr,
           :method=>sym,
           :args=>args,
           :kws=>{}
@@ -51,24 +59,39 @@ module Gofer
     end
     
     private
+    
+    def _pam()
+      pam = nil
+      user = @opts[:user]
+      if !user.nil?
+        pam = {
+          :user=>user,
+          :password=>@opts[:password],
+        }
+      end
+      return pam
+    end
   
     def _send(request)
       method = @opts[:method]
       window = @opts[:window]
       window = (window ? window.hash : nil)
-      any = @opts[:any]
+      options = {
+        :window=>window,
+        :secret=>@opts[:secret],
+        :pam=>_pam(),
+        :any=>@opts[:any]
+      }
       if @pid.is_a?(Array)
         return method.broadcast(
           @pid,
           request,
-          :window=>window,
-          :any=>any)
+          options)
       else
         return method.send(
           @pid,
           request,
-          :window=>window,
-          :any=>any)
+          options)
       end
     end
     
