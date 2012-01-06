@@ -86,8 +86,69 @@ class Yum(YumBase):
 class Package:
     """
     Package management.
+    Returned I{Package} NEVRA+ objects:
+      - qname   : qualified name
+      - repoid  : repository id
+      - name    : package name
+      - epoch   : package epoch
+      - version : package version
+      - release : package release
+      - arch    : package arch
     """
     
+    @classmethod
+    def summary(cls, tsInfo, states=('i','u')):
+        """
+        Get transaction summary.
+        @param tsInfo: A yum transaction.
+        @type tsInfo: YumTransaction
+        @param states: A list of yum transaction states.
+        @type states: tuple|list
+        @return: (resolved[],deps[])
+        @rtype: tuple
+        """
+        resolved = []
+        deps = []
+        for t in tsInfo:
+            if t.ts_state not in states:
+                continue
+            qname = str(t.po)
+            package = dict(
+                qname=qname,
+                repoid=t.repoid,
+                name=t.po.name,
+                version=t.po.ver,
+                release=t.po.rel,
+                arch=t.po.arch,
+                epoch=t.po.epoch)
+            if t.isDep:
+                deps.append(package)
+            else:
+                resolved.append(package)
+        return (resolved, deps)
+    
+    @classmethod
+    def installed(cls, tsInfo):
+        """
+        Get transaction summary for installed packages.
+        @param tsInfo: A yum transaction.
+        @type tsInfo: YumTransaction
+        @return: (resolved[],deps[])
+        @rtype: tuple
+        """
+        return cls.summary(tsInfo)
+    
+    @classmethod
+    def erased(cls, tsInfo):
+        """
+        Get transaction summary for erased packages.
+        @param tsInfo: A yum transaction.
+        @type tsInfo: YumTransaction
+        @return: (resolved[],deps[])
+        @rtype: tuple
+        """
+        return cls.summary(tsInfo, ('e',))
+
     def __init__(self, apply=True, importkeys=False):
         """
         @param apply: Apply changes (not dry-run).
@@ -105,22 +166,21 @@ class Package:
         Install packages by name.
         @param names: A list of package names.
         @type names: [str,]
-        @return: A list of installed packages
-        @rtype: list
+        @return: Packages installed.
+            {resolved=[Package,],deps=[Package,]}
+        @rtype: dict
         """
-        installed = []
         yb = Yum(self.importkeys)
         try:
             for info in names:
                 yb.install(pattern=info)
-            for t in yb.tsInfo:
-                installed.append(str(t.po))
-            if installed and self.apply:
-                yb.resolveDeps()
+            yb.resolveDeps()
+            resolved, deps = self.installed(yb.tsInfo)
+            if self.apply and resolved:
                 yb.processTransaction()
         finally:
             yb.close()
-        return installed
+        return dict(resolved=resolved, deps=deps)
 
     @remote
     @pam(user='root')
@@ -129,22 +189,21 @@ class Package:
         Uninstall (erase) packages by name.
         @param names: A list of package names to be removed.
         @type names: list
-        @return: A list of erased packages.
-        @rtype: list
+        @return: Packages uninstalled (erased).
+            {resolved=[Package,],deps=[Package,]}
+        @rtype: dict
         """
-        erased = []
         yb = Yum()
         try:
             for info in names:
                 yb.remove(pattern=info)
-            for t in yb.tsInfo:
-                erased.append(str(t.po))
-            if erased and self.apply:
-                yb.resolveDeps()
+            yb.resolveDeps()
+            resolved, deps = self.erased(yb.tsInfo)
+            if self.apply and resolved:
                 yb.processTransaction()
         finally:
             yb.close()
-        return erased
+        return dict(resolved=resolved, deps=deps)
             
     @remote
     @pam(user='root')
@@ -154,10 +213,10 @@ class Package:
         When (names) is not specified, all packages are updated.
         @param names: A list of package names.
         @type names: [str,]
-        @return: A list of updates (pkg,{updates=[],obsoletes=[]})
-        @rtype: list
+        @return: Packages installed (updated).
+            {resolved=[Package,],deps=[Package,]}
+        @rtype: dict
         """
-        updated = []
         yb = Yum(self.importkeys)
         try:
             if names:
@@ -165,33 +224,13 @@ class Package:
                     yb.update(pattern=info)
             else:
                 yb.update()
-            for t in yb.tsInfo:
-                u = self.updinfo(t)
-                if not u:
-                    continue
-                updated.append(u)
-            if updated and self.apply:
-                yb.resolveDeps()
+            yb.resolveDeps()
+            resolved, deps = self.installed(yb.tsInfo)
+            if self.apply and resolved:
                 yb.processTransaction()
         finally:
             yb.close()
-        return updated
-    
-    def updinfo(self, t):
-        """
-        Description of an update transaction.
-        @param t: A yum transaction.
-        @type t: Transaction
-        @return: A tuple (pkg,{updates=[],obsoletes=[]})
-        """
-        p = str(t.po)
-        u = [str(u) for u in t.updates]
-        o = [str(o) for o in t.obsoletes]
-        if u or o:
-            d = dict(updates=u, obsoletes=o)
-            return (p, d)
-        else:
-            return None
+        return dict(resolved=resolved, deps=deps)
 
 
 class PackageGroup:
@@ -216,22 +255,21 @@ class PackageGroup:
         Install package groups by name.
         @param names: A list of package group names.
         @type names: list
-        @return: A dict of packages that were installed by group.
-        @rtype: dict 
+        @return: Packages installed.
+            {resolved=[Package,],deps=[Package,]}
+        @rtype: dict
         """
-        installed = {}
         yb = Yum(self.importkeys)
         try:
             for name in names:
-                packages = yb.selectGroup(name)
-                if packages:
-                    installed[name] = [str(t.po) for t in packages]
-            if installed and self.apply:
-                yb.resolveDeps()
+                yb.selectGroup(name)
+            yb.resolveDeps()
+            resolved, deps = Package.installed(yb.tsInfo)
+            if self.apply and resolved:
                 yb.processTransaction()
         finally:
             yb.close()
-        return installed
+        return dict(resolved=resolved, deps=deps)
 
     @remote
     @pam(user='root')
@@ -240,19 +278,19 @@ class PackageGroup:
         Uninstall package groups by name.
         @param names: A list of package group names.
         @type names: [str,]
-        @return: A dict of erased packages by group.
-        @rtype: list
+        @return: Packages uninstalled.
+            {resolved=[Package,],deps=[Package,]}
+        @rtype: dict
         """
         removed = {}
         yb = Yum()
         try:
             for name in names:
-                packages = yb.groupRemove(name)
-                if packages:
-                    removed[name] = [str(t.po) for t in packages]
-            if removed and self.apply:
-                yb.resolveDeps()
+                yb.groupRemove(name)
+            yb.resolveDeps()
+            resolved, deps = Package.erased(yb.tsInfo)
+            if self.apply and resolved:
                 yb.processTransaction()
         finally:
             yb.close()
-        return removed
+        return dict(resolved=resolved, deps=deps)
