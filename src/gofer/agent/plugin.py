@@ -222,6 +222,26 @@ class Plugin(object):
         finally:
             self.__unlock()
             
+    def seturl(self, url, save=False):
+        """
+        Set the plugin's URL.
+        @param url: The new URL.
+        @type url: str
+        @param save: Save to plugin descriptor.
+        @type save: bool
+        """
+        self.__lock()
+        try:
+            cfg = self.cfg()
+            if url:
+                cfg.messaging.url = url
+            else:
+                delattr(cfg.messaging, 'url')
+            if save:
+                cfg.write()
+        finally:
+            self.__unlock()
+            
     def nthreads(self):
         """
         Get the number of theads in the plugin's pool.

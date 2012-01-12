@@ -56,6 +56,21 @@ class ActionThread(Thread):
             for action in self.actions:
                 action()
             sleep(1)
+            
+
+class Snapshot(dict):
+    """
+    Plugin property snapshot.
+    Used to track changes in plugin properties.
+    """
+    __getattr__ = dict.get
+
+    def changed(self, **properties):
+        keys = []
+        for k,v in properties.items():
+            if self.get(k) != v:
+                keys.append(k)
+        return keys
 
 
 class PluginMonitorThread(Thread):
@@ -71,7 +86,7 @@ class PluginMonitorThread(Thread):
         @type plugin: L{Plugin}
         """
         self.plugin = plugin
-        self.lastuuid = None
+        self.snapshot = Snapshot()
         Thread.__init__(self, name='%s-monitor' % plugin.name)
         self.setDaemon(True)
    
@@ -80,30 +95,33 @@ class PluginMonitorThread(Thread):
         Monitor plugin attach/detach.
         """
         while True:
-            self.update()
+            try:
+                self.update()
+            except:
+                log.exception('plugin %s', self.plugin.name)
             sleep(1)
             
     def update(self):
         """
         Update plugin messaging sessions.
-        v = (<uuid>,<ssn>)
+        When a change in URL or UUID is detected the
+        associated plugin is:
+          - detached
+          - attached (URL and UUID specified)
         """
         plugin = self.plugin
+        snapshot = self.snapshot
+        url = plugin.geturl()
         uuid = plugin.getuuid()
-        if uuid == self.lastuuid:
+        if not snapshot.changed(url=url, uuid=uuid):
             return # unchanged
         if plugin.detach():
-            log.info('uuid="%s", detached', self.lastuuid)
-        if not uuid:
-            self.lastuuid = uuid
-            return
-        try:
+            log.info('uuid="%s", detached', snapshot.uuid)
+        snapshot.update(url=url, uuid=uuid)
+        if url and uuid:
             plugin.attach(uuid)
             log.info('uuid="%s", attached', uuid)
-            self.lastuuid = uuid
-        except:
-            log.error('plugin %s', plugin.name, exc_info=1)
-                    
+                   
 
 class Agent:
     """
@@ -169,12 +187,9 @@ class Agent:
         @type plugins: list
         """
         for plugin in plugins:
-            if not plugin.enabled():
-                continue
-            if not plugin.geturl():
-                continue
-            pt = PluginMonitorThread(plugin)
-            pt.start()
+            if plugin.enabled():
+                pt = PluginMonitorThread(plugin)
+                pt.start()
 
 
 class AgentLock(Lock):
