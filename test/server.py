@@ -29,7 +29,7 @@ from logging import INFO, basicConfig, getLogger
 from threading import Thread
 from plugins import *
 
-basicConfig(filename='/tmp/gofer/server.log', level=INFO)
+basicConfig(filename='/opt/gofer/server.log', level=INFO)
 
 log = getLogger(__name__)
 
