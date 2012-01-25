@@ -17,6 +17,8 @@ Provides path and process monitoring classes.
 """
 
 import os
+import errno
+from hashlib import sha256
 from time import sleep
 from threading import Thread, RLock
 from logging import getLogger
@@ -28,7 +30,7 @@ class PathMonitor:
     """
     Path monitor.
     @ivar __paths: A list of paths to monitor.
-    @type __paths: dict (path, cb)
+    @type __paths: dict path:(mtime, digest, cb)
     @ivar __mutex: The mutex.
     @type __mutex: RLock
     @ivar __thread: The optional thread.  see: start().
@@ -50,7 +52,7 @@ class PathMonitor:
         """
         self.__lock()
         try:
-            self.__paths[path] = [0, cb]
+            self.__paths[path] = [0, None, cb]
         finally:
             self.__unlock()
         
@@ -106,28 +108,135 @@ class PathMonitor:
         finally:
             self.__unlock()
         for k,v in paths:
-            mtime = self.__mtime(k)
-            if mtime != v[0]:
-                self.__notify(k, v[1])
-                v[0] = mtime
+            self.__sniff(k, v)
+            
+    def __sniff(self, path, stat):
+        """
+        Sniff and compare the stats of the file at the
+        specified I{path}.
+        First, check the modification time, if different, then
+        check the I{hash} of the file content to see if it really
+        changed.  If changed, notify the registered listener.
+        @param path: The path of the file to sniff.
+        @type path: str
+        @param stat: The cached stat (mtime, digest, cb)
+        @type stat: tuple
+        """
+        try:
+            f = File(path)
+            mtime = f.mtime()
+            if mtime == stat[0]:
+                return
+            digest = f.digest()
+            if (digest and stat[1]) and (digest == stat[1]):
+                return
+            self.__notify(path, stat[2])
+            stat[0] = mtime
+            stat[1] = digest
+        except:
+            log.exception(path)
     
     def __notify(self, path, cb):
+        """
+        Safely invoke registered callback.
+        @param path: The path of the changed file.
+        @type path: str
+        @param cb: A registered callback.
+        @type cb: callable
+        """
         try:
             cb(path)
         except:
-            log.exception(path)                
-    
-    def __mtime(self, path):
-        try:
-            return os.path.getmtime(path)
-        except OSError:
-            return 0
-        
+            log.exception(path)
+
     def __lock(self):
         self.__mutex.acquire()
         
     def __unlock(self):
         self.__mutex.release()
+        
+
+class File:
+    """
+    Safe file operations.
+    @ivar path: The path.
+    @type path: str
+    @ivar fp: The python file object.
+    @type fp: fileobj
+    """
+    
+    def __init__(self, path):
+        """
+        @param path: The file path.
+        @type path: str        
+        """
+        self.path = path
+        self.fp = None
+        
+    def open(self):
+        """
+        Open (if not already open)
+        """
+        if not self.fp:
+            self.fp = open(self.path)
+    
+    def close(self):
+        """
+        Close (if not already closed)
+        """
+        if self.fp:
+            self.fp.close()
+            self.fp = None
+            
+    def read(self, n):
+        """
+        Read (n) bytes.
+        @param n: The bytes to read.
+        @type n: int
+        @return: the bytes read.
+        @rtype: buffer
+        """
+        return self.fp.read(n)
+    
+    def mtime(self):
+        """
+        Get modification time.
+        @return: mtime
+        @rtype: int
+        """
+        try:
+            return os.path.getmtime(self.path)
+        except OSError:
+            pass
+        except:
+            log.exception(self.path)
+        return 0 
+    
+    def digest(self):
+        """
+        Get the SHA256 hex digest for content.
+        @return: the hexdigest.
+        @rtype: str
+        """
+        try:
+            self.open()
+            h = sha256()
+            while True:
+                s = self.read(10240)
+                if s:
+                    h.update(s)
+                else:
+                    break
+            self.close()
+            return h.hexdigest()
+        except IOError:
+            pass
+        except:
+            log.exception(self.path)
+        return None
+        
+    def __del__(self):
+        self.close()
 
 
 class MonitorThread(Thread):
@@ -159,3 +268,16 @@ class MonitorThread(Thread):
         while True:
             monitor.check()
             sleep(self.precision)
+
+
+
+
+if __name__ == '__main__':
+    def changed(path):
+        print 'changed: %s' % path
+    from logging import basicConfig
+    basicConfig()
+    pmon = PathMonitor()
+    pmon.add('/tmp/jeff.repo', changed)
+    pmon.start()
+    pmon.join()
