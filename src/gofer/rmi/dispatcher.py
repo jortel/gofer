@@ -163,7 +163,7 @@ class RemoteException(Exception):
         try:
             C = globals().get(classname)
             if not C:
-                mod = __import__(mod, fromlist=[classname,])
+                mod = __import__(mod, {}, {}, [classname,])
                 C = getattr(mod, classname)
             inst = cls.__new(C)
             inst.__dict__.update(state)
