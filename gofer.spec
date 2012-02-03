@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.64
+Version: 0.65
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -240,6 +240,12 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Fri Feb 03 2012 Jeff Ortel <jortel@redhat.com> 0.65-1
+- Initial add of hmac classes; add synchronized decorator. (jortel@redhat.com)
+- python 2.4 compat for __import__(). (jortel@redhat.com)
+- Enhanced monitoring, use sha256 in addition to mtime. (jortel@redhat.com)
+- Add support for dynamic plugin URL in addition to UUID. (jortel@redhat.com)
+
 * Mon Jan 09 2012 Jeff Ortel <jortel@redhat.com> 0.64-1
 - Enhanced package (plugin) API. (jortel@redhat.com)
 * Wed Nov 30 2011 Jeff Ortel <jortel@redhat.com> 0.63-1
