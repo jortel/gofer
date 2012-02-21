@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.65
+Version: 0.66
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -242,6 +242,10 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Tue Feb 21 2012 Jeff Ortel <jortel@redhat.com> 0.66-1
+- Add DistGit releaser. (jortel@redhat.com)
+- Add deps: python-iniparse; python-hashlib (rhel5). (jortel@redhat.com)
+
 * Fri Feb 03 2012 Jeff Ortel <jortel@redhat.com> 0.65-1
 - Initial add of hmac classes; add synchronized decorator. (jortel@redhat.com)
 - python 2.4 compat for __import__(). (jortel@redhat.com)
