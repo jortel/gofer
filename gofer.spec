@@ -15,6 +15,7 @@ BuildRequires: python2-devel
 BuildRequires: python-setuptools
 BuildRequires: rpm-python
 Requires: python-%{name} = %{version}
+Requires: python-iniparse
 %description
 Gofer provides an extensible, light weight, universal python agent.
 The gofer core agent is a python daemon (service) that provides
@@ -108,6 +109,7 @@ Requires: python-simplejson
 Requires: python-qpid >= 0.7
 Requires: PyPAM
 %if 0%{?rhel} && 0%{?rhel} < 6
+Requires: python-hashlib
 Requires: python-uuid
 Requires: python-ssl
 %endif
