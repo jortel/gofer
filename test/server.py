@@ -239,6 +239,7 @@ def demopam(uuid, yp, exit=0):
         sys.exit(0)
         
 def demosecret(uuid, exit=0):
+    uuid = ('dogfish', uuid)
     agent = Agent(uuid)
     # success
     cat = agent.Cat(secret='garfield')

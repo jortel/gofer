@@ -24,21 +24,23 @@ def Agent(uuid, **options):
     """ backwards compat """
     return agent(uuid, **options)
 
+
 def agent(uuid, **options):
     """
     Get a proxy for the remote Agent.
     @param uuid: An agent ID.
-    @type uuid: str
+        May be tuple (<container>,<agent>)
+    @type uuid: (str|tuple)
     @return: An agent (proxy).
     @rtype: L{Container}
     """
+    if not isinstance(uuid, tuple):
+        uuid = (None, uuid)
     url = options.pop('url', None)
-    if url:
-        p = Producer(url=url)
-    else:
-        p = Producer()
-    return Container(uuid, p, **options)
-        
+    p = Producer(uuid=uuid[0], url=url)
+    return Container(uuid[1], p, **options)
+
+     
 def delete(agent):
     """
     Delete associated AMQP resources.

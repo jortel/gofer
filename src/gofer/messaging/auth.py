@@ -17,16 +17,19 @@ import hmac
 from gofer import *
 from threading import RLock
 
-#
-# Util
-#
 
-def resolved(key):
-    if callable(key):
-        return key()
-    else:
-        return key
-    
+#
+# Decorator
+#
+def resolved(fn):
+    def _fn(*a,**k):
+        k = fn(*a,**k)
+        if callable(k):
+            return k()
+        else:
+            return k
+    return _fn
+
 
 #
 # Exceptions
@@ -40,37 +43,99 @@ class MessageDigest(Exception):
              self.args[1])
 
 #
-# KeyChains
-# 
+# KeyChain
+#
+
+class Role:
+
+    ROLES = {
+        0:'signing',
+        1:'validation',
+        'signing':0,
+        'validation':1,}
+
+    def __init__(self, id):
+        if isinstance(id, str):
+            self.id = self.ROLES[id]
+        else:
+            self.id = id
+        
+    def __str__(self):
+        return self.ROLES[self.id]
+    
+    def __int__(self):
+        return self.id
+    
+    
+class KeyPair:
+
+    def __init__(self, kp):
+        if isinstance(kp, dict):
+            self.dict = {}
+            for k,v in kp.items():
+                r = Role(k)
+                self.dict[int(r)] = v
+            return
+        if isinstance(kp, str):
+            self.dict = {0:kp, 1:kp}
+            return
+        if callable(kp):
+            self.dict = {0:kp, 1:kp}
+            return
+        if isinstance(kp, (tuple,list)):
+            self.dict = {0:kp[0], 1:kp[1]}
+            return
+        raise ValueError(kp)
+
+    def valid(self):
+        err = 0
+        for k in (0, 1):
+            v = self.dict.get(k)
+            if isinstance(v, str):
+                continue
+            if callable(v):
+                continue
+            err += 1
+        return (err == 0)
+
 
 class KeyChain(object):
     
-    signing = property(
-        fget=lambda self: self.get(0),
-        fset=lambda self,v: self.set(0, v),
-        fdel=lambda self: self.unset(0))
-    
-    validation = property(
-        fget=lambda self: self.get(1),
-        fset=lambda self,v: self.set(1, v),
-        fdel=lambda self: self.unset(1))
+    DEFAULT = None
     
     def __init__(self, **keychain):
         self.__mutex = RLock()
         self.__keydict = {}
         self.update(keychain)
-
+        
+    def add(self, id, *kp, **roles):
+        self.set(id, *kp, **roles)
+        
+    def default(self, *kp, **roles):
+        self.set(self.DEFAULT, *kp, **roles)
+        
     @synchronized
-    def get(self, id, d=None):
-        key = self.__keydict.get(id, d)
-        return resolved(key)
+    def clear(self):
+        self.__keydict = {}
     
     @synchronized 
-    def set(self, id, key):
-        if key:
-            self.__keydict[id] = key
-        else:
-            self.unset(id)
+    def set(self, id, *kp, **roles):
+        if len(kp) == 0:
+            kp = KeyPair(roles)
+            if kp.valid():
+                self.__keydict[id] = kp.dict
+            else:
+                raise ValueError()
+            return
+        if len(kp) == 1:
+            kp = KeyPair(kp[0])
+            self.__keydict[id] = kp.dict
+            return
+        if len(kp) == 2:
+            kp = KeyPair(kp)
+            self.__keydict[id] = kp.dict
+            return
+        raise ValueError()
     
     @synchronized
     def unset(self, id):
@@ -79,32 +144,38 @@ class KeyChain(object):
     @synchronized
     def update(self, d):
         if isinstance(d, KeyChain):
-            self.__keydict.update(d.keydict())
-        else:
-            self.__keydict.update(d)
-            
+            self.__keydict.update(d.dict())
+            return
+        for k,v in d.items():
+            self.set(k,v)
+
+    @synchronized
+    def get(self, id, d=None):
+        return self.__keydict.get(id, d)
+    
+    @resolved
     @synchronized
     def find(self, role, id, d=None):
-        key = self.get(id)
-        if key:
-            return resolved(key)
-        key = self.get(role)
-        if key:
-            return resolved(key)
-        return d
+        kp = self.get(id)
+        if not kp:
+            kp = self.get(self.DEFAULT)
+        if kp:
+            key = kp.get(role)
+        else:
+            key = d
+        return key
 
-    @synchronized    
-    def keydict(self):
+    @synchronized
+    def dict(self):
         return dict(self.__keydict)
     
     @synchronized
-    def __setitem__(self, id, key):
-        self.__keydict[id] = key
-    
+    def __setitem__(self, id, kp):
+        self.set(id, kp)
+
     @synchronized
     def __getitem__(self, id):
-        key = self.__keydict[id]
-        return resolved(key)
+        return self.__keydict[id]
     
     @synchronized
     def __repr__(self):
@@ -113,57 +184,7 @@ class KeyChain(object):
     @synchronized
     def __str__(self):
         return str(self.__keydict)
-        
-        
-class KeyPair(object):
 
-    signing = property(
-        fget=lambda self: self.__get(0),
-        fset=lambda self,v: self.__set(0, v),
-        fdel=lambda self: self.__set(0))
-    
-    validation = property(
-        fget=lambda self: self.__get(1),
-        fset=lambda self,v: self.__set(1, v),
-        fdel=lambda self: self.__set(1))
-
-    def __init__(self, signing=None, validation=None):
-        self.__mutex = RLock()
-        self.__keydict = {}
-        if signing:
-            self.signing = signing
-        if validation:
-            self.validation = validation
-        
-    @synchronized
-    def find(self, role, id, d=None):
-        return self.__get(role, d)
-    
-    @synchronized
-    def __get(self, id, d=None):
-        key = self.__keydict.get(id, d)
-        return resolved(key)
-    
-    @synchronized
-    def __set(self, id, key=None):
-        if key:
-            self.__keydict[id] = key
-        else:
-            self.__keydict.pop(id, None)
-    
-    @synchronized    
-    def keydict(self):
-        return dict(self.__keydict)
-    
-    @synchronized
-    def __str__(self):
-        return str(self.__keydict)
-    
-    
-class Key(str):
-
-    def find(self, role, id, d=None):
-        return self
 
 #
 # Authentication
@@ -176,7 +197,7 @@ class Auth:
         
     def sign(self, envelope):
         envelope.pop('digest', None)
-        uuid = envelope.routing[0]
+        uuid = envelope.routing[1]
         key = self.keychain.find(0, uuid)
         hash = hmac.new(key)
         hash.update(repr(envelope))
@@ -205,56 +226,48 @@ class Auth:
 
 from gofer.messaging import Envelope
 
-def test1():    
-    kr = KeyChain(A='0xAA',B='0xBB')
+def test1():
     e = Envelope(routing=('A','B'))
+    kr = KeyChain(B=('0xAA', '0xBB'))
     auth = Auth(kr)
     signed = auth.sign(e)
     print signed
+    kr = KeyChain(A=('0xBB', '0xAA'))
+    auth = Auth(kr)
     auth.validate(signed)
-    print 'validated'
+    print 'test1:validated'
 
-def keyA():
-    return '0xAA'
-def keyB():
-    return '0xBB'
 
 def test2():
-    # sender    
-    krA = KeyPair(signing='0xAA',validation=keyB)
-    e = Envelope(routing=('A','B'))
-    authA = Auth(krA)
-    signed = authA.sign(e)
+    # A
+    routing=('A','B')
+    e = Envelope(routing=routing)
+    kr = KeyChain()
+    kr.set('B', '0xAA', '0xBB')
+    kr.set('C', ('0xXX', '0xYY'))
+    kr.set('D', {0:'0xXX', 1:'0xYY'})
+    T = ('C', '0xGG', '0xZZ')
+    kr.set(*T)
+    auth = Auth(kr)
+    signed = auth.sign(e)
     print signed
-    # receiver
-    received = signed
-    krB = KeyPair(signing='0xBB',validation=keyA)
-    print 'krB: %s' % krB
-    authB = Auth(krB)
-    authB.validate(received)
-    print 'validated (1)'
-    # receiver-2
-    received = signed
-    print 'krA: %s' % krA
-    krA.signing='0xBB'
-    krA.validation='0xAA'
-    print 'krA: %s' % krA
-    authA.validate(received)
-    print 'validated (2)'
+    # B
+    kr = KeyChain()
+    kr.add('A', signing='0xBB', validation='0xAA')
+    auth = Auth(kr)
+    auth.validate(signed)
+    print 'test2:validated'  
 
 def test3():
-    # sender    
-    master = Key('0xAA')
-    e = Envelope(routing=('A','B'))
-    authA = Auth(master)
-    signed = authA.sign(e)
-    print signed
-    # receiver
-    master = Key('0xAA')
-    received = signed
-    authB = Auth(master)
-    authB.validate(received)
-    print 'test3:validated'
+    def keyfn():return '0xDEADBEAF'
+    routing=('A','B')
+    e = Envelope(routing=routing)
+    kr = KeyChain()
+    kr.default(keyfn)
+    auth = Auth(kr)
+    signed = auth.sign(e)
+    auth.validate(signed)
+    print 'test3:validated' 
 
 if __name__ == '__main__':
     test1()
