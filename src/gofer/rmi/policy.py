@@ -24,6 +24,9 @@ from logging import getLogger
 
 log = getLogger(__name__)
 
+#
+# Utils
+#
 
 def timeout(options, none=(None,None)):
     """
@@ -40,6 +43,25 @@ def timeout(options, none=(None,None)):
         return tm
     return (tm, tm)
 
+
+def delayed(options):
+    """
+    Extract (and default as necessary) the delayed option.
+    @param options: Policy options.
+    @type options: dict
+    @return: The delayed flag
+    @rtype: bool
+    """
+    flag = options.get('delayed', 0)
+    try:
+        return bool(flag)
+    except:
+        return False
+        
+
+#
+# Exceptions
+#
 
 class RequestTimeout(Exception):
     """
@@ -59,6 +81,10 @@ class RequestTimeout(Exception):
     def index(self):
         return self.args[1]
         
+
+#
+# Policy
+# 
 
 class RequestMethod:
     """
@@ -212,6 +238,7 @@ class Asynchronous(RequestMethod):
         RequestMethod.__init__(self, producer)
         self.ctag = options.ctag
         self.timeout = timeout(options)
+        self.delayed = delayed(options)
         self.watchdog = options.watchdog
 
     def send(self, destination, request, **any):
@@ -226,16 +253,11 @@ class Asynchronous(RequestMethod):
         @return: The request serial number.
         @rtype: str
         """
-        replyto = self.__replyto()
-        sn = self.producer.send(
-                destination,
-                ttl=self.timeout[0],
-                replyto=replyto,
-                request=request,
-                **any)
-        log.info('sent (%s):\n%s', repr(destination), request)
-        self.__notifywatchdog(sn, replyto, any)
-        return sn
+        trigger = Trigger(self, destination, request, any)
+        if self.delayed:
+            return trigger
+        trigger()
+        return trigger.sn
 
     def broadcast(self, destinations, request, **any):
         """
@@ -247,16 +269,18 @@ class Asynchronous(RequestMethod):
         @type request: object
         @keyword any: Any (extra) data.
         """
-        sns = self.producer.broadcast(
-                destinations,
-                ttl=self.timeout[0],
-                replyto=self.__replyto(),
-                request=request,
-                **any)
-        log.info('sent (%s):\n%s', destinations, request)
-        return sns
+        triggers = []
+        for destination in destinations:
+            t = Trigger(self, destination, request, any)
+            triggers.append(t)
+        if self.delayed:
+            return triggers
+        for trigger in triggers:
+            trigger()
+        return [t.sn for t in triggers]
+            
 
-    def __replyto(self):
+    def replyto(self):
         """
         Get replyto based on the correlation I{tag}.
         @return: The replyto AMQP address.
@@ -268,7 +292,7 @@ class Asynchronous(RequestMethod):
         else:
             return None
 
-    def __notifywatchdog(self, sn, replyto, any):
+    def notifywatchdog(self, sn, replyto, any):
         """
         Add the request to the I{watchdog} for tacking.
         @param sn: A serial number.
@@ -289,4 +313,77 @@ class Asynchronous(RequestMethod):
                 replyto,
                 any.any,
                 self.timeout)
+
+
+class Trigger:
+    """
+    Asynchronous trigger.
+    @ivar __pending: pending flag.
+    @type __pending: bool
+    @ivar __sn: serial number
+    @type __sn: str
+    @ivar __policy: The policy object.
+    @type __policy: L{Asynchronous}
+    @ivar __destination: The AMQP destination.
+    @type __destination: L{Destination}
+    @ivar __request: A request to send.
+    @type __request: object
+    @ivar __any: Any (extra) data.
+    @type __any: dict
+    """
+
+    def __init__(self, policy, destination, request, any):
+        """
+        @param policy: The policy object.
+        @type policy: L{Asynchronous}
+        @param destination: The AMQP destination.
+        @type destination: L{Destination}
+        @param request: A request to send.
+        @type request: object
+        @keyword any: Any (extra) data.
+        """
+        self.__pending = True
+        self.__sn = getuuid()
+        self.__policy = policy
+        self.__destination = destination
+        self.__request = request
+        self.__any = any
         
+    @property
+    def sn(self):
+        """
+        Get serial number.
+        @return: The request serial number.
+        @rtype: str
+        """
+        return self.__sn
+        
+    def __send(self):
+        """
+        Send the request using the specified policy
+        object and generated serial number.
+        """
+        policy = self.__policy
+        destination = self.__destination
+        replyto = policy.replyto()
+        request = self.__request
+        any = self.__any
+        policy.producer.send(
+            destination,
+            sn=self.__sn,
+            ttl=policy.timeout[0],
+            replyto=replyto,
+            request=request,
+            **any)
+        log.info('sent (%s):\n%s', repr(destination), request)
+        policy.notifywatchdog(self.__sn, replyto, any)
+    
+    def __str__(self):
+        return self.__sn
+    
+    def __call__(self):
+        if self.__pending:
+            self.__send()
+            self.__pending = False
+        else:
+            raise Exception('trigger already executed')

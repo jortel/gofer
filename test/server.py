@@ -149,6 +149,19 @@ def perftest(uuid):
     print 'total=%s, percall=%f (ms)' % (t, (t.duration()/N)*1000)
     sys.exit(0)
     
+def delaytest(uuid):
+    agent = Agent(uuid)
+    dog = agent.Dog(delayed=1, ctag='jeff')
+    t = dog.bark('delayed!')
+    print t
+    t()
+    # broadcast
+    agent = Agent([uuid,])
+    dog = agent.Dog(delayed=1, ctag='jeff')
+    for t in dog.bark('delayed!'):
+        print t
+        t()
+    
 def demoperftest(uuid, n=50):
     benchmarks = []
     print 'measuring performance using demo() ...'
@@ -360,6 +373,7 @@ if __name__ == '__main__':
     yp['jortel'] = sys.argv[2]
     demoauth(uuid, yp, 0)
     democonst(uuid)
+    delaytest(uuid)
     #perftest(uuid)
     #demoperftest(uuid)
     rcon = ReplyConsumer(Queue(uuid.upper()))
