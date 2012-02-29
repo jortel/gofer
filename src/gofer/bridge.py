@@ -16,10 +16,12 @@
 
 import socket
 from threading import Thread
-from gofer.bridge import *
-from gofer.messaging import *
-from gofer.messaging.consumer import *
-from gofer.messaging.producer import  *
+from gofer.messaging import getuuid, Queue
+from gofer.messaging.consumer import Consumer, Reader
+from gofer.messaging.producer import Producer, BinaryProducer
+from logging import getLogger
+
+log = getLogger(__name__)
 
 #
 # Utils
@@ -37,39 +39,48 @@ def toq(uuid):
 
 class Bridge(Consumer):
     
-    def __init__(self, url, uuid, port):
+    HOST = socket.gethostname()
+    
+    def __init__(self, url, uuid, port, host=HOST):
         Consumer.__init__(self, toq(uuid), url=url)
         self.uuid = uuid
         self.port = port
+        self.host = host
         
         
     def dispatch(self, env):
         peer = env.peer
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((socket.gethostname(), self.port))
+        sock.connect((self.host, self.port))
         uuid = toq(getuuid())
-        p = Producer(url=url)
+        p = Producer(url=self.url)
         p.send(env.peer, peer=str(uuid))
-        r = Reader(uuid, url=self.url)
-        tr = TunnelReader(r, sock)
+        reader = Reader(uuid, url=self.url)
+        tr = TunnelReader(reader, sock)
         tr.start()
         tw = TunnelWriter(self.url, env.peer, sock)
         tw.start()
-    
+   
 
-class Gateway:
+class Gateway(Thread):
     
-    def __init__(self, url, peer):
+    def __init__(self, url, peer, port):
+        Thread.__init__(self)
         self.url = url
         self.peer = peer
+        self.port = int(port)
+        self.setDaemon(True)
         
-    def start(self, port):
+    def run(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind((socket.gethostname(), port))
+        sock.bind((socket.gethostname(), self.port))
         sock.listen(5)
         while True:
             (client, address) = sock.accept()
-            self.accepted(client)
+            try:
+                self.accepted(client)
+            except Exception:
+                log.exception(address)
     
     def accepted(self, sock):
         uuid = toq(getuuid())
@@ -89,6 +100,7 @@ class TunnelReader(Thread):
         Thread.__init__(self)
         self.reader = reader
         self.sock = sock
+        self.setDaemon(True)
     
     def run(self):
         try:
@@ -97,16 +109,20 @@ class TunnelReader(Thread):
             self.reader.close()
     
     def __read(self):
+        self.sock.setsockopt(
+            socket.IPPROTO_TCP,
+            socket.TCP_NODELAY, 1)
         while True:
             m = self.reader.read(5)
             if not m:
                 continue
             if m.content:
                 n = self.__write(m.content)
-                print 'TR: read(%d)' % n
                 if n == 0:
+                    # broken
                     break
             else:
+                # eof
                 self.close()
                 break
             
@@ -125,18 +141,20 @@ class TunnelReader(Thread):
 
 class TunnelWriter(Thread):
     
+    BUFSIZE = 0x100000
+    
     def __init__(self, url, queue, sock):
         Thread.__init__(self)
         self.url = url
         self.sock = sock
         self.queue = queue
+        self.setDaemon(True)
     
     def run(self):
         producer = BinaryProducer(url=self.url)
         while True:
             content = self.__read()
             if content:
-                print 'TW: write(%d)' % len(content)
                 producer.send(self.queue, content)
             else:
                 producer.send(self.queue, '')
@@ -145,7 +163,7 @@ class TunnelWriter(Thread):
             
     def __read(self):
         try:
-            return self.sock.recv(4096)
+            return self.sock.recv(self.BUFSIZE)
         except:
             pass
             
@@ -160,11 +178,14 @@ class TunnelWriter(Thread):
 # Testing
 #
 
+UUID = 'GATEWAY'
+URL = 'tcp://localhost:5672'
+
 if __name__ == '__main__':
-    url = 'tcp://localhost:5672'
     from logging import basicConfig
     basicConfig()
-    b = Bridge(url, 'B', 443)
+    b = Bridge(URL, UUID, 443)
     b.start()
-    g = Gateway(url, 'B')
-    g.start(9091)
+    g = Gateway(URL, UUID, 9443)
+    g.start()
+    g.join()
