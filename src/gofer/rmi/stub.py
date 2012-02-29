@@ -239,7 +239,8 @@ class Stub:
         @rtype: bool
         """
         if ( self.__options.ctag or
-             self.__options.async ):
+             self.__options.async or
+             self.__options.delayed):
             return True
         return isinstance(self.__destination, (list,tuple))
     

@@ -151,16 +151,17 @@ def perftest(uuid):
     
 def delaytest(uuid):
     agent = Agent(uuid)
-    dog = agent.Dog(delayed=1, ctag='jeff')
+    dog = agent.Dog(delayed=1)
     t = dog.bark('delayed!')
     print t
     t()
     # broadcast
     agent = Agent([uuid,])
-    dog = agent.Dog(delayed=1, ctag='jeff')
+    dog = agent.Dog(delayed=1)
     for t in dog.bark('delayed!'):
         print t
         t()
+    print 'delayed (pass)'
     
 def demoperftest(uuid, n=50):
     benchmarks = []

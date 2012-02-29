@@ -43,22 +43,6 @@ def timeout(options, none=(None,None)):
         return tm
     return (tm, tm)
 
-
-def delayed(options):
-    """
-    Extract (and default as necessary) the delayed option.
-    @param options: Policy options.
-    @type options: dict
-    @return: The delayed flag
-    @rtype: bool
-    """
-    flag = options.get('delayed', 0)
-    try:
-        return bool(flag)
-    except:
-        return False
-        
-
 #
 # Exceptions
 #
@@ -238,7 +222,7 @@ class Asynchronous(RequestMethod):
         RequestMethod.__init__(self, producer)
         self.ctag = options.ctag
         self.timeout = timeout(options)
-        self.delayed = delayed(options)
+        self.delayed = options.delayed
         self.watchdog = options.watchdog
 
     def send(self, destination, request, **any):
