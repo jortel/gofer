@@ -328,6 +328,16 @@ class Reader(Endpoint):
             envelope.subject = Consumer.subject(msg)
             log.debug('{%s} read next:\n%s', self.id(), envelope)
             return envelope
+        
+    def read(self, timeout=90):
+        """
+        Get the next message from the queue.
+        @param timeout: The read timeout.
+        @type timeout: int
+        @return: The next message.
+        @rtype: Message
+        """
+        return self.__fetch(timeout)
 
     def search(self, sn, timeout=90):
         """

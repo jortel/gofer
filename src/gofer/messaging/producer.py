@@ -65,6 +65,40 @@ class Producer(Endpoint):
         """
         sns = []
         for dst in destinations:
-            sn = Producer.send(self, str(dst), **body)
+            sn = self.send(str(dst), **body)
             sns.append((repr(dst),sn))
         return sns
+
+
+class BinaryProducer(Endpoint):
+    """
+    An binary AMQP message producer.
+    """
+
+    def send(self, destination, content, ttl=None):
+        """
+        Send a message.
+        @param destination: An AMQP destination.
+        @type destination: L{Destination}
+        @param content: The message content
+        @type content: buf
+        @param ttl: Time to Live (seconds)
+        @type ttl: float
+        """
+        address = str(destination)
+        message = Message(content=content, durable=True, ttl=ttl)
+        sender = self.session().sender(address)
+        sender.send(message)
+        sender.close()
+        log.debug('{%s} sent (%s)\n%s', self.id(), address)
+
+    def broadcast(self, destinations, content, ttl=None):
+        """
+        Broadcast a message to (N) queues.
+        @param destinations: A list of AMQP destinations.
+        @type destinations: [L{Destination},..]
+        @param content: The message content
+        @type content: buf
+        """
+        for dst in destinations:
+            sn = self.send(str(dst), content, ttl)
