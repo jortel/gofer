@@ -222,13 +222,14 @@ class Asynchronous(RequestMethod):
         RequestMethod.__init__(self, producer)
         self.ctag = options.ctag
         self.timeout = timeout(options)
-        self.delayed = options.trigger
+        self.trigger = options.trigger
         self.watchdog = options.watchdog
 
     def send(self, destination, request, **any):
         """
         Send the specified request and redirect the reply to the
         queue for the specified reply I{correlation} tag.
+        A trigger(1) specifies a I{manual} trigger.
         @param destination: The AMQP destination.
         @type destination: L{Destination}
         @param request: A request to send.
@@ -238,7 +239,7 @@ class Asynchronous(RequestMethod):
         @rtype: str
         """
         trigger = Trigger(self, destination, request, any)
-        if self.delayed:
+        if self.trigger == 1:
             return trigger
         trigger()
         return trigger.sn
@@ -247,6 +248,7 @@ class Asynchronous(RequestMethod):
         """
         Send the specified request and redirect the reply to the
         queue for the specified reply I{correlation} tag.
+        A trigger(1) specifies a I{manual} trigger.
         @param destinations: A list of destinations.
         @type destinations: [L{Destination},..]
         @param request: A request to send.
@@ -257,7 +259,7 @@ class Asynchronous(RequestMethod):
         for destination in destinations:
             t = Trigger(self, destination, request, any)
             triggers.append(t)
-        if self.delayed:
+        if self.trigger == 1:
             return triggers
         for trigger in triggers:
             trigger()
