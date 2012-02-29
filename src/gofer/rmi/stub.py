@@ -240,7 +240,7 @@ class Stub:
         """
         if ( self.__options.ctag or
              self.__options.async or
-             self.__options.delayed):
+             self.__options.trigger):
             return True
         return isinstance(self.__destination, (list,tuple))
     

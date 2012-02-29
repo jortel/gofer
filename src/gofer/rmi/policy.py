@@ -222,7 +222,7 @@ class Asynchronous(RequestMethod):
         RequestMethod.__init__(self, producer)
         self.ctag = options.ctag
         self.timeout = timeout(options)
-        self.delayed = options.delayed
+        self.delayed = options.trigger
         self.watchdog = options.watchdog
 
     def send(self, destination, request, **any):
