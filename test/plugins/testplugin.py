@@ -120,6 +120,18 @@ class Dog:
     def testpam4(self):
         return 'PAM (4) is happy!'
     
+    
+    @user(name='root')
+    @user(name='jortel')
+    @remote(secret='elmer')
+    def testLayered(self):
+        return 'LAYERED (1) is happy'
+
+    @user(name='root')
+    @remote(secret='elmer')
+    def testLayered2(self):
+        return 'LAYERED (2) is happy'
+    
     @remote
     def __str__(self):
         return 'REMOTE:Dog'

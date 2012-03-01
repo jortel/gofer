@@ -72,6 +72,7 @@ def __options(fn):
     """
     if not hasattr(fn, NAME):
         opt = Options()
+        opt.security = []
         setattr(fn, NAME, opt)
     else:
         opt = getattr(fn, NAME)
@@ -90,7 +91,11 @@ def remote(*args, **kwargs):
     def df(fn):
         opt = __options(fn)
         opt.shared = shared
-        opt.secret = secret
+        if secret:
+            required = Options()
+            required.secret = secret
+            auth = ('secret', required)
+            opt.security.append(auth)
         Remote.add(fn)
         return fn
     if args:
@@ -112,7 +117,11 @@ def pam(*args, **kwargs):
         raise Exception('(user) must be specified')
     def df(fn):
         opt = __options(fn)
-        opt.pam = Options(user=user, service=service)
+        required = Options()
+        required.user = user
+        required.service = service
+        auth = ('pam', required)
+        opt.security.append(auth)
         return fn
     if args:
         return df(args[0])
@@ -127,4 +136,14 @@ def user(*args, **kwargs):
       - name: user name.
     """
     name = kwargs.get('name')
-    return pam(user=name)
+    def df(fn):
+        opt = __options(fn)
+        required = Options()
+        required.user = name
+        auth = ('pam', required) 
+        opt.security.append(auth)
+        return fn
+    if args:
+        return df(args[0])
+    else:
+        return df

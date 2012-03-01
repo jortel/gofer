@@ -261,6 +261,28 @@ def demopam(uuid, yp, exit=0):
         print 'PAM not authenticated, invalid service, OK'
     if exit:
         sys.exit(0)
+
+
+def demoLayered(uuid, yp, exit=0):
+    agent = Agent(uuid)
+    # multi-user
+    for user in ('jortel', 'root'):
+        dog = agent.Dog(user=user, password=yp[user])
+        print dog.testLayered()
+    # mixed user and secret
+    dog = agent.Dog(user=user, password=yp[user])
+    print dog.testLayered2()
+    dog = agent.Dog(secret='elmer')
+    print dog.testLayered2()
+    try:
+        dog = agent.Dog()
+        print dog.testLayered2()
+        raise Exception('Exception (UserRequired) expected')
+    except UserRequired:
+        pass
+    if exit:
+        sys.exit(0)
+
         
 def demosecret(uuid, exit=0):
     uuid = ('dogfish', uuid)
@@ -288,6 +310,7 @@ def demosecret(uuid, exit=0):
 def demoauth(uuid, yp, exit=0):
     demosecret(uuid)
     demopam(uuid, yp)
+    demoLayered(uuid, yp)
     if exit:
         sys.exit(0)
         
