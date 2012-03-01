@@ -137,12 +137,22 @@ def threads(uuid, n=10):
     return t
 
 def perftest(uuid):
-    N = 1000
+    N = 200
     agent = Agent(uuid)
     dog = agent.Dog()
     t = Timer()
     t.start()
     print 'measuring performance ...'
+    for i in range(0,N):
+        dog.bark('performance!')
+    t.stop()
+    print 'total=%s, percall=%f (ms)' % (t, (t.duration()/N)*1000)
+    #sys.exit(0)
+    # ASYNCHRONOUS
+    dog = agent.Dog(async=1)
+    t = Timer()
+    t.start()
+    print 'measuring (async) performance ...'
     for i in range(0,N):
         dog.bark('performance!')
     t.stop()
@@ -372,10 +382,10 @@ if __name__ == '__main__':
     yp = {}
     yp['root'] = sys.argv[1]
     yp['jortel'] = sys.argv[2]
+    #perftest(uuid)
     demoauth(uuid, yp, 0)
     democonst(uuid)
     triggertest(uuid)
-    #perftest(uuid)
     #demoperftest(uuid)
     rcon = ReplyConsumer(Queue(uuid.upper()))
     rcon.start(onReply, watchdog=watchdog)

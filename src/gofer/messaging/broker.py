@@ -98,7 +98,11 @@ class Broker:
                 url = self.url.simple()
                 transport = self.url.transport
                 log.info('connecting:\n%s', self)
-                con = Connection(url=url, reconnect=True, transport=transport)
+                con = Connection(
+                    url=url,
+                    tcp_nodelay=True,
+                    reconnect=True,
+                    transport=transport)
                 con.attach()
                 log.info('{%s} connected to AMQP', self.id())
                 self.connection = con

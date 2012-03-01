@@ -195,7 +195,7 @@ class Endpoint:
         Acknowledge all messages received on the session.
         """
         try:
-            self.__session.acknowledge()
+            self.__session.acknowledge(sync=False)
         except:
             pass
 
