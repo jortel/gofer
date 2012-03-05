@@ -41,6 +41,11 @@ class MessageDigest(Exception):
         return 'digest: "%s" for: uuid=%s, not matched' % \
             (self.args[0],
              self.args[1])
+            
+class KeyRequired(Exception):
+    
+    def __str__(self):
+        return 'key for uuid=%s, not found' % self.args[0]
 
 #
 # KeyChain
@@ -190,35 +195,44 @@ class KeyChain(object):
 # Authentication
 #
 
-class Auth:
+class HMAC:
     
-    def __init__(self, keychain=KeyChain()):
+    PROPERTY = 'digest'
+    
+    def __init__(self, keychain=KeyChain(), policy=2):
         self.keychain = keychain
+        self.policy = policy
         
-    def sign(self, envelope):
-        envelope.pop('digest', None)
+    def outbound(self, envelope):
+        envelope.pop(self.PROPERTY, None)
         uuid = envelope.routing[1]
-        key = self.keychain.find(0, uuid)
-        hash = hmac.new(key)
-        hash.update(repr(envelope))
-        envelope.digest = hash.hexdigest()
+        key = self.__key(0, uuid)
+        if key:
+            hash = hmac.new(key)
+            hash.update(repr(envelope))
+            envelope.digest = hash.hexdigest()
+        return envelope
+
+    def inbound(self, envelope):
+        __digest = envelope.pop(self.PROPERTY, None)
+        if __digest:
+            uuid = envelope.routing[0]
+            key = self.__key(1, uuid)
+            if key:
+                hash = hmac.new(key)
+                hash.update(repr(envelope))
+                digest = hash.hexdigest()
+                if digest != __digest:
+                    raise MessageDigest(digest, uuid) 
         return envelope
     
-    def signed(self, envelope):
-        return (envelope.digest is not None)
-
-    def validate(self, envelope):
-        __digest = envelope.pop('digest', None)
-        if not __digest:
-            return
-        uuid = envelope.routing[0]
-        key = self.keychain.find(1, uuid)
-        hash = hmac.new(key)
-        hash.update(repr(envelope))
-        digest = hash.hexdigest()
-        if digest != __digest:
-            raise MessageDigest(digest, uuid)
-        envelope.digest = __digest
+    def __key(self, role, uuid):
+        key = self.keychain.find(role, uuid)
+        if not key:
+            if self.policy == 2:
+                raise KeyRequired(uuid)
+        else:
+            return key
 
 #
 # Testing
@@ -228,13 +242,13 @@ from gofer.messaging import Envelope
 
 def test1():
     e = Envelope(routing=('A','B'))
-    kr = KeyChain(B=('0xAA', '0xBB'))
-    auth = Auth(kr)
-    signed = auth.sign(e)
-    print signed
-    kr = KeyChain(A=('0xBB', '0xAA'))
-    auth = Auth(kr)
-    auth.validate(signed)
+    keychain = KeyChain(B=('0xAA', '0xBB'))
+    auth = HMAC(keychain)
+    outbound = auth.outbound(e)
+    print outbound
+    keychain = KeyChain(A=('0xBB', '0xAA'))
+    auth = HMAC(keychain)
+    auth.inbound(outbound)
     print 'test1:validated'
 
 
@@ -242,31 +256,31 @@ def test2():
     # A
     routing=('A','B')
     e = Envelope(routing=routing)
-    kr = KeyChain()
-    kr.set('B', '0xAA', '0xBB')
-    kr.set('C', ('0xXX', '0xYY'))
-    kr.set('D', {0:'0xXX', 1:'0xYY'})
+    keychain = KeyChain()
+    keychain.set('B', '0xAA', '0xBB')
+    keychain.set('C', ('0xXX', '0xYY'))
+    keychain.set('D', {0:'0xXX', 1:'0xYY'})
     T = ('C', '0xGG', '0xZZ')
-    kr.set(*T)
-    auth = Auth(kr)
-    signed = auth.sign(e)
-    print signed
+    keychain.set(*T)
+    auth = HMAC(keychain)
+    outbound = auth.outbound(e)
+    print outbound
     # B
-    kr = KeyChain()
-    kr.add('A', signing='0xBB', validation='0xAA')
-    auth = Auth(kr)
-    auth.validate(signed)
+    keychain = KeyChain()
+    keychain.add('A', signing='0xBB', validation='0xAA')
+    auth = HMAC(keychain)
+    auth.inbound(outbound)
     print 'test2:validated'  
 
 def test3():
     def keyfn():return '0xDEADBEAF'
     routing=('A','B')
     e = Envelope(routing=routing)
-    kr = KeyChain()
-    kr.default(keyfn)
-    auth = Auth(kr)
-    signed = auth.sign(e)
-    auth.validate(signed)
+    keychain = KeyChain()
+    keychain.default(keyfn)
+    auth = HMAC(keychain)
+    outbound = auth.outbound(e)
+    auth.inbound(outbound)
     print 'test3:validated' 
 
 if __name__ == '__main__':
