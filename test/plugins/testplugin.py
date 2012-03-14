@@ -17,9 +17,14 @@
 from time import sleep
 from gofer.decorators import *
 from gofer.agent.plugin import Plugin
+from gofer.messaging import Topic
+from gofer.messaging.producer import Producer
 from logging import getLogger, INFO, DEBUG
 
 log = getLogger(__name__)
+plugin = Plugin.find(__name__)
+
+HEARTBEAT = 5
 
 # import
 builtin = Plugin.find('builtin')
@@ -166,3 +171,34 @@ def echo(s):
 @action(minutes=5)
 def testAction():
     log.info('Testing')
+
+
+class Heartbeat:
+    """
+    Provide agent heartbeat.
+    """
+
+    __producer = None
+
+    @classmethod
+    def producer(cls):
+        if not cls.__producer:
+            broker = plugin.getbroker()
+            url = str(broker.url)
+            cls.__producer = Producer(url=url)
+        return cls.__producer
+
+    @action(seconds=HEARTBEAT)
+    def heartbeat(self):
+        return self.send()
+
+    @remote
+    def send(self):
+        delay = int(HEARTBEAT)
+        topic = Topic('heartbeat')
+        myid = plugin.getuuid()
+        if myid:
+            p = self.producer()
+            body = dict(uuid=myid, next=delay)
+            p.send(topic, ttl=delay, heartbeat=body)
+        return myid

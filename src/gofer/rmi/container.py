@@ -78,6 +78,16 @@ class Container:
             self.__producer,
             self.__destination(),
             self.__options)
+        
+    def __getitem__(self, name):
+        """
+        Get a stub by name.
+        @param name: The name of a stub class.
+        @type name: str
+        @return: A stub object.
+        @rtype: L{Stub}
+        """
+        return getattr(self, name)
 
     def __str__(self):
         return '{%s} opt:%s' % (self.__id, str(self.__options))

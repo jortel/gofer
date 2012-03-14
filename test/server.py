@@ -331,6 +331,14 @@ def democonst(uuid, exit=0):
         pass
     if exit:
         sys.exit(0)
+        
+        
+def demogetItem(uuid, exit=0):
+    agent = Agent(uuid)
+    fn = agent['Dog']['bark']
+    print fn('RUF')
+    if exit:
+        sys.exit(0)
     
 
 def main(uuid):
@@ -406,6 +414,7 @@ if __name__ == '__main__':
     yp['root'] = sys.argv[1]
     yp['jortel'] = sys.argv[2]
     #perftest(uuid)
+    demogetItem(uuid, 1)
     demoauth(uuid, yp, 0)
     democonst(uuid)
     triggertest(uuid)

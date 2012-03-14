@@ -189,6 +189,17 @@ class Stub:
         """
         cn = self.__class__.__name__
         return Method(cn, name, self)
+    
+    def __getitem__(self, name):
+        """
+        Python vodo.
+        Get a I{Method} object for any requested attribte.
+        @param name: The attribute name.
+        @type name: str
+        @return: A method object.
+        @rtype: L{Method}
+        """
+        return getattr(self, name)
 
     def __call__(self, *args, **options):
         """
