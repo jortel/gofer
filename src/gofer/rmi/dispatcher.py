@@ -186,10 +186,10 @@ class RemoteException(Exception):
             inst.__dict__.update(state)
             if isinstance(inst, Exception):
                 inst.args = args
-            return inst
-        except Exception,e:
-            pass
-        return RemoteException(reply.exval)
+        except:
+            inst = RemoteException(reply.exval)
+        inst.trace = reply.exval
+        return inst
     
     @classmethod
     def __new(cls, C):

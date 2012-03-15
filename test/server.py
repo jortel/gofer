@@ -414,7 +414,7 @@ if __name__ == '__main__':
     yp['root'] = sys.argv[1]
     yp['jortel'] = sys.argv[2]
     #perftest(uuid)
-    demogetItem(uuid, 1)
+    demogetItem(uuid, 0)
     demoauth(uuid, yp, 0)
     democonst(uuid)
     triggertest(uuid)
