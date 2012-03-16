@@ -56,7 +56,7 @@ def demo(agent):
     admin = agent.Admin()
     print admin.hello()
     
-    # misc synchronous
+    # misc
     dog = agent.Dog()
     repolib = agent.RepoLib()
     print dog.bark('RUF')

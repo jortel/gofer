@@ -188,7 +188,6 @@ class RemoteException(Exception):
                 inst.args = args
         except:
             inst = RemoteException(reply.exval)
-        inst.trace = reply.exval
         return inst
     
     @classmethod
@@ -268,7 +267,8 @@ class Return(Envelope):
         args = None
         if issubclass(xclass, Exception):
             args = inst.args
-        state = inst.__dict__
+        state = dict(inst.__dict__)
+        state['trace'] = exval
         inst = Return(exval=exval,
                       xmodule=mod,
                       xclass=xclass.__name__,

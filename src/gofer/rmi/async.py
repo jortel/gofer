@@ -221,6 +221,10 @@ class Failed(FinalReply):
         AsyncReply.__init__(self, envelope)
         reply = Return(envelope.result)
         self.exval = RemoteException.instance(reply)
+        self.xmodule = reply.xmodule,
+        self.xclass = reply.xclass
+        self.xstate = reply.xstate
+        self.xargs = reply.xargs
 
     def throw(self):
         raise self.exval
@@ -228,8 +232,11 @@ class Failed(FinalReply):
     def __str__(self):
         s = []
         s.append(AsyncReply.__str__(self))
-        s.append('  exception:')
-        s.append(str(self.exval))
+        s.append('  exval: %s' % str(self.exval))
+        s.append('  xmodule: %s' % self.xmodule)
+        s.append('  xclass: %s' % self.xclass)
+        s.append('  xstate: %s' % self.xstate)
+        s.append('  xargs: %s' % self.xargs)
         return '\n'.join(s)
 
 
