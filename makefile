@@ -29,6 +29,8 @@ release : rpm rdocs
 	scp $(SPEC) $(FEDORAHOSTEDGOFER)
 
 rpm	:
+	mkdir -p $(TITODIR)
+	rm -rf $(TITODIR)/*
 	tito build --rpm
 
 rdocs : docs
