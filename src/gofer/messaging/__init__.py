@@ -112,7 +112,64 @@ class Destination:
     def __repr__(self):
         return str(self).split(';', 1)[0]
 
+        
+class XBinding:
+    """
+    Represents an AMQP X-BINDING fragment.
+    @ivar exchange: An exchange name.
+    @type exchange: str
+    @ivar key: An (optional) exchange routing key.
+    @type key: str
+    """
 
+    def __init__(self, exchange, key=None):
+        """
+        @param exchange: An exchange name.
+        @type exchange: str
+        @param key: An (optional) routing key.
+        @type key: str
+        """
+        self.exchange = exchange
+        self.key = key
+        
+    def __str__(self):
+        if self.key:
+            return "{exchange:%s,key:'%s'}" % (self.exchange, self.key)
+        else:
+            return "{exchange:%s}" % self.exchange
+
+
+class XBindings:
+    """
+    Represents an AMQP X-BINDINGS fragment.
+    @ivar bindings: A list of binding object.
+    @type bindings: list: L{XBinding}
+    """
+    
+    def __init__(self, bindings=[]):
+        """
+        @param bindings: A list of binding objects.
+        @type bindings: list: L{Binding}
+        """
+        self.bindings = bindings
+        
+    def __bindings(self):
+        bindings = []
+        i = 0
+        for b in self.bindings:
+            if i > 0:
+                s.append(',')
+            bindings.append(str(b))
+            i += 1
+        return ''.join(bindings)
+
+    def __str__(self):
+        if self.bindings:
+            return 'x-bindings:[%s]' % self.__bindings()
+        else:
+            return ''
+    
+    
 class Topic(Destination):
     """
     Represents and AMQP topic.
@@ -125,19 +182,15 @@ class Topic(Destination):
     @type name: str
     """
 
-    def __init__(self, topic, subject=None, name=None):
+    def __init__(self, topic, subject=None):
         """
         @param topic: The name of the topic.
         @type topic: str
         @param subject: The subject.
         @type subject: str
-        @param name: The (optional) subscription name.
-            Used for durable subscriptions.
-        @type name: str
         """
         self.topic = topic
         self.subject = subject
-        self.name = name
 
     def address(self):
         """
@@ -162,42 +215,17 @@ class Topic(Destination):
         if self.subject:
             topic = '/'.join((topic, self.subject))
         return fmt % topic
-
-    def queuedAddress(self):
+    
+    def xbinding(self):
         """
-        Get the topic I{durable} AMQP address which contains
-        properties used to create the topic.
-        @return: The topic address.
-        @rtype: str
+        Get an xbinding for the queue.
+        @return: An xbinding.
+        @rtype: L{XBinding} 
         """
-        fmt = squash("""
-        %s;{
-          create:always,
-          node:{type:topic,durable:True},
-          link:{
-            durable:True,
-            x-declare:{
-              arguments:{no-local:True}
-            },
-            x-bindings:[
-              {exchange:%s
-               %s}
-            ]
-          }
-        }
-        """)
-        topic = self.topic
-        if self.subject:
-            key = ',key:%s' % self.subject
-        else:
-            key = ''
-        return fmt % (self.name, self.topic, key)
+        return XBinding(self.topic, self.subject)
 
     def __str__(self):
-        if self.name:
-            return self.queuedAddress()
-        else:
-            return self.address()
+        return self.address()
 
 
 class Queue(Destination):
@@ -209,15 +237,19 @@ class Queue(Destination):
     @type durable: str
     """
 
-    def __init__(self, name, durable=True):
+    def __init__(self, name, durable=True, bindings=[]):
         """
         @param name: The name of the queue.
         @type name: str
         @param durable: The durable flag.
         @type durable: str
+        @param bindings: An optional list of bindings used to
+            bind queues to other exchanges.
+        @type bindings: L{Destination}
         """
         self.name = name
         self.durable = durable
+        self.bindings = XBindings(bindings)
 
     def address(self):
         """
@@ -229,14 +261,19 @@ class Queue(Destination):
         fmt = squash("""
         %s;{
           create:always,
-          node:{type:queue,durable:True},
+          node:{
+            type:queue,
+            durable:True,
+            %s
+          },
           link:{
             durable:True,
+            reliability:at-least-once,
             x-subscribe:{exclusive:True}
           }
         }
         """)
-        return fmt % self.name
+        return fmt % (self.name, self.bindings)
 
     def tmpAddress(self):
         """
@@ -249,14 +286,26 @@ class Queue(Destination):
         %s;{
           create:always,
           delete:receiver,
-          node:{type:queue},
+          node:{
+            type:queue,
+            %s
+          },
           link:{
             durable:True,
+            reliability:at-least-once,
             x-subscribe:{exclusive:True}
           }
         }
         """)
-        return fmt % self.name
+        return fmt % (self.name, self.bindings)
+    
+    def xbinding(self):
+        """
+        Get an xbinding for the queue.
+        @return: An xbinding.
+        @rtype: L{XBinding} 
+        """
+        return XBinding(self.name)
 
     def __str__(self):
         if self.durable:
