@@ -111,6 +111,21 @@ class Broker:
             return con
         finally:
             self.__unlock()
+            
+    def touch(self, address):
+        """
+        Touch (eval) the specified AMQP address string.
+        Used to perform destination administration.
+        Examples:
+          - myqueue;{delete:always}
+          - mytopic;{create:always,node:node:{type:topic}}
+        @param address: An AMQP address.
+        @type address: str
+        """
+        connection = self.connect()
+        session = connection.session()
+        sender = session.sender(address)
+        sender.close()
 
     def close(self):
         """

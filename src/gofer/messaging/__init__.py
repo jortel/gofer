@@ -216,10 +216,10 @@ class Topic(Destination):
             topic = '/'.join((topic, self.subject))
         return fmt % topic
     
-    def xbinding(self):
+    def binding(self):
         """
-        Get an xbinding for the queue.
-        @return: An xbinding.
+        Get an binding for the queue.
+        @return: A binding.
         @rtype: L{XBinding} 
         """
         return XBinding(self.topic, self.subject)
