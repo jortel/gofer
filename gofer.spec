@@ -82,11 +82,12 @@ rm -rf %{buildroot}
 %config(noreplace) %{_sysconfdir}/%{name}/agent.conf
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/builtin.conf
 %{_libdir}/%{name}/plugins/builtin.*
-%attr(770, root, root) %{_var}/log/%{name}
+%{_var}/log/%{name}
 %doc LICENSE
 
 %post
 chkconfig --add %{name}d
+setfacl -m other::--- %{_var}/log/%{name}
 
 %preun
 if [ $1 = 0 ] ; then
@@ -121,8 +122,11 @@ Contains gofer python lib modules.
 %{python_sitelib}/%{name}/*.py*
 %{python_sitelib}/%{name}/rmi/
 %{python_sitelib}/%{name}/messaging/
-%attr(777, root, root) %{_var}/lib/%{name}/journal/watchdog
+%{_var}/lib/%{name}/journal/watchdog
 %doc LICENSE
+
+%post -n python-%{name}
+setfacl -m other::rwx %{_var}/lib/%{name}/journal/watchdog
 
 
 ###############################################################################
