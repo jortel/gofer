@@ -87,7 +87,6 @@ rm -rf %{buildroot}
 
 %post
 chkconfig --add %{name}d
-setfacl -m other::--- %{_var}/log/%{name}
 
 %preun
 if [ $1 = 0 ] ; then
@@ -122,12 +121,7 @@ Contains gofer python lib modules.
 %{python_sitelib}/%{name}/*.py*
 %{python_sitelib}/%{name}/rmi/
 %{python_sitelib}/%{name}/messaging/
-%{_var}/lib/%{name}/journal/watchdog
 %doc LICENSE
-
-%post -n python-%{name}
-setfacl -m other::rwx %{_var}/lib/%{name}/journal/watchdog
-
 
 ###############################################################################
 # ruby lib
@@ -193,6 +187,7 @@ for asynchronous RMI calls.
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/watchdog.conf
 %{_libdir}/%{name}/plugins/watchdog.*
+%{_var}/lib/%{name}/journal/watchdog
 %doc LICENSE
 
 

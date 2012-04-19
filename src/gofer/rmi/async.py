@@ -316,16 +316,30 @@ class WatchDog:
     __metaclass__ = Singleton
  
     URL = Producer.LOCALHOST
-    DOMAIN = 'watchdog'
+    JOURNAL = '/tmp/%s/journal/watchdog' % NAME
 
-    def __init__(self, url=URL):
+    def __init__(self, id=None, url=URL):
         """
+        @param id: The optional ID.
+        @type id: (int|str)
         @param url: The (optional) broker URL.
         @type url: str
         """
+        self.id = id
         self.url = url
-        self.__jnl = Journal(self.DOMAIN)
         self.__producer = None
+        self.journal()
+        
+    def journal(self, path=JOURNAL):
+        """
+        Set the journal directory.
+        @param path: A directory path.
+        @type path: str
+        """
+        if self.id:
+            id = str(self.id)
+            path = os.path.join(path, id)
+        self.__jnl = Journal(path)
         
     def start(self):
         """
@@ -464,14 +478,12 @@ class Journal:
       - idx: current timout index.
     """
     
-    ROOT = '/var/lib/%s/journal' % NAME
-    
-    def __init__(self, domain):
+    def __init__(self, root):
         """
-        @param domain: A journal domain (subdir).
-        @type domain: str
+        @param root: A journal root directory path.
+        @type root: str
         """
-        self.root = os.path.join(self.ROOT, domain)
+        self.root = root
         self.__mkdir()
         
     def load(self):

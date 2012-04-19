@@ -35,6 +35,7 @@ log = getLogger(__name__)
 
 # asynchronous RMI timeout watchdog
 watchdog = WatchDog()
+watchdog.journal('/opt/gofer/journal/watchdog')
 watchdog.start()
 #watchdog = Agent('xyz').WatchDog()
 

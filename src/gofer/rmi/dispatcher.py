@@ -605,10 +605,11 @@ class Dispatcher:
         """
         request = Request()
         request.update(envelope.request)
+        log.info('request: %s', request)
         request.auth = Options(
             uuid=envelope.routing[-1],
             secret=envelope.secret,
             pam=envelope.pam,)
-        rmi = RMI(request, self.classes)
-        log.info('dispatching:%s', rmi)
-        return rmi()
+        method = RMI(request, self.classes)
+        log.debug('method: %s', method)
+        return method()
