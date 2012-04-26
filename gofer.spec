@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.67
+Version: 0.68
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -237,6 +237,13 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Thu Apr 26 2012 Jeff Ortel <jortel@redhat.com> 0.68-1
+- Refit watchdog plugin; set journal location; skip directories in journal dir.
+  (jortel@redhat.com)
+- Make the watchdog journal directory configurable. (jortel@redhat.com)
+- Add Broker.touch() and rename Topic.binding(). (jortel@redhat.com)
+- Better support for durable topic subscription.  Queue bindings to specified
+  exchanges. (jortel@redhat.com)
 * Fri Mar 16 2012 Jeff Ortel <jortel@redhat.com> 0.67-1
 - Add (trace) attribute to propagated exceptions. (jortel@redhat.com)
 - Add traceback info to propagated exceptions as: Exception.trace.
