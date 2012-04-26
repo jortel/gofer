@@ -495,6 +495,8 @@ class Journal:
         entries = {}
         for fn in os.listdir(self.root):
             path = os.path.join(self.root, fn)
+            if os.path.isdir(path):
+                continue
             je = self.__read(path)
             if not je:
                 continue
