@@ -191,13 +191,17 @@ def demoperftest(uuid, n=50):
     del agent
     sys.exit(0)
     
-def demoWatchdog(uuid):
+def demoWatchdog(uuid, exit=0):
     tag = uuid.upper()
     print '(watchdog) asynchronous'
     agent = Agent(uuid, ctag=tag)
     dog = agent.Dog(watchdog=watchdog, timeout=3, any='jeff')
     dog.bark('who you calling a watchdog?')
     dog.sleep(4)
+    sleep(10)
+    print 'END'
+    if exit:
+        sys.exit(0)
     
 def demoWindow(uuid, exit=0):
     tag = uuid.upper()
@@ -406,7 +410,7 @@ def main(uuid):
     agent = Agent(uuid, ctag=tag)
     dog = agent.Dog(watchdog=watchdog, timeout=3, any='jeff')
     dog.bark('who you calling a watchdog?')
-    dog.sleep(4)
+    dog.sleep(5)
 
 
 if __name__ == '__main__':
@@ -414,14 +418,15 @@ if __name__ == '__main__':
     yp = {}
     yp['root'] = sys.argv[1]
     yp['jortel'] = sys.argv[2]
+    rcon = ReplyConsumer(Queue(uuid.upper()))
+    rcon.start(onReply, watchdog=watchdog)
     #perftest(uuid)
+    #demoWatchdog(uuid, 1)
     demogetItem(uuid, 0)
     demoauth(uuid, yp, 0)
     democonst(uuid)
     triggertest(uuid)
     #demoperftest(uuid)
-    rcon = ReplyConsumer(Queue(uuid.upper()))
-    rcon.start(onReply, watchdog=watchdog)
     #demoWindow(uuid)
     if len(sys.argv) > 3:
         n = int(sys.argv[3])
