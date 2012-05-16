@@ -158,7 +158,7 @@ class XBindings:
         i = 0
         for b in self.bindings:
             if i > 0:
-                s.append(',')
+                bindings.append(',')
             bindings.append(str(b))
             i += 1
         return ''.join(bindings)
