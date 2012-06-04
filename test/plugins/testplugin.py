@@ -34,6 +34,10 @@ try:
     log = builtin.export('log')
 except Exception, e:
     print e
+    
+# whiteboard
+plugin.whiteboard['secret'] = 'garfield'
+
 
 class BadException(Exception):
     def __init__(self):
@@ -57,7 +61,7 @@ class RepoLib:
         
 class Cat:
     
-    @remote(secret='garfield')
+    @remote(secret=plugin.whiteboard['secret'])
     def meow(self, words):
         print 'Ruf %s' % words
         return 'Yes master.  I will meow because that is what cats do. "%s"' % words
