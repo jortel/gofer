@@ -115,7 +115,7 @@ class Stub:
         """
         self.__producer = producer
         self.__destination = destination
-        self.__options = Options(options.items())
+        self.__options = Options(options)
         self.__called = (0, None)
         self.__mutex = RLock()
         self.__policy = None
@@ -143,7 +143,7 @@ class Stub:
         @type options: L{Options}
         """
         opts = Options(self.__options)
-        opts.update(options)
+        opts += options
         request.cntr = self.__called[1]
         policy = self.__getpolicy()
         if isinstance(self.__destination, (list,tuple)):
@@ -214,7 +214,7 @@ class Stub:
         """
         if not self.__called[0]:
             self.__called = (1, None)
-            self.__options.update(options)
+            self.__options += options
         else:
             n = self.__called[0]
             self.__called = (n+1, (args, options))

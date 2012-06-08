@@ -44,12 +44,22 @@ class Container:
         @param producer: An AMQP producer.
         @type producer: L{gofer.messaging.producer.Producer}
         @param options: keyword options.
+            Options:
+              - async : Indicates that requests asynchronous.
+                  Default = False
+              - ctag : The asynchronous correlation tag.
+                  When specified, it implies all requests are asynchronous.
+              - window : The request window.  See I{Window}.
+                  Default = any time.
+              - secret : A shared secret used for request authentication.
+              - timeout : The request timeout (seconds).
+                  Default = (10,90) seconds.
         @type options: dict
         """
         self.__id = uuid
         self.__producer = producer
         self.__options = Options(window=Window())
-        self.__options.update(options)
+        self.__options += options
 
     def __destination(self):
         """

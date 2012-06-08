@@ -31,34 +31,60 @@ def squash(s):
         sq.append(c)
     return ''.join(sq)
 
-class Options(dict):
-    """
-    Container options.
-    Options:
-      - async : Indicates that requests asynchronous.
-          Default = False
-      - ctag : The asynchronous correlation tag.
-          When specified, it implies all requests are asynchronous.
-      - window : The request window.  See I{Window}.
-          Default = any time.
-      - secret : A shared secret used for request authentication.
-      - timeout : The request timeout (seconds).
-          Default = (10,90) seconds.
-    """
-    __getattr__ = dict.get
-    __setattr__ = dict.__setitem__
-    __delattr__= dict.__delitem__
 
-
-class Envelope(dict):
+class Options(object):
     """
-    Basic envelope is a json encoded/decoded dictionary
-    that provides dot (.) style access.
+    Provides a dict-like object that also provides
+    (.) dot notation accessors.
     """
 
-    __getattr__ = dict.get
-    __setattr__= dict.__setitem__
-    __delattr__= dict.__delitem__
+    def __init__(self, *objects, **keywords):
+        for obj in objects:
+            if isinstance(obj, dict):
+                self.__dict__.update(obj)
+                continue
+            if isinstance(obj, Options):
+                self.__dict__.update(obj.__dict__)
+                continue
+            raise ValueError(obj)
+        self.__dict__.update(keywords)
+    
+    def __getattr__(self, name):
+        return self.__dict__.get(name)
+    
+    def __getitem__(self, name):
+        return self.__dict__[name]
+    
+    def __setitem__(self, name, value):
+        self.__dict__[name] = value
+        
+    def __iadd__(self, obj):
+        if isinstance(obj, dict):
+            self.__dict__.update(obj)
+            return self
+        if isinstance(obj, object):
+            self.__dict__.update(object.__dict__)
+            return self
+        raise ValueError(obj)
+    
+    def __len__(self):
+        return len(self.__dict__)
+    
+    def __iter__(self):
+        return iter(self.__dict__)
+    
+    def __repr__(self):
+        return repr(self.__dict__)
+    
+    def __str__(self):
+        return str(self.__dict__)
+
+
+class Envelope(Options):
+    """
+    Extends the dict-like object that also provides
+    JSON serialization.
+    """
 
     def load(self, s):
         """
@@ -67,20 +93,32 @@ class Envelope(dict):
         @type s: str
         """
         d = json.loads(s)
-        self.update(d)
+        self.__dict__.update(d)
         return self
-
+    
     def dump(self):
         """
         Dump to a json string.
         @return: A json encoded string.
         @rtype: str
         """
-        d = self
+        def fn(obj):
+            if isinstance(obj, Options):
+                obj = dict(obj.__dict__)
+                for k,v in obj.items():
+                    obj[k] = fn(v)
+                return obj
+            if isinstance(obj, dict):
+                obj = dict(obj)
+                for k,v in obj.items():
+                    obj[k] = fn(v)
+                return obj
+            if isinstance(obj, (tuple, list)):
+                obj = [fn(e) for e in obj]
+                return obj
+            return obj
+        d = fn(self)
         return json.dumps(d, indent=2)
-
-    def __str__(self):
-        return self.dump()
 
 
 class Destination:

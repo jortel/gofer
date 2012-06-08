@@ -198,6 +198,7 @@ def demoWatchdog(uuid, exit=0):
     dog = agent.Dog(watchdog=watchdog, timeout=3, any='jeff')
     dog.bark('who you calling a watchdog?')
     dog.sleep(4)
+    dog.sleep(12)
     sleep(10)
     print 'END'
     if exit:
@@ -207,14 +208,14 @@ def demoWindow(uuid, exit=0):
     tag = uuid.upper()
     print 'demo window, +10, +10min seconds'
     begin = later(seconds=10)
-    window = Window(begin=begin, minutes=10)
+    window = Window(begin=begin, seconds=5)
     agent = Agent(uuid, ctag=tag)
     dog = agent.Dog(window=window, any='demo')
     print dt.now()
     print dog.bark('hello, after 10 seconds')
     print dog.wag(3)
     print dog.bark('hello again, after 10 seconds')
-    sleep(12)
+    sleep(120)
     if exit:
         sys.exit(0)
     
@@ -420,14 +421,14 @@ if __name__ == '__main__':
     yp['jortel'] = sys.argv[2]
     rcon = ReplyConsumer(Queue(uuid.upper()))
     rcon.start(onReply, watchdog=watchdog)
+    #demoWindow(uuid, 1)
     #perftest(uuid)
+    #demoperftest(uuid)
     #demoWatchdog(uuid, 1)
-    demogetItem(uuid, 0)
-    demoauth(uuid, yp, 0)
+    demogetItem(uuid)
+    demoauth(uuid, yp)
     democonst(uuid)
     triggertest(uuid)
-    #demoperftest(uuid)
-    #demoWindow(uuid)
     if len(sys.argv) > 3:
         n = int(sys.argv[3])
         print '======= RUNNING %d THREADS ============' % n

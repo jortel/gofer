@@ -603,8 +603,7 @@ class Dispatcher:
         @return: The result.
         @rtype: any
         """
-        request = Request()
-        request.update(envelope.request)
+        request = Request(envelope.request)
         log.info('request: %s', request)
         request.auth = Options(
             uuid=envelope.routing[-1],

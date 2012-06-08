@@ -45,7 +45,7 @@ class Producer(Endpoint):
         address = str(destination)
         routing = (self.id(), address.split(';')[0])
         envelope = Envelope(sn=sn, version=version, routing=routing)
-        envelope.update(body)
+        envelope += body
         json = envelope.dump()
         message = Message(content=json, durable=True, ttl=ttl)
         sender = self.session().sender(address)
