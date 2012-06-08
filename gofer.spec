@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.68
+Version: 0.69
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -237,6 +237,12 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Fri Jun 08 2012 Jeff Ortel <jortel@redhat.com> 0.69-1
+- 829767 - fix simplejons 2.2+ issue (fedora 17). Envelope/Options rebased on
+  object rather than dict. (jortel@redhat.com)
+- Add whiteboard. (jortel@redhat.com)
+- Fixed 'Undefined variable (s) in XBindings.__bindings(). (jortel@redhat.com)
+
 * Thu Apr 26 2012 Jeff Ortel <jortel@redhat.com> 0.68-1
 - Refit watchdog plugin; set journal location; skip directories in journal dir.
   (jortel@redhat.com)
