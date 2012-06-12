@@ -102,7 +102,7 @@ class MockContainer:
         """
         self.__id = uuid
         self.__options = Options()
-        self.__options.update(options)
+        self.__options += options
         self.__stubs = {}
     
     def __getattr__(self, name):
