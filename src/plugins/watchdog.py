@@ -13,6 +13,7 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
+from gofer import NAME
 from gofer.decorators import *
 from gofer.agent.plugin import Plugin
 from gofer.rmi.async import WatchDog as Impl
@@ -21,11 +22,14 @@ from logging import getLogger
 log = getLogger(__name__)
 plugin = Plugin.find(__name__)
 
+JOURNAL = '/var/lib/%s/journal/watchdog' % NAME
+
 
 class WatchDog:
     
     def __init__(self):
         self.__impl = Impl()
+        self.__impl.journal(JOURNAL)
     
     @remote
     def track(self, sn, replyto, any, timeout):

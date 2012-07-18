@@ -88,8 +88,6 @@ class Task:
             self.commit(envelope.sn)
             log.info('window missed:\n%s', envelope)
             self.sendreply(envelope, Return.exception())
-        except WindowPending:
-            pass # ignored
         
     def windowmissed(self):
         """
@@ -102,10 +100,6 @@ class Task:
             return
         window = Window(w)
         envelope = self.envelope
-        if window.future():
-            pending = self.__pending.queue
-            pending.add(envelope)
-            raise WindowPending(envelope.sn)
         if window.past():
             raise WindowMissed(envelope.sn)
         

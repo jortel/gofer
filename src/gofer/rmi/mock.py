@@ -102,7 +102,7 @@ class MockContainer:
         """
         self.__id = uuid
         self.__options = Options()
-        self.__options.update(options)
+        self.__options += options
         self.__stubs = {}
     
     def __getattr__(self, name):
@@ -120,6 +120,16 @@ class MockContainer:
                 raise AttributeError(name)
             self.__stubs[name] = stub
         return stub
+    
+    def __getitem__(self, name):
+        """
+        Get a stub by name.
+        @param name: The name of a stub class.
+        @type name: str
+        @return: A stub object.
+        @rtype: L{MockStub}
+        """
+        return getattr(self, name)
 
     def __str__(self):
         return '{%s/%s} opt:%s' % \
@@ -193,6 +203,9 @@ class Stub:
     
     def __getattr__(self, name):
         return getattr(self.__inst, name)
+    
+    def __getitem__(self, name):
+        return getattr(self, name)
     
     def __str__(self):
         return str(self.__inst)

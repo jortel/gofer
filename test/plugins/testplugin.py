@@ -17,9 +17,14 @@
 from time import sleep
 from gofer.decorators import *
 from gofer.agent.plugin import Plugin
+from gofer.messaging import Topic
+from gofer.messaging.producer import Producer
 from logging import getLogger, INFO, DEBUG
 
 log = getLogger(__name__)
+plugin = Plugin.find(__name__)
+
+HEARTBEAT = 5
 
 # import
 builtin = Plugin.find('builtin')
@@ -29,6 +34,10 @@ try:
     log = builtin.export('log')
 except Exception, e:
     print e
+    
+# whiteboard
+plugin.whiteboard['secret'] = 'garfield'
+
 
 class BadException(Exception):
     def __init__(self):
@@ -52,7 +61,7 @@ class RepoLib:
         
 class Cat:
     
-    @remote(secret='garfield')
+    @remote(secret=plugin.whiteboard['secret'])
     def meow(self, words):
         print 'Ruf %s' % words
         return 'Yes master.  I will meow because that is what cats do. "%s"' % words
@@ -124,6 +133,18 @@ class Dog:
     def testpam4(self):
         return 'PAM (4) is happy!'
     
+    
+    @user(name='root')
+    @user(name='jortel')
+    @remote(secret='elmer')
+    def testLayered(self):
+        return 'LAYERED (1) is happy'
+
+    @user(name='root')
+    @remote(secret='elmer')
+    def testLayered2(self):
+        return 'LAYERED (2) is happy'
+    
     @remote
     def __str__(self):
         return 'REMOTE:Dog'
@@ -158,3 +179,34 @@ def echo(s):
 @action(minutes=5)
 def testAction():
     log.info('Testing')
+
+
+class Heartbeat:
+    """
+    Provide agent heartbeat.
+    """
+
+    __producer = None
+
+    @classmethod
+    def producer(cls):
+        if not cls.__producer:
+            broker = plugin.getbroker()
+            url = str(broker.url)
+            cls.__producer = Producer(url=url)
+        return cls.__producer
+
+    @action(seconds=HEARTBEAT)
+    def heartbeat(self):
+        return self.send()
+
+    @remote
+    def send(self):
+        delay = int(HEARTBEAT)
+        topic = Topic('heartbeat')
+        myid = plugin.getuuid()
+        if myid:
+            p = self.producer()
+            body = dict(uuid=myid, next=delay)
+            p.send(topic, ttl=delay, heartbeat=body)
+        return myid

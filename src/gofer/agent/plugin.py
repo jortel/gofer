@@ -30,6 +30,7 @@ from gofer.rmi.decorators import Remote
 from gofer.agent.deplist import DepList
 from gofer.agent.config import Base, Config, nvl
 from gofer.agent.action import Actions
+from gofer.agent.whiteboard import Whiteboard
 from gofer.messaging import Queue
 from gofer.messaging.broker import Broker
 from logging import getLogger
@@ -125,6 +126,7 @@ class Plugin(object):
         self.impl = None
         self.actions = []
         self.dispatcher = Dispatcher([])
+        self.whiteboard = Whiteboard()
         self.consumer = None
         
     def names(self):
@@ -217,6 +219,26 @@ class Plugin(object):
                 cfg.messaging.uuid = uuid
             else:
                 delattr(cfg.messaging, 'uuid')
+            if save:
+                cfg.write()
+        finally:
+            self.__unlock()
+            
+    def seturl(self, url, save=False):
+        """
+        Set the plugin's URL.
+        @param url: The new URL.
+        @type url: str
+        @param save: Save to plugin descriptor.
+        @type save: bool
+        """
+        self.__lock()
+        try:
+            cfg = self.cfg()
+            if url:
+                cfg.messaging.url = url
+            else:
+                delattr(cfg.messaging, 'url')
             if save:
                 cfg.write()
         finally:

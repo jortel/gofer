@@ -44,12 +44,22 @@ class Container:
         @param producer: An AMQP producer.
         @type producer: L{gofer.messaging.producer.Producer}
         @param options: keyword options.
+            Options:
+              - async : Indicates that requests asynchronous.
+                  Default = False
+              - ctag : The asynchronous correlation tag.
+                  When specified, it implies all requests are asynchronous.
+              - window : The request window.  See I{Window}.
+                  Default = any time.
+              - secret : A shared secret used for request authentication.
+              - timeout : The request timeout (seconds).
+                  Default = (10,90) seconds.
         @type options: dict
         """
         self.__id = uuid
         self.__producer = producer
         self.__options = Options(window=Window())
-        self.__options.update(options)
+        self.__options += options
 
     def __destination(self):
         """
@@ -78,6 +88,16 @@ class Container:
             self.__producer,
             self.__destination(),
             self.__options)
+        
+    def __getitem__(self, name):
+        """
+        Get a stub by name.
+        @param name: The name of a stub class.
+        @type name: str
+        @return: A stub object.
+        @rtype: L{Stub}
+        """
+        return getattr(self, name)
 
     def __str__(self):
         return '{%s} opt:%s' % (self.__id, str(self.__options))

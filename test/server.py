@@ -29,12 +29,13 @@ from logging import INFO, basicConfig, getLogger
 from threading import Thread
 from plugins import *
 
-basicConfig(filename='/tmp/gofer/server.log', level=INFO)
+basicConfig(filename='/opt/gofer/server.log', level=INFO)
 
 log = getLogger(__name__)
 
 # asynchronous RMI timeout watchdog
 watchdog = WatchDog()
+watchdog.journal('/opt/gofer/journal/watchdog')
 watchdog.start()
 #watchdog = Agent('xyz').WatchDog()
 
@@ -56,7 +57,7 @@ def demo(agent):
     admin = agent.Admin()
     print admin.hello()
     
-    # misc synchronous
+    # misc
     dog = agent.Dog()
     repolib = agent.RepoLib()
     print dog.bark('RUF')
@@ -137,7 +138,7 @@ def threads(uuid, n=10):
     return t
 
 def perftest(uuid):
-    N = 1000
+    N = 200
     agent = Agent(uuid)
     dog = agent.Dog()
     t = Timer()
@@ -147,7 +148,31 @@ def perftest(uuid):
         dog.bark('performance!')
     t.stop()
     print 'total=%s, percall=%f (ms)' % (t, (t.duration()/N)*1000)
+    #sys.exit(0)
+    # ASYNCHRONOUS
+    dog = agent.Dog(async=1)
+    t = Timer()
+    t.start()
+    print 'measuring (async) performance ...'
+    for i in range(0,N):
+        dog.bark('performance!')
+    t.stop()
+    print 'total=%s, percall=%f (ms)' % (t, (t.duration()/N)*1000)
     sys.exit(0)
+    
+def triggertest(uuid):
+    agent = Agent(uuid)
+    dog = agent.Dog(trigger=1)
+    t = dog.bark('delayed!')
+    print t
+    t()
+    # broadcast
+    agent = Agent([uuid,])
+    dog = agent.Dog(trigger=1)
+    for t in dog.bark('delayed!'):
+        print t
+        t()
+    print 'Manual trigger, OK'
     
 def demoperftest(uuid, n=50):
     benchmarks = []
@@ -166,26 +191,31 @@ def demoperftest(uuid, n=50):
     del agent
     sys.exit(0)
     
-def demoWatchdog(uuid):
+def demoWatchdog(uuid, exit=0):
     tag = uuid.upper()
     print '(watchdog) asynchronous'
     agent = Agent(uuid, ctag=tag)
     dog = agent.Dog(watchdog=watchdog, timeout=3, any='jeff')
     dog.bark('who you calling a watchdog?')
     dog.sleep(4)
+    dog.sleep(12)
+    sleep(10)
+    print 'END'
+    if exit:
+        sys.exit(0)
     
 def demoWindow(uuid, exit=0):
     tag = uuid.upper()
     print 'demo window, +10, +10min seconds'
     begin = later(seconds=10)
-    window = Window(begin=begin, minutes=10)
+    window = Window(begin=begin, seconds=5)
     agent = Agent(uuid, ctag=tag)
     dog = agent.Dog(window=window, any='demo')
     print dt.now()
     print dog.bark('hello, after 10 seconds')
     print dog.wag(3)
     print dog.bark('hello again, after 10 seconds')
-    sleep(12)
+    sleep(120)
     if exit:
         sys.exit(0)
     
@@ -237,8 +267,31 @@ def demopam(uuid, yp, exit=0):
         print 'PAM not authenticated, invalid service, OK'
     if exit:
         sys.exit(0)
+
+
+def demoLayered(uuid, yp, exit=0):
+    agent = Agent(uuid)
+    # multi-user
+    for user in ('jortel', 'root'):
+        dog = agent.Dog(user=user, password=yp[user])
+        print dog.testLayered()
+    # mixed user and secret
+    dog = agent.Dog(user=user, password=yp[user])
+    print dog.testLayered2()
+    dog = agent.Dog(secret='elmer')
+    print dog.testLayered2()
+    try:
+        dog = agent.Dog()
+        print dog.testLayered2()
+        raise Exception('Exception (UserRequired) expected')
+    except UserRequired:
+        pass
+    if exit:
+        sys.exit(0)
+
         
 def demosecret(uuid, exit=0):
+    uuid = ('dogfish', uuid)
     agent = Agent(uuid)
     # success
     cat = agent.Cat(secret='garfield')
@@ -263,6 +316,7 @@ def demosecret(uuid, exit=0):
 def demoauth(uuid, yp, exit=0):
     demosecret(uuid)
     demopam(uuid, yp)
+    demoLayered(uuid, yp)
     if exit:
         sys.exit(0)
         
@@ -281,6 +335,14 @@ def democonst(uuid, exit=0):
         raise Exception, 'Cowboy() should have failed.'
     except TypeError, e:
         pass
+    if exit:
+        sys.exit(0)
+        
+        
+def demogetItem(uuid, exit=0):
+    agent = Agent(uuid)
+    fn = agent['Dog']['bark']
+    print fn('RUF')
     if exit:
         sys.exit(0)
     
@@ -349,7 +411,7 @@ def main(uuid):
     agent = Agent(uuid, ctag=tag)
     dog = agent.Dog(watchdog=watchdog, timeout=3, any='jeff')
     dog.bark('who you calling a watchdog?')
-    dog.sleep(4)
+    dog.sleep(5)
 
 
 if __name__ == '__main__':
@@ -357,13 +419,16 @@ if __name__ == '__main__':
     yp = {}
     yp['root'] = sys.argv[1]
     yp['jortel'] = sys.argv[2]
-    demoauth(uuid, yp, 0)
-    democonst(uuid)
-    #perftest(uuid)
-    #demoperftest(uuid)
     rcon = ReplyConsumer(Queue(uuid.upper()))
     rcon.start(onReply, watchdog=watchdog)
-    #demoWindow(uuid)
+    #demoWindow(uuid, 1)
+    #perftest(uuid)
+    #demoperftest(uuid)
+    #demoWatchdog(uuid, 1)
+    demogetItem(uuid)
+    demoauth(uuid, yp)
+    democonst(uuid)
+    triggertest(uuid)
     if len(sys.argv) > 3:
         n = int(sys.argv[3])
         print '======= RUNNING %d THREADS ============' % n

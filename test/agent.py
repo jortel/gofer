@@ -18,8 +18,8 @@ import os
 import sys
 from time import sleep
 from gofer.agent.config import Config
-Config.PATH = '/tmp/gofer/agent.conf'
-Config.CNFD = '/tmp/gofer/conf.d'
+Config.PATH = '/opt/gofer/agent.conf'
+Config.CNFD = '/opt/gofer/conf.d'
 from gofer.messaging import Queue
 from gofer.decorators import *
 from gofer.rmi.consumer import RequestConsumer
@@ -56,8 +56,8 @@ def installPlugins(thread):
             continue
 
 def install(threads=1):
-    PluginDescriptor.ROOT = '/tmp/gofer/plugins'
-    PluginLoader.PATH = ['/tmp/gofer/lib/plugins']
+    PluginDescriptor.ROOT = '/opt/gofer/plugins'
+    PluginLoader.PATH = ['/opt/gofer/lib/plugins']
     for path in (PluginDescriptor.ROOT, PluginLoader.PATH[0]):
         if not os.path.exists(path):
             os.makedirs(path)

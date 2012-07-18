@@ -221,6 +221,10 @@ class Failed(FinalReply):
         AsyncReply.__init__(self, envelope)
         reply = Return(envelope.result)
         self.exval = RemoteException.instance(reply)
+        self.xmodule = reply.xmodule,
+        self.xclass = reply.xclass
+        self.xstate = reply.xstate
+        self.xargs = reply.xargs
 
     def throw(self):
         raise self.exval
@@ -228,8 +232,11 @@ class Failed(FinalReply):
     def __str__(self):
         s = []
         s.append(AsyncReply.__str__(self))
-        s.append('  exception:')
-        s.append(str(self.exval))
+        s.append('  exval: %s' % str(self.exval))
+        s.append('  xmodule: %s' % self.xmodule)
+        s.append('  xclass: %s' % self.xclass)
+        s.append('  xstate: %s' % self.xstate)
+        s.append('  xargs: %s' % self.xargs)
         return '\n'.join(s)
 
 
@@ -309,16 +316,30 @@ class WatchDog:
     __metaclass__ = Singleton
  
     URL = Producer.LOCALHOST
-    DOMAIN = 'watchdog'
+    JOURNAL = '/tmp/%s/journal/watchdog' % NAME
 
-    def __init__(self, url=URL):
+    def __init__(self, id=None, url=URL):
         """
+        @param id: The optional ID.
+        @type id: (int|str)
         @param url: The (optional) broker URL.
         @type url: str
         """
+        self.id = id
         self.url = url
-        self.__jnl = Journal(self.DOMAIN)
         self.__producer = None
+        self.journal()
+        
+    def journal(self, path=JOURNAL):
+        """
+        Set the journal directory.
+        @param path: A directory path.
+        @type path: str
+        """
+        if self.id:
+            id = str(self.id)
+            path = os.path.join(path, id)
+        self.__jnl = Journal(path)
         
     def start(self):
         """
@@ -457,14 +478,12 @@ class Journal:
       - idx: current timout index.
     """
     
-    ROOT = '/var/lib/%s/journal' % NAME
-    
-    def __init__(self, domain):
+    def __init__(self, root):
         """
-        @param domain: A journal domain (subdir).
-        @type domain: str
+        @param root: A journal root directory path.
+        @type root: str
         """
-        self.root = os.path.join(self.ROOT, domain)
+        self.root = root
         self.__mkdir()
         
     def load(self):
@@ -476,6 +495,8 @@ class Journal:
         entries = {}
         for fn in os.listdir(self.root):
             path = os.path.join(self.root, fn)
+            if os.path.isdir(path):
+                continue
             je = self.__read(path)
             if not je:
                 continue

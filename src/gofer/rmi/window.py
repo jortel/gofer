@@ -23,7 +23,7 @@ from datetime import timedelta as delta
 
 
 
-class Window(Envelope):
+class Window(Options):
     """
     Represents a maintenance (time) window.
     An empty L{Window} defines an unbounded window.
@@ -54,12 +54,12 @@ class Window(Envelope):
             - weeks
         """
         if D:
-            dict.__init__(self, *D)
+            Options.__init__(self, *D)
             return
         if window:
             self.__setbegin(window)
             self.__setend(window)
-        dict.__init__(self, **window)
+        Options.__init__(self, **window)
 
     def match(self):
         """
@@ -71,7 +71,7 @@ class Window(Envelope):
         """
         if self:
             now = dt.utcnow()
-            begin, end = self.__dates()
+            begin, end = self.__dates(now)
             return ( now >= begin and now <= end )
         else:
             return True
@@ -85,7 +85,7 @@ class Window(Envelope):
         """
         if self:
             now = dt.utcnow()
-            begin, end = self.__dates()
+            begin, end = self.__dates(now)
             return ( now < begin )
         else:
             return False
@@ -99,7 +99,7 @@ class Window(Envelope):
         """
         if self:
             now = dt.utcnow()
-            begin, end = self.__dates()
+            begin, end = self.__dates(now)
             return ( now > end )
         else:
             return False
@@ -167,9 +167,11 @@ class Window(Envelope):
                 return True
         return False
 
-    def __dates(self):
+    def __dates(self, now=None):
         """
         Convert to datetime objects.
+        @param now: The current UTC time.
+        @type now: datetime
         @return: (begin, end)
         @rtype: (datetime, datetime)
         """
@@ -177,12 +179,12 @@ class Window(Envelope):
         if self.begin:
             begin = dt.strptime(self.begin, self.FORMAT)
         else:
-            begin = dt.utcnow()
+            begin = (now or td.utcnow())
         if self.end:
             end = dt.strptime(self.begin, self.FORMAT)
         else:
             end = begin
-        for k,v in self.items():
+        for k,v in self.__dict__.items():
             if k in DURATION:
                 end = end+delta(**{k:v})
         return (begin, end)

@@ -28,6 +28,9 @@ from logging import getLogger
 
 log = getLogger(__name__)
 
+#
+# Exceptions
+#
 
 class DispatchError(Exception):
     pass
@@ -67,6 +70,20 @@ class NotAuthorized(DispatchError):
     Not authorized.
     """
     pass
+
+
+class AuthMethod(DispatchError):
+    """
+    Authentication method not supported.
+    """
+
+    def __init__(self, cnfn, name):
+        message = \
+            '%s.%s(), auth (%s) not supported' % \
+            (cnfn[0],
+             cnfn[1],
+             name)
+        NotAuthorized.__init__(self, message)
         
         
 class NotShared(NotAuthorized):
@@ -76,7 +93,7 @@ class NotShared(NotAuthorized):
 
     def __init__(self, cnfn):
         message = '%s.%s(), not shared' % cnfn
-        NotAuthorized.__init__(self, message)
+        DispatchError.__init__(self, message)
 
 
 class SecretRequired(NotAuthorized):
@@ -163,16 +180,15 @@ class RemoteException(Exception):
         try:
             C = globals().get(classname)
             if not C:
-                mod = __import__(mod, fromlist=[classname,])
+                mod = __import__(mod, {}, {}, [classname,])
                 C = getattr(mod, classname)
             inst = cls.__new(C)
             inst.__dict__.update(state)
             if isinstance(inst, Exception):
                 inst.args = args
-            return inst
-        except Exception,e:
-            pass
-        return RemoteException(reply.exval)
+        except:
+            inst = RemoteException(reply.exval)
+        return inst
     
     @classmethod
     def __new(cls, C):
@@ -182,7 +198,11 @@ class RemoteException(Exception):
         except:
             pass
         return Exception.__new__(C)
+    
 
+#
+# RMI Classes
+#
 
 class Return(Envelope):
     """
@@ -247,7 +267,8 @@ class Return(Envelope):
         args = None
         if issubclass(xclass, Exception):
             args = inst.args
-        state = inst.__dict__
+        state = dict(inst.__dict__)
+        state['trace'] = exval
         inst = Return(exval=exval,
                       xmodule=mod,
                       xclass=xclass.__name__,
@@ -319,7 +340,7 @@ class RMI(object):
         @return: The requested method.
         @rtype: (method|function)
         """
-        cn, fn = self.__cnfn()
+        cn, fn = self.cnfn()
         if hasattr(inst, fn):
             method = getattr(inst, fn)
             return self.permitted(method)
@@ -329,6 +350,7 @@ class RMI(object):
     def permitted(self, method):
         """
         Check whether remote invocation of the specified method is permitted.
+        Applies security model using L{Security}.
         @param method: The method in question.
         @type method: (method|function)
         @return: True if permitted.
@@ -337,11 +359,20 @@ class RMI(object):
         auth = self.request.auth
         fninfo = self.__fninfo(method)
         if fninfo is None:
-            raise NotPermitted(self.__cnfn())
+            raise NotPermitted(self.cnfn())
         self.__shared(fninfo, auth)
-        self.__authorized(fninfo, auth)
-        self.__pam(fninfo, auth)
+        security = Security(self, fninfo)
+        security.apply(auth)
         return method
+    
+    def cnfn(self):
+        """
+        Get the I{classname} and I{function} specified in the request.
+        @return: (classname, function-name)
+        @rtype: tuple
+        """
+        return (self.request.classname,
+                self.request.method)
         
     def __shared(self, fninfo, auth):
         """
@@ -362,77 +393,7 @@ class RMI(object):
         log.debug('match uuid: "%s" = "%s"', auth.uuid, uuid)
         if auth.uuid == uuid:
             return
-        raise NotShared(self.__cnfn())
-        
-    def __authorized(self, fninfo, auth):
-        """
-        Validate the method was decorated by specifying
-        a I{secret} and that if matches the I{secret}
-        passed with the request.  The secret may be I{callable} in
-        which case it is invoked and the returned value is tested against
-        the secret passed in the request.
-        @param fninfo: The decorated function info.
-        @type fninfo: L{Options}
-        @param auth: The request's I{auth} info.
-        @type auth: L{Options}
-        @raise SecretRequired: On secret required and not passed.
-        @raise SecretNotMatched: On not matched.
-        """
-        secret = fninfo.secret
-        if not secret:
-            return # secret not required
-        if callable(secret):
-            secret = secret()
-        if not secret:
-            return
-        if not isinstance(secret, (list,tuple)):
-            secret = (secret,)
-        passed = auth.secret
-        if not passed:
-            raise SecretRequired(self.__cnfn())
-        if passed in secret:
-            return
-        raise SecretNotMatched(self.__cnfn(), secret, passed)
-    
-    def __pam(self, fninfo, auth):
-        """
-        Perform PAM authentication.
-        @param fninfo: The decorated function info.
-        @type fninfo: L{Options}
-        @param auth: The request's I{auth} info.
-        @type auth: L{Options}
-        @raise UserRequired: On user required and not passed.
-        @raise PasswordRequired: On password required and not passed.
-        @raise UserNotAuthorized: On user not authorized.
-        @raise NotAuthenticated: On PAM auth failed.
-        """
-        pam = fninfo.pam
-        if not pam:
-            return # pam not required
-        if auth.pam:
-            passed = Options(auth.pam)
-        else:
-            passed = Options()
-        if not passed.user:
-            raise UserRequired(self.__cnfn())
-        if not passed.password:
-            raise PasswordRequired(self.__cnfn())
-        if pam.user != passed.user:
-            raise UserNotAuthorized(self.__cnfn(), pam.user, passed.user)
-        auth = PAM()
-        try:
-            auth.authenticate(passed.user, passed.password, pam.service)
-        except Exception:
-            raise NotAuthenticated(self.__cnfn(), passed.user)
-
-    def __cnfn(self):
-        """
-        Get the I{classname} and I{function} specified in the request.
-        @return: (classname, function-name)
-        @rtype: tuple
-        """
-        return (self.request.classname,
-             self.request.method)
+        raise NotShared(self.cnfn())
 
     def __fn(self, method):
         """
@@ -494,6 +455,128 @@ class RMI(object):
     def __repr__(self):
         return str(self)
 
+#
+# Security classes
+#
+    
+class Security:
+    """
+    Layered Security.
+    @ivar context: The auth context.
+    @type context: L{RMI}.
+    @ivar stack: The security stack; list of auth
+        specifictions defined by decorators.
+    @type stack: list
+    """
+    
+    def __init__(self, context, fninfo):
+        """
+        @param context: The auth context.
+        @type content: L{RMI}
+        @param fninfo: The decorated function info.
+        @type fninfo: L{Options}
+        """
+        self.context = context
+        self.stack = fninfo.security
+
+    def apply(self, passed):
+        """
+        Apply auth specifications.
+        @param passed: The request's I{auth} info passed.
+        @type passed: L{Options}.
+        @raise SecretRequired: On secret required and not passed.
+        @raise SecretNotMatched: On not matched.
+        @raise UserRequired: On user required and not passed.
+        @raise PasswordRequired: On password required and not passed.
+        @raise UserNotAuthorized: On user not authorized.
+        @raise NotAuthenticated: On PAM auth failed.
+        """
+        failed = []
+        for name, required in self.stack:
+            try:
+                fn = self.impl(name)
+                return fn(required, passed)
+            except NotAuthorized, e:
+                log.debug(e)
+                failed.append(e)
+        if failed:
+            raise failed[-1]
+        
+    def cnfn(self):
+        """
+        Get the I{classname} and I{function} in the context.
+        @return: (classname, function-name)
+        @rtype: tuple
+        """
+        return self.context.cnfn()
+
+    def impl(self, name):
+        """
+        Find auth implementation by name.
+        @param name: auth type (name)
+        @type name: str
+        @return: The implementation method
+        @rtype: instancemethod
+        """
+        try:
+            return getattr(self, name)
+        except AttributeError:
+            raise AuthMethod(self.cnfn(), name)
+
+    def secret(self, required, passed):
+        """
+        Perform shared secret auth.
+        @param auth: Method specific auth specification.
+        @type auth: L{Options}
+        @param passed: The credentials passed.
+        @type passed: L{Options}
+        @raise SecretRequired: On secret required and not passed.
+        @raise SecretNotMatched: On not matched.
+        """
+        secret = required.secret
+        if callable(secret):
+            secret = secret()
+        if not secret:
+            return
+        if not isinstance(secret, (list,tuple)):
+            secret = (secret,)
+        if not passed.secret:
+            raise SecretRequired(self.cnfn())
+        if passed.secret in secret:
+            return
+        raise SecretNotMatched(self.cnfn(), passed.secret, secret)
+    
+    def pam(self, required, passed):
+        """
+        Perform PAM authentication.
+        @param required: Method specific auth specification.
+        @type required: L{Options}
+        @param passed: The credentials passed.
+        @type passed: L{Options}
+        @raise UserRequired: On user required and not passed.
+        @raise PasswordRequired: On password required and not passed.
+        @raise UserNotAuthorized: On user not authorized.
+        @raise NotAuthenticated: On PAM auth failed.
+        """
+        if passed.pam:
+            passed = Options(passed.pam)
+        else:
+            passed = Options()
+        if not passed.user:
+            raise UserRequired(self.cnfn())
+        if not passed.password:
+            raise PasswordRequired(self.cnfn())
+        if passed.user != required.user:
+            raise UserNotAuthorized(self.cnfn(), required.user, passed.user)
+        pam = PAM()
+        try:
+            pam.authenticate(passed.user, passed.password, required.service)
+        except Exception:
+            raise NotAuthenticated(self.cnfn(), passed.user)
+
+#
+# Dispatcher classes
+# 
 
 class Dispatcher:
     """
@@ -520,12 +603,12 @@ class Dispatcher:
         @return: The result.
         @rtype: any
         """
-        request = Request()
-        request.update(envelope.request)
+        request = Request(envelope.request)
+        log.info('request: %s', request)
         request.auth = Options(
             uuid=envelope.routing[-1],
             secret=envelope.secret,
             pam=envelope.pam,)
-        rmi = RMI(request, self.classes)
-        log.info('dispatching:%s', rmi)
-        return rmi()
+        method = RMI(request, self.classes)
+        log.debug('method: %s', method)
+        return method()

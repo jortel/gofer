@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.63
+Version: 0.70
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -15,6 +15,7 @@ BuildRequires: python2-devel
 BuildRequires: python-setuptools
 BuildRequires: rpm-python
 Requires: python-%{name} = %{version}
+Requires: python-iniparse
 %description
 Gofer provides an extensible, light weight, universal python agent.
 The gofer core agent is a python daemon (service) that provides
@@ -86,7 +87,6 @@ rm -rf %{buildroot}
 
 %post
 chkconfig --add %{name}d
-setfacl -m other::--- %{_var}/log/%{name}
 
 %preun
 if [ $1 = 0 ] ; then
@@ -108,6 +108,7 @@ Requires: python-simplejson
 Requires: python-qpid >= 0.7
 Requires: PyPAM
 %if 0%{?rhel} && 0%{?rhel} < 6
+Requires: python-hashlib
 Requires: python-uuid
 Requires: python-ssl
 %endif
@@ -120,12 +121,7 @@ Contains gofer python lib modules.
 %{python_sitelib}/%{name}/*.py*
 %{python_sitelib}/%{name}/rmi/
 %{python_sitelib}/%{name}/messaging/
-%{_var}/lib/%{name}/journal/watchdog
 %doc LICENSE
-
-%post -n python-%{name}
-setfacl -m other::rwx %{_var}/lib/%{name}/journal/watchdog
-
 
 ###############################################################################
 # ruby lib
@@ -191,6 +187,7 @@ for asynchronous RMI calls.
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/watchdog.conf
 %{_libdir}/%{name}/plugins/watchdog.*
+%{_var}/lib/%{name}/journal/watchdog
 %doc LICENSE
 
 
@@ -240,6 +237,54 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Tue Jun 12 2012 Jeff Ortel <jortel@redhat.com> 0.70-1
+- Refit mocks for reparent of Envelope & Options to (object).
+  (jortel@redhat.com)
+
+* Fri Jun 08 2012 Jeff Ortel <jortel@redhat.com> 0.69-1
+- 829767 - fix simplejons 2.2+ issue (fedora 17). Envelope/Options rebased on
+  object rather than dict. (jortel@redhat.com)
+- Add whiteboard. (jortel@redhat.com)
+- Fixed 'Undefined variable (s) in XBindings.__bindings(). (jortel@redhat.com)
+
+* Thu Apr 26 2012 Jeff Ortel <jortel@redhat.com> 0.68-1
+- Refit watchdog plugin; set journal location; skip directories in journal dir.
+  (jortel@redhat.com)
+- Make the watchdog journal directory configurable. (jortel@redhat.com)
+- Add Broker.touch() and rename Topic.binding(). (jortel@redhat.com)
+- Better support for durable topic subscription.  Queue bindings to specified
+  exchanges. (jortel@redhat.com)
+* Fri Mar 16 2012 Jeff Ortel <jortel@redhat.com> 0.67-1
+- Add (trace) attribute to propagated exceptions. (jortel@redhat.com)
+- Add traceback info to propagated exceptions as: Exception.trace.
+  (jortel@redhat.com)
+- Add support for __getitem__ in container and stub. (jortel@redhat.com)
+- Refactor to crypto (delegate) interface. (jortel@redhat.com)
+- Support multiple security decorators. (jortel@redhat.com)
+- perf: asynchronous ack(); tcp_nodelay. (jortel@redhat.com)
+- Rename 'delayed/trigger' policy property to match option. (jortel@redhat.com)
+- Rename 'delayed' option to: 'trigger'. (jortel@redhat.com)
+- option 'delayed' implies asynchronous RMI. (jortel@redhat.com)
+- fix for tito compat. (jortel@redhat.com)
+- bridge: clean debug prints; make gateway a thread. (jortel@redhat.com)
+- Add tcp bridge (experimental). (jortel@redhat.com)
+- Add support for delayed trigger asynchronous RMI. (jortel@redhat.com)
+- Add fedora releaser. (jortel@redhat.com)
+- support setting producer uuid; HMAC enhancements. (jortel@redhat.com)
+- rel-eng: rename redhat releaser. (jortel@redhat.com)
+
+* Tue Feb 21 2012 Jeff Ortel <jortel@redhat.com> 0.66-1
+- Add DistGit releaser. (jortel@redhat.com)
+- Add deps: python-iniparse; python-hashlib (rhel5). (jortel@redhat.com)
+
+* Fri Feb 03 2012 Jeff Ortel <jortel@redhat.com> 0.65-1
+- Initial add of hmac classes; add synchronized decorator. (jortel@redhat.com)
+- python 2.4 compat for __import__(). (jortel@redhat.com)
+- Enhanced monitoring, use sha256 in addition to mtime. (jortel@redhat.com)
+- Add support for dynamic plugin URL in addition to UUID. (jortel@redhat.com)
+
+* Mon Jan 09 2012 Jeff Ortel <jortel@redhat.com> 0.64-1
+- Enhanced package (plugin) API. (jortel@redhat.com)
 * Wed Nov 30 2011 Jeff Ortel <jortel@redhat.com> 0.63-1
 - Mitigate systemd issues on F15. (jortel@redhat.com)
 
