@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.70
+Version: 0.71
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -241,6 +241,11 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Tue Jul 31 2012 Jeff Ortel <jortel@redhat.com> 0.71-1
+- Port ruby-gofer to rubygem-qpid. (jortel@redhat.com)
+- Make /usr/share/gofer/plugins the primary plugin location. Based on fedora
+  packaging guidelines referencing FHS standards. (jortel@redhat.com)
+- Discontinue {_libdir} macro for plugins. (jortel@redhat.com)
 * Tue Jun 12 2012 Jeff Ortel <jortel@redhat.com> 0.70-1
 - Refit mocks for reparent of Envelope & Options to (object).
   (jortel@redhat.com)
