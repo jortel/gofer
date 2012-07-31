@@ -60,13 +60,14 @@ mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/conf.d
 mkdir -p %{buildroot}/%{_sysconfdir}/init.d
 mkdir -p %{buildroot}/%{_var}/log/%{name}
 mkdir -p %{buildroot}/%{_var}/lib/%{name}/journal/watchdog
-mkdir -p %{buildroot}/%{_var}/lib/%{name}/plugins
+mkdir -p %{buildroot}/%{_usr}/lib/%{name}/plugins
+mkdir -p %{buildroot}/%{_usr}/share/%{name}/plugins
 
 cp bin/%{name}d %{buildroot}/usr/bin
 cp etc/init.d/%{name}d %{buildroot}/%{_sysconfdir}/init.d
 cp etc/%{name}/*.conf %{buildroot}/%{_sysconfdir}/%{name}
 cp etc/%{name}/plugins/*.conf %{buildroot}/%{_sysconfdir}/%{name}/plugins
-cp src/plugins/*.py %{buildroot}/%{_var}/lib/%{name}/plugins
+cp src/plugins/*.py %{buildroot}/%{_usr}/lib/%{name}/plugins
 
 rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
 
@@ -75,14 +76,17 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
+%dir %{_sysconfdir}/%{name}/
+%dir %{_usr}/lib/%{name}/plugins/
+%dir %{_usr}/share/%{name}/plugins/
 %dir %{_sysconfdir}/%{name}/conf.d/
+%dir %{_var}/log/%{name}/
 %{python_sitelib}/%{name}/agent/
 %{_bindir}/%{name}d
 %attr(755,root,root) %{_sysconfdir}/init.d/%{name}d
 %config(noreplace) %{_sysconfdir}/%{name}/agent.conf
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/builtin.conf
-%{_var}/lib/%{name}/plugins/builtin.*
-%{_var}/log/%{name}
+%{_usr}/lib/%{name}/plugins/builtin.*
 %doc LICENSE
 
 %post
@@ -164,7 +168,7 @@ The system plug-in provides system functionality.
 %files -n gofer-system
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/system.conf
-%{_var}/lib/%{name}/plugins/system.*
+%{_usr}/lib/%{name}/plugins/system.*
 %doc LICENSE
 
 
@@ -186,7 +190,7 @@ for asynchronous RMI calls.
 %files -n gofer-watchdog
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/watchdog.conf
-%{_var}/lib/%{name}/plugins/watchdog.*
+%{_usr}/lib/%{name}/plugins/watchdog.*
 %{_var}/lib/%{name}/journal/watchdog
 %doc LICENSE
 
@@ -209,7 +213,7 @@ This plug-in provides RMI access to libvirt functionality.
 %files -n gofer-virt
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/virt.conf
-%{_var}/lib/%{name}/plugins/virt.*
+%{_usr}/lib/%{name}/plugins/virt.*
 %doc LICENSE
 
 
@@ -231,7 +235,7 @@ This plug-in provides RMI access to package (RPM) management.
 %files -n gofer-package
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/package.conf
-%{_var}/lib/%{name}/plugins/package.*
+%{_usr}/lib/%{name}/plugins/package.*
 %doc LICENSE
 
 
