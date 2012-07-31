@@ -431,6 +431,8 @@ class PluginDescriptor(Base):
 class PluginLoader:
     """
     Agent plugins loader.
+    @cvar PATH: A list of paths to directories containing plugins.
+    @type PATH: list
     @ivar plugins: A dict of plugins and configuratons
     @type plugins: dict
     """
