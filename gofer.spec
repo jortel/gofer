@@ -60,13 +60,13 @@ mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/conf.d
 mkdir -p %{buildroot}/%{_sysconfdir}/init.d
 mkdir -p %{buildroot}/%{_var}/log/%{name}
 mkdir -p %{buildroot}/%{_var}/lib/%{name}/journal/watchdog
-mkdir -p %{buildroot}/%{_libdir}/%{name}/plugins
+mkdir -p %{buildroot}/%{_var}/lib/%{name}/plugins
 
 cp bin/%{name}d %{buildroot}/usr/bin
 cp etc/init.d/%{name}d %{buildroot}/%{_sysconfdir}/init.d
 cp etc/%{name}/*.conf %{buildroot}/%{_sysconfdir}/%{name}
 cp etc/%{name}/plugins/*.conf %{buildroot}/%{_sysconfdir}/%{name}/plugins
-cp src/plugins/*.py %{buildroot}/%{_libdir}/%{name}/plugins
+cp src/plugins/*.py %{buildroot}/%{_var}/lib/%{name}/plugins
 
 rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
 
@@ -81,7 +81,7 @@ rm -rf %{buildroot}
 %attr(755,root,root) %{_sysconfdir}/init.d/%{name}d
 %config(noreplace) %{_sysconfdir}/%{name}/agent.conf
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/builtin.conf
-%{_libdir}/%{name}/plugins/builtin.*
+%{_var}/lib/%{name}/plugins/builtin.*
 %{_var}/log/%{name}
 %doc LICENSE
 
@@ -164,7 +164,7 @@ The system plug-in provides system functionality.
 %files -n gofer-system
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/system.conf
-%{_libdir}/%{name}/plugins/system.*
+%{_var}/lib/%{name}/plugins/system.*
 %doc LICENSE
 
 
@@ -186,7 +186,7 @@ for asynchronous RMI calls.
 %files -n gofer-watchdog
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/watchdog.conf
-%{_libdir}/%{name}/plugins/watchdog.*
+%{_var}/lib/%{name}/plugins/watchdog.*
 %{_var}/lib/%{name}/journal/watchdog
 %doc LICENSE
 
@@ -209,7 +209,7 @@ This plug-in provides RMI access to libvirt functionality.
 %files -n gofer-virt
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/virt.conf
-%{_libdir}/%{name}/plugins/virt.*
+%{_var}/lib/%{name}/plugins/virt.*
 %doc LICENSE
 
 
@@ -231,7 +231,7 @@ This plug-in provides RMI access to package (RPM) management.
 %files -n gofer-package
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/package.conf
-%{_libdir}/%{name}/plugins/package.*
+%{_var}/lib/%{name}/plugins/package.*
 %doc LICENSE
 
 
