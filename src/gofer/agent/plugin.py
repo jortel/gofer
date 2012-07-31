@@ -438,9 +438,9 @@ class PluginLoader:
     """
 
     PATH = [
+        '/usr/share/%s/plugins' % NAME,
         '/usr/lib/%s/plugins' % NAME,
         '/usr/lib64/%s/plugins' % NAME,
-        '/usr/share/%s/plugins' % NAME,
         '/opt/%s/plugins' % NAME,
     ]
 
