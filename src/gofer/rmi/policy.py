@@ -19,6 +19,7 @@ Contains request delivery policies.
 
 from gofer.messaging import *
 from gofer.rmi.dispatcher import *
+from gofer.metrics import Timer
 from gofer.messaging.consumer import Reader
 from logging import getLogger
 
@@ -126,6 +127,7 @@ class Synchronous(RequestMethod):
         """
         self.timeout = timeout(options, self.TIMEOUT)
         self.queue = Queue(getuuid(), durable=False)
+        self.progress = options.progress
         RequestMethod.__init__(self, producer)
 
     def send(self, destination, request, **any):
@@ -168,7 +170,7 @@ class Synchronous(RequestMethod):
         envelope = reader.search(sn, self.timeout[0])
         if envelope:
             reader.ack()
-            if envelope.status:
+            if envelope.status == 'started':
                 log.debug('request (%s), started', sn)
             else:
                 self.__onreply(envelope)
@@ -185,12 +187,26 @@ class Synchronous(RequestMethod):
         @return: The matched reply envelope.
         @rtype: L{Envelope}
         """
-        envelope = reader.search(sn, self.timeout[1])
-        if envelope:
-            reader.ack()
-            return self.__onreply(envelope)
-        else:
-            raise RequestTimeout(sn, 1)
+        timer = Timer()
+        timeout = float(self.timeout[1])
+        while True:
+            timer.start()
+            envelope = reader.search(sn, int(timeout))
+            if envelope:
+                reader.ack()
+            timer.stop()
+            elapsed = timer.duration()
+            if elapsed > timeout:
+                raise RequestTimeout(sn, 1)
+            else:
+                timeout -= elapsed
+            if envelope:
+                if envelope.status == 'progress':
+                    self.__onprogress(envelope)
+                else:
+                    return self.__onreply(envelope)
+            else:
+                raise RequestTimeout(sn, 1)
         
     def __onreply(self, envelope):
         """
@@ -205,6 +221,23 @@ class Synchronous(RequestMethod):
             return reply.retval
         else:
             raise RemoteException.instance(reply)
+        
+    def __onprogress(self, envelope):
+        """
+        Handle the progress report.
+        @param envelope: The status envelope.
+        @type envelope: L{Envelope}
+        """
+        try:
+            callback = self.progress
+            if callable(callback):
+                callback(envelope.sn,
+                         envelope.any,
+                         envelope.total,
+                         envelope.complete,
+                         envelope.details)
+        except:
+            log.error('progress callback failed', exc_info=1)
 
 
 class Asynchronous(RequestMethod):

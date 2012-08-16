@@ -23,7 +23,7 @@ from time import sleep, time
 from threading import Thread
 from gofer import NAME, Singleton
 from gofer.messaging import *
-from gofer.rmi.dispatcher import Return, RemoteException
+from gofer.rmi.dispatcher import Reply, Return, RemoteException
 from gofer.rmi.policy import RequestTimeout
 from gofer.messaging.consumer import Consumer
 from gofer.messaging.producer import Producer
@@ -51,7 +51,8 @@ class ReplyConsumer(Consumer):
         @type watchdog: L{WatchDog}
         """
         self.listener = listener
-        self.watchdog = watchdog
+        self.watchdog = watchdog or LazyDog()
+        self.blacklist = BlackList()
         Consumer.start(self)
 
     def dispatch(self, envelope):
@@ -61,46 +62,69 @@ class ReplyConsumer(Consumer):
         @type envelope: L{Envelope}
         """
         try:
-            self.__notifywatchdog(envelope)
-            reply = self.__getreply(envelope)
-            reply.notify(self.listener)
+            reply = Reply(envelope)
+            if reply.started():
+                if self.blacklist.find(envelope.sn):
+                    # ignored
+                    return
+                self.watchdog.started(envelope.sn)
+                reply = Started(envelope)
+                reply.notify(self.listener)
+                return
+            if reply.progress():
+                if self.blacklist.find(envelope.sn):
+                    # ignored
+                    return
+                self.watchdog.progress(envelope.sn)
+                reply = Progress(envelope)
+                reply.notify(self.listener)
+                return
+            if reply.succeeded():
+                if self.blacklist.find(envelope.sn):
+                    # ignored
+                    return
+                self.watchdog.completed(envelope.sn)
+                reply = Succeeded(envelope)
+                reply.notify(self.listener)
+                return
+            if reply.failed():
+                self.blacklist.add(envelope.sn)
+                self.watchdog.completed(envelope.sn)
+                reply = Failed(envelope)
+                reply.notify(self.listener)
+                return
         except Exception:
-            log.error(envelope, exc_info=1)
-            
-    def __notifywatchdog(self, envelope):
-        """
-        Notify the watchdog that a proper reply has been
-        received.  The effective timeout is incremented.
-        @param envelope: The received envelope.
-        @type envelope: L{Envelope}
-        """
-        if envelope.watchdog:
-            return # sent by watchdog
-        if self.watchdog is None:
-            return
-        try:
-            self.watchdog.hack(envelope.sn)
-        except Exception:
-            log.error(envelope, exc_info=1)
+            log.exception(envelope)
+
+
+class BlackList:
+    """
+    Collection of black listed serial numbers.
+    @ivar __list: The collection of serial numbers.
+    @type __list: dict
+    """
+    
+    def __init__(self):
+        self.__list = {}
         
-
-    def __getreply(self, envelope):
+    def add(self, sn):
         """
-        Get the appropriate reply object.
-        @param envelope: The received envelope.
-        @type envelope: L{Envelope}
-        @return: A reply object based on the recived envelope.
-        @rtype: L{AsyncReply}
+        Add a serial number.
+        @param sn: A serial number.
+        @type sn: str
         """
-        if envelope.status:
-            return Status(envelope)
-        result = Return(envelope.result)
-        if result.succeeded():
-            return Succeeded(envelope)
-        else:
-            return Failed(envelope)
-
-
+        self.__list[sn] = time()
+        
+    def find(self, sn):
+        """
+        Find a serial number.
+        @param sn: A serial number.
+        @type sn: str
+        @return: The timestamp of when the ts was added.
+        @rtype: float
+        """
+        return ( sn in self.__list )
+            
 
 class AsyncReply:
     """
@@ -240,11 +264,34 @@ class Failed(FinalReply):
         return '\n'.join(s)
 
 
-class Status(AsyncReply):
+class Started(AsyncReply):
     """
-    Status changed for an asynchronous operation.
-    @ivar status: The status.
-    @type status: str
+    An asynchronous operation started.
+    @see: L{Failed.throw}
+    """
+
+    def notify(self, listener):
+        if callable(listener):
+            listener(self)
+        else:
+            listener.started(self)
+
+    def __str__(self):
+        s = []
+        s.append(AsyncReply.__str__(self))
+        s.append('started')
+        return '\n'.join(s)
+
+
+class Progress(AsyncReply):
+    """
+    Progress reported for an asynchronous operation.
+    @ivar total: The total number of units.
+    @type total: int
+    @ivar complete: The total number completed of units.
+    @type complete: int
+    @ivar details: Optional information about the progress.
+    @type details: object
     @see: L{Failed.throw}
     """
 
@@ -254,7 +301,9 @@ class Status(AsyncReply):
         @type envelope: L{Envelope}
         """
         AsyncReply.__init__(self, envelope)
-        self.status = 'started'
+        self.total = envelope.total
+        self.complete = envelope.complete
+        self.details = envelope.details
 
     def notify(self, listener):
         if callable(listener):
@@ -265,7 +314,9 @@ class Status(AsyncReply):
     def __str__(self):
         s = []
         s.append(AsyncReply.__str__(self))
-        s.append('  status: %s' % str(self.status))
+        s.append('     total: %s' % str(self.total))
+        s.append('  complete: %s' % str(self.complete))
+        s.append('   details: %s' % str(self.details))
         return '\n'.join(s)
 
 
@@ -290,11 +341,19 @@ class Listener:
         """
         pass
 
-    def status(self, reply):
+    def started(self, reply):
         """
         Async request has started.
         @param reply: The request.
-        @type reply: L{Status}.
+        @type reply: L{Started}.
+        """
+        pass
+
+    def progress(self, reply):
+        """
+        Async progress report.
+        @param reply: The request.
+        @type reply: L{Progress}.
         """
         pass
 
@@ -368,24 +427,51 @@ class WatchDog:
         je = self.__jnl.write(sn, replyto, any, ts)
         log.info('tracking: %s', je)
             
-    def hack(self, sn):
+    def started(self, sn):
         """
         Timeout is a tuple of: (start,complete).
-        Hack (increment) the index because a propery reply has been received.
-        When the last timeout has been I{hacked}, the journal entry is
-        removed from the list of I{tracked} messages.
+        A proper status='started' has been received and the timout
+        index is changed from 0 to 1.  This switches the timeout logic
+        to work off the 2nd timeout which indicates the completion timeout.
         @param sn: An entry serial number.
         @type sn: str
         """
         log.info(sn)
         je = self.__jnl.find(sn)
-        if not je:
-            return
-        je.idx += 1
-        if je.idx < len(je.ts):
-            je = self.__jnl.update(sn, idx=je.idx)
+        if je:
+            self.__jnl.update(sn, idx=1)
         else:
-            self.__jnl.delete(sn)
+            pass # ignored
+        
+    def progress(self, sn):
+        """
+        Progress reporting received.
+        Because a progress report has been received, the
+        current timestamp is bumped 5 seconds only if the timestamp
+        is within 5 seconds of expiration.
+        """
+        log.info(sn)
+        je = self.__jnl.find(sn)
+        if not je:
+            # ignored
+            return
+        if je.idx != 1:
+            # invalid state
+            return
+        grace_period = time()+5 # seconds
+        if grace_period > je.ts[1]:
+            ts = (je.ts[0], grace_period)
+            self.__jnl.update(sn, ts=ts)
+        
+    def completed(self, sn):
+        """
+        The request has been properly completed by the agent.
+        Tracking is discontinued.
+        @param sn: An entry serial number.
+        @type sn: str
+        """
+        log.info(sn)
+        self.__jnl.delete(sn)
 
     def process(self):
         """
@@ -419,7 +505,7 @@ class WatchDog:
         try:
             self.__sendreply(je)
         except:
-            log.error(str(je), exc_info=1)
+            log.exception(str(je))
         
     def __sendreply(self, je):
         """
@@ -459,7 +545,7 @@ class WatchDogThread(Thread):
                 watchdog.process()
                 sleep(1)
             except:
-                log.error(self.getName(), exc_info=1)
+                log.exception(self.getName())
                 sleep(3)
                 
     def stop(self):
@@ -570,8 +656,8 @@ class Journal:
             fn = self.__fn(sn)
             path = os.path.join(self.root, fn)
             return self.__read(path)
-        except OSError:
-            log.error(sn)
+        except (IOError, OSError):
+            log.debug(sn, exc_info=1)
     
     def __fn(self, sn):
         """
@@ -598,7 +684,7 @@ class Journal:
                 je.load(f.read())
                 return je
             except:
-                log.error(path, exc_info=1)
+                log.exception(path)
                 self.__unlink(path)
         finally:
             f.close()
@@ -625,7 +711,7 @@ class Journal:
         try:
             os.unlink(path)
         except OSError:
-            log.error(path, exc_info=1)
+            log.debug(path, exc_info=1)
     
     def __mkdir(self):
         """
@@ -633,3 +719,19 @@ class Journal:
         """
         if not os.path.exists(self.root):
             os.makedirs(self.root)
+
+
+class LazyDog:
+    """
+    A lazy (good-for-nothing) watchdog.
+    """
+    
+    def started(self, sn):
+        pass
+    
+    def progress(self, sn):
+        pass
+    
+    def completed(self, sn):
+        pass
+    

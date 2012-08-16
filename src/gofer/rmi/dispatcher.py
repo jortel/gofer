@@ -204,6 +204,45 @@ class RemoteException(Exception):
 # RMI Classes
 #
 
+class Reply(Envelope):
+    """
+    Envelope for examining replies.
+    """
+
+    def succeeded(self):
+        """
+        Test whether the reply indicates success.
+        @return: True when indicates success.
+        @rtype: bool
+        """
+        return ( self.result and 'retval' in self.result )
+        
+
+    def failed(self):
+        """
+        Test whether the reply indicates failure.
+        @return: True when indicates failure.
+        @rtype: bool
+        """
+        return ( self.result and 'exval' in self.result )
+    
+    def started(self):
+        """
+        Test whether the reply indicates status (started).
+        @return: True when indicates started.
+        @rtype: bool
+        """
+        return ( self.status == 'started' )
+    
+    def progress(self):
+        """
+        Test whether the reply indicates status (progress).
+        @return: True when indicates progress.
+        @rtype: bool
+        """
+        return ( self.status == 'progress' )
+    
+
 class Return(Envelope):
     """
     Return envelope.
@@ -248,7 +287,7 @@ class Return(Envelope):
         @return: True when indicates failure.
         @rtype: bool
         """
-        return ( not self.succeeded() )
+        return ( 'exval' in self )
     
     @classmethod
     def __exception(cls):

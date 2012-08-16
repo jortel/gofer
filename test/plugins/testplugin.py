@@ -19,6 +19,7 @@ from gofer.decorators import *
 from gofer.agent.plugin import Plugin
 from gofer.messaging import Topic
 from gofer.messaging.producer import Producer
+from gofer.agent.rmi import Context
 from logging import getLogger, INFO, DEBUG
 
 log = getLogger(__name__)
@@ -169,7 +170,28 @@ class Cowboy:
     @remote
     def age(self):
         return self.__age
-
+    
+    
+class Progress:
+    
+    @remote
+    def send(self, total):
+        ctx = Context.current()
+        ctx.progress.reset(total)
+        for n in range(0, total):
+            ctx.progress.increment(details='for: %d' % n)
+            sleep(1)
+        return 'sent, boss'
+    
+    @remote
+    def send_half(self, total):
+        ctx = Context.current()
+        ctx.progress.reset(total)
+        for n in range(0, total):
+            if n < (total/2):
+                ctx.progress.increment()
+            sleep(1)
+        return 'sent, boss'
     
 @remote
 def echo(s):

@@ -14,6 +14,7 @@
 #
 
 from time import time
+from threading import local as Local
 from gofer.rmi.window import *
 from gofer.rmi.store import PendingThread
 from gofer.rmi.dispatcher import Dispatcher, Return
@@ -50,6 +51,8 @@ class Task:
     @type ts: float
     """
     
+    context = Local()
+    
     def __init__(self, plugin, envelope, producer, commit):
         """
         @param plugin: A plugin.
@@ -78,6 +81,7 @@ class Task:
             self.expired()
             self.windowmissed()
             self.sendstarted(envelope)
+            self.context.progress = Progress(self)
             result = self.plugin.dispatch(envelope)
             self.commit(envelope.sn)
             self.sendreply(envelope, result)
@@ -133,7 +137,7 @@ class Task:
                 any=any,
                 status='started')
         except:
-            log.error('send (started), failed', exc_info=True)
+            log.exception('send (started), failed')
             
     def sendreply(self, envelope, result):
         """
@@ -159,7 +163,7 @@ class Task:
                 any=any,
                 result=result)
         except:
-            log.error('send failed:\n%s', result, exc_info=True)
+            log.exception('send failed:\n%s', result)
             
 
 class EmptyPlugin:
@@ -245,3 +249,70 @@ class Scheduler(PendingThread):
             p = Producer(url=url)
             self.producers[url] = p
         return p
+
+
+class Context:
+    """
+    Remote method invocation context.
+    Provides call context to method implementations.
+    @cvar current: The current call context.
+    @type current: L{Local}
+    """
+    
+    @classmethod
+    def current(cls):
+        return Task.context
+
+
+class Progress:
+    """
+    Provides support for progress reporting.
+    @ivar __task: The current task.
+    @type __task: L{Task}
+    @ivar __total: The progress total.
+    @type __total: int
+    """
+    
+    def __init__(self, task):
+        """
+        @param task: The current task.
+        @type task: L{Task}
+        """
+        self.__task = task
+        self.__total = 0
+        self.__complete = 0
+    
+    def reset(self, total):
+        """
+        Reset/init the progress total.
+        @param total: The total units to complete.
+        @type total: int
+        """
+        self.__total = total
+
+    def increment(self, complete=1, details=None):
+        """
+        Send a progress status report.
+        The number of completed units is incremented as specified.
+        @param complete: The number of completed units.
+        @type complete: int
+        @param details: Information regarding the completed units.
+        @type details: object
+        """
+        sn = self.__task.envelope.sn
+        any = self.__task.envelope.any
+        replyto = self.__task.envelope.replyto
+        if not replyto:
+            return
+        try:
+            self.__complete += complete
+            self.__task.producer.send(
+                replyto,
+                sn=sn,
+                any=any,
+                status='progress',
+                total=self.__total,
+                complete=self.__complete,
+                details=details)
+        except:
+            log.exception('send (progress), failed')

@@ -37,7 +37,10 @@ class Listener:
     def failed(self, reply):
         print reply
 
-    def status(self, reply):
+    def started(self, reply):
+        print reply
+        
+    def progress(self, reply):
         print reply
 
 

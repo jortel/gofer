@@ -345,6 +345,28 @@ def demogetItem(uuid, exit=0):
     print fn('RUF')
     if exit:
         sys.exit(0)
+        
+
+def demoProgress(uuid, exit=0):
+    # synchronous
+    def fn(sn, any, total, complete, details):
+        pct = (float(complete)/float(total))*100
+        print 'Progress: sn=%s, any=%s, total=%s, complete=%s, pct:%d%% details=%s' % \
+            (sn, any, total, complete, int(pct), details)
+    agent = Agent(uuid)
+    p = agent.Progress(progress=fn, any={4:5})
+    print p.send(4)
+    # asynchronous
+    agent = Agent(uuid, ctag=uuid.upper())
+    p = agent.Progress(timeout=(3,5), watchdog=watchdog, any={1:2})
+    print p.send(12)
+    sleep(20)
+    print '-------- timeout expected ---------'
+    p = agent.Progress(timeout=(3,5), watchdog=watchdog)
+    print p.send_half(12)
+    sleep(20)
+    if exit:
+        sys.exit(0)
     
 
 def main(uuid):
@@ -421,6 +443,7 @@ if __name__ == '__main__':
     yp['jortel'] = sys.argv[2]
     rcon = ReplyConsumer(Queue(uuid.upper()))
     rcon.start(onReply, watchdog=watchdog)
+    #demoProgress(uuid, 1)
     #demoWindow(uuid, 1)
     #perftest(uuid)
     #demoperftest(uuid)
