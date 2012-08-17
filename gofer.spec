@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.66
+Version: 0.66.1
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -11,6 +11,7 @@ URL: https://fedorahosted.org/gofer/
 Source0: https://fedorahosted.org/releases/g/o/gofer/%{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch: noarch
+BuildRequires: gzip
 BuildRequires: python2-devel
 BuildRequires: python-setuptools
 BuildRequires: rpm-python
@@ -31,6 +32,9 @@ executed at the specified interval.
 %build
 pushd src
 %{__python} setup.py build
+popd
+pushd docs/man/man1
+gzip *
 popd
 
 %install
@@ -61,12 +65,14 @@ mkdir -p %{buildroot}/%{_sysconfdir}/init.d
 mkdir -p %{buildroot}/%{_var}/log/%{name}
 mkdir -p %{buildroot}/%{_var}/lib/%{name}/journal/watchdog
 mkdir -p %{buildroot}/%{_libdir}/%{name}/plugins
+mkdir -p %{buildroot}/%{_mandir}/man1
 
 cp bin/%{name}d %{buildroot}/usr/bin
 cp etc/init.d/%{name}d %{buildroot}/%{_sysconfdir}/init.d
 cp etc/%{name}/*.conf %{buildroot}/%{_sysconfdir}/%{name}
 cp etc/%{name}/plugins/*.conf %{buildroot}/%{_sysconfdir}/%{name}/plugins
 cp src/plugins/*.py %{buildroot}/%{_libdir}/%{name}/plugins
+cp docs/man/man1/* %{buildroot}/%{_mandir}/man1
 
 rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
 
@@ -84,6 +90,7 @@ rm -rf %{buildroot}
 %{_libdir}/%{name}/plugins/builtin.*
 %{_var}/log/%{name}
 %doc LICENSE
+%doc %{_mandir}/man1/gofer*
 
 %post
 chkconfig --add %{name}d

@@ -1,0 +1,85 @@
+.\" Manpage for goferd.
+.\" Contact jortel@redhat.com to correct errors or typos.
+.TH man 1 "17 Aug 2012" "0.66" "goferd man page"
+
+.SH NAME
+
+goferd \- The Gofer Agent Daemon
+
+.SH SYNOPSIS
+
+goferd [ -h ] [ -c ] [ -p
+.I seconds 
+]
+
+.SH DESCRIPTION
+
+.B goferd
+is the daemon for the Gofer Agent which provides an extensible,
+light weight, universal python agent.  The gofer core agent is a
+python daemon (service) that provides infrastructure for exposing
+a remote API and for running Recurring Actions. The APIs contributed
+by plug-ins are accessible by Remote Method Invocation (RMI). The
+transport for RMI is AMQP using the
+.B qpidd(1)
+message broker. Actions are also provided by
+.I plug-ins
+and are executed
+at the specified interval.
+
+.PP
+See: https://fedorahosted.org/gofer/ for more information.
+
+.SH OPTIONS
+
+The following options are supported by
+.B goferd
+
+.TP
+-h [ --help ]
+Displays the help message.
+.TP
+-c [ --console ]
+Run in the foreground and not as a daemon.
+.TP
+-p [ --profile ] <seconds>
+Run in the foreground and display code profiling statistics.
+
+.SH SEE ALSO
+
+qpidd(1)
+
+.SH BUGS
+
+No known bugs.
+
+.SH FILES
+
+.TP
+/etc/gofer/agent.conf
+The main
+.B goferd
+configuration file
+
+.TP
+/etc/gofer/conf.d
+A directory of
+.B goferd
+configuration files used to override properties in agent.conf
+
+.TP
+/etc/gofer/plugins
+The directory of plugin descriptors.  Each plugin descriptor
+defines and configures a plugin to be loaded by
+.B goferd
+.
+
+.TP
+/usr/lib/gofer/plugins 
+A directory of plugins implementations.  Each plugin consists of a single
+python module with a basename matching it's descriptor found in /etc/gofer/plugins.
+
+
+.SH AUTHOR
+
+Jeff Ortel (jortel@redhat.com)
