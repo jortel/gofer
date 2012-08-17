@@ -39,6 +39,8 @@ class ReplyConsumer(Consumer):
     @type listener: any
     @ivar watchdog: An (optional) watchdog.
     @type watchdog: L{WatchDog}
+    @ivar blacklist: A set of serial numbers to ignore.
+    @type blacklist: set
     """
 
     def start(self, listener, watchdog=None):
@@ -52,37 +54,37 @@ class ReplyConsumer(Consumer):
         """
         self.listener = listener
         self.watchdog = watchdog or LazyDog()
-        self.blacklist = BlackList()
+        self.blacklist = set()
         Consumer.start(self)
 
     def dispatch(self, envelope):
         """
         Dispatch received request.
+        The serial number of failed requests is added to the blacklist
+        help prevent dispatching both failure and success replies.  The
+        primary cause of this is when the watchdog has replied on the agent's
+        behalf but the agent actually completes the request and later sends
+        a reply.
         @param envelope: The received envelope.
         @type envelope: L{Envelope}
         """
         try:
             reply = Reply(envelope)
+            if envelope.sn in self.blacklist:
+                # ignored
+                return
             if reply.started():
-                if self.blacklist.find(envelope.sn):
-                    # ignored
-                    return
                 self.watchdog.started(envelope.sn)
                 reply = Started(envelope)
                 reply.notify(self.listener)
                 return
             if reply.progress():
-                if self.blacklist.find(envelope.sn):
-                    # ignored
-                    return
                 self.watchdog.progress(envelope.sn)
                 reply = Progress(envelope)
                 reply.notify(self.listener)
                 return
             if reply.succeeded():
-                if self.blacklist.find(envelope.sn):
-                    # ignored
-                    return
+                self.blacklist.add(envelope.sn)
                 self.watchdog.completed(envelope.sn)
                 reply = Succeeded(envelope)
                 reply.notify(self.listener)
@@ -96,35 +98,6 @@ class ReplyConsumer(Consumer):
         except Exception:
             log.exception(envelope)
 
-
-class BlackList:
-    """
-    Collection of black listed serial numbers.
-    @ivar __list: The collection of serial numbers.
-    @type __list: dict
-    """
-    
-    def __init__(self):
-        self.__list = {}
-        
-    def add(self, sn):
-        """
-        Add a serial number.
-        @param sn: A serial number.
-        @type sn: str
-        """
-        self.__list[sn] = time()
-        
-    def find(self, sn):
-        """
-        Find a serial number.
-        @param sn: A serial number.
-        @type sn: str
-        @return: The timestamp of when the ts was added.
-        @rtype: float
-        """
-        return ( sn in self.__list )
-            
 
 class AsyncReply:
     """

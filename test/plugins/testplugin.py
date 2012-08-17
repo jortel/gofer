@@ -173,6 +173,9 @@ class Cowboy:
     
     
 class Progress:
+    """
+    Test progress reporting
+    """
     
     @remote
     def send(self, total):
