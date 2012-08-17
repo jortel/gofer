@@ -249,6 +249,9 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Fri Aug 17 2012 Jeff Ortel <jortel@redhat.com> 0.66.1-1
+- Add man page for goferd. (jortel@redhat.com)
+
 * Tue Feb 21 2012 Jeff Ortel <jortel@redhat.com> 0.66-1
 - Add DistGit releaser. (jortel@redhat.com)
 - Add deps: python-iniparse; python-hashlib (rhel5). (jortel@redhat.com)
