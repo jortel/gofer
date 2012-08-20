@@ -697,7 +697,11 @@ class Journal:
 class LazyDog:
     """
     A lazy (good-for-nothing) watchdog.
+    Basically a watchdog that does not do anything.
     """
+    
+    def track(self, sn, replyto, any, timeout):
+        pass
     
     def started(self, sn):
         pass
