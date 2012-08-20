@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.71
+Version: 0.72
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -248,6 +248,13 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Mon Aug 20 2012 Jeff Ortel <jortel@redhat.com> 0.72-1
+- Add unit tests: watchdog test. (jortel@redhat.com)
+- Add man page for goferd. (jortel@redhat.com)
+- Replace BlackList with python set. (jortel@redhat.com)
+- Add progress reporting; watchdog enhancements. (jortel@redhat.com)
+- remove f15 and add f18 to tito releaser. (jortel@redhat.com)
+
 * Tue Jul 31 2012 Jeff Ortel <jortel@redhat.com> 0.71-1
 - Port ruby-gofer to rubygem-qpid. (jortel@redhat.com)
 - Make /usr/share/gofer/plugins the primary plugin location. Based on fedora
