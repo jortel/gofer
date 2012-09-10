@@ -34,7 +34,7 @@ cfg = Config()
 
 class ActionThread(Thread):
     """
-    Run actions independantly of main thread.
+    Run actions independently of main thread.
     @ivar actions: A list of actions to run.
     @type actions: [L{Action},..]
     """
