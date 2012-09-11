@@ -46,7 +46,7 @@ class TestAgent:
         plugins = pl.load(eager())
         agent = Agent(plugins)
         agent.start(False)
-        print 'Agent: started'
+        print 'Agent: started.  Logging in: %s' % logutil.LOGDIR
         while True:
             time.sleep(10)
             print 'Agent: sleeping...'
