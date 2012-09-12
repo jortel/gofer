@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.73
+Version: 0.74
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -248,6 +248,9 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Wed Sep 12 2012 Jeff Ortel <jortel@redhat.com> 0.74-1
+- Simplify synchronous progress callback signature. (jortel@redhat.com)
+
 * Wed Sep 12 2012 Jeff Ortel <jortel@redhat.com> 0.73-1
 - Progress reporting enhancements. (jortel@redhat.com)
 - Run test agent completely in /opt/gofer. (jortel@redhat.com)
