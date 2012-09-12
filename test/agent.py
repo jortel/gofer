@@ -14,16 +14,32 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
+ROOT = '/opt/gofer'
+
 import os
 import sys
 from time import sleep
+
+# logging
+from gofer.agent import logutil
+logutil.LOGDIR = ROOT
+
+# lock
+from gofer.agent.main import AgentLock
+AgentLock.PATH = os.path.join(ROOT, 'gofer.pid')
+
+# pending queue
+from gofer.rmi.store import PendingQueue
+PendingQueue.ROOT = os.path.join(ROOT, 'messaging/pending')
+if not os.path.exists(PendingQueue.ROOT):
+    os.makedirs(PendingQueue.ROOT)
+
+# configuration
 from gofer.agent.config import Config
 Config.PATH = '/opt/gofer/agent.conf'
 Config.CNFD = '/opt/gofer/conf.d'
-from gofer.messaging import Queue
-from gofer.decorators import *
-from gofer.rmi.consumer import RequestConsumer
-from gofer.messaging.broker import Broker
+
+# misc
 from gofer.agent.plugin import PluginDescriptor, PluginLoader
 from gofer.agent.main import Agent, eager
 from logging import getLogger, INFO, DEBUG
@@ -56,8 +72,10 @@ def installPlugins(thread):
             continue
 
 def install(threads=1):
-    PluginDescriptor.ROOT = '/opt/gofer/plugins'
-    PluginLoader.PATH = ['/opt/gofer/lib/plugins']
+    PluginDescriptor.ROOT = os.path.join(ROOT, 'plugins')
+    PluginLoader.PATH = [
+        os.path.join(ROOT, 'lib/plugins')
+    ]
     for path in (PluginDescriptor.ROOT, PluginLoader.PATH[0]):
         if not os.path.exists(path):
             os.makedirs(path)
@@ -65,14 +83,9 @@ def install(threads=1):
     
 
 class TestAgent:
-    def __init__(self, uuid, threads):
+
+    def __init__(self, threads):
         install(threads)
-        url = 'ssl://localhost:5674'
-        url = 'tcp://50.17.201.180:5672'
-        url = 'tcp://localhost:5672'
-        broker = Broker(url)
-        broker.cacert = '/etc/pki/qpid/ca/ca.crt'
-        broker.clientcert = '/etc/pki/qpid/client/client.pem'
         pl = PluginLoader()
         plugins = pl.load(eager())
         agent = Agent(plugins)
@@ -80,6 +93,7 @@ class TestAgent:
         while True:
             sleep(10)
             print 'Agent: sleeping...'
+
 
 if __name__ == '__main__':
     uuid = 'xyz'
@@ -89,5 +103,5 @@ if __name__ == '__main__':
     if len(sys.argv) > 2:
         uuid = sys.argv[2]
     log.info('started')
-    print 'starting agent (%s), threads=%d' % (uuid, threads)
-    agent = TestAgent(uuid, threads)
+    print 'starting agent, threads=%d' % threads
+    agent = TestAgent(threads)
