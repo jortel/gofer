@@ -269,8 +269,12 @@ class Progress:
     Provides support for progress reporting.
     @ivar __task: The current task.
     @type __task: L{Task}
-    @ivar __total: The progress total.
-    @type __total: int
+    @ivar total: The total work units.
+    @type total: int
+    @ivar completed: The completed work units.
+    @type completed: int
+    @ivar details: The reported details.
+    @type details: object
     """
     
     def __init__(self, task):
@@ -279,25 +283,13 @@ class Progress:
         @type task: L{Task}
         """
         self.__task = task
-        self.__total = 0
-        self.__complete = 0
-    
-    def reset(self, total):
-        """
-        Reset/init the progress total.
-        @param total: The total units to complete.
-        @type total: int
-        """
-        self.__total = total
+        self.total = 0
+        self.completed = 0
+        self.details = {}
 
-    def increment(self, complete=1, details=None):
+    def report(self):
         """
-        Send a progress status report.
-        The number of completed units is incremented as specified.
-        @param complete: The number of completed units.
-        @type complete: int
-        @param details: Information regarding the completed units.
-        @type details: object
+        Send the progress report.
         """
         sn = self.__task.envelope.sn
         any = self.__task.envelope.any
@@ -305,14 +297,13 @@ class Progress:
         if not replyto:
             return
         try:
-            self.__complete += complete
             self.__task.producer.send(
                 replyto,
                 sn=sn,
                 any=any,
                 status='progress',
-                total=self.__total,
-                complete=self.__complete,
-                details=details)
+                total=self.total,
+                completed=self.completed,
+                details=self.details)
         except:
             log.exception('send (progress), failed')

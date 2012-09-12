@@ -349,10 +349,10 @@ def demogetItem(uuid, exit=0):
 
 def demoProgress(uuid, exit=0):
     # synchronous
-    def fn(sn, any, total, complete, details):
-        pct = (float(complete)/float(total))*100
+    def fn(sn, any, total, completed, details):
+        pct = (float(completed)/float(total))*100
         print 'Progress: sn=%s, any=%s, total=%s, complete=%s, pct:%d%% details=%s' % \
-            (sn, any, total, complete, int(pct), details)
+            (sn, any, total, completed, int(pct), details)
     agent = Agent(uuid)
     p = agent.Progress(progress=fn, any={4:5})
     print p.send(4)

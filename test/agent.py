@@ -97,7 +97,7 @@ class TestAgent:
 
 if __name__ == '__main__':
     uuid = 'xyz'
-    threads = 1
+    threads = 3
     if len(sys.argv) > 1:
         threads = int(sys.argv[1])
     if len(sys.argv) > 2:

@@ -261,8 +261,8 @@ class Progress(AsyncReply):
     Progress reported for an asynchronous operation.
     @ivar total: The total number of units.
     @type total: int
-    @ivar complete: The total number completed of units.
-    @type complete: int
+    @ivar completed: The total number of completed units.
+    @type completed: int
     @ivar details: Optional information about the progress.
     @type details: object
     @see: L{Failed.throw}
@@ -275,7 +275,7 @@ class Progress(AsyncReply):
         """
         AsyncReply.__init__(self, envelope)
         self.total = envelope.total
-        self.complete = envelope.complete
+        self.completed = envelope.completed
         self.details = envelope.details
 
     def notify(self, listener):
@@ -288,7 +288,7 @@ class Progress(AsyncReply):
         s = []
         s.append(AsyncReply.__str__(self))
         s.append('     total: %s' % str(self.total))
-        s.append('  complete: %s' % str(self.complete))
+        s.append(' completed: %s' % str(self.completed))
         s.append('   details: %s' % str(self.details))
         return '\n'.join(s)
 

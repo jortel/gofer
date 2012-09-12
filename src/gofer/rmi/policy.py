@@ -234,7 +234,7 @@ class Synchronous(RequestMethod):
                 callback(envelope.sn,
                          envelope.any,
                          envelope.total,
-                         envelope.complete,
+                         envelope.completed,
                          envelope.details)
         except:
             log.error('progress callback failed', exc_info=1)

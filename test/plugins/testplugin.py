@@ -180,19 +180,22 @@ class Progress:
     @remote
     def send(self, total):
         ctx = Context.current()
-        ctx.progress.reset(total)
+        ctx.progress.total = total
         for n in range(0, total):
-            ctx.progress.increment(details='for: %d' % n)
+            ctx.progress.completed += 1
+            ctx.progress.details = 'for: %d' % n
+            ctx.progress.report()
             sleep(1)
         return 'sent, boss'
     
     @remote
     def send_half(self, total):
         ctx = Context.current()
-        ctx.progress.reset(total)
+        ctx.progress.total = total
         for n in range(0, total):
             if n < (total/2):
-                ctx.progress.increment()
+                ctx.progress.completed += 1
+                ctx.progress.report()
             sleep(1)
         return 'sent, boss'
     
