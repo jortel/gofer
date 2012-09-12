@@ -231,11 +231,13 @@ class Synchronous(RequestMethod):
         try:
             callback = self.progress
             if callable(callback):
-                callback(envelope.sn,
-                         envelope.any,
-                         envelope.total,
-                         envelope.completed,
-                         envelope.details)
+                report = dict(
+                    sn=envelope.sn,
+                    any=envelope.any,
+                    total=envelope.total,
+                    completed=envelope.completed,
+                    details=envelope.details)
+                callback(report)
         except:
             log.error('progress callback failed', exc_info=1)
 
