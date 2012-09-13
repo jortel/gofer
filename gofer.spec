@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.72
+Version: 0.73
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -248,6 +248,9 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Thu Sep 13 2012 Jeff Ortel <jortel@redhat.com> 0.73-1
+- Progress reporting enhancements. (jortel@redhat.com)
+- Add for debugging w/o running as root. (jortel@redhat.com)
 * Mon Aug 20 2012 Jeff Ortel <jortel@redhat.com> 0.72-1
 - Add unit tests: watchdog test. (jortel@redhat.com)
 - Add man page for goferd. (jortel@redhat.com)
