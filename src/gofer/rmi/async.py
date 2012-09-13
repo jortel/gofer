@@ -282,7 +282,7 @@ class Progress(AsyncReply):
         if callable(listener):
             listener(self)
         else:
-            listener.status(self)
+            listener.progress(self)
 
     def __str__(self):
         s = []
