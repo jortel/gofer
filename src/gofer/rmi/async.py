@@ -348,31 +348,18 @@ class WatchDog:
     __metaclass__ = Singleton
  
     URL = Producer.LOCALHOST
-    JOURNAL = '/tmp/%s/journal/watchdog' % NAME
 
-    def __init__(self, id=None, url=URL):
+    def __init__(self, url=URL, journal=None):
         """
-        @param id: The optional ID.
-        @type id: (int|str)
         @param url: The (optional) broker URL.
         @type url: str
+        @param journal: A journal object (default: Journal()).
+        @type journal: L{Journal}
         """
-        self.id = id
         self.url = url
         self.__producer = None
-        self.journal()
-        
-    def journal(self, path=JOURNAL):
-        """
-        Set the journal directory.
-        @param path: A directory path.
-        @type path: str
-        """
-        if self.id:
-            id = str(self.id)
-            path = os.path.join(path, id)
-        self.__jnl = Journal(path)
-        
+        self.__jnl = (journal or Journal())
+
     def start(self):
         """
         Start a watchdog thread.
@@ -529,15 +516,21 @@ class WatchDogThread(Thread):
 class Journal:
     """
     Async message journal
+    @ivar root: The root journal directory.
+    @type root: str
+    @cvar ROOT: The default journal directory root.
+    @type ROOT: str
     Entry:
       - sn: serial number
       - replyto: reply to amqp address.
       - any: user data
-      - timeout: (start<ctime>, complte<ctime>)
-      - idx: current timout index.
+      - timeout: (start<ctime>, complete<ctime>)
+      - idx: current timeout index.
     """
+
+    ROOT = '/tmp/%s/journal/watchdog' % NAME
     
-    def __init__(self, root):
+    def __init__(self, root=ROOT):
         """
         @param root: A journal root directory path.
         @type root: str

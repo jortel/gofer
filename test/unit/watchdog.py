@@ -42,11 +42,9 @@ class TestWatchDog(TestCase):
 
     def testBasic(self):
         global ELAPSED
-        
         # setup
         timeout = (5,30)
-        watchdog = WatchDog()
-        watchdog.journal(self.jdir)
+        watchdog = WatchDog(journal=Journal(self.jdir))
         # tracking
         watchdog.track(SN, REPLYTO, ANY, timeout)
         path = os.path.join(self.jdir, '%s.jnl' % SN)

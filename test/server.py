@@ -34,8 +34,8 @@ basicConfig(filename='/opt/gofer/server.log', level=INFO)
 log = getLogger(__name__)
 
 # asynchronous RMI timeout watchdog
-watchdog = WatchDog()
-watchdog.journal('/opt/gofer/journal/watchdog')
+jdir = '/opt/gofer/journal/watchdog'
+watchdog = WatchDog(journal=Journal(jdir))
 watchdog.start()
 #watchdog = Agent('xyz').WatchDog()
 
