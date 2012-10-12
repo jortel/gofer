@@ -18,29 +18,18 @@ from random import random
 from time import sleep
 from threading import Thread
 from gofer.metrics import Timer
-from gofer.messaging.threadpool import ThreadPool
-
-
-class ReplyReader(Thread):
-    
-    def __init__(self, pool, n):
-        Thread.__init__(self)
-        self.reply = []
-        self.pool = pool
-        self.limit = n
-    
-    def run(self):
-        for i in range(0, self.limit):
-            r = pool.get()
-            self.reply.append(r)
+from gofer.rmi.threadpool import ThreadPool
+from unittest import TestCase
 
 
 def fn(s):
     n = random()*3
     print 'sleep(%d)' % n
     sleep(n)
-    raise Exception(s)
-    return s.lower()
+    return s.tolower()
+
+def fn2(s):
+    print s
 
 def exfn(s):
     n = random()*3
@@ -48,7 +37,7 @@ def exfn(s):
     sleep(n)
     raise Exception(s)
 
-def test(pool, fn):
+def test_duplex(pool, fn):
     N = 100
     print 'START'
     t = Timer()
@@ -65,9 +54,38 @@ def test(pool, fn):
     print 'total: %s, per-call: %f' % (t, t.duration()/N)
     print repr(pool)
 
-if __name__ == '__main__':
-    pool = ThreadPool(5,10)
-    del pool
-    pool = ThreadPool(1,10)
-    test(pool, fn)
-    test(pool, exfn)
+def test_simplex(pool, fn):
+    N = 3
+    for i in range(0,N):
+        request = 'REQUEST-%d' % i
+        pool.run(fn, request)
+    sleep(N)
+
+
+class ReplyReader(Thread):
+
+    def __init__(self, pool, n):
+        Thread.__init__(self)
+        self.reply = []
+        self.pool = pool
+        self.limit = n
+
+    def run(self):
+        for i in range(0, self.limit):
+            r = self.pool.get()
+            self.reply.append(r)
+
+
+class TestPool(TestCase):
+
+    def test_duplex(self):
+        pool = ThreadPool(5, 10)
+        del pool
+        pool = ThreadPool(1, 10)
+        test_duplex(pool, fn)
+        test_duplex(pool, exfn)
+
+    def test_simplex(self):
+        pool = ThreadPool(1, 10, duplex=False)
+        test_simplex(pool, fn2)
+        self.assertTrue(pool.get() is None)

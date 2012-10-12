@@ -19,7 +19,6 @@ Thread Pool classes.
 
 from threading import Thread, RLock
 from Queue import Queue, Empty
-from time import sleep
 
 
 class Worker(Thread):
@@ -98,22 +97,29 @@ class ThreadPool:
     @type __mutex: RLock
     """
 
-    def __init__(self, min=1, max=1):
+    def __init__(self, min=1, max=1, duplex=True):
         """
         @param min: The min # of threads.
         @type min: int
         @param max: The max # of threads.
         @type max: int
+        @param duplex: Indicates that the pool supports
+            bidirectional communication.  That is, call
+            results are queued. (default: True).
+        @type duplex: bool
         """
         assert(min > 0)
         assert(max >= min)
         self.min = min
         self.max = max
         self.__pending = Queue()
-        self.__result = Queue()
         self.__threads = []
         self.__busy = set()
         self.__mutex = RLock()
+        if duplex:
+            self.__result = Queue()
+        else:
+            self.__result = TrashQueue()
         for x in range(0, min):
             self.__add()
         
@@ -197,7 +203,6 @@ class ThreadPool:
         """
         self.__lock()
         try:
-            backlog = self.__pending.qsize()
             total = len(self.__threads)
             busy = len(self.__busy)
             capacity = (total-busy)
@@ -242,3 +247,24 @@ class Immediate:
         @type options: dict
         """
         return fn(*args, **options)
+
+
+class TrashQueue:
+    """
+    Trash queue used for simplex pool.
+    """
+
+    def put(self, item, blocking=True, timeout=0):
+        pass
+
+    def get(self, blocking=True, timeout=0):
+        raise Empty()
+
+    def qsize(self):
+        return 0
+
+    def full(self):
+        return False
+
+    def empty(self):
+        return True
