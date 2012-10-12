@@ -24,7 +24,7 @@ import inspect
 from threading import RLock
 from gofer import *
 from gofer.rmi.dispatcher import Dispatcher
-from gofer.rmi.threadpool import Immediate, ThreadPool
+from gofer.rmi.threadpool import ThreadPool
 from gofer.rmi.consumer import RequestConsumer
 from gofer.rmi.decorators import Remote
 from gofer.agent.deplist import DepList
@@ -201,7 +201,7 @@ class Plugin(object):
         """
         if self.__pool is None:
             n = self.nthreads()
-            self.__pool = ThreadPool(1, n)
+            self.__pool = ThreadPool(1, n, duplex=False)
         return self.__pool
     
     def setuuid(self, uuid, save=False):
