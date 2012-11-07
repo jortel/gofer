@@ -41,8 +41,75 @@ def timeout(options, none=(None,None)):
     if tm is None:
         return none
     if isinstance(tm, (list,tuple)):
-        return tm
-    return (tm, tm)
+        timeout = Timeout(*tm)
+    else:
+        timeout = Timeout(tm, tm)
+    return timeout.tuple()
+
+
+class Timeout:
+    """
+    Policy timeout.
+    @cvar MINUTE: Minutes in seconds.
+    @cvar HOUR: Hour is seconds
+    @cvar DAY: Day in seconds
+    @cvar SUFFIX: Suffix to multiplier mapping.
+    """
+
+    SECOND = 1
+    MINUTE = 60
+    HOUR = (MINUTE * 60)
+    DAY = (HOUR * 24)
+
+    SUFFIX = {
+        's' : SECOND,
+        'm' : MINUTE,
+        'h' : HOUR,
+        'd' : DAY,
+    }
+
+    @classmethod
+    def seconds(cls, tm):
+        """
+        Convert tm to seconds based on suffix.
+        @param tm: A timeout value.
+            The string value may have a suffix of:
+              (s) = seconds
+              (m) = minutes
+              (h) = hours
+              (d) = days
+        @type tm: (None|int|float|str)
+
+        """
+        if tm is None:
+            return tm
+        if isinstance(tm, int):
+            return tm
+        if isinstance(tm, float):
+            return int(tm)
+        if not isinstance(tm, (basestring)):
+            raise TypeError(tm)
+        if not len(tm):
+            raise ValueError(tm)
+        if cls.has_suffix(tm):
+            multiplier = cls.SUFFIX[tm[-1]]
+            return (multiplier * int(tm[:-1]))
+        else:
+            return int(tm)
+
+    @classmethod
+    def has_suffix(cls, tm):
+        for k in cls.SUFFIX.keys():
+            if tm.endswith(k):
+                return True
+        return False
+
+    def __init__(self, start=None, duration=None):
+        self.start = self.seconds(start)
+        self.duration = self.seconds(duration)
+
+    def tuple(self):
+        return (self.start, self.duration)
 
 #
 # Exceptions
