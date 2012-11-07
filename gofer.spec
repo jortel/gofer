@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 0.74
+Version: 0.75
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -248,6 +248,12 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Wed Nov 07 2012 Jeff Ortel <jortel@redhat.com> 0.75-1
+- policy timeout enhancements. (jortel@redhat.com)
+- Fix threadpool leak; change plugin to use simplex pool. (jortel@redhat.com)
+- Move threadpool test to unit/ (jortel@redhat.com)
+- Add simplex/duplex option to ThreadPool. Fixes memory leak. (jortel@redhat.com)
+
 * Wed Oct 03 2012 Jeff Ortel <jortel@redhat.com> 0.74-1
 - Make watchdog journal object configurable; watchdog singleton by URL only.
   (jortel@redhat.com)
