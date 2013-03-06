@@ -18,7 +18,6 @@ Plugin classes.
 """
 
 import os
-import sys
 import imp
 import inspect
 from threading import RLock
@@ -110,7 +109,7 @@ class Plugin(object):
         @param name: The plugin name.
         @type name: str
         @param descriptor: The plugin descriptor.
-        @type descriptor: str
+        @type descriptor: L{PluginDescriptor}
         @param synonyms: The plugin synonyms.
         @type synonyms: list
         """
@@ -290,7 +289,7 @@ class Plugin(object):
         """
         Get the plugin descriptor.
         @return: The plugin descriptor
-        @rtype: L{Config}
+        @rtype: L{PluginDescriptor}
         """
         return self.descriptor
     

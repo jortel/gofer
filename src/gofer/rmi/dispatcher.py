@@ -20,17 +20,19 @@ Provides RMI dispatcher classes.
 import sys
 import inspect
 import traceback as tb
+
 from gofer import NAME
 from gofer.messaging import *
 from gofer.pam import PAM
+
 from logging import getLogger
 
 
 log = getLogger(__name__)
 
-#
-# Exceptions
-#
+
+# --- Exceptions -------------------------------------------------------------
+
 
 class DispatchError(Exception):
     pass
@@ -60,8 +62,8 @@ class NotPermitted(DispatchError):
     Called method not decorated as I{remote}.
     """
 
-    def __init__(self, cnfn):
-        message = '%s.%s(), not permitted' % cnfn
+    def __init__(self, method):
+        message = '%s(), not permitted' % method.name
         DispatchError.__init__(self, message)
         
         
@@ -72,17 +74,14 @@ class NotAuthorized(DispatchError):
     pass
 
 
-class AuthMethod(DispatchError):
+class AuthMethod(NotAuthorized):
     """
     Authentication method not supported.
     """
 
-    def __init__(self, cnfn, name):
+    def __init__(self, method, name):
         message = \
-            '%s.%s(), auth (%s) not supported' % \
-            (cnfn[0],
-             cnfn[1],
-             name)
+            '%s(), auth (%s) not supported' % (method.name, name)
         NotAuthorized.__init__(self, message)
         
         
@@ -91,8 +90,8 @@ class NotShared(NotAuthorized):
     Method not shared between UUIDs.
     """
 
-    def __init__(self, cnfn):
-        message = '%s.%s(), not shared' % cnfn
+    def __init__(self, method):
+        message = '%s(), not shared' % method.name
         DispatchError.__init__(self, message)
 
 
@@ -101,8 +100,8 @@ class SecretRequired(NotAuthorized):
     Shared secret required and not passed.
     """
 
-    def __init__(self, cnfn):
-        message = '%s.%s(), secret required' % cnfn
+    def __init__(self, method):
+        message = '%s(), secret required' % method.name
         NotAuthorized.__init__(self, message)
         
         
@@ -111,8 +110,8 @@ class UserRequired(NotAuthorized):
     User (name)  required and not passed.
     """
 
-    def __init__(self, cnfn):
-        message = '%s.%s(), user (name) required' % cnfn
+    def __init__(self, method):
+        message = '%s(), user (name) required' % method.name
         NotAuthorized.__init__(self, message)
         
         
@@ -121,8 +120,8 @@ class PasswordRequired(NotAuthorized):
     Password required and not passed.
     """
 
-    def __init__(self, cnfn):
-        message = '%s.%s(), password required' % cnfn
+    def __init__(self, method):
+        message = '%s(), password required' % method.name
         NotAuthorized.__init__(self, message)
 
 
@@ -132,9 +131,8 @@ class NotAuthenticated(NotAuthorized):
     PAM authentication.
     """
 
-    def __init__(self, cnfn, user):
-        message = '%s.%s(), user "%s" not authenticted'\
-            % (cnfn[0], cnfn[1], user)
+    def __init__(self, method, user):
+        message = '%s(), user "%s" not authenticted' % (method.name, user)
         NotAuthorized.__init__(self, message)
         
 
@@ -143,10 +141,9 @@ class UserNotAuthorized(NotAuthorized):
     The specified user is not authorized to invoke the RMI.
     """
 
-    def __init__(self, cnfn, expected, passed):
-        message = '%s.%s(), user must be: %s, passed: %s'\
-            % (cnfn[0],
-               cnfn[1],
+    def __init__(self, method, expected, passed):
+        message = '%s(), user must be: %s, passed: %s' \
+            % (method.name,
                expected,
                passed)
         NotAuthorized.__init__(self, message)
@@ -157,10 +154,9 @@ class SecretNotMatched(NotAuthorized):
     Specified secret, not matched.
     """
 
-    def __init__(self, cnfn, expected, passed):
-        message = '%s.%s(), secret: %s not in: %s' \
-            % (cnfn[0],
-               cnfn[1],
+    def __init__(self, method, expected, passed):
+        message = '%s(), secret: %s not in: %s' \
+            % (method.name,
                passed,
                expected)
         NotAuthorized.__init__(self, message)
@@ -200,9 +196,8 @@ class RemoteException(Exception):
         return Exception.__new__(C)
     
 
-#
-# RMI Classes
-#
+# --- RMI Classes ------------------------------------------------------------
+
 
 class Reply(Envelope):
     """
@@ -333,111 +328,70 @@ class RMI(object):
     @type catalog: dict
     """
 
-    def __init__(self, request, catalog):
+    def __init__(self, request, auth, catalog):
         """
+        @param request: The request envelope.
+        @type request: L{Request}
+        @param auth: Authentication properties.
+        @type auth: L{Options}
+        @param catalog: A dict of class mappings.
+        @type catalog: dict
+        """
+        self.name = '.'.join((request.classname, request.method))
+        self.request = request
+        self.auth = auth
+        self.inst = self.getclass(request, catalog)
+        self.method = self.getmethod(request, self.inst)
+        self.args = request.args
+        self.kwargs = request.kws
+
+    @staticmethod
+    def getclass(request, catalog):
+        """
+        Get an instance of the class or module specified in
+        the request using the catalog.
         @param request: The request envelope.
         @type request: L{Request}
         @param catalog: A dict of class mappings.
         @type catalog: dict
-        """
-        self.request = request
-        self.catalog = catalog
-
-    def resolve(self):
-        """
-        Resolve the class/method in the request.
-        @return: A tuple (inst, method)
-        @rtype: tuple
-        """
-        inst = self.getclass()
-        method = self.getmethod(inst)
-        return (inst, method)
-
-    def getclass(self):
-        """
-        Get an instance of the class or module specified in
-        the request using the catalog.
         @return: An instance.
         @rtype: (class|module)
         """
-        key = self.request.classname
-        inst = self.catalog.get(key, None)
+        key = request.classname
+        inst = catalog.get(key, None)
         if inst is None:
             raise ClassNotFound(key)
         if inspect.isclass(inst):
-            args,keywords = self.__constructor()
+            args, keywords = RMI.constructor(request)
             return inst(*args, **keywords)
         else:
             return inst
 
-    def getmethod(self, inst):
+    @staticmethod
+    def getmethod(request, inst):
         """
         Get method of the class specified in the request.
         Ensures that remote invocation is permitted.
+        @param request: The request envelope.
+        @type request: L{Request}
         @param inst: A class or module object.
         @type inst: (class|module)
         @return: The requested method.
         @rtype: (method|function)
         """
-        cn, fn = self.cnfn()
+        cn, fn = (request.classname, request.method)
         if hasattr(inst, fn):
-            method = getattr(inst, fn)
-            return self.permitted(method)
+            return getattr(inst, fn)
         else:
             raise MethodNotFound(cn, fn)
-        
-    def permitted(self, method):
-        """
-        Check whether remote invocation of the specified method is permitted.
-        Applies security model using L{Security}.
-        @param method: The method in question.
-        @type method: (method|function)
-        @return: True if permitted.
-        @rtype: bool
-        """
-        auth = self.request.auth
-        fninfo = self.__fninfo(method)
-        if fninfo is None:
-            raise NotPermitted(self.cnfn())
-        self.__shared(fninfo, auth)
-        security = Security(self, fninfo)
-        security.apply(auth)
-        return method
-    
-    def cnfn(self):
-        """
-        Get the I{classname} and I{function} specified in the request.
-        @return: (classname, function-name)
-        @rtype: tuple
-        """
-        return (self.request.classname,
-                self.request.method)
-        
-    def __shared(self, fninfo, auth):
-        """
-        Validate the method is either marked as I{shared}
-        or that the request was received on the method's
-        contributing plugin UUID.
-        @param fninfo: The decorated function info.
-        @type fninfo: L{Options}
-        @param auth: The request's I{auth} info.
-        @type auth: L{Options}
-        @raise NotShared: On sharing violation.
-        """
-        if fninfo.shared:
-            return
-        uuid = fninfo.plugin.getuuid()
-        if not uuid:
-            return
-        log.debug('match uuid: "%s" = "%s"', auth.uuid, uuid)
-        if auth.uuid == uuid:
-            return
-        raise NotShared(self.cnfn())
 
-    def __fn(self, method):
+    @staticmethod
+    def __fn(method):
         """
         Return the method's function (if a method) or
         the I{method} assuming it's a function.
+        @param method: An instance method.
+        @type method: instancemethod
         @return: The function
         @rtype: function
         """
@@ -446,30 +400,63 @@ class RMI(object):
         else:
             fn = method
         return fn
-    
-    def __fninfo(self, method):
+
+    @staticmethod
+    def __fninfo(method):
         """
         Get the I{gofer} metadata embedded in the function
         by the @remote decorator.
-        @param method: A called (resolved) method
-        @type method: function
+        @param method: An instance method.
+        @type method: instancemethod
         @return: The I{gofer} attribute.
         @rtype: L{Options}
         """
         try:
-            return getattr(self.__fn(method), NAME)
+            return getattr(RMI.__fn(method), NAME)
         except:
             pass
-        
-    def __constructor(self):
+
+    @staticmethod
+    def constructor(request):
         """
         Get (optional) constructor arguments.
         @return: cntr: ([],{})
         """
-        cntr = self.request.cntr
+        cntr = request.cntr
         if not cntr:
             cntr = ([],{})
         return cntr
+
+    def __shared(self, fninfo):
+        """
+        Validate the method is either marked as I{shared}
+        or that the request was received on the method's
+        contributing plugin UUID.
+        @param fninfo: The decorated function info.
+        @type fninfo: L{Options}
+        @raise NotShared: On sharing violation.
+        """
+        if fninfo.shared:
+            return
+        uuid = fninfo.plugin.getuuid()
+        if not uuid:
+            return
+        log.debug('match uuid: "%s" = "%s"', self.auth.uuid, uuid)
+        if self.auth.uuid == uuid:
+            return
+        raise NotShared(self)
+
+    def permitted(self):
+        """
+        Check whether remote invocation of the specified method is permitted.
+        Applies security model using L{Security}.
+        """
+        fninfo = RMI.__fninfo(self.method)
+        if fninfo is None:
+            raise NotPermitted(self)
+        self.__shared(fninfo)
+        security = Security(self, fninfo)
+        security.apply(self.auth)
 
     def __call__(self):
         """
@@ -477,15 +464,12 @@ class RMI(object):
         @return: The invocation result.
         @rtype: L{Return}
         """
-        args, keywords = \
-            (self.request.args,
-             self.request.kws)
         try:
-            inst, method = self.resolve()
-            retval = method(*args, **keywords)
+            self.permitted()
+            retval = self.method(*self.args, **self.kwargs)
             return Return.succeed(retval)
-        except Exception, e:
-            log.exception(e)
+        except Exception:
+            log.exception(str(self.method))
             return Return.exception()
 
     def __str__(self):
@@ -494,28 +478,27 @@ class RMI(object):
     def __repr__(self):
         return str(self)
 
-#
-# Security classes
-#
-    
+
+# --- Security classes -------------------------------------------------------
+
+
 class Security:
     """
     Layered Security.
-    @ivar context: The auth context.
-    @type context: L{RMI}.
-    @ivar stack: The security stack; list of auth
-        specifictions defined by decorators.
+    @ivar method: The method name.
+    @type method: str
+    @ivar stack: The security stack; list of auth specifications defined by decorators.
     @type stack: list
     """
     
-    def __init__(self, context, fninfo):
+    def __init__(self, method, fninfo):
         """
-        @param context: The auth context.
-        @type content: L{RMI}
+        @param method: The method name.
+        @type method: str
         @param fninfo: The decorated function info.
         @type fninfo: L{Options}
         """
-        self.context = context
+        self.method = method
         self.stack = fninfo.security
 
     def apply(self, passed):
@@ -540,14 +523,6 @@ class Security:
                 failed.append(e)
         if failed:
             raise failed[-1]
-        
-    def cnfn(self):
-        """
-        Get the I{classname} and I{function} in the context.
-        @return: (classname, function-name)
-        @rtype: tuple
-        """
-        return self.context.cnfn()
 
     def impl(self, name):
         """
@@ -560,13 +535,13 @@ class Security:
         try:
             return getattr(self, name)
         except AttributeError:
-            raise AuthMethod(self.cnfn(), name)
+            raise AuthMethod(self.method, name)
 
     def secret(self, required, passed):
         """
         Perform shared secret auth.
-        @param auth: Method specific auth specification.
-        @type auth: L{Options}
+        @param required: Method specific auth specification.
+        @type required: L{Options}
         @param passed: The credentials passed.
         @type passed: L{Options}
         @raise SecretRequired: On secret required and not passed.
@@ -580,10 +555,10 @@ class Security:
         if not isinstance(secret, (list,tuple)):
             secret = (secret,)
         if not passed.secret:
-            raise SecretRequired(self.cnfn())
+            raise SecretRequired(self.method)
         if passed.secret in secret:
             return
-        raise SecretNotMatched(self.cnfn(), passed.secret, secret)
+        raise SecretNotMatched(self.method, passed.secret, secret)
     
     def pam(self, required, passed):
         """
@@ -602,37 +577,45 @@ class Security:
         else:
             passed = Options()
         if not passed.user:
-            raise UserRequired(self.cnfn())
+            raise UserRequired(self.method)
         if not passed.password:
-            raise PasswordRequired(self.cnfn())
+            raise PasswordRequired(self.method)
         if passed.user != required.user:
-            raise UserNotAuthorized(self.cnfn(), required.user, passed.user)
+            raise UserNotAuthorized(self.method, required.user, passed.user)
         pam = PAM()
         try:
             pam.authenticate(passed.user, passed.password, required.service)
         except Exception:
-            raise NotAuthenticated(self.cnfn(), passed.user)
+            raise NotAuthenticated(self.method, passed.user)
 
-#
-# Dispatcher classes
-# 
+
+# --- Dispatcher -------------------------------------------------------------
+
 
 class Dispatcher:
     """
     The remote invocation dispatcher.
-    @ivar classes: The (catalog) of target classes.
-    @type classes: list
+    @ivar __catalog: The (catalog) of target classes.
+    @type __catalog: dict
     """
+
+    @staticmethod
+    def auth(envelope):
+        return Options(
+            uuid=envelope.routing[-1],
+            secret=envelope.secret,
+            pam=envelope.pam,)
 
     def __init__(self, classes):
         """
+        @param classes: The (catalog) of target classes.
+        @type classes: list
         """
-        self.classes = {}
-        for c in classes:
-            self.classes[c.__name__] = c
-        
+        self.catalog = \
+            dict([(c.__name__, c) for c in classes])
+
     def provides(self, name):
-        return ( name in self.classes )
+        return ( name in self.catalog )
 
     def dispatch(self, envelope):
         """
@@ -642,12 +625,13 @@ class Dispatcher:
         @return: The result.
         @rtype: any
         """
-        request = Request(envelope.request)
-        log.info('request: %s', request)
-        request.auth = Options(
-            uuid=envelope.routing[-1],
-            secret=envelope.secret,
-            pam=envelope.pam,)
-        method = RMI(request, self.classes)
-        log.debug('method: %s', method)
-        return method()
+        try:
+            auth = self.auth(envelope)
+            request = Request(envelope.request)
+            log.info('request: %s', request)
+            method = RMI(request, auth, self.catalog)
+            log.debug('method: %s', method)
+            return method()
+        except Exception:
+            log.exception(str(envelope))
+            return Return.exception()

@@ -21,10 +21,10 @@ The I{depsolve} module defines a class for performing dependancy solving.
 
 class DepList:
     """
-    Dependancy solving list.
+    Dependency solving list.
     Items are tuples: (object, (deps,))
-    @ivar raw: The raw (unsorted) items.
-    @type raw: list
+    @ivar unsorted: The raw (unsorted) items.
+    @type unsorted: list
     @ivar index: The index of (unsorted) items.
     @type index: list
     @ivar stack: The sorting stack.
@@ -60,7 +60,7 @@ class DepList:
         
     def sort(self):
         """
-        Sort the list based on dependancies.
+        Sort the list based on dependencies.
         @return: The sorted items.
         @rtype: list
         """
@@ -117,7 +117,7 @@ class DepList:
         try:
             frame = self.stack.pop()
             return frame[0]
-        except:
+        except Exception:
             pass
 
 

@@ -171,7 +171,23 @@ class Cowboy:
     def age(self):
         return self.__age
     
-    
+
+class Cancel:
+    """
+    Test cancel
+    """
+
+    @remote
+    def test(self):
+        ctx = Context.current()
+        for n in range(0,100):
+            log.info(ctx.sn)
+            sleep(1)
+            if ctx.cancelled():
+                return 'cancelled'
+        return 'finished'
+
+
 class Progress:
     """
     Test progress reporting

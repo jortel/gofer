@@ -21,9 +21,12 @@ import socket
 import inspect
 from uuid import uuid4
 from gofer.decorators import *
+from gofer.rmi.tracker import Tracker
+from gofer.rmi.criteria import Builder
 from gofer.agent.plugin import Plugin
 from gofer.agent.action import Actions
 from gofer.agent.config import Config
+
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -49,6 +52,35 @@ class TestAction:
 class Admin:
 
     @remote
+    def cancel(self, sn=None, criteria=None):
+        """
+        Cancel by serial number or user defined property.
+        @param sn: An RMI serial number.
+        @type sn: str
+        @param criteria: The criteria used to match the
+            I{any} property on an RMI request.
+        @type criteria: str
+        @return: The list of cancelled serial numbers.
+        @rtype: list
+        @raise Exception, on (sn) not found.
+        @see: L{gofer.rmi.criteria}
+        """
+        sn_list = []
+        cancelled = []
+        tracker = Tracker()
+        if sn:
+            sn_list = [sn]
+        if criteria:
+            b = Builder()
+            criteria = b.build(criteria)
+            sn_list = tracker.find(criteria)
+        for sn in sn_list:
+            _sn = tracker.cancel(sn)
+            if _sn:
+                cancelled.append(_sn)
+        return cancelled
+
+    @remote
     def hello(self):
         s = []
         cfg = Config()
@@ -72,7 +104,7 @@ class Admin:
                 s.append(indent('<plugin> %s', 2, p.name))
             # classes
             s.append(indent('Classes:', 4))
-            for n,v in p.dispatcher.classes.items():
+            for n,v in p.dispatcher.catalog.items():
                 if inspect.ismodule(v):
                     continue
                 s.append(indent('<class> %s', 6, n))
@@ -84,7 +116,7 @@ class Admin:
                     s.append(indent(self.__signature(n, fn), 10))
             # functions
             s.append(indent('Functions:', 4))
-            for n,v in p.dispatcher.classes.items():
+            for n,v in p.dispatcher.catalog.items():
                 if not inspect.ismodule(v):
                     continue
                 for n,v in inspect.getmembers(v, inspect.isfunction):

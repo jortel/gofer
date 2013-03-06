@@ -15,7 +15,9 @@
 
 from time import time
 from threading import local as Local
+
 from gofer.rmi.window import *
+from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import PendingThread
 from gofer.rmi.dispatcher import Dispatcher, Return
 from gofer.rmi.threadpool import Immediate
@@ -52,7 +54,7 @@ class Task:
     """
     
     context = Local()
-    
+
     def __init__(self, plugin, envelope, producer, commit):
         """
         @param plugin: A plugin.
@@ -77,11 +79,25 @@ class Task:
         Dispatch received request.
         """
         envelope = self.envelope
+        self.context.sn = envelope.sn
+        self.context.progress = Progress(self)
+        self.context.cancelled = Cancelled(envelope.sn)
+        try:
+            self.__call()
+        finally:
+            self.context.sn = None
+            self.context.progress = None
+            self.context.cancelled = None
+
+    def __call(self):
+        """
+        Dispatch received request.
+        """
+        envelope = self.envelope
         try:
             self.expired()
-            self.windowmissed()
+            self.missed()
             self.sendstarted(envelope)
-            self.context.progress = Progress(self)
             result = self.plugin.dispatch(envelope)
             self.commit(envelope.sn)
             self.sendreply(envelope, result)
@@ -92,8 +108,8 @@ class Task:
             self.commit(envelope.sn)
             log.info('window missed:\n%s', envelope)
             self.sendreply(envelope, Return.exception())
-        
-    def windowmissed(self):
+
+    def missed(self):
         """
         Check the window.
         @raise WindowPending: when window in the future.
@@ -307,3 +323,26 @@ class Progress:
                 details=self.details)
         except:
             log.exception('send (progress), failed')
+
+
+class Cancelled:
+    """
+    A callable added to the Context and used
+    by plugin methods to check for cancellation.
+    @ivar tracker: The cancellation tracker.
+    @type tracker: L{Tracker}
+    """
+
+    def __init__(self, sn):
+        """
+        @param sn: Serial number.
+        @type sn: str
+        """
+        self.sn = sn
+        self.tracker = Tracker()
+
+    def __call__(self):
+        return self.tracker.cancelled(self.sn)
+
+    def __del__(self):
+        self.tracker.remove(self.sn)

@@ -112,3 +112,22 @@ def synchronized(fn):
         finally:
             mutex.release()
     return sfn
+
+def conditional(fn):
+    """
+    Decorator that provides reentrant method invocation
+    using the object's mutex.  The object must have a private
+    RLock attribute named __mutex.  Intended only for instance
+    methods that have a method body that can be safely mutexed
+    in it's entirety to prevent deadlock senarios.
+    """
+    def sfn(*args, **kwargs):
+        inst = args[0]
+        cn = inst.__class__.__name__
+        mutex = getattr(inst, '_%s__condition' % cn)
+        mutex.acquire()
+        try:
+            return fn(*args, **kwargs)
+        finally:
+            mutex.release()
+    return sfn

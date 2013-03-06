@@ -22,6 +22,7 @@ from stat import *
 from gofer import NAME, Singleton
 from gofer.messaging import *
 from gofer.rmi.window import Window
+from gofer.rmi.tracker import Tracker
 from time import time
 from threading import Thread, RLock, Event
 from logging import getLogger
@@ -75,6 +76,8 @@ class PendingQueue:
         log.debug('add pending:\n%s', envelope)
         self.__lock()
         try:
+            tracker = Tracker()
+            tracker.add(envelope.sn, envelope.any)
             self.__pending.insert(0, envelope)
         finally:
             self.__unlock()
@@ -193,7 +196,7 @@ class PendingQueue:
             else:
                 wait -= 1
                 self.__event.wait(1)
-            
+
     def __pop(self, queue):
         """
         Pop and return the next I{ready} entry.
@@ -210,9 +213,11 @@ class PendingQueue:
             try:
                 if self.__expired(envelope):
                     self.__purge(envelope)
-                    continue # TTL expired
+                    # TTL expired
+                    continue
                 if self.__delayed(envelope):
-                    continue # future
+                    # future
+                    continue
                 self.__pendingcommit(envelope)
                 self.__adjustTTL(envelope)
                 popped = envelope
@@ -287,12 +292,15 @@ class PendingQueue:
     def __delayed(self, envelope):
         """
         Get whether the envelope has a future window.
+        Cancelled requests are not considered to be delayed and
+        the window is ignored.
         @param envelope: An L{Envelope}
         @type envelope: L{Envelope}
         @return: True when window in the future.
         @rtype: bool
         """
-        if envelope.window:
+        tracker = Tracker()
+        if envelope.window and not tracker.cancelled(envelope.sn):
             window = Window(envelope.window)
             if window.future():
                 log.info('deferring:\n%s', envelope)

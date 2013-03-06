@@ -17,10 +17,12 @@
 import os
 import re
 import socket
-from gofer import NAME, Singleton
+
+from logging import getLogger
 from iniparse import INIConfig
 from iniparse.config import Undefined
-from gofer.agent.logutil import getLogger
+
+from gofer import NAME, Singleton
 
 log = getLogger(__name__)
 
