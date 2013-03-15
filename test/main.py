@@ -23,41 +23,104 @@ IMPORTANT: be sure the installed daemon is stopped.
 
 import os
 import time
+import shutil
 
-from gofer.agent import logutil
+from tempfile import mkdtemp
+from optparse import OptionParser
+from multiprocessing import Process
+
+
+# --- utils ------------------------------------------------------------------
+
+def mkdir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
+
+
+# --- agent ------------------------------------------------------------------
 
 
 class TestAgent:
 
-    ROOT = '/tmp/gofer'
+    def __init__(self, root=None):
+        self.root = root or mkdtemp()
 
-    def start(self):
-        self.mkdir()
-        logutil.LOGDIR = self.ROOT
+    def start(self, spoofing=None):
 
-        from gofer.agent.main import PluginLoader, Agent, AgentLock, eager
-        from gofer.rmi.store import PendingQueue
+        self._setup_logging()
+        self._setup_spoofing(spoofing)
+        self._setup_locking()
+        self._setup_pending_queue()
 
-        AgentLock.PATH = os.path.join(self.ROOT, 'gofer.pid')
-        PendingQueue.ROOT = os.path.join(self.ROOT, 'messaging/pending')
-        self.mkdir(PendingQueue.ROOT)
+        from gofer.agent.main import PluginLoader, Agent, eager
 
         pl = PluginLoader()
         plugins = pl.load(eager())
         agent = Agent(plugins)
         agent.start(False)
-        print 'Agent: started.  Logging in: %s' % logutil.LOGDIR
+        print 'Agent pid:%s started. Working directory [ %s ]' % (os.getpid(), self.root)
         while True:
             time.sleep(10)
-            print 'Agent: sleeping...'
 
-    def mkdir(self, path=ROOT):
-        if not os.path.exists(path):
-            os.makedirs(path)
-        return path
+    def _setup_logging(self):
+        from gofer.agent import logutil
+        logutil.LOGDIR = os.path.join(self.root, 'var/log/gofer')
+        mkdir(logutil.LOGDIR)
 
+    def _setup_locking(self):
+        from gofer.agent.main import AgentLock
+        lock_dir = 'var/lock'
+        AgentLock.PATH = os.path.join(self.root, lock_dir, 'gofer.pid')
+        mkdir(lock_dir)
+
+    def _setup_pending_queue(self):
+        from gofer.rmi.store import PendingQueue
+        PendingQueue.ROOT = os.path.join(self.root, 'messaging/pending')
+        mkdir(PendingQueue.ROOT)
+
+    def _setup_spoofing(self, suffix):
+        from gofer.agent.plugin import Plugin
+        if suffix:
+            impl = Plugin.getuuid
+            def getuuid(plugin):
+                uuid = impl(plugin)
+                if uuid:
+                    uuid = '-'.join((uuid, suffix))
+                return uuid
+            Plugin.getuuid = getuuid
+
+
+# --- python scripting -------------------------------------------------------
+
+
+def main(working_dir=None, background=False, spoofing=None):
+    def run():
+        agent = TestAgent(working_dir)
+        agent.start(spoofing)
+        if not working_dir:
+            shutil.rmtree(agent.root, ignore_errors=True)
+        print 'Done'
+    if background:
+        p = Process(target=run)
+        p.daemon = True
+        p.start()
+        return p.pid
+    else:
+        run()
+
+
+# --- shell scripting --------------------------------------------------------
+
+
+SUFFIX = '(optional) plugin uuid suffix; used for uuid spoofing'
+DIR = '(optional) agent working directory'
+BG = 'run in the background'
 
 if __name__ == '__main__':
-    agent = TestAgent()
-    agent.start()
-    print 'Done'
+    parser = OptionParser()
+    parser.add_option('-s', dest='suffix', help=SUFFIX)
+    parser.add_option('-d', dest='dir', help=DIR, default=None)
+    parser.add_option('--bg', dest='background', help=BG, action='store_true', default=False)
+    options, args = parser.parse_args()
+    main(working_dir=options.dir, background=options.background, spoofing=options.suffix)
