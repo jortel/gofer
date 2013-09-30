@@ -303,7 +303,7 @@ class PendingQueue:
         if envelope.window and not tracker.cancelled(envelope.sn):
             window = Window(envelope.window)
             if window.future():
-                log.info('deferring:\n%s', envelope)
+                log.debug('deferring:\n%s', envelope)
                 return True
         return False
     

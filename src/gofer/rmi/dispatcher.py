@@ -628,7 +628,7 @@ class Dispatcher:
         try:
             auth = self.auth(envelope)
             request = Request(envelope.request)
-            log.info('request: %s', request)
+            log.debug('request: %s', request)
             method = RMI(request, auth, self.catalog)
             log.debug('method: %s', method)
             return method()

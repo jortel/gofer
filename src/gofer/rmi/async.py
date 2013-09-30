@@ -385,7 +385,7 @@ class WatchDog:
         now = time()
         ts = (now+timeout[0], now+timeout[1])
         je = self.__jnl.write(sn, replyto, any, ts)
-        log.info('tracking: %s', je)
+        log.debug('tracking: %s', je)
             
     def started(self, sn):
         """

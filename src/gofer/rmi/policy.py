@@ -215,7 +215,7 @@ class Synchronous(RequestMethod):
             replyto=str(self.queue),
             request=request,
             **any)
-        log.info('sent (%s):\n%s', repr(destination), request)
+        log.debug('sent (%s):\n%s', repr(destination), request)
         reader = Reader(self.queue, url=self.producer.url)
         reader.open()
         try:
@@ -463,7 +463,7 @@ class Trigger:
             replyto=replyto,
             request=request,
             **any)
-        log.info('sent (%s):\n%s', repr(destination), request)
+        log.debug('sent (%s):\n%s', repr(destination), request)
         policy.notifywatchdog(self.__sn, replyto, any)
     
     def __str__(self):

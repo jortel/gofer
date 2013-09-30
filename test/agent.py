@@ -16,6 +16,20 @@
 
 ROOT = '/opt/gofer'
 
+CONFIGURATION = """
+[logging]
+gofer.agent = info
+gofer.messaging = info
+
+[messaging]
+
+[pam]
+service = passwd
+
+[loader]
+eager=1
+"""
+
 import os
 import sys
 from time import sleep
@@ -23,6 +37,14 @@ from time import sleep
 # logging
 from gofer.agent import logutil
 logutil.LOGDIR = ROOT
+
+# configuration
+from gofer.agent.config import Config
+Config.PATH = '/opt/gofer/agent.conf'
+Config.CNFD = '/opt/gofer/conf.d'
+if not os.path.exists(Config.PATH):
+    with open(Config.PATH, 'w+') as fp:
+        fp.write(CONFIGURATION)
 
 # lock
 from gofer.agent.main import AgentLock
@@ -34,14 +56,9 @@ PendingQueue.ROOT = os.path.join(ROOT, 'messaging/pending')
 if not os.path.exists(PendingQueue.ROOT):
     os.makedirs(PendingQueue.ROOT)
 
-# configuration
-from gofer.agent.config import Config
-Config.PATH = '/opt/gofer/agent.conf'
-Config.CNFD = '/opt/gofer/conf.d'
-
 # misc
 from gofer.agent.plugin import PluginDescriptor, PluginLoader
-from gofer.agent.main import Agent, eager
+from gofer.agent.main import Agent, eager, setupLogging
 from logging import getLogger, INFO, DEBUG
 
 log = getLogger(__name__)
@@ -53,7 +70,7 @@ def installPlugins(thread):
     for fn in os.listdir(dir):
         path = os.path.join(dir, fn)
         if fn.endswith('.conf'):
-            pd =  PluginDescriptor(path)
+            pd = PluginDescriptor(path)
             pd.messaging.threads = threads
             path = os.path.join(PluginDescriptor.ROOT, fn)
             f = open(path, 'w')
@@ -71,6 +88,7 @@ def installPlugins(thread):
             f.close()
             continue
 
+
 def install(threads=1):
     PluginDescriptor.ROOT = os.path.join(ROOT, 'plugins')
     PluginLoader.PATH = [
@@ -85,6 +103,7 @@ def install(threads=1):
 class TestAgent:
 
     def __init__(self, threads):
+        setupLogging()
         install(threads)
         pl = PluginLoader()
         plugins = pl.load(eager())
