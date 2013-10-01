@@ -16,6 +16,7 @@ Contents:
    design
    configuration
    options
+   decorators
 
 
 
