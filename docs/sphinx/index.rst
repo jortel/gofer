@@ -18,6 +18,7 @@ Contents:
    options
    decorators
    extensions
+   qpidd
 
 
 
