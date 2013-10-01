@@ -14,6 +14,7 @@ Contents:
    main
    quickstart
    design
+   configuration
 
 
 

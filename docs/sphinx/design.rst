@@ -69,24 +69,24 @@ Messages
 The message format is json:
 
 - Envelope:
-   - **sn** Serial Number (uuid)
-   - **version** The API version.
-   - **routing** A tuple containing the amqp (sender, destination).
-   - **window** The window, date/time UTC window in which the message is valid.
-   - **secret** The (optional) shared secret used for request authentication.
-   - **pam** The (optional) PAM authentication credentials.
-   - **replyto** The reply amqp address (optional)
+   - **sn** - Serial Number (uuid)
+   - **version** - The API version.
+   - **routing** - A tuple containing the amqp (sender, destination).
+   - **window** - The window, date/time UTC window in which the message is valid.
+   - **secret** - The (optional) shared secret used for request authentication.
+   - **pam** - The (optional) PAM authentication credentials.
+   - **replyto** - The reply amqp address (optional)
    - **(request|result|status|progress)** The payload.
        (request is type: Request, result is type: Result, status is type: string)
 - Request (RMI):
-   - **class** The target class name.
-   - **cntr** The (optional) remote class constructor arguments. format: ([],{}).
-   - **method** The target instance method name.
-   - **args[]** The list of parameters passed to method
-   - **kws{}** The named keyword arguments passed to method.
+   - **class** - The target class name.
+   - **cntr** - The (optional) remote class constructor arguments. format: ([],{}).
+   - **method** - The target instance method name.
+   - **args[]** - The list of parameters passed to method
+   - **kws{}** - The named keyword arguments passed to method.
 - Result (RMI):
-   - **retval** The returned data (optional).
-   - **retex** The returned exception (optoinal).
+   - **retval** - The returned data (optional).
+   - **retex** - The returned exception (optoinal).
 
 
 Example RMI request message:
