@@ -19,6 +19,7 @@ Contents:
    decorators
    extensions
    examples/python
+   examples/ruby
    qpidd
 
 
