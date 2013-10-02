@@ -44,5 +44,9 @@ Mailing List:
 - subscribe: [here](https://fedorahosted.org/mailman/listinfo/gofer)
 
 
+Fedora
+------
 
+The Gofer project started in [Fedora Hosted](https://fedorahosted.org/gofer/) and is available 
+in [Fedora](http://fedoraproject.org/) and [EPEL](http://fedoraproject.org/wiki/EPEL) distributions.
 
