@@ -55,15 +55,15 @@ class Admin:
     def cancel(self, sn=None, criteria=None):
         """
         Cancel by serial number or user defined property.
-        @param sn: An RMI serial number.
-        @type sn: str
-        @param criteria: The criteria used to match the
+        :param sn: An RMI serial number.
+        :type sn: str
+        :param criteria: The criteria used to match the
             I{any} property on an RMI request.
-        @type criteria: str
-        @return: The list of cancelled serial numbers.
-        @rtype: list
-        @raise Exception, on (sn) not found.
-        @see: L{gofer.rmi.criteria}
+        :type criteria: str
+        :return: The list of cancelled serial numbers.
+        :rtype: list
+        :raise Exception, on (sn) not found.
+        :see: gofer.rmi.criteria
         """
         sn_list = []
         cancelled = []

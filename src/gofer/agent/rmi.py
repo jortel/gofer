@@ -39,32 +39,32 @@ class Expired(Exception):
 class Task:
     """
     An RMI task to be scheduled on the plugin's thread pool.
-    @ivar plugin: A plugin.
-    @type plugin: Plugin
-    @ivar envelope: A gofer messaging envelope.
-    @type envelope: L{Envelope}
-    @ivar producer: An AMQP message producer.
-    @type producer: L{Producer}
-    @ivar window: The window in which the task is valid.
-    @type window: dict
-    @ivar ttl: The task time-to-live.
-    @type ttl: float
-    @ivar ts: Timestamp
-    @type ts: float
+    :ivar plugin: A plugin.
+    :type plugin: Plugin
+    :ivar envelope: A gofer messaging envelope.
+    :type envelope: Envelope
+    :ivar producer: An AMQP message producer.
+    :type producer: Producer
+    :ivar window: The window in which the task is valid.
+    :type window: dict
+    :ivar ttl: The task time-to-live.
+    :type ttl: float
+    :ivar ts: Timestamp
+    :type ts: float
     """
     
     context = Local()
 
     def __init__(self, plugin, envelope, producer, commit):
         """
-        @param plugin: A plugin.
-        @type plugin: Plugin
-        @param envelope: A gofer messaging envelope.
-        @type envelope: L{Envelope}
-        @param producer: An AMQP message producer.
-        @type producer: L{Producer}
-        @param commit: Transaction commit function.
-        @type commit: callable
+        :param plugin: A plugin.
+        :type plugin: Plugin
+        :param envelope: A gofer messaging envelope.
+        :type envelope: Envelope
+        :param producer: An AMQP message producer.
+        :type producer: Producer
+        :param commit: Transaction commit function.
+        :type commit: callable
         """
         self.plugin = plugin
         self.envelope = envelope
@@ -112,8 +112,8 @@ class Task:
     def missed(self):
         """
         Check the window.
-        @raise WindowPending: when window in the future.
-        @raise WindowMissed: when window missed.
+        :raise WindowPending: when window in the future.
+        :raise WindowMissed: when window missed.
         """
         w = self.window
         if not isinstance(w, dict):
@@ -126,7 +126,7 @@ class Task:
     def expired(self):
         """
         Check the TTL.
-        @raise Expired: When TTL expired.
+        :raise Expired: When TTL expired.
         """
         ttl = self.ttl
         if not isinstance(ttl, float):
@@ -138,8 +138,8 @@ class Task:
     def sendstarted(self, envelope):
         """
         Send the a status update if requested.
-        @param envelope: The received envelope.
-        @type envelope: L{Envelope}
+        :param envelope: The received envelope.
+        :type envelope: Envelope
         """
         sn = envelope.sn
         any = envelope.any
@@ -158,10 +158,10 @@ class Task:
     def sendreply(self, envelope, result):
         """
         Send the reply if requested.
-        @param envelope: The received envelope.
-        @type envelope: L{Envelope}
-        @param result: The request result.
-        @type result: object
+        :param envelope: The received envelope.
+        :type envelope: Envelope
+        :param result: The request result.
+        :type result: object
         """
         sn = envelope.sn
         any = envelope.any
@@ -203,16 +203,16 @@ class Scheduler(PendingThread):
     """
     The pending request scheduler.
     Processes the I{pending} queue.
-    @ivar plugins: A collection of loaded plugins.
-    @type plugins: list
-    @ivar producers: A cache of AMQP producers.
-    @type producers: dict
+    :ivar plugins: A collection of loaded plugins.
+    :type plugins: list
+    :ivar producers: A cache of AMQP producers.
+    :type producers: dict
     """
     
     def __init__(self, plugins):
         """
-        @param plugins: A collection of loaded plugins.
-        @type plugins: list
+        :param plugins: A collection of loaded plugins.
+        :type plugins: list
         """
         PendingThread.__init__(self)
         self.plugins = plugins
@@ -222,8 +222,8 @@ class Scheduler(PendingThread):
         """
         Dispatch the specified envelope to plugin that
         provides the specified class.
-        @param envelope: A gofer messaging envelope.
-        @type envelope: L{Envelope}
+        :param envelope: A gofer messaging envelope.
+        :type envelope: Envelope
         """
         url = envelope.url
         plugin = self.findplugin(envelope)
@@ -239,11 +239,11 @@ class Scheduler(PendingThread):
         """
         Find the plugin that provides the class specified in
         the I{request} embedded in the envelope.  Returns
-        L{EmptyPlugin} when not found.
-        @param envelope: A gofer messaging envelope.
-        @type envelope: L{Envelope}
-        @return: The appropriate plugin.
-        @rtype: Plugin
+        EmptyPlugin when not found.
+        :param envelope: A gofer messaging envelope.
+        :type envelope: Envelope
+        :return: The appropriate plugin.
+        :rtype: Plugin
         """
         request = Envelope(envelope.request)
         classname = request.classname 
@@ -255,10 +255,10 @@ class Scheduler(PendingThread):
     def producer(self, url):
         """
         Find the cached producer by URL.
-        @param url: The URL of the broker the request was received.
-        @type url: str
-        @return: The appropriate producer.
-        @rtype: L{Producer}
+        :param url: The URL of the broker the request was received.
+        :type url: str
+        :return: The appropriate producer.
+        :rtype: Producer
         """
         p = self.producers.get(url)
         if p is None:
@@ -271,8 +271,8 @@ class Context:
     """
     Remote method invocation context.
     Provides call context to method implementations.
-    @cvar current: The current call context.
-    @type current: L{Local}
+    :cvar current: The current call context.
+    :type current: Local
     """
     
     @classmethod
@@ -283,20 +283,20 @@ class Context:
 class Progress:
     """
     Provides support for progress reporting.
-    @ivar __task: The current task.
-    @type __task: L{Task}
-    @ivar total: The total work units.
-    @type total: int
-    @ivar completed: The completed work units.
-    @type completed: int
-    @ivar details: The reported details.
-    @type details: object
+    :ivar __task: The current task.
+    :type __task: Task
+    :ivar total: The total work units.
+    :type total: int
+    :ivar completed: The completed work units.
+    :type completed: int
+    :ivar details: The reported details.
+    :type details: object
     """
     
     def __init__(self, task):
         """
-        @param task: The current task.
-        @type task: L{Task}
+        :param task: The current task.
+        :type task: Task
         """
         self.__task = task
         self.total = 0
@@ -329,14 +329,14 @@ class Cancelled:
     """
     A callable added to the Context and used
     by plugin methods to check for cancellation.
-    @ivar tracker: The cancellation tracker.
-    @type tracker: L{Tracker}
+    :ivar tracker: The cancellation tracker.
+    :type tracker: Tracker
     """
 
     def __init__(self, sn):
         """
-        @param sn: Serial number.
-        @type sn: str
+        :param sn: Serial number.
+        :type sn: str
         """
         self.sn = sn
         self.tracker = Tracker()

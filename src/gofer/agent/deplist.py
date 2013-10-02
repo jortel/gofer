@@ -23,17 +23,17 @@ class DepList:
     """
     Dependency solving list.
     Items are tuples: (object, (deps,))
-    @ivar unsorted: The raw (unsorted) items.
-    @type unsorted: list
-    @ivar index: The index of (unsorted) items.
-    @type index: list
-    @ivar stack: The sorting stack.
-    @type stack: list
-    @ivar pushed: The I{pushed} set tracks items that have been
+    :ivar unsorted: The raw (unsorted) items.
+    :type unsorted: list
+    :ivar index: The index of (unsorted) items.
+    :type index: list
+    :ivar stack: The sorting stack.
+    :type stack: list
+    :ivar pushed: The I{pushed} set tracks items that have been
         processed.
-    @type pushed: set
-    @ivar sorted: The sorted list of items.
-    @type sorted: list
+    :type pushed: set
+    :ivar sorted: The sorted list of items.
+    :type sorted: list
     """
 
     def __init__(self):
@@ -47,10 +47,10 @@ class DepList:
     def add(self, *items):
         """
         Add items to be sorted.
-        @param items: One or more items to be added.
-        @type items: I{item}
-        @return: self
-        @rtype: L{DepList}
+        :param items: One or more items to be added.
+        :type items: I{item}
+        :return: self
+        :rtype: DepList
         """
         for item in items:
             self.unsorted.append(item)
@@ -61,8 +61,8 @@ class DepList:
     def sort(self):
         """
         Sort the list based on dependencies.
-        @return: The sorted items.
-        @rtype: list
+        :return: The sorted items.
+        :rtype: list
         """
         self.sorted = list()
         self.pushed = set()
@@ -88,18 +88,18 @@ class DepList:
     def top(self):
         """
         Get the item at the top of the stack.
-        @return: The top item.
-        @rtype: (item, iter)
+        :return: The top item.
+        :rtype: (item, iter)
         """
         return self.stack[-1]
     
     def push(self, item):
         """
         Push and item onto the sorting stack.
-        @param item: An item to push.
-        @type item: I{item}
-        @return: The number of items pushed.
-        @rtype: int
+        :param item: An item to push.
+        :type item: I{item}
+        :return: The number of items pushed.
+        :rtype: int
         """
         if item in self.pushed:
             return
@@ -111,8 +111,8 @@ class DepList:
         """
         Pop the top item off the stack and append
         it to the sorted list.
-        @return: The popped item.
-        @rtype: I{item}
+        :return: The popped item.
+        :rtype: I{item}
         """
         try:
             frame = self.stack.pop()

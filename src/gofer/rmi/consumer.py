@@ -30,8 +30,8 @@ class RequestConsumer(Consumer):
     def dispatch(self, envelope):
         """
         Dispatch received request.
-        @param envelope: The received envelope.
-        @type envelope: L{Envelope}
+        :param envelope: The received envelope.
+        :type envelope: Envelope
         """
         url = str(self.url)
         pending = PendingQueue()

@@ -21,18 +21,18 @@ class Criteria:
 
     def __init__(self, criteria):
         """
-        @param criteria: The data used for matching.
-        @type criteria: object
+        :param criteria: The data used for matching.
+        :type criteria: object
         """
         self.criteria = criteria
 
     def match(self, locator):
         """
         Match on the specified criteria.
-        @param locator: RMI request locator information.
-        @type locator: object
-        @return: True on match.
-        @rtype: bool
+        :param locator: RMI request locator information.
+        :type locator: object
+        :return: True on match.
+        :rtype: bool
         """
         raise NotImplementedError()
 
@@ -108,12 +108,12 @@ class Builder:
 
     def build(self, criteria):
         """
-        Build a L{Criteria} object based on the specified
+        Build a Criteria object based on the specified
         dict representation.
-        @param criteria: The criteria to build.
-        @type criteria: dict
-        @rtype: L{Criteria}
-        @raise Exception, on invalid criteria.
+        :param criteria: The criteria to build.
+        :type criteria: dict
+        :rtype: Criteria
+        :raise Exception, on invalid criteria.
         """
         for k, v in criteria.items():
             if self._criteria(v):

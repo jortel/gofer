@@ -37,18 +37,18 @@ Undefined.__getattr__ = _undefined
 def ndef(x):
     """
     Section/property not defined.
-    @param x: A section/property
-    @type x: A section or property object.
-    @return: True if not defined.
+    :param x: A section/property
+    :type x: A section or property object.
+    :return: True if not defined.
     """
     return isinstance(x, Undefined)
 
 def nvl(x, d=None):
     """
     Not define value.
-    @param x: An object to check.
-    @type x: A section/property
-    @return: d if not defined, else x.
+    :param x: An object to check.
+    :type x: A section/property
+    :return: d if not defined, else x.
     """
     if ndef(x):
         return d
@@ -59,13 +59,13 @@ def nvl(x, d=None):
 class Base(INIConfig):
     """
     Base configuration.
-    Uses L{Reader} which provides import.
+    Uses Reader which provides import.
     """
 
     def __init__(self, path):
         """
-        @param path: The path to an INI file.
-        @type path: str
+        :param path: The path to an INI file.
+        :type path: str
         """
         fp = Reader(path)
         try:
@@ -77,16 +77,16 @@ class Base(INIConfig):
 class Config(Base):
     """
     The gofer agent configuration.
-    @cvar ROOT: The root configuration directory.
-    @type ROOT: str
-    @cvar PATH: The absolute path to the config directory.
-    @type PATH: str
-    @cvar USER: The path to an alternate configuration file
+    :cvar ROOT: The root configuration directory.
+    :type ROOT: str
+    :cvar PATH: The absolute path to the config directory.
+    :type PATH: str
+    :cvar USER: The path to an alternate configuration file
         within the user's home.
-    @type USER: str
-    @cvar ALT: The environment variable with a path to an alternate
+    :type USER: str
+    :cvar ALT: The environment variable with a path to an alternate
         configuration file.
-    @type ALT: str
+    :type ALT: str
     """
     __metaclass__ = Singleton
 
@@ -118,10 +118,10 @@ class Config(Base):
     def __update(self, other):
         """
         Update with the specified I{other} configuration.
-        @param other: The conf to update with.
-        @type other: Base
-        @return: self
-        @rtype: L{Config}
+        :param other: The conf to update with.
+        :type other: Base
+        :return: self
+        :rtype: Config
         """
         for section in other:
             for key in other[section]:
@@ -131,10 +131,10 @@ class Config(Base):
     def __mergeIn(self, other):
         """
         Merge (in) the specified I{other} configuration.
-        @param other: The conf to merge in.
-        @type other: Base
-        @return: self
-        @rtype: L{Config}
+        :param other: The conf to merge in.
+        :type other: Base
+        :return: self
+        :rtype: Config
         """
         for section in other:
             if section not in self:
@@ -146,10 +146,10 @@ class Config(Base):
     def __mergeOut(self, other):
         """
         Merge (out) to the specified I{other} configuration.
-        @param other: The conf to merge out.
-        @type other: Base
-        @return: self
-        @rtype: L{Config}
+        :param other: The conf to merge out.
+        :type other: Base
+        :return: self
+        :rtype: Config
         """
         for section in other:
             if section not in self:
@@ -182,8 +182,8 @@ class Config(Base):
         """
         Get the I{alternate} configuration path.
         Resolution order: ALT, USER
-        @return: The path to the alternate configuration file.
-        @rtype: str
+        :return: The path to the alternate configuration file.
+        :rtype: str
         """
         path =  os.environ.get(self.ALT)
         if path:
@@ -208,20 +208,20 @@ class Config(Base):
 class Properties:
     """
     Import property specification.
-    @ivar pattern: The regex for property specification.
-    @type pattern: I{regex.pattern}
-    @ivar vdict: The variable dictionary.
-    @type vdict: dict
-    @ivar plain: The list of I{plan} properties to import.
-    @type plain: [str,..]
+    :ivar pattern: The regex for property specification.
+    :type pattern: I{regex.pattern}
+    :ivar vdict: The variable dictionary.
+    :type vdict: dict
+    :ivar plain: The list of I{plan} properties to import.
+    :type plain: [str,..]
     """
 
     pattern = re.compile('([^(]+)(\()([^)]+)(\))')
     
     def __init__(self, properties=()):
         """
-        @param properties: A list of property specifications.
-        @type properties: [str,..]
+        :param properties: A list of property specifications.
+        :type properties: [str,..]
         """
         self.vdict = {}
         self.plain = []
@@ -239,29 +239,29 @@ class Properties:
     def isplain(self, property):
         """
         Get whether a property is I{plain} and is to be imported.
-        @param property: A property name.
-        @type property: str
-        @return: True when property is to be imported.
-        @rtype: bool
+        :param property: A property name.
+        :type property: str
+        :return: True when property is to be imported.
+        :rtype: bool
         """
         return ( property in self.plain )
     
     def var(self, property):
         """
         Get the property's declared variable name.
-        @param property: A property name.
-        @type property: str
-        @return: The variable name declared for the property
+        :param property: A property name.
+        :type property: str
+        :return: The variable name declared for the property
             or None when not declared.
-        @rtype: str
+        :rtype: str
         """
         return self.vdict.get(property)
     
     def empty(self):
         """
         Get whether the object is empty.
-        @return: True no properties defined.
-        @rtype: bool
+        :return: True no properties defined.
+        :rtype: bool
         """
         return ( len(self) == 0 )
     
@@ -281,23 +281,23 @@ class Import:
     where <property> is: <name>|<name>(<variable>).
     When the <variable> form is used, a variable is assigned the value 
     to be used as $(var) in the conf rather than imported.
-    @cvar allproperties: An (empty) object representing all properties
+    :cvar allproperties: An (empty) object representing all properties
         are to be imported.
-    @type allproperties: L{Properties}
-    @ivar path: The path to the imported ini file.
-    @type path: str
-    @ivar section: The name of the section to be imported.
-    @type section: str
-    @ivar properties: The property specification.
-    @type properties: L{Properties}
+    :type allproperties: Properties
+    :ivar path: The path to the imported ini file.
+    :type path: str
+    :ivar section: The name of the section to be imported.
+    :type section: str
+    :ivar properties: The property specification.
+    :type properties: Properties
     """
     
     allproperties = Properties()
 
     def __init__(self, imp):
         """
-        @param imp: An import directive.
-        @type imp: str
+        :param imp: An import directive.
+        :type imp: str
         """
         part = imp.split(':')
         self.path = part[1]
@@ -312,8 +312,8 @@ class Import:
     def __call__(self):
         """
         Execute the import directive.
-        @return: The (imported) lines & declared (vdict) variables.
-        @rtype: tuple(<imported>,<vdict>)
+        :return: The (imported) lines & declared (vdict) variables.
+        :rtype: tuple(<imported>,<vdict>)
         """
         vdict = {}
         input = Base(self.path)
@@ -339,8 +339,8 @@ class Import:
 def _cnfvalue(macro):
     """
     configuration macro resolver
-    @return: The resolved configuration value
-    @rtype: str
+    :return: The resolved configuration value
+    :rtype: str
     """
     n = macro[2:-1]
     cfg = Config()
@@ -352,12 +352,12 @@ class Reader:
     """
     File reader.
     post-process directives.
-    @ivar idx: The line index.
-    @type idx: int
-    @ivar vdict: The variable dictionary.
-    @type vdict: dict
-    @ivar path: The path to a file to read.
-    @type path: str
+    :ivar idx: The line index.
+    :type idx: int
+    :ivar vdict: The variable dictionary.
+    :type vdict: dict
+    :ivar path: The path to a file to read.
+    :type path: str
     """
     
     MACROS = {
@@ -382,8 +382,8 @@ class Reader:
     def readline(self):
         """
         read the next line.
-        @return: The line of None on EOF.
-        @rtype: str 
+        :return: The line of None on EOF.
+        :rtype: str 
         """
         if self.idx < len(self.lines):
             ln = self.lines[self.idx]
@@ -396,10 +396,10 @@ class Reader:
     def __post(self, input):
         """
         Post-process file content for directives.
-        @param input: The file content (lines).
-        @type input: list
-        @return: The post processed content.
-        @rtype: list
+        :param input: The file content (lines).
+        :type input: list
+        :return: The post processed content.
+        :rtype: list
         """
         output = []
         for ln in input:
@@ -414,10 +414,10 @@ class Reader:
     def __import(self, ln):
         """
         Procecss an i{import} directive and return the result.
-        @param ln: A line containing the directive.
-        @type ln: str
-        @return: The import result (lines).
-        @rtype: [str,..]
+        :param ln: A line containing the directive.
+        :type ln: str
+        :return: The import result (lines).
+        :rtype: [str,..]
         """
         log.info('processing: %s', ln)
         imp = Import(ln)
@@ -428,10 +428,10 @@ class Reader:
     def __repl(self, ln):
         """
         Replace variables contained in the line.
-        @param ln: A file line.
-        @type ln: str
-        @return: The line w/ vars replaced.
-        @rtype: str
+        :param ln: A file line.
+        :type ln: str
+        :return: The line w/ vars replaced.
+        :rtype: str
         """
         if ln.startswith('#'):
             return ln

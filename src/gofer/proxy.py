@@ -28,11 +28,11 @@ def Agent(uuid, **options):
 def agent(uuid, **options):
     """
     Get a proxy for the remote Agent.
-    @param uuid: An agent ID.
+    :param uuid: An agent ID.
         May be tuple (<container>,<agent>)
-    @type uuid: (str|tuple)
-    @return: An agent (proxy).
-    @rtype: L{Container}
+    :type uuid: (str|tuple)
+    :return: An agent (proxy).
+    :rtype: Container
     """
     if not isinstance(uuid, tuple):
         uuid = (None, uuid)
@@ -44,8 +44,8 @@ def agent(uuid, **options):
 def delete(agent):
     """
     Delete associated AMQP resources.
-    @param agent: A gofer agent.
-    @type agent: L{Container}
+    :param agent: A gofer agent.
+    :type agent: Container
     """
     if isinstance(agent, Container):
         queue = agent._Container__destination()

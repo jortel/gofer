@@ -29,21 +29,21 @@ log = getLogger(__name__)
 class Container:
     """
     The stub container
-    @ivar __id: The peer ID.
-    @type __id: str
-    @ivar __producer: An AMQP producer.
-    @type __producer: L{gofer.messaging.producer.Producer}
-    @ivar __options: Container options.
-    @type __options: L{Options}
+    :ivar __id: The peer ID.
+    :type __id: str
+    :ivar __producer: An AMQP producer.
+    :type __producer: gofer.messaging.producer.Producer
+    :ivar __options: Container options.
+    :type __options: Options
     """
 
     def __init__(self, uuid, producer, **options):
         """
-        @param uuid: The peer ID.
-        @type uuid: str
-        @param producer: An AMQP producer.
-        @type producer: L{gofer.messaging.producer.Producer}
-        @param options: keyword options.
+        :param uuid: The peer ID.
+        :type uuid: str
+        :param producer: An AMQP producer.
+        :type producer: gofer.messaging.producer.Producer
+        :param options: keyword options.
             Options:
               - async : Indicates that requests asynchronous.
                   Default = False
@@ -54,7 +54,7 @@ class Container:
               - secret : A shared secret used for request authentication.
               - timeout : The request timeout (seconds).
                   Default = (10,90) seconds.
-        @type options: dict
+        :type options: dict
         """
         self.__id = uuid
         self.__producer = producer
@@ -64,8 +64,8 @@ class Container:
     def __destination(self):
         """
         Get the stub destination(s).
-        @return: Either a queue destination or a list of queues.
-        @rtype: list
+        :return: Either a queue destination or a list of queues.
+        :rtype: list
         """
         if isinstance(self.__id, (list,tuple)):
             queues = []
@@ -78,10 +78,10 @@ class Container:
     def __getattr__(self, name):
         """
         Get a stub by name.
-        @param name: The name of a stub class.
-        @type name: str
-        @return: A stub object.
-        @rtype: L{Stub}
+        :param name: The name of a stub class.
+        :type name: str
+        :return: A stub object.
+        :rtype: Stub
         """
         return Stub.stub(
             name,
@@ -92,10 +92,10 @@ class Container:
     def __getitem__(self, name):
         """
         Get a stub by name.
-        @param name: The name of a stub class.
-        @type name: str
-        @return: A stub object.
-        @rtype: L{Stub}
+        :param name: The name of a stub class.
+        :type name: str
+        :return: A stub object.
+        :rtype: Stub
         """
         return getattr(self, name)
 

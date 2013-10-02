@@ -22,12 +22,12 @@ class Tracker:
     """
     Request tracker used to track information about
     active RMI requests.
-    @ivar __all: All known requests by serial number.
-    @type __all: set
-    @ivar __cancelled: Cancelled requests.
-    @type __cancelled: set
-    @ivar __mutex: The object mutex.
-    @type __mutex: RLock
+    :ivar __all: All known requests by serial number.
+    :type __all: set
+    :ivar __cancelled: Cancelled requests.
+    :type __cancelled: set
+    :ivar __mutex: The object mutex.
+    :type __mutex: RLock
     """
 
     __metaclass__ = Singleton
@@ -41,11 +41,11 @@ class Tracker:
     def add(self, sn, locator):
         """
         Add a serial number (make know) for tracking.
-        @param sn: An RMI serial number.
-        @type sn: str
-        @param locator:  The object used by find() to match
+        :param sn: An RMI serial number.
+        :type sn: str
+        :param locator:  The object used by find() to match
             on RMI requests.
-        @type locator: object
+        :type locator: object
         """
         self.__all[sn] = locator
 
@@ -53,10 +53,10 @@ class Tracker:
     def find(self, criteria):
         """
         Find serial numbers matching user defined (any) data.
-        @param criteria: The object used to match RMI requests.
-        @type criteria: L{gofer.rmi.criteria.Criteria}
-        @return: The list of matching serial numbers.
-        @rtype: list
+        :param criteria: The object used to match RMI requests.
+        :type criteria: gofer.rmi.criteria.Criteria
+        :return: The list of matching serial numbers.
+        :rtype: list
         """
         matched = []
         for sn, locator in self.__all.items():
@@ -68,10 +68,10 @@ class Tracker:
     def cancel(self, sn):
         """
         Notify the tracker that an RMI request has been cancelled.
-        @param sn: An RMI serial number.
-        @type sn: str
-        @return: The cancelled serial number (if not already cancelled).
-        @rtype: str
+        :param sn: An RMI serial number.
+        :type sn: str
+        :return: The cancelled serial number (if not already cancelled).
+        :rtype: str
         """
         if sn in self.__all:
             if sn not in self.__cancelled:
@@ -84,10 +84,10 @@ class Tracker:
     def cancelled(self, sn):
         """
         Get whether an RMI request has been cancelled.
-        @param sn: An RMI serial number.
-        @type sn: str
-        @return: True if cancelled.
-        @rtype: bool
+        :param sn: An RMI serial number.
+        :type sn: str
+        :return: True if cancelled.
+        :rtype: bool
         """
         return sn in self.__cancelled
 
@@ -95,8 +95,8 @@ class Tracker:
     def remove(self, sn):
         """
         Discontinue tracking an RMI request.
-        @param sn: An RMI serial number.
-        @type sn: str
+        :param sn: An RMI serial number.
+        :type sn: str
         """
         self.__all.pop(sn)
         if sn in self.__cancelled:

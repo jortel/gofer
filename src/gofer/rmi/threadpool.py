@@ -31,16 +31,16 @@ log = getLogger(__name__)
 class Worker(Thread):
     """
     Pool (worker) thread.
-    @ivar pool: A thread pool.
-    @type pool: L{ThreadPool}
+    :ivar pool: A thread pool.
+    :type pool: ThreadPool
     """
     
     def __init__(self, id, pool):
         """
-        @param id: The worker id in the pool.
-        @type id: int
-        @param pool: A thread pool.
-        @type pool: L{ThreadPool}
+        :param id: The worker id in the pool.
+        :type id: int
+        :param pool: A thread pool.
+        :type pool: ThreadPool
         """
         name = 'worker-%d' % id
         Thread.__init__(self, name=name)
@@ -67,26 +67,26 @@ class Worker(Thread):
 class Call:
     """
     A call to be executed by the thread pool.
-    @ivar id: The unique call ID.
-    @type id: str
-    @ivar fn: The function/method to be executed.
-    @type fn: callable
-    @ivar args: The list of args passed to the callable.
-    @type args: list
-    @ivar kwargs: The list of keyword args passed to the callable.
-    @type kwargs: dict
+    :ivar id: The unique call ID.
+    :type id: str
+    :ivar fn: The function/method to be executed.
+    :type fn: callable
+    :ivar args: The list of args passed to the callable.
+    :type args: list
+    :ivar kwargs: The list of keyword args passed to the callable.
+    :type kwargs: dict
     """
 
     def __init__(self, id, fn, args=None, kwargs=None):
         """
-        @param id: The unique call ID.
-        @type id: str
-        @param fn: The function/method to be executed.
-        @type fn: callable
-        @param args: The list of args passed to the callable.
-        @type args: tuple
-        @param kwargs: The list of keyword args passed to the callable.
-        @type kwargs: dict
+        :param id: The unique call ID.
+        :type id: str
+        :param fn: The function/method to be executed.
+        :type fn: callable
+        :param args: The list of args passed to the callable.
+        :type args: tuple
+        :param kwargs: The list of keyword args passed to the callable.
+        :type kwargs: dict
         """
         self.id = id
         self.fn = fn
@@ -97,8 +97,8 @@ class Call:
     def __call__(self, pool):
         """
         Execute the call.
-        @param pool: A thread pool.
-        @type pool: L{ThreadPool}
+        :param pool: A thread pool.
+        :type pool: ThreadPool
         """
         try:
             self.retval = self.fn(*self.args, **self.kwargs)
@@ -121,12 +121,12 @@ class Call:
 class IndexedQueue:
     """
     Synchronized call queue with indexed search.
-    @ivar __condition: A condition used to synchronize the queue.
-    @type __condition: L{Condition}
-    @ivar __list: Provides fifo functionality.
-    @type __list: list
-    @ivar __dict: Provides indexed access.
-    @type __dict: dict
+    :ivar __condition: A condition used to synchronize the queue.
+    :type __condition: Condition
+    :ivar __list: Provides fifo functionality.
+    :type __list: list
+    :ivar __dict: Provides indexed access.
+    :type __dict: dict
     """
 
     def __init__(self):
@@ -139,8 +139,8 @@ class IndexedQueue:
         """
         Put a call and retval in the queue.
         Signals threads waiting on the condition using get() or find().
-        @param call: A call to enqueue.
-        @type call: L{Call}
+        :param call: A call to enqueue.
+        :type call: Call
         """
         self.__list.insert(0, call)
         self.__dict[call.id] = call
@@ -150,12 +150,12 @@ class IndexedQueue:
     def get(self, blocking=True, timeout=None):
         """
         Read the next available call.
-        @param blocking: Block and wait when the queue is empty.
-        @type blocking: bool
-        @param timeout: The time to wait when the queue is empty.
-        @type timeout: int
-        @return: The next completed call.
-        @rtype: L{call}
+        :param blocking: Block and wait when the queue is empty.
+        :type blocking: bool
+        :param timeout: The time to wait when the queue is empty.
+        :type timeout: int
+        :return: The next completed call.
+        :rtype: call
         """
         waited = False
         while True:
@@ -176,14 +176,14 @@ class IndexedQueue:
     def find(self, id, blocking=True, timeout=None):
         """
         Find a call result by ID.
-        @param id: A call ID.
-        @type id: str
-        @param blocking: Block and wait when the queue is empty.
-        @type blocking: bool
-        @param timeout: The time to wait when the queue is empty.
-        @type timeout: int
-        @return: A completed call by call ID.
-        @rtype: L{call}
+        :param id: A call ID.
+        :type id: str
+        :param blocking: Block and wait when the queue is empty.
+        :type blocking: bool
+        :param timeout: The time to wait when the queue is empty.
+        :type timeout: int
+        :return: A completed call by call ID.
+        :rtype: call
         """
         waited = False
         while True:
@@ -220,30 +220,30 @@ class IndexedQueue:
 class ThreadPool:
     """
     A load distributed thread pool.
-    @ivar min: The min # of workers.
-    @type min: int
-    @ivar max: The max # of workers.
-    @type max: int
-    @ivar __pending: The worker pending queue.
-    @type __pending: L{Queue}
-    @ivar __threads: The list of workers
-    @type __threads: list
-    @ivar __tracking: The job tracking dict(s) (<pending>,<completed>)
-    @type __tracking: tuple(2)
-    @ivar __mutex: The pool mutex.
-    @type __mutex: RLock
+    :ivar min: The min # of workers.
+    :type min: int
+    :ivar max: The max # of workers.
+    :type max: int
+    :ivar __pending: The worker pending queue.
+    :type __pending: Queue
+    :ivar __threads: The list of workers
+    :type __threads: list
+    :ivar __tracking: The job tracking dict(s) (<pending>,<completed>)
+    :type __tracking: tuple(2)
+    :ivar __mutex: The pool mutex.
+    :type __mutex: RLock
     """
 
     def __init__(self, min=1, max=1, duplex=True):
         """
-        @param min: The min # of workers.
-        @type min: int
-        @param max: The max # of workers.
-        @type max: int
-        @param duplex: Indicates that the pool supports
+        :param min: The min # of workers.
+        :type min: int
+        :param max: The max # of workers.
+        :type max: int
+        :param duplex: Indicates that the pool supports
             bidirectional communication.  That is, call
             results are queued. (default: True).
-        @type duplex: bool
+        :type duplex: bool
         """
         assert(min > 0)
         assert(max >= min)
@@ -261,14 +261,14 @@ class ThreadPool:
         """
         Schedule a call.
         Convenience method for scheduling.
-        @param fn: A function/method to execute.
-        @type fn: callable
-        @param args: The args passed to fn()
-        @type args: tuple
-        @param kwargs: The keyword args passed fn()
-        @type kwargs: dict
-        @return The call ID.
-        @rtype str
+        :param fn: A function/method to execute.
+        :type fn: callable
+        :param args: The args passed to fn()
+        :type args: tuple
+        :param kwargs: The keyword args passed fn()
+        :type kwargs: dict
+        :return The call ID.
+        :rtype str
         """
         id = uuid4()
         call = Call(id, fn, args, kwargs)
@@ -277,10 +277,10 @@ class ThreadPool:
     def schedule(self, call):
         """
         Schedule a call.
-        @param call: A call to schedule for execution.
-        @param call: L{Call}
-        @return: The call ID.
-        @rtype: str
+        :param call: A call to schedule for execution.
+        :param call: Call
+        :return: The call ID.
+        :rtype: str
         """
         self.__expand()
         self.__track(call)
@@ -290,42 +290,42 @@ class ThreadPool:
     def get(self, blocking=True, timeout=None):
         """
         Get the results of I{calls} executed in the pool.
-        @param id: A job ID.
-        @type id: str
-        @param blocking: Block when queue is empty.
-        @type blocking: bool
-        @param timeout: The time (seconds) to block when empty.
-        @return: Call result (call, retval)
-        @rtype: tuple(2)
+        :param id: A job ID.
+        :type id: str
+        :param blocking: Block when queue is empty.
+        :type blocking: bool
+        :param timeout: The time (seconds) to block when empty.
+        :return: Call result (call, retval)
+        :rtype: tuple(2)
         """
         return self.__tracking[1].get(blocking, timeout)
 
     def find(self, id=None, blocking=True, timeout=None):
         """
         Find the results of I{calls} executed in the pool by job ID.
-        @param id: A job ID.
-        @type id: str
-        @param blocking: Block when queue is empty.
-        @type blocking: bool
-        @param timeout: The time (seconds) to block when empty.
-        @return: Call return value
-        @rtype: object
+        :param id: A job ID.
+        :type id: str
+        :param blocking: Block when queue is empty.
+        :type blocking: bool
+        :param timeout: The time (seconds) to block when empty.
+        :return: Call return value
+        :rtype: object
         """
         return self.__tracking[1].find(id, blocking, timeout)
 
     def pending(self):
         """
         Used by worker to get the next pending call.
-        @return: The next pending call.
-        @rtype L{Call}
+        :return: The next pending call.
+        :rtype Call
         """
         return self.__pending.get()
 
     def completed(self, call):
         """
         Result received.
-        @param call: A call object.
-        @type call: Call
+        :param call: A call object.
+        :type call: Call
         """
         if self.duplex:
             self.__tracking[1].put(call)
@@ -338,12 +338,12 @@ class ThreadPool:
     def info(self):
         """
         Get pool statistics.
-        @return: pool statistics
+        :return: pool statistics
             - capacity: number of allocated threads
             - running: number of calls currently queued.
             - completed: number of calls completed but return has not been
                          consumed using get() or find().
-        @rtype: dict
+        :rtype: dict
         """
         pending = self.__pending.qsize()
         self.__lock()
@@ -380,8 +380,8 @@ class ThreadPool:
     def __track(self, call):
         """
         Call has been scheduled.
-        @param call: A call (id, fn, args, kwargs).
-        @type call: tuple(4)
+        :param call: A call (id, fn, args, kwargs).
+        :type call: tuple(4)
         """
         self.__tracking[0][call.id] = call
 
@@ -429,12 +429,12 @@ class Immediate:
     def run(self, fn, *args, **options):
         """
         Run request.
-        @param fn: A function/method to execute.
-        @type fn: callable
-        @param args: The args passed to fn()
-        @type args: list
-        @param options: The keyword args passed fn()
-        @type options: dict
+        :param fn: A function/method to execute.
+        :type fn: callable
+        :param args: The args passed to fn()
+        :type args: list
+        :param options: The keyword args passed fn()
+        :type options: dict
         """
         fn(*args, **options)
         return 0

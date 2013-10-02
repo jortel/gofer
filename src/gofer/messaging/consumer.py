@@ -31,21 +31,21 @@ log = getLogger(__name__)
 class ReceiverThread(Thread):
     """
     Message consumer thread.
-    @cvar WAIT: How long (seconds) to wait for messages.
-    @type WAIT: int
-    @ivar __run: The main run latch.
-    @type __run: bool
-    @ivar __consumer: The (target) consumer.
-    @type __consumer: L{Consumer}
+    :cvar WAIT: How long (seconds) to wait for messages.
+    :type WAIT: int
+    :ivar __run: The main run latch.
+    :type __run: bool
+    :ivar __consumer: The (target) consumer.
+    :type __consumer: Consumer
     """
 
     WAIT = 3
 
     def __init__(self, consumer):
         """
-        @param consumer: The (target) consumer that is notified
+        :param consumer: The (target) consumer that is notified
             when messages are fetched.
-        @type consumer: L{Consumer}
+        :type consumer: Consumer
         """
         self.__run = True
         self.__consumer = consumer
@@ -82,8 +82,8 @@ class ReceiverThread(Thread):
     def __open(self):
         """
         Open the AMQP receiver.
-        @return: The opened receiver.
-        @rtype: Receiver
+        :return: The opened receiver.
+        :rtype: Receiver
         """
         addr = self.__consumer.address()
         ssn = self.__consumer.session()
@@ -93,8 +93,8 @@ class ReceiverThread(Thread):
     def __fetch(self, receiver):
         """
         Fetch the next available message.
-        @param receiver: An AMQP receiver.
-        @type receiver: Receiver
+        :param receiver: An AMQP receiver.
+        :type receiver: Receiver
         """
         try:
             return receiver.fetch(timeout=self.WAIT)
@@ -110,29 +110,29 @@ class Consumer(Endpoint):
     """
     An AMQP (abstract) consumer.
     The received() method needs to be overridden.
-    @ivar __started: Indicates that start() has been called.
-    @type __started: bool
-    @ivar __destination: The AMQP destination to consume.
-    @type __destination: L{Destination}
-    @ivar __thread: The receiver thread.
-    @type __thread: L{ReceiverThread}
+    :ivar __started: Indicates that start() has been called.
+    :type __started: bool
+    :ivar __destination: The AMQP destination to consume.
+    :type __destination: Destination
+    :ivar __thread: The receiver thread.
+    :type __thread: ReceiverThread
     """
     
     @classmethod
     def subject(cls, message):
         """
         Extract the message subject.
-        @param message: The received message.
-        @type message: qpid.messaging.Message
-        @return: The message subject
-        @rtype: str
+        :param message: The received message.
+        :type message: qpid.messaging.Message
+        :return: The message subject
+        :rtype: str
         """
         return message.properties.get('qpid.subject')
 
     def __init__(self, destination, **options):
         """
-        @param destination: The destination to consumer.
-        @type destination: L{Destination}
+        :param destination: The destination to consumer.
+        :type destination: Destination
         """
         Endpoint.__init__(self, **options)
         self.__started = False
@@ -142,8 +142,8 @@ class Consumer(Endpoint):
     def id(self):
         """
         Get the endpoint id
-        @return: The destination (simple) address.
-        @rtype: str
+        :return: The destination (simple) address.
+        :rtype: str
         """
         self._lock()
         try:
@@ -154,8 +154,8 @@ class Consumer(Endpoint):
     def address(self):
         """
         Get the AMQP address for this endpoint.
-        @return: The AMQP address.
-        @rtype: str
+        :return: The AMQP address.
+        :rtype: str
         """
         self._lock()
         try:
@@ -212,8 +212,8 @@ class Consumer(Endpoint):
         """
         Process received request.
         Inject subject & destination.uuid.
-        @param message: The received message.
-        @type message: qpid.messaging.Message
+        :param message: The received message.
+        :type message: qpid.messaging.Message
         """
         self._lock()
         try:
@@ -224,8 +224,8 @@ class Consumer(Endpoint):
     def valid(self, envelope):
         """
         Check to see if the envelope is valid.
-        @param envelope: The received envelope.
-        @type envelope: qpid.messaging.Message
+        :param envelope: The received envelope.
+        :type envelope: qpid.messaging.Message
         """
         valid = True
         if envelope.version != version:
@@ -237,8 +237,8 @@ class Consumer(Endpoint):
     def dispatch(self, envelope):
         """
         Dispatch received request.
-        @param envelope: The received envelope.
-        @type envelope: qpid.messaging.Message
+        :param envelope: The received envelope.
+        :type envelope: qpid.messaging.Message
         """
         pass
     
@@ -246,8 +246,8 @@ class Consumer(Endpoint):
         """
         Process received request.
         Inject subject & destination.uuid.
-        @param message: The received message.
-        @type message: qpid.messaging.Message
+        :param message: The received message.
+        :type message: qpid.messaging.Message
         """
         envelope = Envelope()
         envelope.load(message.content)
@@ -262,20 +262,20 @@ class Consumer(Endpoint):
 class Reader(Endpoint):
     """
     An AMQP message reader.
-    @ivar __opened: Indicates that open() has been called.
-    @type __opened: bool
-    @ivar __receiver: An AMQP receiver to read.
-    @type __receiver: Receiver
-    @ivar __destination: The AMQP destination to read.
-    @type __destination: L{Destination}
+    :ivar __opened: Indicates that open() has been called.
+    :type __opened: bool
+    :ivar __receiver: An AMQP receiver to read.
+    :type __receiver: Receiver
+    :ivar __destination: The AMQP destination to read.
+    :type __destination: Destination
     """
     
     def __init__(self, destination, **options):
         """
-        @param destination: The destination to consumer.
-        @type destination: L{Destination}
-        @param options: Options passed to Endpoint.
-        @type options: dict
+        :param destination: The destination to consumer.
+        :type destination: Destination
+        :param options: Options passed to Endpoint.
+        :type options: dict
         """
         self.__opened = False
         self.__receiver = None
@@ -316,10 +316,10 @@ class Reader(Endpoint):
     def next(self, timeout=90):
         """
         Get the next envelope from the queue.
-        @param timeout: The read timeout.
-        @type timeout: int
-        @return: The next envelope.
-        @rtype: L{Envelope}
+        :param timeout: The read timeout.
+        :type timeout: int
+        :return: The next envelope.
+        :rtype: Envelope
         """
         msg = self.__fetch(timeout)
         if msg:
@@ -332,10 +332,10 @@ class Reader(Endpoint):
     def read(self, timeout=90):
         """
         Get the next message from the queue.
-        @param timeout: The read timeout.
-        @type timeout: int
-        @return: The next message.
-        @rtype: Message
+        :param timeout: The read timeout.
+        :type timeout: int
+        :return: The next message.
+        :rtype: Message
         """
         return self.__fetch(timeout)
 
@@ -343,12 +343,12 @@ class Reader(Endpoint):
         """
         Seach the reply queue for the envelope with
         the matching serial #.
-        @param sn: The expected serial number.
-        @type sn: str
-        @param timeout: The read timeout.
-        @type timeout: int
-        @return: The next envelope.
-        @rtype: L{Envelope}
+        :param sn: The expected serial number.
+        :type sn: str
+        :param timeout: The read timeout.
+        :type timeout: int
+        :return: The next envelope.
+        :rtype: Envelope
         """
         log.debug('{%s} searching for: sn=%s', self.id(), sn)
         while True:
@@ -365,8 +365,8 @@ class Reader(Endpoint):
     def address(self):
         """
         Get the AMQP address for this endpoint.
-        @return: The AMQP address.
-        @rtype: str
+        :return: The AMQP address.
+        :rtype: str
         """
         self._lock()
         try:
@@ -377,10 +377,10 @@ class Reader(Endpoint):
     def __fetch(self, timeout):
         """
         Fetch the next message.
-        @param timeout: The read timeout.
-        @type timeout: int
-        @return: The next message, or (None).
-        @rtype: Message
+        :param timeout: The read timeout.
+        :type timeout: int
+        :return: The next message, or (None).
+        :rtype: Message
         """
         try:
             self.open()

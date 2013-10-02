@@ -34,10 +34,10 @@ class Virt:
     def getDomainID(self, name):
         """
         Resolve a domain name to a domain ID.
-        @param name: A domain name.
-        @type name: str
-        @return: A domain ID.
-        @rtype: int
+        :param name: A domain name.
+        :type name: str
+        :return: A domain ID.
+        :rtype: int
         """
         con = self.open()
         try:
@@ -50,8 +50,8 @@ class Virt:
     def listDomains(self):
         """
         Get a list of domains.
-        @return: List of dict: {id, name, active}
-        @rtype: list
+        :return: List of dict: {id, name, active}
+        :rtype: list
         """
         con = self.open()
         try:
@@ -70,10 +70,10 @@ class Virt:
     def isAlive(self, id):
         """
         Get whether a domain is alive (running).
-        @param id: A domain ID.
-        @type id: int
-        @return: True if alive.
-        @rtype: bool
+        :param id: A domain ID.
+        :type id: int
+        :return: True if alive.
+        :rtype: bool
         """
         con = self.open()
         try:
@@ -87,8 +87,8 @@ class Virt:
     def start(self, id):
         """
         Start (create) a domain.
-        @param id: A domain ID.
-        @type id: int
+        :param id: A domain ID.
+        :type id: int
         """
         con = self.open()
         try:
@@ -102,8 +102,8 @@ class Virt:
     def shutdown(self, id):
         """
         Shutdown a domain.
-        @param id: A domain ID.
-        @type id: int
+        :param id: A domain ID.
+        :type id: int
         """
         con = self.open()
         try:

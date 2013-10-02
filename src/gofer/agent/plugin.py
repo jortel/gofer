@@ -40,14 +40,14 @@ log = getLogger(__name__)
 class Plugin(object):
     """
     Represents a plugin.
-    @ivar name: The plugin name.
-    @type name: str
-    @ivar synonyms: The plugin synonyms.
-    @type synonyms: list
-    @ivar descriptor: The plugin descriptor.
-    @type descriptor: str
-    @cvar plugins: The dict of loaded plugins.
-    @type plugins: dict
+    :ivar name: The plugin name.
+    :type name: str
+    :ivar synonyms: The plugin synonyms.
+    :type synonyms: list
+    :ivar descriptor: The plugin descriptor.
+    :type descriptor: str
+    :cvar plugins: The dict of loaded plugins.
+    :type plugins: dict
     """
     plugins = {}
     
@@ -55,10 +55,10 @@ class Plugin(object):
     def add(cls, plugin):
         """
         Add the plugin.
-        @param plugin: The plugin to add.
-        @type plugin: L{Plugin}
-        @return: The added plugin
-        @rtype: L{Plugin}
+        :param plugin: The plugin to add.
+        :type plugin: Plugin
+        :return: The added plugin
+        :rtype: Plugin
         """
         cls.plugins[plugin.name] = plugin
         for syn in plugin.synonyms:
@@ -71,8 +71,8 @@ class Plugin(object):
     def delete(cls, plugin):
         """
         Delete the plugin.
-        @param plugin: The plugin to delete.
-        @type plugin: L{Plugin}
+        :param plugin: The plugin to delete.
+        :type plugin: Plugin
         """
         for k,v in cls.plugins.items():
             if v == plugin:
@@ -83,10 +83,10 @@ class Plugin(object):
     def find(cls, name):
         """
         Find a plugin by name or synonym.
-        @param name: A plugin name or synonym.
-        @type name: str
-        @return: The plugin when found.
-        @rtype: L{Plugin} 
+        :param name: A plugin name or synonym.
+        :type name: str
+        :return: The plugin when found.
+        :rtype: Plugin 
         """
         return cls.plugins.get(name)
     
@@ -94,8 +94,8 @@ class Plugin(object):
     def all(cls):
         """
         Get a unique list of loaded plugins.
-        @return: A list of plugins
-        @rtype: list
+        :return: A list of plugins
+        :rtype: list
         """
         unique = []
         for p in cls.plugins.values():
@@ -106,12 +106,12 @@ class Plugin(object):
     
     def __init__(self, name, descriptor, synonyms=[]):
         """
-        @param name: The plugin name.
-        @type name: str
-        @param descriptor: The plugin descriptor.
-        @type descriptor: L{PluginDescriptor}
-        @param synonyms: The plugin synonyms.
-        @type synonyms: list
+        :param name: The plugin name.
+        :type name: str
+        :param descriptor: The plugin descriptor.
+        :type descriptor: PluginDescriptor
+        :param synonyms: The plugin synonyms.
+        :type synonyms: list
         """
         self.name = name
         self.descriptor = descriptor
@@ -131,8 +131,8 @@ class Plugin(object):
     def names(self):
         """
         Get I{all} the names by which the plugin can be found.
-        @return: A list of name and synonyms.
-        @rtype: list
+        :return: A list of name and synonyms.
+        :rtype: list
         """
         names = [self.name]
         names += self.synonyms
@@ -141,8 +141,8 @@ class Plugin(object):
     def enabled(self):
         """
         Get whether the plugin is enabled.
-        @return: True if enabled.
-        @rtype: bool
+        :return: True if enabled.
+        :rtype: bool
         """
         cfg = self.cfg()
         try:
@@ -153,8 +153,8 @@ class Plugin(object):
     def getuuid(self):
         """
         Get the plugin's messaging UUID.
-        @return: The plugin's messaging UUID.
-        @rtype: str
+        :return: The plugin's messaging UUID.
+        :rtype: str
         """
         self.__lock()
         try:
@@ -166,8 +166,8 @@ class Plugin(object):
     def geturl(self):
         """
         Get the broker URL
-        @return: The broker URL
-        @rtype: str
+        :return: The broker URL
+        :rtype: str
         """
         main = Config()
         cfg = self.cfg()
@@ -178,8 +178,8 @@ class Plugin(object):
         """
         Get the amqp broker for this plugin.  Each plugin can
         connect to a different broker.
-        @return: The broker if configured.
-        @rtype: L{Broker}
+        :return: The broker if configured.
+        :rtype: Broker
         """
         cfg = self.cfg()
         main = Config()
@@ -196,7 +196,7 @@ class Plugin(object):
     def getpool(self):
         """
         Get the plugin's thread pool.
-        @return: ThreadPool.
+        :return: ThreadPool.
         """
         if self.__pool is None:
             n = self.nthreads()
@@ -206,10 +206,10 @@ class Plugin(object):
     def setuuid(self, uuid, save=False):
         """
         Set the plugin's UUID.
-        @param uuid: The new UUID.
-        @type uuid: str
-        @param save: Save to plugin descriptor.
-        @type save: bool
+        :param uuid: The new UUID.
+        :type uuid: str
+        :param save: Save to plugin descriptor.
+        :type save: bool
         """
         self.__lock()
         try:
@@ -226,10 +226,10 @@ class Plugin(object):
     def seturl(self, url, save=False):
         """
         Set the plugin's URL.
-        @param url: The new URL.
-        @type url: str
-        @param save: Save to plugin descriptor.
-        @type save: bool
+        :param url: The new URL.
+        :type url: str
+        :param save: Save to plugin descriptor.
+        :type save: bool
         """
         self.__lock()
         try:
@@ -246,8 +246,8 @@ class Plugin(object):
     def nthreads(self):
         """
         Get the number of theads in the plugin's pool.
-        @return: number of theads.
-        @rtype: int
+        :return: number of theads.
+        :rtype: int
         """
         main = Config()
         cfg = self.cfg()
@@ -261,8 +261,8 @@ class Plugin(object):
     def attach(self, uuid=None):
         """
         Attach (connect) to AMQP broker using the specified uuid.
-        @param uuid: The (optional) messaging UUID.
-        @type uuid: str
+        :param uuid: The (optional) messaging UUID.
+        :type uuid: str
         """
         cfg = self.cfg()
         if not uuid:
@@ -288,27 +288,27 @@ class Plugin(object):
     def cfg(self):
         """
         Get the plugin descriptor.
-        @return: The plugin descriptor
-        @rtype: L{PluginDescriptor}
+        :return: The plugin descriptor
+        :rtype: PluginDescriptor
         """
         return self.descriptor
     
     def dispatch(self, request):
         """
         Dispatch (invoke) the specified RMI request.
-        @param request: An RMI request
-        @type request: L{Envelope}
-        @return: The RMI returned.
+        :param request: An RMI request
+        :type request: Envelope
+        :return: The RMI returned.
         """
         return self.dispatcher.dispatch(request)
     
     def provides(self, name):
         """
         Get whether a plugin provides the specified class.
-        @param name: A class (or module) name.
-        @type name: str
-        @return: True if provides.
-        @rtype: bool
+        :param name: A class (or module) name.
+        :type name: str
+        :return: True if provides.
+        :rtype: bool
         """
         return self.dispatcher.provides(name)
     
@@ -316,11 +316,11 @@ class Plugin(object):
         """
         Export an object defined in the plugin (module).
         The name must reference a class or function object.
-        @param name: A name (class|function)
-        @type name: str
-        @return: The named item.
-        @rtype: (class|function)
-        @raise NameError: when not found
+        :param name: A name (class|function)
+        :type name: str
+        :return: The named item.
+        :rtype: (class|function)
+        :raise NameError: when not found
         """
         try:
             obj = getattr(self.impl, name)
@@ -354,8 +354,8 @@ class PluginDescriptor(Base):
     def load(cls):
         """
         Load the plugin descriptors.
-        @return: A list of descriptors.
-        @rtype: list
+        :return: A list of descriptors.
+        :rtype: list
         """
         unsorted = []
         cls.__mkdir()
@@ -385,10 +385,10 @@ class PluginDescriptor(Base):
         """
         Sort descriptors based on defined dependencies.
         Dependencies defined by [main].requires
-        @param descriptors: A list of descriptor tuples (name,descriptor)
-        @type descriptors: list
-        @return: The sorted list
-        @rtype: list
+        :param descriptors: A list of descriptor tuples (name,descriptor)
+        :type descriptors: list
+        :return: The sorted list
+        :rtype: list
         """
         index = {}
         for d in descriptors:
@@ -406,8 +406,8 @@ class PluginDescriptor(Base):
     def __requires(self):
         """
         Get the list of declared required plugins.
-        @return: A list of plugin names.
-        @rtype: list
+        :return: A list of plugin names.
+        :rtype: list
         """
         required = []
         declared = nvl(self.main.requires)
@@ -430,10 +430,10 @@ class PluginDescriptor(Base):
 class PluginLoader:
     """
     Agent plugins loader.
-    @cvar PATH: A list of paths to directories containing plugins.
-    @type PATH: list
-    @ivar plugins: A dict of plugins and configuratons
-    @type plugins: dict
+    :cvar PATH: A list of paths to directories containing plugins.
+    :type PATH: list
+    :ivar plugins: A dict of plugins and configuratons
+    :type plugins: dict
     """
 
     PATH = [
@@ -446,10 +446,10 @@ class PluginLoader:
     def load(self, eager=True):
         """
         Load the plugins.
-        @param eager: Load disabled plugins.
-        @type eager: bool
-        @return: A list of loaded plugins
-        @rtype: list
+        :param eager: Load disabled plugins.
+        :type eager: bool
+        :return: A list of loaded plugins
+        :rtype: list
         """
         loaded = []
         for plugin, cfg in PluginDescriptor.load():
@@ -466,12 +466,12 @@ class PluginLoader:
     def __noload(self, cfg, eager):
         """
         Determine whether the plugin should be loaded.
-        @param cfg: A plugin descriptor.
-        @type cfg: L{PluginDescriptor}
-        @param eager: The I{eager} load flag.
-        @type eager: bool
-        @return: True when not loaded.
-        @rtype: bool
+        :param cfg: A plugin descriptor.
+        :type cfg: PluginDescriptor
+        :param eager: The I{eager} load flag.
+        :type eager: bool
+        :return: True when not loaded.
+        :rtype: bool
         """
         try:
             return not ( eager or int(cfg.main.enabled) )
@@ -482,12 +482,12 @@ class PluginLoader:
     def __import(self, plugin, cfg):
         """
         Import a module by file name.
-        @param plugin: The plugin (module) name.
-        @type plugin: str
-        @param cfg: A plugin descriptor.
-        @type cfg: L{PluginDescriptor}
-        @return: The loaded module.
-        @rtype: Module
+        :param plugin: The plugin (module) name.
+        :type plugin: str
+        :param cfg: A plugin descriptor.
+        :type cfg: PluginDescriptor
+        :return: The loaded module.
+        :rtype: Module
         """
         Remote.clear()
         Actions.clear()
@@ -513,11 +513,11 @@ class PluginLoader:
     def __findplugin(self, plugin):
         """
         Find a plugin module.
-        @param plugin: The plugin name.
-        @type plugin: str
-        @return: The fully qualified path to the plugin module.
-        @rtype: str
-        @raise Exception: When not found.
+        :param plugin: The plugin name.
+        :type plugin: str
+        :return: The fully qualified path to the plugin module.
+        :rtype: str
+        :raise Exception: When not found.
         """
         mod = '%s.py' % plugin
         for root in self.PATH:
@@ -531,10 +531,10 @@ class PluginLoader:
     def __mangled(self, plugin):
         """
         Get the module name for the specified plugin.
-        @param plugin: The name of the plugin.
-        @type plugin: str
-        @return: The (mangled if necessary) plugin's module name.
-        @rtype: str
+        :param plugin: The name of the plugin.
+        :type plugin: str
+        :return: The (mangled if necessary) plugin's module name.
+        :rtype: str
         """
         try:
             imp.find_module(plugin)

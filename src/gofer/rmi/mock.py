@@ -24,10 +24,10 @@ from threading import RLock
 def agent(uuid, **options):
     """
     Get a (mock) proxy for the remote Agent.
-    @param uuid: An agent ID.
-    @type uuid: str
-    @return: A (mock) agent proxy.
-    @rtype: L{MockContainer}
+    :param uuid: An agent ID.
+    :type uuid: str
+    :return: A (mock) agent proxy.
+    :rtype: MockContainer
     """
     return MockContainer(uuid, None, **options)
 
@@ -59,8 +59,8 @@ def reset():
 def all():
     """
     Get all mock container instances.
-    @return: A list of mock container instances.
-    @rtype: L{MockContainer}
+    :return: A list of mock container instances.
+    :rtype: MockContainer
     """
     return MockContainer.all()
     
@@ -81,24 +81,24 @@ class MetaContainer(Singleton):
 class MockContainer:
     """
     The (mock) stub container
-    @ivar __id: The peer ID.
-    @type __id: str
-    @ivar __options: Container options.
-    @type __options: L{Options}
-    @ivar __stubs: A cache of stubs.
-    @type __stubs: dict
+    :ivar __id: The peer ID.
+    :type __id: str
+    :ivar __options: Container options.
+    :type __options: Options
+    :ivar __stubs: A cache of stubs.
+    :type __stubs: dict
     """
     
     __metaclass__ = MetaContainer
     
     def __init__(self, uuid, producer=None, **options):
         """
-        @param uuid: The peer ID.
-        @type uuid: str
-        @param producer: An AMQP producer (unused).
-        @type producer: L{gofer.messaging.producer.Producer}
-        @param options: keyword options.
-        @type options: dict
+        :param uuid: The peer ID.
+        :type uuid: str
+        :param producer: An AMQP producer (unused).
+        :type producer: gofer.messaging.producer.Producer
+        :param options: keyword options.
+        :type options: dict
         """
         self.__id = uuid
         self.__options = Options()
@@ -108,10 +108,10 @@ class MockContainer:
     def __getattr__(self, name):
         """
         Get a stub by name.
-        @param name: The name of a stub class.
-        @type name: str
-        @return: A stub object.
-        @rtype: L{MockStub}
+        :param name: The name of a stub class.
+        :type name: str
+        :return: A stub object.
+        :rtype: MockStub
         """
         stub = self.__stubs.get(name)
         if stub is None:
@@ -124,10 +124,10 @@ class MockContainer:
     def __getitem__(self, name):
         """
         Get a stub by name.
-        @param name: The name of a stub class.
-        @type name: str
-        @return: A stub object.
-        @rtype: L{MockStub}
+        :param name: The name of a stub class.
+        :type name: str
+        :return: A stub object.
+        :rtype: MockStub
         """
         return getattr(self, name)
 
@@ -144,14 +144,14 @@ class MockContainer:
 class Call:
     """
     Call object.
-    @ivar call: The call tuple (args,kwargs)
-    @type call: tuple
+    :ivar call: The call tuple (args,kwargs)
+    :type call: tuple
     """
     
     def __init__(self, call):
         """
-        @param call: The call tuple.
-        @type call: tuple
+        :param call: The call tuple.
+        :type call: tuple
         """
         self.call = call
     
@@ -217,18 +217,18 @@ class Stub:
 class Method:
     """
     Method wrapper.
-    @ivar __method: The (wrapped) method.
-    @type __method: instancemethod
-    @ivar __history: The call history
-    @type __history: list
-    @ivar __mutex: The object mutex
-    @type __mutex: RLock 
+    :ivar __method: The (wrapped) method.
+    :type __method: instancemethod
+    :ivar __history: The call history
+    :type __history: list
+    :ivar __mutex: The object mutex
+    :type __mutex: RLock 
     """
     
     def __init__(self, method):
         """
-        @param method: A (wrapped) method.
-        @type method: instancemethod
+        :param method: A (wrapped) method.
+        :type method: instancemethod
         """
         self.__method = [method]
         self.__history = []
@@ -247,8 +247,8 @@ class Method:
     def push(self, method):
         """
         Push a function, exception to be evaluated on next call.
-        @param method: A function/exception
-        @type method: function/exception
+        :param method: A function/exception
+        :type method: function/exception
         """
         self.__lock()
         try:
@@ -260,8 +260,8 @@ class Method:
         """
         Pop the next method to be executed.
         It could be an exception in which case, it is raised.
-        @return: The next method.
-        @rtype: callable
+        :return: The next method.
+        :rtype: callable
         """
         self.__lock()
         try:
@@ -287,8 +287,8 @@ class Method:
     def history(self):
         """
         Get the call history.
-        @return: A list of L{Call}
-        @rtype: list
+        :return: A list of Call
+        :rtype: list
         """
         self.__lock()
         try:
@@ -309,8 +309,8 @@ class Method:
 class Factory:
     """
     Stub factory
-    @cvar mocks: The registered stubs.
-    @type mocks: dict
+    :cvar mocks: The registered stubs.
+    :type mocks: dict
     """
     
     mocks = {}
@@ -334,10 +334,10 @@ class Factory:
     def stub(cls, name):
         """
         Get a (mock) stub by name.
-        @param name: The stub class (or module) name.
-        @type name: str
-        @return: A stub instance.
-        @rtype: L{Stub}
+        :param name: The stub class (or module) name.
+        :type name: str
+        :return: A stub instance.
+        :rtype: Stub
         """
         stub = cls.mocks.get(name)
         if stub:

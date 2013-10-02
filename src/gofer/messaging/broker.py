@@ -43,16 +43,16 @@ class MetaBroker(Singleton):
 class Broker:
     """
     Represents an AMQP broker.
-    @cvar domain: A list dict of brokers.
-    @type domain: dict
-    @ivar url: The broker's url.
-    @type url: L{URL}
-    @ivar cacert: Path to a PEM encoded file containing
+    :cvar domain: A list dict of brokers.
+    :type domain: dict
+    :ivar url: The broker's url.
+    :type url: URL
+    :ivar cacert: Path to a PEM encoded file containing
         the CA certificate used to validate the server certificate.
-    @type cacert: str
-    @ivar clientcert: Path to a PEM encoded file containing
+    :type cacert: str
+    :ivar clientcert: Path to a PEM encoded file containing
         the private key & certificate used for client authentication.
-    @type clientcert: str
+    :type clientcert: str
     """
     __metaclass__ = MetaBroker
     __mutex = RLock()
@@ -67,8 +67,8 @@ class Broker:
 
     def __init__(self, url):
         """
-        @param url: The broker url <transport>://<host>:<port>.
-        @type url: str
+        :param url: The broker url <transport>://<host>:<port>.
+        :type url: str
         """
         if isinstance(url, URL):
             self.url = url
@@ -81,16 +81,16 @@ class Broker:
     def id(self):
         """
         Get broker identifier.
-        @return: The broker I{simple} url.
-        @rtype: str
+        :return: The broker I{simple} url.
+        :rtype: str
         """
         return self.url.simple()
 
     def connect(self):
         """
         Connect to the broker.
-        @return: The AMQP connection object.
-        @rtype: I{Connection}
+        :return: The AMQP connection object.
+        :rtype: I{Connection}
         """
         self.__lock()
         try:
@@ -119,8 +119,8 @@ class Broker:
         Examples:
           - myqueue;{delete:always}
           - mytopic;{create:always,node:node:{type:topic}}
-        @param address: An AMQP address.
-        @type address: str
+        :param address: An AMQP address.
+        :type address: str
         """
         connection = self.connect()
         session = connection.session()
@@ -156,22 +156,22 @@ class Broker:
 class URL:
     """
     Represents a QPID broker URL.
-    @ivar transport: A qpid transport.
-    @type transport: str
-    @ivar host: The host.
-    @type host: str
-    @ivar port: The tcp port.
-    @type port: int
+    :ivar transport: A qpid transport.
+    :type transport: str
+    :ivar host: The host.
+    :type host: str
+    :ivar port: The tcp port.
+    :type port: int
     """
 
     @classmethod
     def split(cls, s):
         """
         Split the url string.
-        @param s: A url string format: <transport>://<host>:<port>.
-        @type s: str
-        @return: The url parts: (transport, host, port)
-        @rtype: tuple
+        :param s: A url string format: <transport>://<host>:<port>.
+        :type s: str
+        :return: The url parts: (transport, host, port)
+        :rtype: tuple
         """
         transport, hp = cls.spliturl(s)
         host, port = cls.splitport(hp)
@@ -181,10 +181,10 @@ class URL:
     def spliturl(cls, s):
         """
         Split the transport and url parts.
-        @param s: A url string format: <transport>://<host>:<port>.
-        @type s: str
-        @return: The urlparts: (transport, hostport)
-        @rtype: tuple
+        :param s: A url string format: <transport>://<host>:<port>.
+        :type s: str
+        :return: The urlparts: (transport, hostport)
+        :rtype: tuple
         """
         part = s.split('://', 1)
         if len(part) > 1:
@@ -197,10 +197,10 @@ class URL:
     def splitport(cls, s, d=5672):
         """
         Split the host and port.
-        @param s: A url string format: <host>:<port>.
-        @type s: str
-        @return: The urlparts: (host, port)
-        @rtype: tuple
+        :param s: A url string format: <host>:<port>.
+        :type s: str
+        :return: The urlparts: (host, port)
+        :rtype: tuple
         """
         part = s.split(':')
         host = part[0]
@@ -213,15 +213,15 @@ class URL:
     def simple(self):
         """
         Get the I{simple} string representation: <host>:<port>
-        @return: "<host>:<port>"
-        @rtype: str
+        :return: "<host>:<port>"
+        :rtype: str
         """
         return '%s:%d' % (self.host, self.port)
 
     def __init__(self, s):
         """
-        @param s: A url string format: <transport>://<host>:<port>.
-        @type s: str
+        :param s: A url string format: <transport>://<host>:<port>.
+        :type s: str
         """
         self.transport,\
             self.host,\

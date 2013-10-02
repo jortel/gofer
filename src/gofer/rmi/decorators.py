@@ -25,7 +25,7 @@ from gofer.collator import Collator
 
 class Remote:
     """
-    @cvar functions: The list of decorated functions.
+    :cvar functions: The list of decorated functions.
     """
     functions = []
     
@@ -66,9 +66,9 @@ def __options(fn):
     """
     Ensure funtion has the gofer options attribute
     and return it.
-    @param fn: A function
-    @return: The funtion options object.
-    @rtype: L{Options}
+    :param fn: A function
+    :return: The funtion options object.
+    :rtype: Options
     """
     if not hasattr(fn, NAME):
         opt = Options()
