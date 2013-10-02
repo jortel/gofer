@@ -35,22 +35,22 @@ log = getLogger(__name__)
 class ReplyConsumer(Consumer):
     """
     A request, reply consumer.
-    @ivar listener: An reply listener.
-    @type listener: any
-    @ivar watchdog: An (optional) watchdog.
-    @type watchdog: L{WatchDog}
-    @ivar blacklist: A set of serial numbers to ignore.
-    @type blacklist: set
+    :ivar listener: An reply listener.
+    :type listener: any
+    :ivar watchdog: An (optional) watchdog.
+    :type watchdog: WatchDog
+    :ivar blacklist: A set of serial numbers to ignore.
+    :type blacklist: set
     """
 
     def start(self, listener, watchdog=None):
         """
         Start processing messages on the queue and
         forward to the listener.
-        @param listener: A reply listener.
-        @type listener: L{Listener}
-        @param watchdog: An (optional) watchdog.
-        @type watchdog: L{WatchDog}
+        :param listener: A reply listener.
+        :type listener: Listener
+        :param watchdog: An (optional) watchdog.
+        :type watchdog: WatchDog
         """
         self.listener = listener
         self.watchdog = watchdog or LazyDog()
@@ -65,8 +65,8 @@ class ReplyConsumer(Consumer):
         primary cause of this is when the watchdog has replied on the agent's
         behalf but the agent actually completes the request and later sends
         a reply.
-        @param envelope: The received envelope.
-        @type envelope: L{Envelope}
+        :param envelope: The received envelope.
+        :type envelope: Envelope
         """
         try:
             reply = Reply(envelope)
@@ -102,18 +102,18 @@ class ReplyConsumer(Consumer):
 class AsyncReply:
     """
     Asynchronous request reply.
-    @ivar sn: The request serial number.
-    @type sn: str
-    @ivar origin: Which endpoint sent the reply.
-    @type origin: str
-    @ivar any: User defined (round-tripped) data.
-    @type any: object
+    :ivar sn: The request serial number.
+    :type sn: str
+    :ivar origin: Which endpoint sent the reply.
+    :type origin: str
+    :ivar any: User defined (round-tripped) data.
+    :type any: object
     """
 
     def __init__(self, envelope):
         """
-        @param envelope: The received envelope.
-        @type envelope: L{Envelope}
+        :param envelope: The received envelope.
+        :type envelope: Envelope
         """
         self.sn = envelope.sn
         self.origin = envelope.routing[0]
@@ -122,8 +122,8 @@ class AsyncReply:
     def notify(self, listener):
         """
         Notify the specified listener.
-        @param listener: The listener to notify.
-        @type listener: L{Listener} or callable.
+        :param listener: The listener to notify.
+        :type listener: Listener or callable.
         """
         pass
 
@@ -153,23 +153,23 @@ class FinalReply(AsyncReply):
     def succeeded(self):
         """
         Get whether the reply indicates success.
-        @return: True when succeeded.
-        @rtype: bool
+        :return: True when succeeded.
+        :rtype: bool
         """
         return False
 
     def failed(self):
         """
         Get whether the reply indicates failure.
-        @return: True when failed.
-        @rtype: bool
+        :return: True when failed.
+        :rtype: bool
         """
         return ( not self.succeeded() )
 
     def throw(self):
         """
         Throw contained exception.
-        @raise Exception: When contained.
+        :raise Exception: When contained.
         """
         pass
 
@@ -177,14 +177,14 @@ class FinalReply(AsyncReply):
 class Succeeded(FinalReply):
     """
     Successful reply to asynchronous operation.
-    @ivar retval: The returned value.
-    @type retval: object
+    :ivar retval: The returned value.
+    :type retval: object
     """
 
     def __init__(self, envelope):
         """
-        @param envelope: The received envelope.
-        @type envelope: L{Envelope}
+        :param envelope: The received envelope.
+        :type envelope: Envelope
         """
         AsyncReply.__init__(self, envelope)
         reply = Return(envelope.result)
@@ -205,15 +205,15 @@ class Failed(FinalReply):
     """
     Failed reply to asynchronous operation.  This reply
     indicates an exception was raised.
-    @ivar exval: The returned exception.
-    @type exval: object
-    @see: L{Failed.throw}
+    :ivar exval: The returned exception.
+    :type exval: object
+    :see: Failed.throw
     """
 
     def __init__(self, envelope):
         """
-        @param envelope: The received envelope.
-        @type envelope: L{Envelope}
+        :param envelope: The received envelope.
+        :type envelope: Envelope
         """
         AsyncReply.__init__(self, envelope)
         reply = Return(envelope.result)
@@ -240,7 +240,7 @@ class Failed(FinalReply):
 class Started(AsyncReply):
     """
     An asynchronous operation started.
-    @see: L{Failed.throw}
+    :see: Failed.throw
     """
 
     def notify(self, listener):
@@ -259,19 +259,19 @@ class Started(AsyncReply):
 class Progress(AsyncReply):
     """
     Progress reported for an asynchronous operation.
-    @ivar total: The total number of units.
-    @type total: int
-    @ivar completed: The total number of completed units.
-    @type completed: int
-    @ivar details: Optional information about the progress.
-    @type details: object
-    @see: L{Failed.throw}
+    :ivar total: The total number of units.
+    :type total: int
+    :ivar completed: The total number of completed units.
+    :type completed: int
+    :ivar details: Optional information about the progress.
+    :type details: object
+    :see: Failed.throw
     """
 
     def __init__(self, envelope):
         """
-        @param envelope: The received envelope.
-        @type envelope: L{Envelope}
+        :param envelope: The received envelope.
+        :type envelope: Envelope
         """
         AsyncReply.__init__(self, envelope)
         self.total = envelope.total
@@ -301,32 +301,32 @@ class Listener:
     def succeeded(self, reply):
         """
         Async request succeeded.
-        @param reply: The reply data.
-        @type reply: L{Succeeded}.
+        :param reply: The reply data.
+        :type reply: Succeeded.
         """
         pass
 
     def failed(self, reply):
         """
         Async request failed (raised an exception).
-        @param reply: The reply data.
-        @type reply: L{Failed}.
+        :param reply: The reply data.
+        :type reply: Failed.
         """
         pass
 
     def started(self, reply):
         """
         Async request has started.
-        @param reply: The request.
-        @type reply: L{Started}.
+        :param reply: The request.
+        :type reply: Started.
         """
         pass
 
     def progress(self, reply):
         """
         Async progress report.
-        @param reply: The request.
-        @type reply: L{Progress}.
+        :param reply: The request.
+        :type reply: Progress.
         """
         pass
 
@@ -335,14 +335,14 @@ class WatchDog:
     """
     A watchdog object used to track asynchronous messages
     by serial number.  Tracking is persisted using journal files.
-    @ivar url: The AMQP broker URL.
-    @type url: str
-    @ivar __jnl: A journal use for persistence.
-    @type __jnl: L{Journal}
-    @ivar __producer: An AMQP message producer.
-    @type __producer: L{Producer}
-    @ivar __run: Run flag.
-    @type __run: bool
+    :ivar url: The AMQP broker URL.
+    :type url: str
+    :ivar __jnl: A journal use for persistence.
+    :type __jnl: Journal
+    :ivar __producer: An AMQP message producer.
+    :type __producer: Producer
+    :ivar __run: Run flag.
+    :type __run: bool
     """
     
     __metaclass__ = Singleton
@@ -351,10 +351,10 @@ class WatchDog:
 
     def __init__(self, url=URL, journal=None):
         """
-        @param url: The (optional) broker URL.
-        @type url: str
-        @param journal: A journal object (default: Journal()).
-        @type journal: L{Journal}
+        :param url: The (optional) broker URL.
+        :type url: str
+        :param journal: A journal object (default: Journal()).
+        :type journal: Journal
         """
         self.url = url
         self.__producer = None
@@ -363,8 +363,8 @@ class WatchDog:
     def start(self):
         """
         Start a watchdog thread.
-        @return: The started thread.
-        @rtype: L{WatchDogThread}
+        :return: The started thread.
+        :rtype: WatchDogThread
         """
         thread = WatchDogThread(self)
         thread.start()
@@ -373,14 +373,14 @@ class WatchDog:
     def track(self, sn, replyto, any, timeout):
         """
         Add a request by serial number for tacking.
-        @param sn: A serial number.
-        @type sn: str
-        @param replyto: An AMQP address.
-        @type replyto: str
-        @param any: User defined data.
-        @type any: any
-        @param timeout: A timeout (start,complete)
-        @type timeout: tuple(2)
+        :param sn: A serial number.
+        :type sn: str
+        :param replyto: An AMQP address.
+        :type replyto: str
+        :param any: User defined data.
+        :type any: any
+        :param timeout: A timeout (start,complete)
+        :type timeout: tuple(2)
         """
         now = time()
         ts = (now+timeout[0], now+timeout[1])
@@ -393,8 +393,8 @@ class WatchDog:
         A proper status='started' has been received and the timout
         index is changed from 0 to 1.  This switches the timeout logic
         to work off the 2nd timeout which indicates the completion timeout.
-        @param sn: An entry serial number.
-        @type sn: str
+        :param sn: An entry serial number.
+        :type sn: str
         """
         log.info(sn)
         je = self.__jnl.find(sn)
@@ -427,8 +427,8 @@ class WatchDog:
         """
         The request has been properly completed by the agent.
         Tracking is discontinued.
-        @param sn: An entry serial number.
-        @type sn: str
+        :param sn: An entry serial number.
+        :type sn: str
         """
         log.info(sn)
         self.__jnl.delete(sn)
@@ -436,7 +436,7 @@ class WatchDog:
     def process(self):
         """
         Process all I{outstanding} journal entries.
-        When a journal entry (timeout) is detected, a L{RequestTimeout}
+        When a journal entry (timeout) is detected, a RequestTimeout
         exception is raised and sent to the I{replyto} AMQP address.
         The journal entry is deleted.
         """
@@ -458,8 +458,8 @@ class WatchDog:
         """
         Send the (timeout) reply to the I{replyto} AMQP address
         specified in the journal entry.
-        @param je: A journal entry.
-        @type je: Entry
+        :param je: A journal entry.
+        :type je: Entry
         """
         log.info('sn:%s timeout detected', je.sn)
         try:
@@ -471,8 +471,8 @@ class WatchDog:
         """
         Send the (timeout) reply to the I{replyto} AMQP address
         specified in the journal entry.
-        @param je: A journal entry.
-        @type je: Entry
+        :param je: A journal entry.
+        :type je: Entry
         """
         sn = je.sn
         replyto = je.replyto
@@ -516,10 +516,10 @@ class WatchDogThread(Thread):
 class Journal:
     """
     Async message journal
-    @ivar root: The root journal directory.
-    @type root: str
-    @cvar ROOT: The default journal directory root.
-    @type ROOT: str
+    :ivar root: The root journal directory.
+    :type root: str
+    :cvar ROOT: The default journal directory root.
+    :type ROOT: str
     Entry:
       - sn: serial number
       - replyto: reply to amqp address.
@@ -532,8 +532,8 @@ class Journal:
     
     def __init__(self, root=ROOT):
         """
-        @param root: A journal root directory path.
-        @type root: str
+        :param root: A journal root directory path.
+        :type root: str
         """
         self.root = root
         self.__mkdir()
@@ -541,8 +541,8 @@ class Journal:
     def load(self):
         """
         Load all journal entries.
-        @return: A dict of journal entries.
-        @rtype: dict
+        :return: A dict of journal entries.
+        :rtype: dict
         """
         entries = {}
         for fn in os.listdir(self.root):
@@ -558,14 +558,14 @@ class Journal:
     def write(self, sn, replyto, any, ts):
         """
         Write a new journal entry.
-        @param sn: A serial number.
-        @type sn: str
-        @param replyto: An AMQP address.
-        @type replyto: str
-        @param any: User defined data.
-        @type any: any
-        @param ts: A timeout (start<ctime>,complete<ctime>)
-        @type ts: tuple(2)
+        :param sn: A serial number.
+        :type sn: str
+        :param replyto: An AMQP address.
+        :type replyto: str
+        :param any: User defined data.
+        :type any: any
+        :param ts: A timeout (start<ctime>,complete<ctime>)
+        :type ts: tuple(2)
         """
         je = Envelope(
             sn=sn,
@@ -579,13 +579,13 @@ class Journal:
     def update(self, sn, **property):
         """
         Update a journal entry for the specified I{sn}.
-        @param sn: An entry serial number.
-        @type sn: str
-        @param property: properties to update.
-        @type property: dict
-        @return: The updated journal entry
-        @rtype: Entry
-        @raise KeyError: On invalid key.
+        :param sn: An entry serial number.
+        :type sn: str
+        :param property: properties to update.
+        :type property: dict
+        :return: The updated journal entry
+        :rtype: Entry
+        :raise KeyError: On invalid key.
         """
         je = self.find(sn)
         if not je:
@@ -603,8 +603,8 @@ class Journal:
     def delete(self, sn):
         """
         Delete a journal entry by serial number.
-        @param sn: An entry serial number.
-        @type sn: str
+        :param sn: An entry serial number.
+        :type sn: str
         """
         fn = self.__fn(sn)
         path = os.path.join(self.root, fn)
@@ -613,10 +613,10 @@ class Journal:
     def find(self, sn):
         """
         Find a journal entry my serial number.
-        @param sn: An entry serial number.
-        @type sn: str
-        @return: The journal entry.
-        @rtype: Entry
+        :param sn: An entry serial number.
+        :type sn: str
+        :return: The journal entry.
+        :rtype: Entry
         """
         try:
             fn = self.__fn(sn)
@@ -628,20 +628,20 @@ class Journal:
     def __fn(self, sn):
         """
         File name.
-        @param sn: An entry serial number.
-        @type sn: str
-        @return: The journal file name by serial number.
-        @rtype: str
+        :param sn: An entry serial number.
+        :type sn: str
+        :return: The journal file name by serial number.
+        :rtype: str
         """
         return '%s.jnl' % sn
     
     def __read(self, path):
         """
         Read the journal file at the specified I{path}.
-        @param path: A journal file path.
-        @type path: str
-        @return: A journal entry.
-        @rtype: Entry
+        :param path: A journal file path.
+        :type path: str
+        :return: A journal entry.
+        :rtype: Entry
         """
         f = open(path)
         try:
@@ -658,8 +658,8 @@ class Journal:
     def __write(self, je):
         """
         Write the specified journal entry.
-        @param je: A journal entry
-        @type je: Entry
+        :param je: A journal entry
+        :type je: Entry
         """
         path = os.path.join(self.root, self.__fn(je.sn))
         f = open(path, 'w')
@@ -671,8 +671,8 @@ class Journal:
     def __unlink(self, path):
         """
         Unlink (delete) the journal file at the specified I{path}.
-        @param path: A journal file path.
-        @type path: str
+        :param path: A journal file path.
+        :type path: str
         """
         try:
             os.unlink(path)

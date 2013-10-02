@@ -34,16 +34,16 @@ class NotLocked(Exception):
 class LockFile:
     """
     File based locking.
-    @ivar path: The absolute path to the lock file.
-    @type path: str
-    @ivar __fp: The I{file pointer} to the lock file.
-    @type __fp: I{file-like} pointer.
+    :ivar path: The absolute path to the lock file.
+    :type path: str
+    :ivar __fp: The I{file pointer} to the lock file.
+    :type __fp: I{file-like} pointer.
     """
 
     def __init__(self, path):
         """
-        @param path: The absolute path to the lock file.
-        @type path: str
+        :param path: The absolute path to the lock file.
+        :type path: str
         """
         self.path = path
         self.__fp = None
@@ -52,10 +52,10 @@ class LockFile:
     def acquire(self, blocking=True):
         """
         Acquire the lockfile.
-        @param blocking: Wait for the lock.
-        @type blocking: bool
-        @return: self
-        @rtype: L{LockFile}
+        :param blocking: Wait for the lock.
+        :type blocking: bool
+        :return: self
+        :rtype: LockFile
         """ 
         fp = open(self.path, 'w')
         if not blocking:
@@ -85,8 +85,8 @@ class LockFile:
     def getpid(self):
         """
         Get the process id.
-        @return: The pid in the lock file, else the current pid.
-        @rtype: int
+        :return: The pid in the lock file, else the current pid.
+        :rtype: int
         """
         pid = 0
         fp = open(self.path)
@@ -98,8 +98,8 @@ class LockFile:
     def setpid(self, pid=os.getpid()):
         """
         Write our procecss id and flush.
-        @param pid: The process ID.
-        @type pid: int
+        :param pid: The process ID.
+        :type pid: int
         """
         self.__fp.seek(0)
         self.__fp.write(str(pid))
@@ -125,10 +125,10 @@ class Lock:
         """
         Acquire the lock.
         Acquire the mutex; acquire the lockfile.
-        @param blocking: Wait for the lock.
-        @type blocking: bool
-        @return: self
-        @rtype: L{Lock}
+        :param blocking: Wait for the lock.
+        :type blocking: bool
+        :return: self
+        :rtype: Lock
         """
         self.__lock(blocking)
         if self.__push() == 1:
@@ -152,8 +152,8 @@ class Lock:
     def setpid(self, pid):
         """
         Write our procecss id and flush.
-        @param pid: The process ID.
-        @type pid: int
+        :param pid: The process ID.
+        :type pid: int
         """
         self.__lock()
         try:
@@ -164,8 +164,8 @@ class Lock:
     def __push(self):
         """
         Increment the lock depth.
-        @return: The incremented depth
-        @rtype: int
+        :return: The incremented depth
+        :rtype: int
         """
         self.__lock()
         try:
@@ -177,8 +177,8 @@ class Lock:
     def __pop(self):
         """
         Decrement the lock depth.
-        @return: The decremented depth
-        @rtype: int
+        :return: The decremented depth
+        :rtype: int
         """
         self.__lock()
         try:

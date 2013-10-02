@@ -41,10 +41,10 @@ class SessionPool:
     def get(self, url):
         """
         Get the next free session in the pool.
-        @param url: A broker url.
-        @type url: str
-        @return: A free session.
-        @rtype: qpid.messaging.Session
+        :param url: A broker url.
+        :type url: str
+        :return: A free session.
+        :rtype: qpid.messaging.Session
         """
         self.__lock()
         try:
@@ -62,10 +62,10 @@ class SessionPool:
     def put(self, url, ssn):
         """
         Release a session back to the pool.
-        @param url: A broker url.
-        @type url: str
-        @param ssn: An AMQP session.
-        @rtype: qpid.messaging.Session
+        :param url: A broker url.
+        :type url: str
+        :param ssn: An AMQP session.
+        :rtype: qpid.messaging.Session
         """
         self.__lock()
         try:
@@ -97,10 +97,10 @@ class SessionPool:
         """
         Pop the next available session from the free list.
         The session is acknowledge to purge it of stale transactions.
-        @param pool: A pool (free,busy).
-        @type pool: tuple
-        @return: The popped session
-        @rtype: qpid.messaging.Session
+        :param pool: A pool (free,busy).
+        :type pool: tuple
+        :return: The popped session
+        :rtype: qpid.messaging.Session
         """
         while pool[0]:
             ssn = pool[0].pop()
@@ -113,10 +113,10 @@ class SessionPool:
     def __pool(self, url):
         """
         Obtain the pool for the specified url.
-        @param url: A broker url.
-        @type url: str
-        @return: The session pool.  (free,busy)
-        @rtype: tuple
+        :param url: A broker url.
+        :type url: str
+        :return: The session pool.  (free,busy)
+        :rtype: tuple
         """
         self.__lock()
         try:
@@ -138,16 +138,16 @@ class SessionPool:
 class Endpoint:
     """
     Base class for QPID endpoint.
-    @cvar ssnpool: An AMQP session pool.
-    @type ssnpool: L{SessionPool}
-    @ivar uuid: The unique endpoint id.
-    @type uuid: str
-    @ivar url: The broker URL.
-    @type url: str
-    @ivar __mutex: The endpoint mutex.
-    @type __mutex: RLock
-    @ivar __session: An AMQP session.
-    @type __session: qpid.messaging.Session
+    :cvar ssnpool: An AMQP session pool.
+    :type ssnpool: SessionPool
+    :ivar uuid: The unique endpoint id.
+    :type uuid: str
+    :ivar url: The broker URL.
+    :type url: str
+    :ivar __mutex: The endpoint mutex.
+    :type __mutex: RLock
+    :ivar __session: An AMQP session.
+    :type __session: qpid.messaging.Session
     """
 
     LOCALHOST = 'tcp://localhost:5672'
@@ -156,10 +156,10 @@ class Endpoint:
 
     def __init__(self, uuid=None, url=None):
         """
-        @param uuid: The endpoint uuid.
-        @type uuid: str
-        @param url: The broker url <transport>://<user>/<pass>@<host>:<port>.
-        @type url: str
+        :param uuid: The endpoint uuid.
+        :type uuid: str
+        :param url: The broker url <transport>://<user>/<pass>@<host>:<port>.
+        :type url: str
         """
         self.uuid = (uuid or getuuid())
         self.url = (url or self.LOCALHOST)
@@ -170,16 +170,16 @@ class Endpoint:
     def id(self):
         """
         Get the endpoint id
-        @return: The id.
-        @rtype: str
+        :return: The id.
+        :rtype: str
         """
         return self.uuid
 
     def session(self):
         """
         Get a session for the open connection.
-        @return: An open session.
-        @rtype: qpid.messaging.Session
+        :return: An open session.
+        :rtype: qpid.messaging.Session
         """
         self._lock()
         try:

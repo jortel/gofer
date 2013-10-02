@@ -30,22 +30,22 @@ from gofer.rmi.window import Window
 class Method:
     """
     A dynamic method object used to wrap the RMI call.
-    @ivar classname: The target class name.
-    @type classname: str
-    @ivar name: The target method name.
-    @type name: str
-    @ivar stub: The stub object used to send the AMQP message.
-    @type stub: L{Stub}
+    :ivar classname: The target class name.
+    :type classname: str
+    :ivar name: The target method name.
+    :type name: str
+    :ivar stub: The stub object used to send the AMQP message.
+    :type stub: Stub
     """
 
     def __init__(self, classname, name, stub):
         """
-        @param classname: The target class name.
-        @type classname: str
-        @param name: The target method name.
-        @type name: str
-        @param stub: The stub object used to send the AMQP message.
-        @type stub: L{Stub}
+        :param classname: The target class name.
+        :type classname: str
+        :param name: The target method name.
+        :type name: str
+        :param stub: The stub object used to send the AMQP message.
+        :type stub: Stub
         """
         self.classname = classname
         self.name = name
@@ -54,10 +54,10 @@ class Method:
     def __call__(self, *args, **kws):
         """
         Invoke the method .
-        @param args: The args.
-        @type args: list
-        @param kws: The I{keyword} arguments.
-        @type kws: dict
+        :param args: The args.
+        :type args: list
+        :param kws: The I{keyword} arguments.
+        :type kws: dict
         """
         opts = Options()
         for k,v in kws.items():
@@ -75,30 +75,30 @@ class Method:
 class Stub:
     """
     The stub class for remote objects.
-    @ivar __producer: An AMQP producer.
-    @type __producer: L{gofer.messaging.producer.Producer}
-    @ivar __destination: The AMQP destination
-    @type __destination: L{Destination}
-    @ivar __options: Stub options.
-    @type __options: L{Options}
-    @ivar __mutex: The object mutex.
-    @type __mutex: RLock
-    @ivar __policy: The invocation policy.
-    @type __policy: L{Policy}
+    :ivar __producer: An AMQP producer.
+    :type __producer: gofer.messaging.producer.Producer
+    :ivar __destination: The AMQP destination
+    :type __destination: Destination
+    :ivar __options: Stub options.
+    :type __options: Options
+    :ivar __mutex: The object mutex.
+    :type __mutex: RLock
+    :ivar __policy: The invocation policy.
+    :type __policy: Policy
     """
     
     @classmethod
     def stub(cls, name, producer, destination, options):
         """
         Factory method.
-        @param name: The stub class (or module) name.
-        @type name: str
-        @param destination: The AMQP destination
-        @type destination: L{Destination}
-        @param options: A dict of gofer options
-        @param options: L{Options}
-        @return: A stub instance.
-        @rtype: L{Stub}
+        :param name: The stub class (or module) name.
+        :type name: str
+        :param destination: The AMQP destination
+        :type destination: Destination
+        :param options: A dict of gofer options
+        :param options: Options
+        :return: A stub instance.
+        :rtype: Stub
         """
         subclass = classobj(name, (Stub,), {})
         inst = subclass(producer, destination, options)
@@ -106,12 +106,12 @@ class Stub:
 
     def __init__(self, producer, destination, options):
         """
-        @param producer: An AMQP producer.
-        @type producer: L{gofer.messaging.producer.Producer}
-        @param destination: The AMQP destination
-        @type destination: L{Destination}
-        @param options: Stub options.
-        @type options: L{Options}
+        :param producer: An AMQP producer.
+        :type producer: gofer.messaging.producer.Producer
+        :param destination: The AMQP destination
+        :type destination: Destination
+        :param options: Stub options.
+        :type options: Options
         """
         self.__producer = producer
         self.__destination = destination
@@ -123,10 +123,10 @@ class Stub:
     def _send(self, request, options):
         """
         Send the request using the configured request method.
-        @param request: An RMI request.
-        @type request: str
-        @param options: Invocation options.
-        @type options: L{Options}
+        :param request: An RMI request.
+        :type request: str
+        :param options: Invocation options.
+        :type options: Options
         """
         self.__lock()
         try:
@@ -137,10 +137,10 @@ class Stub:
     def __send(self, request, options):
         """
         Send the request using the configured request method.
-        @param request: An RMI request.
-        @type request: str
-        @param options: Invocation options.
-        @type options: L{Options}
+        :param request: An RMI request.
+        :type request: str
+        :param options: Invocation options.
+        :type options: Options
         """
         opts = Options(self.__options)
         opts += options
@@ -166,10 +166,10 @@ class Stub:
     def __getpam(self, opts):
         """
         Get PAM options.
-        @param opts: options dict.
-        @type opts: dict
-        @return: pam options
-        @rtype: L{Options}
+        :param opts: options dict.
+        :type opts: dict
+        :return: pam options
+        :rtype: Options
         """
         user = opts.user
         if opts.user:
@@ -182,10 +182,10 @@ class Stub:
         """
         Python vodo.
         Get a I{Method} object for any requested attribte.
-        @param name: The attribute name.
-        @type name: str
-        @return: A method object.
-        @rtype: L{Method}
+        :param name: The attribute name.
+        :type name: str
+        :return: A method object.
+        :rtype: Method
         """
         cn = self.__class__.__name__
         return Method(cn, name, self)
@@ -194,10 +194,10 @@ class Stub:
         """
         Python vodo.
         Get a I{Method} object for any requested attribte.
-        @param name: The attribute name.
-        @type name: str
-        @return: A method object.
-        @rtype: L{Method}
+        :param name: The attribute name.
+        :type name: str
+        :return: A method object.
+        :rtype: Method
         """
         return getattr(self, name)
 
@@ -207,10 +207,10 @@ class Stub:
         The 1st call updates stub options.
         The 2nd call updates remote object constructor
         parameters which are passed on RMI calls.
-        @param options: keyword options.
-        @type options: dict
-        @return: self
-        @rtype: L{Stub}
+        :param options: keyword options.
+        :type options: dict
+        :return: self
+        :rtype: Stub
         """
         if not self.__called[0]:
             self.__called = (1, None)
@@ -224,8 +224,8 @@ class Stub:
         """
         Get the request policy based on options.
         The policy is cached for performance.
-        @return: The request policy.
-        @rtype: L{Policy}
+        :return: The request policy.
+        :rtype: Policy
         """
         if self.__policy is None:
             self.__setpolicy()
@@ -246,8 +246,8 @@ class Stub:
         """
         Get whether an I{asynchronous} request method
         should be used based on selected options.
-        @return: True if async.
-        @rtype: bool
+        :return: True if async.
+        :rtype: bool
         """
         if ( self.__options.ctag or
              self.__options.async or

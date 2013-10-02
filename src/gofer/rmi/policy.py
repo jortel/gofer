@@ -32,10 +32,10 @@ log = getLogger(__name__)
 def timeout(options, none=(None,None)):
     """
     Extract (and default as necessary) the timeout option.
-    @param options: Policy options.
-    @type options: dict
-    @return: The timeout (<start>,<duration>)
-    @rtype: tuple
+    :param options: Policy options.
+    :type options: dict
+    :return: The timeout (<start>,<duration>)
+    :rtype: tuple
     """
     tm = options.timeout
     if tm is None:
@@ -50,10 +50,10 @@ def timeout(options, none=(None,None)):
 class Timeout:
     """
     Policy timeout.
-    @cvar MINUTE: Minutes in seconds.
-    @cvar HOUR: Hour is seconds
-    @cvar DAY: Day in seconds
-    @cvar SUFFIX: Suffix to multiplier mapping.
+    :cvar MINUTE: Minutes in seconds.
+    :cvar HOUR: Hour is seconds
+    :cvar DAY: Day in seconds
+    :cvar SUFFIX: Suffix to multiplier mapping.
     """
 
     SECOND = 1
@@ -72,13 +72,13 @@ class Timeout:
     def seconds(cls, tm):
         """
         Convert tm to seconds based on suffix.
-        @param tm: A timeout value.
+        :param tm: A timeout value.
             The string value may have a suffix of:
               (s) = seconds
               (m) = minutes
               (h) = hours
               (d) = days
-        @type tm: (None|int|float|str)
+        :type tm: (None|int|float|str)
 
         """
         if tm is None:
@@ -122,8 +122,8 @@ class RequestTimeout(Exception):
 
     def __init__(self, sn, index):
         """
-        @param sn: The request serial number.
-        @type sn: str
+        :param sn: The request serial number.
+        :type sn: str
         """
         Exception.__init__(self, sn, index)
         
@@ -141,36 +141,36 @@ class RequestTimeout(Exception):
 class RequestMethod:
     """
     Base class for request methods.
-    @ivar producer: A queue producer.
-    @type producer: L{gofer.messaging.producer.Producer}
+    :ivar producer: A queue producer.
+    :type producer: gofer.messaging.producer.Producer
     """
     
     def __init__(self, producer):
         """
-        @param producer: A queue producer.
-        @type producer: L{gofer.messaging.producer.Producer}
+        :param producer: A queue producer.
+        :type producer: gofer.messaging.producer.Producer
         """
         self.producer = producer
 
     def send(self, address, request, **any):
         """
         Send the request..
-        @param address: The destination queue address.
-        @type address: str
-        @param request: A request to send.
-        @type request: object
-        @keyword any: Any (extra) data.
+        :param address: The destination queue address.
+        :type address: str
+        :param request: A request to send.
+        :type request: object
+        :keyword any: Any (extra) data.
         """
         pass
 
     def broadcast(self, addresses, request, **any):
         """
         Broadcast the request.
-        @param addresses: A list of destination queue addresses.
-        @type addresses: [str,..]
-        @param request: A request to send.
-        @type request: object
-        @keyword any: Any (extra) data.
+        :param addresses: A list of destination queue addresses.
+        :type addresses: [str,..]
+        :param request: A request to send.
+        :type request: object
+        :keyword any: Any (extra) data.
         """
         pass
 
@@ -179,18 +179,18 @@ class Synchronous(RequestMethod):
     """
     The synchronous request method.
     This method blocks until a reply is received.
-    @ivar reader: A queue reader used to read the reply.
-    @type reader: L{gofer.messaging.consumer.Reader}
+    :ivar reader: A queue reader used to read the reply.
+    :type reader: gofer.messaging.consumer.Reader
     """
     
     TIMEOUT = (10, 90)
 
     def __init__(self, producer, options):
         """
-        @param producer: A queue producer.
-        @type producer: L{gofer.messaging.producer.Producer}
-        @param options: Policy options.
-        @type options: dict
+        :param producer: A queue producer.
+        :type producer: gofer.messaging.producer.Producer
+        :param options: Policy options.
+        :type options: dict
         """
         self.timeout = timeout(options, self.TIMEOUT)
         self.queue = Queue(getuuid(), durable=False)
@@ -200,14 +200,14 @@ class Synchronous(RequestMethod):
     def send(self, destination, request, **any):
         """
         Send the request then read the reply.
-        @param destination: The destination queue address.
-        @type destination: str
-        @param request: A request to send.
-        @type request: object
-        @keyword any: Any (extra) data.
-        @return: The result of the request.
-        @rtype: object
-        @raise Exception: returned by the peer.
+        :param destination: The destination queue address.
+        :type destination: str
+        :param request: A request to send.
+        :type request: object
+        :keyword any: Any (extra) data.
+        :return: The result of the request.
+        :rtype: object
+        :raise Exception: returned by the peer.
         """
         sn = self.producer.send(
             destination,
@@ -227,12 +227,12 @@ class Synchronous(RequestMethod):
     def __getstarted(self, sn, reader):
         """
         Get the STARTED reply matched by serial number.
-        @param sn: The request serial number.
-        @type sn: str
-        @param reader: A reader.
-        @type reader: L{Reader}
-        @return: The matched reply envelope.
-        @rtype: L{Envelope}
+        :param sn: The request serial number.
+        :type sn: str
+        :param reader: A reader.
+        :type reader: Reader
+        :return: The matched reply envelope.
+        :rtype: Envelope
         """
         envelope = reader.search(sn, self.timeout[0])
         if envelope:
@@ -247,12 +247,12 @@ class Synchronous(RequestMethod):
     def __getreply(self, sn, reader):
         """
         Get the reply matched by serial number.
-        @param sn: The request serial number.
-        @type sn: str
-        @param reader: A reader.
-        @type reader: L{Reader}
-        @return: The matched reply envelope.
-        @rtype: L{Envelope}
+        :param sn: The request serial number.
+        :type sn: str
+        :param reader: A reader.
+        :type reader: Reader
+        :return: The matched reply envelope.
+        :rtype: Envelope
         """
         timer = Timer()
         timeout = float(self.timeout[1])
@@ -278,10 +278,10 @@ class Synchronous(RequestMethod):
     def __onreply(self, envelope):
         """
         Handle the reply.
-        @param envelope: The reply envelope.
-        @type envelope: L{Envelope}
-        @return: The matched reply envelope.
-        @rtype: L{Envelope}
+        :param envelope: The reply envelope.
+        :type envelope: Envelope
+        :return: The matched reply envelope.
+        :rtype: Envelope
         """
         reply = Return(envelope.result)
         if reply.succeeded():
@@ -292,8 +292,8 @@ class Synchronous(RequestMethod):
     def __onprogress(self, envelope):
         """
         Handle the progress report.
-        @param envelope: The status envelope.
-        @type envelope: L{Envelope}
+        :param envelope: The status envelope.
+        :type envelope: Envelope
         """
         try:
             callback = self.progress
@@ -316,10 +316,10 @@ class Asynchronous(RequestMethod):
 
     def __init__(self, producer, options):
         """
-        @param producer: A queue producer.
-        @type producer: L{gofer.messaging.producer.Producer}
-        @param options: Policy options.
-        @type options: dict
+        :param producer: A queue producer.
+        :type producer: gofer.messaging.producer.Producer
+        :param options: Policy options.
+        :type options: dict
         """
         RequestMethod.__init__(self, producer)
         self.ctag = options.ctag
@@ -332,13 +332,13 @@ class Asynchronous(RequestMethod):
         Send the specified request and redirect the reply to the
         queue for the specified reply I{correlation} tag.
         A trigger(1) specifies a I{manual} trigger.
-        @param destination: The AMQP destination.
-        @type destination: L{Destination}
-        @param request: A request to send.
-        @type request: object
-        @keyword any: Any (extra) data.
-        @return: The request serial number.
-        @rtype: str
+        :param destination: The AMQP destination.
+        :type destination: Destination
+        :param request: A request to send.
+        :type request: object
+        :keyword any: Any (extra) data.
+        :return: The request serial number.
+        :rtype: str
         """
         trigger = Trigger(self, destination, request, any)
         if self.trigger == 1:
@@ -351,11 +351,11 @@ class Asynchronous(RequestMethod):
         Send the specified request and redirect the reply to the
         queue for the specified reply I{correlation} tag.
         A trigger(1) specifies a I{manual} trigger.
-        @param destinations: A list of destinations.
-        @type destinations: [L{Destination},..]
-        @param request: A request to send.
-        @type request: object
-        @keyword any: Any (extra) data.
+        :param destinations: A list of destinations.
+        :type destinations: [Destination,..]
+        :param request: A request to send.
+        :type request: object
+        :keyword any: Any (extra) data.
         """
         triggers = []
         for destination in destinations:
@@ -371,8 +371,8 @@ class Asynchronous(RequestMethod):
     def replyto(self):
         """
         Get replyto based on the correlation I{tag}.
-        @return: The replyto AMQP address.
-        @rtype: str
+        :return: The replyto AMQP address.
+        :rtype: str
         """
         if self.ctag:
             queue = Queue(self.ctag)
@@ -383,12 +383,12 @@ class Asynchronous(RequestMethod):
     def notifywatchdog(self, sn, replyto, any):
         """
         Add the request to the I{watchdog} for tacking.
-        @param sn: A serial number.
-        @type sn: str
-        @param replyto: An AMQP address.
-        @type replyto: str
-        @param any: User defined data.
-        @type any: any
+        :param sn: A serial number.
+        :type sn: str
+        :param replyto: An AMQP address.
+        :type replyto: str
+        :param any: User defined data.
+        :type any: any
         """
         any = Envelope(any)
         if replyto and \
@@ -406,29 +406,29 @@ class Asynchronous(RequestMethod):
 class Trigger:
     """
     Asynchronous trigger.
-    @ivar __pending: pending flag.
-    @type __pending: bool
-    @ivar __sn: serial number
-    @type __sn: str
-    @ivar __policy: The policy object.
-    @type __policy: L{Asynchronous}
-    @ivar __destination: The AMQP destination.
-    @type __destination: L{Destination}
-    @ivar __request: A request to send.
-    @type __request: object
-    @ivar __any: Any (extra) data.
-    @type __any: dict
+    :ivar __pending: pending flag.
+    :type __pending: bool
+    :ivar __sn: serial number
+    :type __sn: str
+    :ivar __policy: The policy object.
+    :type __policy: Asynchronous
+    :ivar __destination: The AMQP destination.
+    :type __destination: Destination
+    :ivar __request: A request to send.
+    :type __request: object
+    :ivar __any: Any (extra) data.
+    :type __any: dict
     """
 
     def __init__(self, policy, destination, request, any):
         """
-        @param policy: The policy object.
-        @type policy: L{Asynchronous}
-        @param destination: The AMQP destination.
-        @type destination: L{Destination}
-        @param request: A request to send.
-        @type request: object
-        @keyword any: Any (extra) data.
+        :param policy: The policy object.
+        :type policy: Asynchronous
+        :param destination: The AMQP destination.
+        :type destination: Destination
+        :param request: A request to send.
+        :type request: object
+        :keyword any: Any (extra) data.
         """
         self.__pending = True
         self.__sn = getuuid()
@@ -441,8 +441,8 @@ class Trigger:
     def sn(self):
         """
         Get serial number.
-        @return: The request serial number.
-        @rtype: str
+        :return: The request serial number.
+        :rtype: str
         """
         return self.__sn
         

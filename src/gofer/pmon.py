@@ -29,12 +29,12 @@ log = getLogger(__name__)
 class PathMonitor:
     """
     Path monitor.
-    @ivar __paths: A list of paths to monitor.
-    @type __paths: dict path:(mtime, digest, cb)
-    @ivar __mutex: The mutex.
-    @type __mutex: RLock
-    @ivar __thread: The optional thread.  see: start().
-    @type __thread: Thread
+    :ivar __paths: A list of paths to monitor.
+    :type __paths: dict path:(mtime, digest, cb)
+    :ivar __mutex: The mutex.
+    :type __mutex: RLock
+    :ivar __thread: The optional thread.  see: start().
+    :type __thread: Thread
     """
 
     def __init__(self):
@@ -45,10 +45,10 @@ class PathMonitor:
     def add(self, path, cb):
         """
         Add a path to be monitored.
-        @param path: An absolute path to monitor.
-        @type path: str
-        @param cb: A listener.
-        @type cb: callable
+        :param path: An absolute path to monitor.
+        :type path: str
+        :param cb: A listener.
+        :type cb: callable
         """
         self.__lock()
         try:
@@ -59,8 +59,8 @@ class PathMonitor:
     def delete(self, path):
         """
         Delete a path to be monitored.
-        @param path: An absolute path to monitor.
-        @type path: str
+        :param path: An absolute path to monitor.
+        :type path: str
         """
         self.__lock()
         try:
@@ -74,10 +74,10 @@ class PathMonitor:
     def start(self, precision=1):
         """
         Start the monitor thread.
-        @param precision: The precision (how often to check).
-        @type precision: float
-        @return: self
-        @rtype: L{PathMonitor}
+        :param precision: The precision (how often to check).
+        :type precision: float
+        :return: self
+        :rtype: PathMonitor
         """
         self.__lock()
         try:
@@ -117,10 +117,10 @@ class PathMonitor:
         First, check the modification time, if different, then
         check the I{hash} of the file content to see if it really
         changed.  If changed, notify the registered listener.
-        @param path: The path of the file to sniff.
-        @type path: str
-        @param stat: The cached stat (mtime, digest, cb)
-        @type stat: tuple
+        :param path: The path of the file to sniff.
+        :type path: str
+        :param stat: The cached stat (mtime, digest, cb)
+        :type stat: tuple
         """
         try:
             f = File(path)
@@ -139,10 +139,10 @@ class PathMonitor:
     def __notify(self, path, cb):
         """
         Safely invoke registered callback.
-        @param path: The path of the changed file.
-        @type path: str
-        @param cb: A registered callback.
-        @type cb: callable
+        :param path: The path of the changed file.
+        :type path: str
+        :param cb: A registered callback.
+        :type cb: callable
         """
         try:
             cb(path)
@@ -159,16 +159,16 @@ class PathMonitor:
 class File:
     """
     Safe file operations.
-    @ivar path: The path.
-    @type path: str
-    @ivar fp: The python file object.
-    @type fp: fileobj
+    :ivar path: The path.
+    :type path: str
+    :ivar fp: The python file object.
+    :type fp: fileobj
     """
     
     def __init__(self, path):
         """
-        @param path: The file path.
-        @type path: str        
+        :param path: The file path.
+        :type path: str        
         """
         self.path = path
         self.fp = None
@@ -191,18 +191,18 @@ class File:
     def read(self, n):
         """
         Read (n) bytes.
-        @param n: The bytes to read.
-        @type n: int
-        @return: the bytes read.
-        @rtype: buffer
+        :param n: The bytes to read.
+        :type n: int
+        :return: the bytes read.
+        :rtype: buffer
         """
         return self.fp.read(n)
     
     def mtime(self):
         """
         Get modification time.
-        @return: mtime
-        @rtype: int
+        :return: mtime
+        :rtype: int
         """
         try:
             return os.path.getmtime(self.path)
@@ -215,8 +215,8 @@ class File:
     def digest(self):
         """
         Get the SHA256 hex digest for content.
-        @return: the hexdigest.
-        @rtype: str
+        :return: the hexdigest.
+        :rtype: str
         """
         try:
             self.open()
@@ -242,18 +242,18 @@ class File:
 class MonitorThread(Thread):
     """
     Monitor thread.
-    @ivar monitor: A monitor object.
-    @type monitor: Monitor
-    @ivar precision: The level of percision (seconds).
-    @type precision: float
+    :ivar monitor: A monitor object.
+    :type monitor: Monitor
+    :ivar precision: The level of percision (seconds).
+    :type precision: float
     """
     
     def __init__(self, monitor, precision):
         """
-        @param monitor: A monitor object.
-        @type monitor: Monitor
-        @param precision: The level of percision (seconds).
-        @type precision: float
+        :param monitor: A monitor object.
+        :type monitor: Monitor
+        :param precision: The level of percision (seconds).
+        :type precision: float
         """
         Thread.__init__(self, name='PathMonitor%s' % precision)
         self.monitor = monitor

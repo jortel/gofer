@@ -28,16 +28,16 @@ log = getLogger(__name__)
 class SSL(tls):
     """
     SSL Transport.
-    Extends L{tls} to support client certificates.
+    Extends tls to support client certificates.
     """
 
     def __init__(self, *args):
         """
-        @param args: The argument list.
+        :param args: The argument list.
         Using arglist for compatability with many versions
         For <= 0.8  passed (host, port)
         For 0.10 (el6) passed (con, host, port)
-        @type args: list
+        :type args: list
         """
         host, port = args[-2:]
         url = ':'.join((host,str(port)))

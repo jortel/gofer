@@ -207,8 +207,8 @@ class Reply(Envelope):
     def succeeded(self):
         """
         Test whether the reply indicates success.
-        @return: True when indicates success.
-        @rtype: bool
+        :return: True when indicates success.
+        :rtype: bool
         """
         return ( self.result and 'retval' in self.result )
         
@@ -216,24 +216,24 @@ class Reply(Envelope):
     def failed(self):
         """
         Test whether the reply indicates failure.
-        @return: True when indicates failure.
-        @rtype: bool
+        :return: True when indicates failure.
+        :rtype: bool
         """
         return ( self.result and 'exval' in self.result )
     
     def started(self):
         """
         Test whether the reply indicates status (started).
-        @return: True when indicates started.
-        @rtype: bool
+        :return: True when indicates started.
+        :rtype: bool
         """
         return ( self.status == 'started' )
     
     def progress(self):
         """
         Test whether the reply indicates status (progress).
-        @return: True when indicates progress.
-        @rtype: bool
+        :return: True when indicates progress.
+        :rtype: bool
         """
         return ( self.status == 'progress' )
     
@@ -247,10 +247,10 @@ class Return(Envelope):
     def succeed(cls, x):
         """
         Return successful
-        @param x: The returned value.
-        @type x: any
-        @return: A return envelope.
-        @rtype: L{Return}
+        :param x: The returned value.
+        :type x: any
+        :return: A return envelope.
+        :rtype: Return
         """
         inst = Return(retval=x)
         inst.dump() # validate
@@ -260,8 +260,8 @@ class Return(Envelope):
     def exception(cls):
         """
         Return raised exception.
-        @return: A return envelope.
-        @rtype: L{Return}
+        :return: A return envelope.
+        :rtype: Return
         """
         try:
             return cls.__exception()
@@ -271,16 +271,16 @@ class Return(Envelope):
     def succeeded(self):
         """
         Test whether the return indicates success.
-        @return: True when indicates success.
-        @rtype: bool
+        :return: True when indicates success.
+        :rtype: bool
         """
         return ( 'retval' in self )
 
     def failed(self):
         """
         Test whether the return indicates failure.
-        @return: True when indicates failure.
-        @rtype: bool
+        :return: True when indicates failure.
+        :rtype: bool
         """
         return ( 'exval' in self )
     
@@ -288,8 +288,8 @@ class Return(Envelope):
     def __exception(cls):
         """
         Return raised exception.
-        @return: A return envelope.
-        @rtype: L{Return}
+        :return: A return envelope.
+        :rtype: Return
         """
         info = sys.exc_info()
         inst = info[1]
@@ -322,20 +322,20 @@ class Request(Envelope):
 class RMI(object):
     """
     The RMI object performs the invocation.
-    @ivar request: The request envelope.
-    @type request: L{Request}
-    @ivar catalog: A dict of class mappings.
-    @type catalog: dict
+    :ivar request: The request envelope.
+    :type request: Request
+    :ivar catalog: A dict of class mappings.
+    :type catalog: dict
     """
 
     def __init__(self, request, auth, catalog):
         """
-        @param request: The request envelope.
-        @type request: L{Request}
-        @param auth: Authentication properties.
-        @type auth: L{Options}
-        @param catalog: A dict of class mappings.
-        @type catalog: dict
+        :param request: The request envelope.
+        :type request: Request
+        :param auth: Authentication properties.
+        :type auth: Options
+        :param catalog: A dict of class mappings.
+        :type catalog: dict
         """
         self.name = '.'.join((request.classname, request.method))
         self.request = request
@@ -350,12 +350,12 @@ class RMI(object):
         """
         Get an instance of the class or module specified in
         the request using the catalog.
-        @param request: The request envelope.
-        @type request: L{Request}
-        @param catalog: A dict of class mappings.
-        @type catalog: dict
-        @return: An instance.
-        @rtype: (class|module)
+        :param request: The request envelope.
+        :type request: Request
+        :param catalog: A dict of class mappings.
+        :type catalog: dict
+        :return: An instance.
+        :rtype: (class|module)
         """
         key = request.classname
         inst = catalog.get(key, None)
@@ -372,12 +372,12 @@ class RMI(object):
         """
         Get method of the class specified in the request.
         Ensures that remote invocation is permitted.
-        @param request: The request envelope.
-        @type request: L{Request}
-        @param inst: A class or module object.
-        @type inst: (class|module)
-        @return: The requested method.
-        @rtype: (method|function)
+        :param request: The request envelope.
+        :type request: Request
+        :param inst: A class or module object.
+        :type inst: (class|module)
+        :return: The requested method.
+        :rtype: (method|function)
         """
         cn, fn = (request.classname, request.method)
         if hasattr(inst, fn):
@@ -390,10 +390,10 @@ class RMI(object):
         """
         Return the method's function (if a method) or
         the I{method} assuming it's a function.
-        @param method: An instance method.
-        @type method: instancemethod
-        @return: The function
-        @rtype: function
+        :param method: An instance method.
+        :type method: instancemethod
+        :return: The function
+        :rtype: function
         """
         if inspect.ismethod(method):
             fn = method.im_func
@@ -406,10 +406,10 @@ class RMI(object):
         """
         Get the I{gofer} metadata embedded in the function
         by the @remote decorator.
-        @param method: An instance method.
-        @type method: instancemethod
-        @return: The I{gofer} attribute.
-        @rtype: L{Options}
+        :param method: An instance method.
+        :type method: instancemethod
+        :return: The I{gofer} attribute.
+        :rtype: Options
         """
         try:
             return getattr(RMI.__fn(method), NAME)
@@ -420,7 +420,7 @@ class RMI(object):
     def constructor(request):
         """
         Get (optional) constructor arguments.
-        @return: cntr: ([],{})
+        :return: cntr: ([],{})
         """
         cntr = request.cntr
         if not cntr:
@@ -432,9 +432,9 @@ class RMI(object):
         Validate the method is either marked as I{shared}
         or that the request was received on the method's
         contributing plugin UUID.
-        @param fninfo: The decorated function info.
-        @type fninfo: L{Options}
-        @raise NotShared: On sharing violation.
+        :param fninfo: The decorated function info.
+        :type fninfo: Options
+        :raise NotShared: On sharing violation.
         """
         if fninfo.shared:
             return
@@ -449,7 +449,7 @@ class RMI(object):
     def permitted(self):
         """
         Check whether remote invocation of the specified method is permitted.
-        Applies security model using L{Security}.
+        Applies security model using Security.
         """
         fninfo = RMI.__fninfo(self.method)
         if fninfo is None:
@@ -461,8 +461,8 @@ class RMI(object):
     def __call__(self):
         """
         Invoke the method.
-        @return: The invocation result.
-        @rtype: L{Return}
+        :return: The invocation result.
+        :rtype: Return
         """
         try:
             self.permitted()
@@ -485,18 +485,18 @@ class RMI(object):
 class Security:
     """
     Layered Security.
-    @ivar method: The method name.
-    @type method: str
-    @ivar stack: The security stack; list of auth specifications defined by decorators.
-    @type stack: list
+    :ivar method: The method name.
+    :type method: str
+    :ivar stack: The security stack; list of auth specifications defined by decorators.
+    :type stack: list
     """
     
     def __init__(self, method, fninfo):
         """
-        @param method: The method name.
-        @type method: str
-        @param fninfo: The decorated function info.
-        @type fninfo: L{Options}
+        :param method: The method name.
+        :type method: str
+        :param fninfo: The decorated function info.
+        :type fninfo: Options
         """
         self.method = method
         self.stack = fninfo.security
@@ -504,14 +504,14 @@ class Security:
     def apply(self, passed):
         """
         Apply auth specifications.
-        @param passed: The request's I{auth} info passed.
-        @type passed: L{Options}.
-        @raise SecretRequired: On secret required and not passed.
-        @raise SecretNotMatched: On not matched.
-        @raise UserRequired: On user required and not passed.
-        @raise PasswordRequired: On password required and not passed.
-        @raise UserNotAuthorized: On user not authorized.
-        @raise NotAuthenticated: On PAM auth failed.
+        :param passed: The request's I{auth} info passed.
+        :type passed: Options.
+        :raise SecretRequired: On secret required and not passed.
+        :raise SecretNotMatched: On not matched.
+        :raise UserRequired: On user required and not passed.
+        :raise PasswordRequired: On password required and not passed.
+        :raise UserNotAuthorized: On user not authorized.
+        :raise NotAuthenticated: On PAM auth failed.
         """
         failed = []
         for name, required in self.stack:
@@ -527,10 +527,10 @@ class Security:
     def impl(self, name):
         """
         Find auth implementation by name.
-        @param name: auth type (name)
-        @type name: str
-        @return: The implementation method
-        @rtype: instancemethod
+        :param name: auth type (name)
+        :type name: str
+        :return: The implementation method
+        :rtype: instancemethod
         """
         try:
             return getattr(self, name)
@@ -540,12 +540,12 @@ class Security:
     def secret(self, required, passed):
         """
         Perform shared secret auth.
-        @param required: Method specific auth specification.
-        @type required: L{Options}
-        @param passed: The credentials passed.
-        @type passed: L{Options}
-        @raise SecretRequired: On secret required and not passed.
-        @raise SecretNotMatched: On not matched.
+        :param required: Method specific auth specification.
+        :type required: Options
+        :param passed: The credentials passed.
+        :type passed: Options
+        :raise SecretRequired: On secret required and not passed.
+        :raise SecretNotMatched: On not matched.
         """
         secret = required.secret
         if callable(secret):
@@ -563,14 +563,14 @@ class Security:
     def pam(self, required, passed):
         """
         Perform PAM authentication.
-        @param required: Method specific auth specification.
-        @type required: L{Options}
-        @param passed: The credentials passed.
-        @type passed: L{Options}
-        @raise UserRequired: On user required and not passed.
-        @raise PasswordRequired: On password required and not passed.
-        @raise UserNotAuthorized: On user not authorized.
-        @raise NotAuthenticated: On PAM auth failed.
+        :param required: Method specific auth specification.
+        :type required: Options
+        :param passed: The credentials passed.
+        :type passed: Options
+        :raise UserRequired: On user required and not passed.
+        :raise PasswordRequired: On password required and not passed.
+        :raise UserNotAuthorized: On user not authorized.
+        :raise NotAuthenticated: On PAM auth failed.
         """
         if passed.pam:
             passed = Options(passed.pam)
@@ -595,8 +595,8 @@ class Security:
 class Dispatcher:
     """
     The remote invocation dispatcher.
-    @ivar __catalog: The (catalog) of target classes.
-    @type __catalog: dict
+    :ivar __catalog: The (catalog) of target classes.
+    :type __catalog: dict
     """
 
     @staticmethod
@@ -608,8 +608,8 @@ class Dispatcher:
 
     def __init__(self, classes):
         """
-        @param classes: The (catalog) of target classes.
-        @type classes: list
+        :param classes: The (catalog) of target classes.
+        :type classes: list
         """
         self.catalog = \
             dict([(c.__name__, c) for c in classes])
@@ -620,10 +620,10 @@ class Dispatcher:
     def dispatch(self, envelope):
         """
         Dispatch the requested RMI.
-        @param envelope: A request envelope.
-        @type envelope: L{Envelope}
-        @return: The result.
-        @rtype: any
+        :param envelope: A request envelope.
+        :type envelope: Envelope
+        :return: The result.
+        :rtype: any
         """
         try:
             auth = self.auth(envelope)

@@ -35,14 +35,14 @@ cfg = Config()
 class ActionThread(Thread):
     """
     Run actions independently of main thread.
-    @ivar actions: A list of actions to run.
-    @type actions: [L{Action},..]
+    :ivar actions: A list of actions to run.
+    :type actions: [Action,..]
     """
     
     def __init__(self, actions):
         """
-        @param actions: A list of actions to run.
-        @type actions: [L{Action},..]
+        :param actions: A list of actions to run.
+        :type actions: [Action,..]
         """
         self.actions = actions
         Thread.__init__(self, name='Actions')
@@ -76,14 +76,14 @@ class Snapshot(dict):
 class PluginMonitorThread(Thread):
     """
     Run actions independantly of main thread.
-    @ivar plugin: A plugin to monitor.
-    @type plugin: L{Plugin}
+    :ivar plugin: A plugin to monitor.
+    :type plugin: Plugin
     """
 
     def __init__(self, plugin):
         """
-        @param plugin: A plugin to monitor.
-        @type plugin: L{Plugin}
+        :param plugin: A plugin to monitor.
+        :type plugin: Plugin
         """
         self.plugin = plugin
         self.snapshot = Snapshot()
@@ -134,8 +134,8 @@ class Agent:
 
     def __init__(self, plugins):
         """
-        @param plugins: A list of loaded plugins
-        @type plugins: list
+        :param plugins: A list of loaded plugins
+        :type plugins: list
         """
         self.plugins = plugins
         PAM.SERVICE = nvl(cfg.pam.service, PAM.SERVICE)
@@ -155,10 +155,10 @@ class Agent:
     def __startActions(self, plugins):
         """
         Start actions on enabled plugins.
-        @param plugins: A list of loaded plugins.
-        @type plugins: list
-        @return: The started action thread.
-        @rtype: L{ActionThread}
+        :param plugins: A list of loaded plugins.
+        :type plugins: list
+        :return: The started action thread.
+        :rtype: ActionThread
         """
         actions = []
         for plugin in plugins:
@@ -170,10 +170,10 @@ class Agent:
     def __startScheduler(self, plugins):
         """
         Start the RMI scheduler.
-        @param plugins: A list of loaded plugins.
-        @type plugins: list
-        @return: The started scheduler thread.
-        @rtype: L{Scheduler}
+        :param plugins: A list of loaded plugins.
+        :type plugins: list
+        :return: The started scheduler thread.
+        :rtype: Scheduler
         """
         scheduler = Scheduler(plugins)
         scheduler.start()
@@ -183,8 +183,8 @@ class Agent:
         """
         Start the plugins.
         Create and start a plugin monitor thread for each plugin.
-        @param plugins: A list of loaded plugins.
-        @type plugins: list
+        :param plugins: A list of loaded plugins.
+        :type plugins: list
         """
         for plugin in plugins:
             if plugin.enabled():
@@ -195,8 +195,8 @@ class Agent:
 class AgentLock(Lock):
     """
     Agent lock ensure that agent only has single instance running.
-    @cvar PATH: The lock file absolute path.
-    @type PATH: str
+    :cvar PATH: The lock file absolute path.
+    :type PATH: str
     """
 
     PATH = '/var/run/%sd.pid' % NAME
@@ -209,7 +209,7 @@ def start(daemon=True):
     """
     Agent main.
     Add recurring, time-based actions here.
-    All actions must be subclass of L{action.Action}.
+    All actions must be subclass of action.Action.
     """
     lock = AgentLock()
     try:

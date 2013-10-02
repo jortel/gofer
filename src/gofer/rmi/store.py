@@ -35,16 +35,16 @@ class PendingQueue:
     Persistent (local) storage of I{pending} envelopes that have
     been processed of an AMQP queue.  Most likely use is for messages
     with a future I{window} which cannot be processed immediately.
-    @cvar ROOT: The root directory used for storage.
-    @type ROOT: str
-    @ivar id: The queue id.
-    @type id: str
-    @ivar lastmod: Last (directory) modification.
-    @type lastmod: int
-    @ivar pending: The queue of pending envelopes.
-    @type pending: [Envelope,..]
-    @ivar uncommitted: A list (removed) of files pending commit.
-    @type uncommitted: [path,..]
+    :cvar ROOT: The root directory used for storage.
+    :type ROOT: str
+    :ivar id: The queue id.
+    :type id: str
+    :ivar lastmod: Last (directory) modification.
+    :type lastmod: int
+    :ivar pending: The queue of pending envelopes.
+    :type pending: [Envelope,..]
+    :ivar uncommitted: A list (removed) of files pending commit.
+    :type uncommitted: [path,..]
     """
     
     __metaclass__ = Singleton
@@ -62,10 +62,10 @@ class PendingQueue:
     def add(self, url, envelope):
         """
         Enqueue the specified envelope.
-        @param url: The broker URL.
-        @type url: str
-        @param envelope: An L{Envelope}
-        @type envelope: L{Envelope}
+        :param url: The broker URL.
+        :type url: str
+        :param envelope: An Envelope
+        :type envelope: Envelope
         """
         envelope.ts = time()
         envelope.url = url
@@ -86,10 +86,10 @@ class PendingQueue:
     def get(self, wait=10):
         """
         Get the next pending envelope.
-        @param wait: The number of seconds to block.
-        @type wait: int
-        @return: An L{Envelope}
-        @rtype: L{Envelope}
+        :param wait: The number of seconds to block.
+        :type wait: int
+        :return: An Envelope
+        :rtype: Envelope
         """
         assert(wait >= 0)
         try:
@@ -100,9 +100,9 @@ class PendingQueue:
     def commit(self, sn):
         """
         Commit an entry returned by get().
-        @param sn: The serial number to commit.
-        @type sn: str
-        @raise KeyError: when no found.
+        :param sn: The serial number to commit.
+        :type sn: str
+        :raise KeyError: when no found.
         """
         self.__lock()
         try:
@@ -116,8 +116,8 @@ class PendingQueue:
     def __purge(self, envelope):
         """
         Purge the queue entry.
-        @param envelope: An L{Envelope}
-        @type envelope: L{Envelope}
+        :param envelope: An Envelope
+        :type envelope: Envelope
         """
         self.__lock()
         try:
@@ -131,8 +131,8 @@ class PendingQueue:
     def __pendingcommit(self, envelope):
         """
         Move the envelope to the uncommitted list.
-        @param envelope: An L{Envelope}
-        @type envelope: L{Envelope}
+        :param envelope: An Envelope
+        :type envelope: Envelope
         """
         self.__lock()
         try:
@@ -164,10 +164,10 @@ class PendingQueue:
     def __import(self, path):
         """
         Import a stored envelpoe.
-        @param path: An absolute file path.
-        @type path: str
-        @return: An imported envelope.
-        @rtype: L{Envelope}
+        :param path: An absolute file path.
+        :type path: str
+        :return: An imported envelope.
+        :rtype: Envelope
         """
         try:
             s = self.__read(path)
@@ -182,10 +182,10 @@ class PendingQueue:
     def __get(self, wait=1):
         """
         Get the next pending envelope.
-        @param wait: The number of seconds to wait for a pending item.
-        @type wait: int
-        @return: (url, L{Envelope})
-        @rtype: L{Envelope}
+        :param wait: The number of seconds to wait for a pending item.
+        :type wait: int
+        :return: (url, Envelope)
+        :rtype: Envelope
         """
         while wait:
             queue = self.__copy(self.__pending)
@@ -202,10 +202,10 @@ class PendingQueue:
         Pop and return the next I{ready} entry.
         Entries that have expired (TTL), are purged.
         Entries that have a future I{window} are excluded.
-        @param queue: An ordered list of candidate entries.
-        @type queue: list
-        @return: An L{Envelope}
-        @rtype: L{Envelope}
+        :param queue: An ordered list of candidate entries.
+        :type queue: list
+        :return: An Envelope
+        :rtype: Envelope
         """
         popped = None
         while queue:
@@ -238,8 +238,8 @@ class PendingQueue:
     def __created(self, path):
         """
         Get create timestamp.
-        @return: The file create timestamp.
-        @rtype: int
+        :return: The file create timestamp.
+        :rtype: int
         """
         stat = os.stat(path)
         return stat[ST_CTIME]
@@ -247,8 +247,8 @@ class PendingQueue:
     def __modified(self, path):
         """
         Get modification timestamp.
-        @return: The file modification timestamp.
-        @rtype: int
+        :return: The file modification timestamp.
+        :rtype: int
         """
         stat = os.stat(path)
         return stat[ST_MTIME]
@@ -256,20 +256,20 @@ class PendingQueue:
     def __fn(self, envelope):
         """
         Get the qualified file name for an entry.
-        @param envelope: A queue entry.
-        @type envelope: L{Envelope}
-        @return: The absolute file path.
-        @rtype: str
+        :param envelope: A queue entry.
+        :type envelope: Envelope
+        :return: The absolute file path.
+        :rtype: str
         """
         return os.path.join(self.ROOT, envelope.sn)
     
     def __expired(self, envelope):
         """
         Get whether the envelope has expired.
-        @param envelope: A queue entry.
-        @type envelope: L{Envelope}
-        @return: True when expired based on TTL.
-        @rtype: bool
+        :param envelope: A queue entry.
+        :type envelope: Envelope
+        :return: True when expired based on TTL.
+        :rtype: bool
         """
         now = time()
         if isinstance(envelope.ttl, float):
@@ -282,8 +282,8 @@ class PendingQueue:
     def __adjustTTL(self, envelope):
         """
         Adjust the TTL based on time spent on the queue.
-        @param envelope: A queue entry.
-        @type envelope: L{Envelope}
+        :param envelope: A queue entry.
+        :type envelope: Envelope
         """
         if isinstance(envelope.ttl, float):
             elapsed = (time()-envelope.ts)
@@ -294,10 +294,10 @@ class PendingQueue:
         Get whether the envelope has a future window.
         Cancelled requests are not considered to be delayed and
         the window is ignored.
-        @param envelope: An L{Envelope}
-        @type envelope: L{Envelope}
-        @return: True when window in the future.
-        @rtype: bool
+        :param envelope: An Envelope
+        :type envelope: Envelope
+        :return: True when window in the future.
+        :rtype: bool
         """
         tracker = Tracker()
         if envelope.window and not tracker.cancelled(envelope.sn):
@@ -331,12 +331,12 @@ class PendingQueue:
 class PendingThread(Thread):
     """
     A pending queue receiver.
-    @ivar __run: The main run loop flag.
-    @type __run: bool
-    @ivar queue: The L{PendingQueue} being read.
-    @type queue: L{PendingQueue}
-    @ivar consumer: The queue listener.
-    @type consumer: L{gofer.messaging.consumer.Consumer}
+    :ivar __run: The main run loop flag.
+    :type __run: bool
+    :ivar queue: The PendingQueue being read.
+    :type queue: PendingQueue
+    :ivar consumer: The queue listener.
+    :type consumer: gofer.messaging.consumer.Consumer
     """
 
     def __init__(self):
@@ -361,16 +361,16 @@ class PendingThread(Thread):
     def dispatch(self, envelope):
         """
         Dispatch the envelope.
-        @param envelope: An L{Envelope}
-        @type envelope: L{Envelope}        
+        :param envelope: An Envelope
+        :type envelope: Envelope        
         """
         pass
     
     def commit(self, sn):
         """
         Commit a dispatched envelope.
-        @param sn: The serial number to commit.
-        @type sn: str
+        :param sn: The serial number to commit.
+        :type sn: str
         """
         try:
             self.queue.commit(sn)

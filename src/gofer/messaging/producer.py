@@ -33,13 +33,13 @@ class Producer(Endpoint):
     def send(self, destination, ttl=None, **body):
         """
         Send a message.
-        @param destination: An AMQP destination.
-        @type destination: L{Destination}
-        @param ttl: Time to Live (seconds)
-        @type ttl: float
-        @keyword body: envelope body.
-        @return: The message serial number.
-        @rtype: str
+        :param destination: An AMQP destination.
+        :type destination: Destination
+        :param ttl: Time to Live (seconds)
+        :type ttl: float
+        :keyword body: envelope body.
+        :return: The message serial number.
+        :rtype: str
         """
         sn = getuuid()
         address = str(destination)
@@ -57,11 +57,11 @@ class Producer(Endpoint):
     def broadcast(self, destinations, **body):
         """
         Broadcast a message to (N) queues.
-        @param destinations: A list of AMQP destinations.
-        @type destinations: [L{Destination},..]
-        @keyword body: envelope body.
-        @return: A list of (addr,sn).
-        @rtype: list
+        :param destinations: A list of AMQP destinations.
+        :type destinations: [Destination,..]
+        :keyword body: envelope body.
+        :return: A list of (addr,sn).
+        :rtype: list
         """
         sns = []
         for dst in destinations:
@@ -78,12 +78,12 @@ class BinaryProducer(Endpoint):
     def send(self, destination, content, ttl=None):
         """
         Send a message.
-        @param destination: An AMQP destination.
-        @type destination: L{Destination}
-        @param content: The message content
-        @type content: buf
-        @param ttl: Time to Live (seconds)
-        @type ttl: float
+        :param destination: An AMQP destination.
+        :type destination: Destination
+        :param content: The message content
+        :type content: buf
+        :param ttl: Time to Live (seconds)
+        :type ttl: float
         """
         address = str(destination)
         message = Message(content=content, durable=True, ttl=ttl)
@@ -95,10 +95,10 @@ class BinaryProducer(Endpoint):
     def broadcast(self, destinations, content, ttl=None):
         """
         Broadcast a message to (N) queues.
-        @param destinations: A list of AMQP destinations.
-        @type destinations: [L{Destination},..]
-        @param content: The message content
-        @type content: buf
+        :param destinations: A list of AMQP destinations.
+        :type destinations: [Destination,..]
+        :param content: The message content
+        :type content: buf
         """
         for dst in destinations:
             sn = self.send(str(dst), content, ttl)

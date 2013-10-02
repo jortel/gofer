@@ -33,13 +33,13 @@ class System:
     def halt(self, when=1):
         """
         Halt the system.
-        @param when: When to perform the shutdown.
+        :param when: When to perform the shutdown.
           One of:
             - now   : immediate.  note: reply not sent.
             - +m    : where m is minutes.
             - hh:mm : time (hours:minutes) 24hr clock.
-        @type when: str
-        @see: shutdown(8)
+        :type when: str
+        :see: shutdown(8)
         """
         command = 'shutdown -h %s &' % when
         call(command, shell=1)
@@ -49,13 +49,13 @@ class System:
     def reboot(self, when=1):
         """
         Reboot the system.
-        @param when: When to perform the reboot.
+        :param when: When to perform the reboot.
           One of:
             - now   : immediate.  note: reply not sent.
             - +m    : where m is minutes.
             - hh:mm : time (hours:minutes) 24hr clock.
-        @type when: str
-        @see: shutdown(8)
+        :type when: str
+        :see: shutdown(8)
         """
         command = 'shutdown -r %s &' % when
         call(command, shell=1)
@@ -77,14 +77,14 @@ class Shell:
         Run a shell command.
         The command is executed as: "su - <user> -c <cmd>" and the
         user/password is authenticated using PAM.
-        @param cmd: The command & arguments.
-        @type cmd: str
-        @param user: A user name.
-        @type user: str
-        @param password: The password.
-        @type password: str
-        @return: tuple (status, output)
-        @rtype: tuple
+        :param cmd: The command & arguments.
+        :type cmd: str
+        :param user: A user name.
+        :type user: str
+        :param password: The password.
+        :type password: str
+        :return: tuple (status, output)
+        :rtype: tuple
         """
         auth = PAM()
         auth.authenticate(user, password)

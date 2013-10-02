@@ -89,8 +89,8 @@ class Envelope(Options):
     def load(self, s):
         """
         Load using a json string.
-        @param s: A json encoded string.
-        @type s: str
+        :param s: A json encoded string.
+        :type s: str
         """
         d = json.loads(s)
         self.__dict__.update(d)
@@ -99,8 +99,8 @@ class Envelope(Options):
     def dump(self):
         """
         Dump to a json string.
-        @return: A json encoded string.
-        @rtype: str
+        :return: A json encoded string.
+        :rtype: str
         """
         def fn(obj):
             if isinstance(obj, Options):
@@ -130,8 +130,8 @@ class Destination:
         """
         Get the destination I{formal} AMQP address which contains
         properties used to create the destination.
-        @return: The destination address.
-        @rtype: str
+        :return: The destination address.
+        :rtype: str
         """
         pass
 
@@ -140,8 +140,8 @@ class Destination:
         Delete the destination.
         Implemented using a hack becauase python API does not
         directly support removing destinations.
-        @param session: An AMQP session.
-        @type session: I{qpid.messaging.Session}
+        :param session: An AMQP session.
+        :type session: I{qpid.messaging.Session}
         """
         address = '%s;{delete:always}' % repr(self)
         sender = session.sender(address)
@@ -154,18 +154,18 @@ class Destination:
 class XBinding:
     """
     Represents an AMQP X-BINDING fragment.
-    @ivar exchange: An exchange name.
-    @type exchange: str
-    @ivar key: An (optional) exchange routing key.
-    @type key: str
+    :ivar exchange: An exchange name.
+    :type exchange: str
+    :ivar key: An (optional) exchange routing key.
+    :type key: str
     """
 
     def __init__(self, exchange, key=None):
         """
-        @param exchange: An exchange name.
-        @type exchange: str
-        @param key: An (optional) routing key.
-        @type key: str
+        :param exchange: An exchange name.
+        :type exchange: str
+        :param key: An (optional) routing key.
+        :type key: str
         """
         self.exchange = exchange
         self.key = key
@@ -180,14 +180,14 @@ class XBinding:
 class XBindings:
     """
     Represents an AMQP X-BINDINGS fragment.
-    @ivar bindings: A list of binding object.
-    @type bindings: list: L{XBinding}
+    :ivar bindings: A list of binding object.
+    :type bindings: list: XBinding
     """
     
     def __init__(self, bindings=[]):
         """
-        @param bindings: A list of binding objects.
-        @type bindings: list: L{Binding}
+        :param bindings: A list of binding objects.
+        :type bindings: list: Binding
         """
         self.bindings = bindings
         
@@ -211,21 +211,21 @@ class XBindings:
 class Topic(Destination):
     """
     Represents and AMQP topic.
-    @ivar topic: The name of the topic.
-    @type topic: str
-    @ivar subject: The subject.
-    @type subject: str
-    @ivar name: The (optional) subscription name.
+    :ivar topic: The name of the topic.
+    :type topic: str
+    :ivar subject: The subject.
+    :type subject: str
+    :ivar name: The (optional) subscription name.
         Used for durable subscriptions.
-    @type name: str
+    :type name: str
     """
 
     def __init__(self, topic, subject=None):
         """
-        @param topic: The name of the topic.
-        @type topic: str
-        @param subject: The subject.
-        @type subject: str
+        :param topic: The name of the topic.
+        :type topic: str
+        :param subject: The subject.
+        :type subject: str
         """
         self.topic = topic
         self.subject = subject
@@ -234,8 +234,8 @@ class Topic(Destination):
         """
         Get the topic I{formal} AMQP address which contains
         properties used to create the topic.
-        @return: The topic address.
-        @rtype: str
+        :return: The topic address.
+        :rtype: str
         """
         fmt = squash("""
         %s;{
@@ -257,8 +257,8 @@ class Topic(Destination):
     def binding(self):
         """
         Get an binding for the queue.
-        @return: A binding.
-        @rtype: L{XBinding} 
+        :return: A binding.
+        :rtype: XBinding 
         """
         return XBinding(self.topic, self.subject)
 
@@ -269,21 +269,21 @@ class Topic(Destination):
 class Queue(Destination):
     """
     Represents and AMQP queue.
-    @ivar name: The name of the queue.
-    @type name: str
-    @ivar durable: The durable flag.
-    @type durable: str
+    :ivar name: The name of the queue.
+    :type name: str
+    :ivar durable: The durable flag.
+    :type durable: str
     """
 
     def __init__(self, name, durable=True, bindings=[]):
         """
-        @param name: The name of the queue.
-        @type name: str
-        @param durable: The durable flag.
-        @type durable: str
-        @param bindings: An optional list of bindings used to
+        :param name: The name of the queue.
+        :type name: str
+        :param durable: The durable flag.
+        :type durable: str
+        :param bindings: An optional list of bindings used to
             bind queues to other exchanges.
-        @type bindings: L{Destination}
+        :type bindings: Destination
         """
         self.name = name
         self.durable = durable
@@ -293,8 +293,8 @@ class Queue(Destination):
         """
         Get the queue I{formal} AMQP address which contains
         properties used to create the queue.
-        @return: The queue address.
-        @rtype: str
+        :return: The queue address.
+        :rtype: str
         """
         fmt = squash("""
         %s;{
@@ -317,8 +317,8 @@ class Queue(Destination):
         """
         Get the queue AMQP address which contains
         properties used to create a temporary queue.
-        @return: The queue address.
-        @rtype: str
+        :return: The queue address.
+        :rtype: str
         """
         fmt = squash("""
         %s;{
@@ -340,8 +340,8 @@ class Queue(Destination):
     def xbinding(self):
         """
         Get an xbinding for the queue.
-        @return: An xbinding.
-        @rtype: L{XBinding} 
+        :return: An xbinding.
+        :rtype: XBinding 
         """
         return XBinding(self.name)
 

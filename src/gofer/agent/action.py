@@ -28,7 +28,7 @@ log = getLogger(__name__)
 
 class Actions:
     """
-    @cvar functions: The list of decorated functions.
+    :cvar functions: The list of decorated functions.
     """
     functions = {}
     
@@ -74,25 +74,25 @@ def action(**interval):
 class Action:
     """
     Abstract recurring action (base).
-    @ivar target: The action target.
-    @type target: (method|function)
-    @keyword interval: The run interval.
+    :ivar target: The action target.
+    :type target: (method|function)
+    :keyword interval: The run interval.
       One of:
         - days
         - seconds
         - minutes
         - hours
         - weeks
-    @ivar last: The last run timestamp.
-    @type last: datetime
+    :ivar last: The last run timestamp.
+    :type last: datetime
     """
 
     def __init__(self, target, **interval):
         """
-        @param target: The action target.
-        @type target: (method|function)
-        @param interval: The run interval (minutes).
-        @type interval: timedelta
+        :param target: The action target.
+        :type target: (method|function)
+        :param interval: The run interval (minutes).
+        :type interval: timedelta
         """
         self.target = target
         for k,v in interval.items():
@@ -103,8 +103,8 @@ class Action:
     def name(self):
         """
         Get action name.  Default to class name.
-        @return: The action name.
-        @rtype: str
+        :return: The action name.
+        :rtype: str
         """
         t = self.target
         if inspect.ismethod(t):

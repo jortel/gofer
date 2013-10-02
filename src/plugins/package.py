@@ -31,8 +31,8 @@ class Yum(YumBase):
 
     def __init__(self, importkeys=False):
         """
-        @param importkeys: Allow the import of GPG keys.
-        @type importkeys: bool
+        :param importkeys: Allow the import of GPG keys.
+        :type importkeys: bool
         """
         parser = OptionParser()
         parser.parse_args([])
@@ -100,12 +100,12 @@ class Package:
     def summary(cls, tsInfo, states=('i','u')):
         """
         Get transaction summary.
-        @param tsInfo: A yum transaction.
-        @type tsInfo: YumTransaction
-        @param states: A list of yum transaction states.
-        @type states: tuple|list
-        @return: (resolved[],deps[])
-        @rtype: tuple
+        :param tsInfo: A yum transaction.
+        :type tsInfo: YumTransaction
+        :param states: A list of yum transaction states.
+        :type states: tuple|list
+        :return: (resolved[],deps[])
+        :rtype: tuple
         """
         resolved = []
         deps = []
@@ -131,10 +131,10 @@ class Package:
     def installed(cls, tsInfo):
         """
         Get transaction summary for installed packages.
-        @param tsInfo: A yum transaction.
-        @type tsInfo: YumTransaction
-        @return: (resolved[],deps[])
-        @rtype: tuple
+        :param tsInfo: A yum transaction.
+        :type tsInfo: YumTransaction
+        :return: (resolved[],deps[])
+        :rtype: tuple
         """
         return cls.summary(tsInfo)
     
@@ -142,19 +142,19 @@ class Package:
     def erased(cls, tsInfo):
         """
         Get transaction summary for erased packages.
-        @param tsInfo: A yum transaction.
-        @type tsInfo: YumTransaction
-        @return: (resolved[],deps[])
-        @rtype: tuple
+        :param tsInfo: A yum transaction.
+        :type tsInfo: YumTransaction
+        :return: (resolved[],deps[])
+        :rtype: tuple
         """
         return cls.summary(tsInfo, ('e',))
 
     def __init__(self, apply=True, importkeys=False):
         """
-        @param apply: Apply changes (not dry-run).
-        @type apply: bool
-        @param importkeys: Allow the import of GPG keys.
-        @type importkeys: bool
+        :param apply: Apply changes (not dry-run).
+        :type apply: bool
+        :param importkeys: Allow the import of GPG keys.
+        :type importkeys: bool
         """
         self.apply = apply
         self.importkeys = importkeys
@@ -164,11 +164,11 @@ class Package:
     def install(self, names):
         """
         Install packages by name.
-        @param names: A list of package names.
-        @type names: [str,]
-        @return: Packages installed.
+        :param names: A list of package names.
+        :type names: [str,]
+        :return: Packages installed.
             {resolved=[Package,],deps=[Package,]}
-        @rtype: dict
+        :rtype: dict
         """
         yb = Yum(self.importkeys)
         try:
@@ -187,11 +187,11 @@ class Package:
     def uninstall(self, names):
         """
         Uninstall (erase) packages by name.
-        @param names: A list of package names to be removed.
-        @type names: list
-        @return: Packages uninstalled (erased).
+        :param names: A list of package names to be removed.
+        :type names: list
+        :return: Packages uninstalled (erased).
             {resolved=[Package,],deps=[Package,]}
-        @rtype: dict
+        :rtype: dict
         """
         yb = Yum()
         try:
@@ -211,11 +211,11 @@ class Package:
         """
         Update installed packages.
         When (names) is not specified, all packages are updated.
-        @param names: A list of package names.
-        @type names: [str,]
-        @return: Packages installed (updated).
+        :param names: A list of package names.
+        :type names: [str,]
+        :return: Packages installed (updated).
             {resolved=[Package,],deps=[Package,]}
-        @rtype: dict
+        :rtype: dict
         """
         yb = Yum(self.importkeys)
         try:
@@ -240,10 +240,10 @@ class PackageGroup:
     
     def __init__(self, apply=True, importkeys=False):
         """
-        @param apply: Apply changes (not dry-run).
-        @type apply: bool
-        @param importkeys: Allow the import of GPG keys.
-        @type importkeys: bool
+        :param apply: Apply changes (not dry-run).
+        :type apply: bool
+        :param importkeys: Allow the import of GPG keys.
+        :type importkeys: bool
         """
         self.apply = apply
         self.importkeys = importkeys
@@ -253,11 +253,11 @@ class PackageGroup:
     def install(self, names):
         """
         Install package groups by name.
-        @param names: A list of package group names.
-        @type names: list
-        @return: Packages installed.
+        :param names: A list of package group names.
+        :type names: list
+        :return: Packages installed.
             {resolved=[Package,],deps=[Package,]}
-        @rtype: dict
+        :rtype: dict
         """
         yb = Yum(self.importkeys)
         try:
@@ -276,11 +276,11 @@ class PackageGroup:
     def uninstall(self, names):
         """
         Uninstall package groups by name.
-        @param names: A list of package group names.
-        @type names: [str,]
-        @return: Packages uninstalled.
+        :param names: A list of package group names.
+        :type names: [str,]
+        :return: Packages uninstalled.
             {resolved=[Package,],deps=[Package,]}
-        @rtype: dict
+        :rtype: dict
         """
         removed = {}
         yb = Yum()
