@@ -24,6 +24,8 @@ Plugins provide:
 - Recurring (scheduled) actions
 - Agent identity (optional)
 
+![agent](https://raw.github.com/jortel/gofer/master/docs/sphinx/images/agent.png)
+
 
 Documentation
 -------------
