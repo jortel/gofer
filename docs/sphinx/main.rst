@@ -1,5 +1,5 @@
-Gofer
-=====
+Overview
+========
 
 Gofer provides an extensible, light weight, universal python agent. It has no
 relation to the Gopher_ protocol.
