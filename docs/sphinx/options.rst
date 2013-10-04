@@ -31,6 +31,10 @@ Summary
  *password*
    A password, used for PAM authenticated access to remote methods.
    
+
+Details
+^^^^^^^
+   
 async
 -----
 
