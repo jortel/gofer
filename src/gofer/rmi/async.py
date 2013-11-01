@@ -23,7 +23,7 @@ from time import sleep, time
 from threading import Thread
 from gofer import NAME, Singleton
 from gofer.messaging.model import Envelope
-from gofer.messaging import Consumer, Queue, Producer
+from gofer.messaging import Consumer, Producer, Destination
 from gofer.rmi.dispatcher import Reply, Return, RemoteException
 from gofer.rmi.policy import RequestTimeout
 from logging import getLogger
@@ -460,11 +460,11 @@ class WatchDog:
         """
         log.info('sn:%s timeout detected', je.sn)
         try:
-            self.__sendreply(je)
+            self.__send_reply(je)
         except:
             log.exception(str(je))
         
-    def __sendreply(self, je):
+    def __send_reply(self, je):
         """
         Send the (timeout) reply to the I{replyto} AMQP address
         specified in the journal entry.
@@ -472,7 +472,7 @@ class WatchDog:
         :type je: Entry
         """
         sn = je.sn
-        replyto = je.replyto
+        replyto = Destination.create(je.replyto)
         any = je.any
         result = Return.exception()
         log.info('send (timeout) for sn:%s to:%s', sn, replyto)
@@ -667,7 +667,7 @@ class Journal:
         try:
             f.write(je.dump())
         finally:
-            f.close 
+            f.close()
     
     def __unlink(self, path):
         """
