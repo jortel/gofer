@@ -18,7 +18,8 @@
 Agent base classes.
 """
 
-from gofer.messaging import *
+from gofer.messaging.model import Options
+from gofer.messaging import Queue, Exchange, Destination
 from gofer.rmi.stub import Stub
 from gofer.rmi.window import Window
 from logging import getLogger
@@ -31,18 +32,16 @@ class Container:
     The stub container
     :ivar __id: The peer ID.
     :type __id: str
-    :ivar __producer: An AMQP producer.
-    :type __producer: gofer.messaging.producer.Producer
     :ivar __options: Container options.
     :type __options: Options
     """
 
-    def __init__(self, uuid, producer, **options):
+    def __init__(self, uuid, url, **options):
         """
         :param uuid: The peer ID.
         :type uuid: str
-        :param producer: An AMQP producer.
-        :type producer: gofer.messaging.producer.Producer
+        :param url: The agent URL.
+        :type url: str
         :param options: keyword options.
             Options:
               - async : Indicates that requests asynchronous.
@@ -57,23 +56,25 @@ class Container:
         :type options: dict
         """
         self.__id = uuid
-        self.__producer = producer
+        self.__url = url
         self.__options = Options(window=Window())
         self.__options += options
 
     def __destination(self):
         """
         Get the stub destination(s).
-        :return: Either a queue destination or a list of queues.
-        :rtype: list
+        :return: Either a queue destination or a list of destinations.
+        :rtype: gofer.transport.model.Destination
         """
-        if isinstance(self.__id, (list,tuple)):
-            queues = []
+        direct = Exchange.direct(self.__url)
+        if isinstance(self.__id, (list, tuple)):
+            destinations = []
             for d in self.__id:
-                queues.append(Queue(d))
-            return queues
+                d = Destination(direct.name, d)
+                destinations.append(d)
+            return destinations
         else:
-            return Queue(self.__id)
+            return Destination(direct.name, self.__id)
     
     def __getattr__(self, name):
         """
@@ -85,7 +86,7 @@ class Container:
         """
         return Stub.stub(
             name,
-            self.__producer,
+            self.__url,
             self.__destination(),
             self.__options)
         

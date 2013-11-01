@@ -17,10 +17,10 @@
 Contains maintenance window classes.
 """
 
-from gofer.messaging import *
 from datetime import datetime as dt
 from datetime import timedelta as delta
 
+from gofer.messaging.model import Options
 
 
 class Window(Options):
@@ -179,7 +179,7 @@ class Window(Options):
         if self.begin:
             begin = dt.strptime(self.begin, self.FORMAT)
         else:
-            begin = (now or td.utcnow())
+            begin = (now or dt.utcnow())
         if self.end:
             end = dt.strptime(self.begin, self.FORMAT)
         else:

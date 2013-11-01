@@ -22,11 +22,10 @@ import os
 from time import sleep, time
 from threading import Thread
 from gofer import NAME, Singleton
-from gofer.messaging import *
+from gofer.messaging.model import Envelope
+from gofer.messaging import Consumer, Queue, Producer
 from gofer.rmi.dispatcher import Reply, Return, RemoteException
 from gofer.rmi.policy import RequestTimeout
-from gofer.messaging.consumer import Consumer
-from gofer.messaging.producer import Producer
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -42,6 +41,9 @@ class ReplyConsumer(Consumer):
     :ivar blacklist: A set of serial numbers to ignore.
     :type blacklist: set
     """
+
+    def __init__(self, queue, url=None):
+        Consumer.__init__(self, queue, url=url)
 
     def start(self, listener, watchdog=None):
         """
@@ -346,10 +348,8 @@ class WatchDog:
     """
     
     __metaclass__ = Singleton
- 
-    URL = Producer.LOCALHOST
 
-    def __init__(self, url=URL, journal=None):
+    def __init__(self, url=None, journal=None):
         """
         :param url: The (optional) broker URL.
         :type url: str
@@ -357,7 +357,6 @@ class WatchDog:
         :type journal: Journal
         """
         self.url = url
-        self.__producer = None
         self.__jnl = (journal or Journal())
 
     def start(self):
@@ -442,8 +441,6 @@ class WatchDog:
         """
         sent = []
         now = time()
-        if self.__producer is None:
-            self.__producer = Producer(url=self.url)
         for sn,je in self.__jnl.load().items():
             if now > je.ts[je.idx]:
                 sent.append(sn)
@@ -479,12 +476,16 @@ class WatchDog:
         any = je.any
         result = Return.exception()
         log.info('send (timeout) for sn:%s to:%s', sn, replyto)
-        self.__producer.send(
-            replyto,
-            sn=sn,
-            any=any,
-            result=result,
-            watchdog=self.__producer.uuid)
+        producer = Producer(url=self.url)
+        try:
+            producer.send(
+                replyto,
+                sn=sn,
+                any=any,
+                result=result,
+                watchdog=producer.uuid)
+        finally:
+            producer.close()
         
         
 class WatchDogThread(Thread):

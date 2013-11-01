@@ -17,7 +17,6 @@
 import sys
 from time import sleep
 from gofer.messaging import Queue
-from gofer.messaging.producer import Producer
 from gofer.rmi.window import *
 from gofer.rmi.dispatcher import *
 from gofer.rmi.async import ReplyConsumer, WatchDog, Journal
@@ -25,13 +24,16 @@ from gofer.metrics import Timer
 from gofer.proxy import Agent
 from datetime import datetime as dt
 from datetime import timedelta as delta
-from logging import INFO, basicConfig, getLogger
+from logging import DEBUG, INFO, basicConfig, getLogger
 from threading import Thread
 from plugins import *
 
-basicConfig(filename='/opt/gofer/server.log', level=INFO)
+basicConfig(filename='/opt/gofer/server.log')
 
 log = getLogger(__name__)
+
+getLogger('gofer.transport').setLevel(DEBUG)
+
 
 # asynchronous RMI timeout watchdog
 jdir = '/opt/gofer/journal/watchdog'
@@ -42,7 +44,8 @@ watchdog.start()
 
 def onReply(reply):
     print 'REPLY [%s]\n%s' % (dt.now(), reply)
-    
+
+
 def isAsync(agent):
     options = agent._Container__options
     return (options.async or options.ctag)
@@ -291,7 +294,6 @@ def demoLayered(uuid, yp, exit=0):
 
         
 def demosecret(uuid, exit=0):
-    uuid = ('dogfish', uuid)
     agent = Agent(uuid)
     # success
     cat = agent.Cat(secret='garfield')
@@ -441,12 +443,32 @@ def main(uuid):
     dog.sleep(5)
 
 
+def smokeTest(uuid, exit=0):
+    print 'running smoke test ...'
+    agent = Agent(uuid)
+    for T in range(0, 5000):
+        print 'test: %d' % T
+        agent.testplugin.echo('have a nice day')
+        admin = agent.Admin()
+        print admin.hello()
+        dog = agent.Dog()
+        print dog.bark('RUF')
+        print dog.bark('hello')
+        print dog.wag(3)
+        print dog.bark('hello again')
+    print 'DONE'
+    if exit:
+        sys.exit(0)
+
+
 if __name__ == '__main__':
     uuid = 'xyz'
     yp = {}
     yp['root'] = sys.argv[1]
     yp['jortel'] = sys.argv[2]
-    rcon = ReplyConsumer(Queue(uuid.upper()))
+    url = 'tcp://localhost:5672'
+    queue = Queue(uuid.upper(), url=url)
+    rcon = ReplyConsumer(queue, url)
     rcon.start(onReply, watchdog=watchdog)
     #demoProgress(uuid, 1)
     #demoWindow(uuid, 1)
@@ -457,6 +479,7 @@ if __name__ == '__main__':
     demoauth(uuid, yp)
     democonst(uuid)
     triggertest(uuid)
+    smokeTest(uuid)
     if len(sys.argv) > 3:
         n = int(sys.argv[3])
         print '======= RUNNING %d THREADS ============' % n

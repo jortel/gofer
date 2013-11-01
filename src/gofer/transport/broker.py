@@ -13,16 +13,14 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-
 """
 Defined AMQP broker objects.
 """
 
-from gofer import Singleton
-from gofer.messaging import *
-from qpid.messaging import Connection
-from threading import RLock
 from logging import getLogger
+from threading import local as Local
+
+from gofer import Singleton
 
 log = getLogger(__name__)
 
@@ -34,17 +32,18 @@ class MetaBroker(Singleton):
     """
 
     @classmethod
-    def key(cls, t, d):
+    def key(mcs, t, d):
         url = t[0]
         if not isinstance(url, URL):
             url = URL(url)
         return url.simple()
 
+
 class Broker:
     """
     Represents an AMQP broker.
-    :cvar domain: A list dict of brokers.
-    :type domain: dict
+    :ivar connection: A thread local containing an open connection.
+    :type connection: Local
     :ivar url: The broker's url.
     :type url: URL
     :ivar cacert: Path to a PEM encoded file containing
@@ -54,16 +53,8 @@ class Broker:
         the private key & certificate used for client authentication.
     :type clientcert: str
     """
+
     __metaclass__ = MetaBroker
-    __mutex = RLock()
-    
-    @classmethod
-    def __lock(cls):
-        cls.__mutex.acquire()
-        
-    @classmethod
-    def __unlock(cls):
-        cls.__mutex.release()
 
     def __init__(self, url):
         """
@@ -74,9 +65,11 @@ class Broker:
             self.url = url
         else:
             self.url = URL(url)
+        self.connection = Local()
         self.cacert = None
         self.clientcert = None
-        self.connection = None
+        self.userid = None
+        self.password = None
 
     def id(self):
         """
@@ -92,55 +85,13 @@ class Broker:
         :return: The AMQP connection object.
         :rtype: I{Connection}
         """
-        self.__lock()
-        try:
-            if self.connection is None:
-                url = self.url.simple()
-                transport = self.url.transport
-                log.info('connecting:\n%s', self)
-                con = Connection(
-                    url=url,
-                    tcp_nodelay=True,
-                    reconnect=True,
-                    transport=transport)
-                con.attach()
-                log.info('{%s} connected to AMQP', self.id())
-                self.connection = con
-            else:
-                con = self.connection
-            return con
-        finally:
-            self.__unlock()
-            
-    def touch(self, address):
-        """
-        Touch (eval) the specified AMQP address string.
-        Used to perform destination administration.
-        Examples:
-          - myqueue;{delete:always}
-          - mytopic;{create:always,node:node:{type:topic}}
-        :param address: An AMQP address.
-        :type address: str
-        """
-        connection = self.connect()
-        session = connection.session()
-        sender = session.sender(address)
-        sender.close()
+        raise NotImplemented()
 
     def close(self):
         """
         Close the connection to the broker.
         """
-        self.__lock()
-        try:
-            try:
-                con = self.connection
-                self.connection = None
-                con.close()
-            except:
-                log.exception(str(self))
-        finally:
-            self.__unlock()
+        raise NotImplemented()
 
     def __str__(self):
         s = []
@@ -150,13 +101,15 @@ class Broker:
         s.append('port=%d' % self.url.port)
         s.append('cacert=%s' % self.cacert)
         s.append('clientcert=%s' % self.clientcert)
+        s.append('userid=%s' % self.userid)
+        s.append('password=%s' % self.password)
         return '\n'.join(s)
 
 
 class URL:
     """
-    Represents a QPID broker URL.
-    :ivar transport: A qpid transport.
+    Represents a broker URL.
+    :ivar transport: A URL transport.
     :type transport: str
     :ivar host: The host.
     :type host: str
@@ -164,8 +117,10 @@ class URL:
     :type port: int
     """
 
-    @classmethod
-    def split(cls, s):
+    SSL = ('ssl', 'amqps')
+
+    @staticmethod
+    def split(s):
         """
         Split the url string.
         :param s: A url string format: <transport>://<host>:<port>.
@@ -173,12 +128,12 @@ class URL:
         :return: The url parts: (transport, host, port)
         :rtype: tuple
         """
-        transport, hp = cls.spliturl(s)
-        host, port = cls.splitport(hp)
-        return (transport, host, port)
+        transport, hp = URL.split_url(s)
+        host, port = URL.split_port(hp, URL._port(transport))
+        return transport, host, port
 
-    @classmethod
-    def spliturl(cls, s):
+    @staticmethod
+    def split_url(s):
         """
         Split the transport and url parts.
         :param s: A url string format: <transport>://<host>:<port>.
@@ -191,10 +146,10 @@ class URL:
             transport, hp = (part[0], part[1])
         else:
             transport, hp = ('tcp', part[0])
-        return (transport, hp)
+        return transport, hp
 
-    @classmethod
-    def splitport(cls, s, d=5672):
+    @staticmethod
+    def split_port(s, default):
         """
         Split the host and port.
         :param s: A url string format: <host>:<port>.
@@ -205,10 +160,31 @@ class URL:
         part = s.split(':')
         host = part[0]
         if len(part) < 2:
-            port = d
+            port = default
         else:
             port = part[1]
-        return (host, int(port))
+        return host, int(port)
+
+    @staticmethod
+    def _port(transport):
+        """
+        Get the port based on the transport.
+        :param transport: The URL transport or scheme.
+        :type transport: str
+        :return: port
+        :rtype: int
+        """
+        if transport.lower() in URL.SSL:
+            return 5671
+        else:
+            return 5672
+
+    def __init__(self, s):
+        """
+        :param s: A url string format: <transport>://<host>:<port>.
+        :type s: str
+        """
+        self.transport, self.host, self.port = self.split(s)
 
     def simple(self):
         """
@@ -218,20 +194,14 @@ class URL:
         """
         return '%s:%d' % (self.host, self.port)
 
-    def __init__(self, s):
-        """
-        :param s: A url string format: <transport>://<host>:<port>.
-        :type s: str
-        """
-        self.transport,\
-            self.host,\
-            self.port = self.split(s)
+    def is_ssl(self):
+        return self.transport.lower() in self.SSL
 
     def __hash__(self):
         return hash(self.simple())
 
     def __eq__(self, other):
-        return ( self.simple() == other.simple() )
+        return self.simple() == other.simple()
 
     def __str__(self):
         return '%s://%s:%d' % \

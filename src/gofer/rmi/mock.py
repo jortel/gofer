@@ -16,7 +16,7 @@
 import inspect
 from gofer import proxy
 from gofer import Singleton
-from gofer.messaging import Options
+from gofer.messaging.model import Options
 from gofer.rmi.stub import Stub
 from threading import RLock
 
@@ -91,16 +91,17 @@ class MockContainer:
     
     __metaclass__ = MetaContainer
     
-    def __init__(self, uuid, producer=None, **options):
+    def __init__(self, uuid, url=None, **options):
         """
         :param uuid: The peer ID.
         :type uuid: str
-        :param producer: An AMQP producer (unused).
-        :type producer: gofer.messaging.producer.Producer
+        :param url: The agent URL.
+        :type url: str
         :param options: keyword options.
         :type options: dict
         """
         self.__id = uuid
+        self.__url = url
         self.__options = Options()
         self.__options += options
         self.__stubs = {}

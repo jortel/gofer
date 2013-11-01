@@ -18,13 +18,13 @@ AMQP endpoint base classes.
 """
 
 import atexit
-from time import sleep
-from threading import RLock
-from gofer.messaging import *
-from gofer.messaging.broker import Broker
-from gofer.messaging.transport import SSL
-from qpid.messaging import Connection
+
+from threading import RLock, local as Local
 from logging import getLogger
+
+from gofer.messaging.model import getuuid
+from gofer.transport.qpid.broker import Qpid
+
 
 log = getLogger(__name__)
 
@@ -33,11 +33,10 @@ class SessionPool:
     """
     The AMQP session pool.
     """
-    
+
     def __init__(self):
-        self.__mutex = RLock()
-        self.__pools = {}
-        
+        self.__pools = Local()
+
     def get(self, url):
         """
         Get the next free session in the pool.
@@ -46,19 +45,15 @@ class SessionPool:
         :return: A free session.
         :rtype: qpid.messaging.Session
         """
-        self.__lock()
-        try:
-            pool = self.__pool(url)
-            ssn = self.__pop(pool)
-            if ssn is None:
-                broker = Broker(url)
-                con = broker.connect()
-                ssn = con.session()
-            pool[1].append(ssn)
-            return ssn
-        finally:
-            self.__unlock()
-            
+        pool = self.__pool(url)
+        ssn = self.__pop(pool)
+        if ssn is None:
+            broker = Qpid(url)
+            con = broker.connect()
+            ssn = con.session()
+        pool[1].append(ssn)
+        return ssn
+
     def put(self, url, ssn):
         """
         Release a session back to the pool.
@@ -67,32 +62,24 @@ class SessionPool:
         :param ssn: An AMQP session.
         :rtype: qpid.messaging.Session
         """
-        self.__lock()
-        try:
-            pool = self.__pool(url)
-            if ssn in pool[1]:
-                pool[1].remove(ssn)
-            if ssn not in pool[0]:
-                pool[0].append(ssn)
-        finally:
-            self.__unlock()
-            
+        pool = self.__pool(url)
+        if ssn in pool[1]:
+            pool[1].remove(ssn)
+        if ssn not in pool[0]:
+            pool[0].append(ssn)
+
     def purge(self):
         """
         Purge (close) free sessions.
         """
-        self.__lock()
-        try:
-            for pool in self.__pools.values():
-                while pool[0]:
-                    try:
-                        ssn = pool.pop()
-                        ssn.close()
-                    except:
-                        log.error(ssn, exc_info=1)
-        finally:
-            self.__unlock()
-            
+        for pool in self.__pools.values():
+            while pool[0]:
+                try:
+                    ssn = pool.pop()
+                    ssn.close()
+                except:
+                    log.error(ssn, exc_info=1)
+
     def __pop(self, pool):
         """
         Pop the next available session from the free list.
@@ -109,7 +96,7 @@ class SessionPool:
                 return ssn
             except:
                 log.error(ssn, exc_info=1)
-        
+
     def __pool(self, url):
         """
         Obtain the pool for the specified url.
@@ -118,26 +105,21 @@ class SessionPool:
         :return: The session pool.  (free,busy)
         :rtype: tuple
         """
-        self.__lock()
         try:
-            pool = self.__pools.get(url)
-            if pool is None:
-                pool = ([],[])
-                self.__pools[url] = pool
-            return pool
-        finally:
-            self.__unlock()
-        
-    def __lock(self):
-        self.__mutex.acquire()
-        
-    def __unlock(self):
-        self.__mutex.release()
+            pools = self.__pools.cache
+        except AttributeError:
+            pools = {}
+            self.__pools.cache = pools
+        pool = pools.get(url)
+        if pool is None:
+            pool = ([], [])
+            pools[url] = pool
+        return pool
 
 
 class Endpoint:
     """
-    Base class for QPID endpoint.
+    Base class for an AMQP endpoint.
     :cvar ssnpool: An AMQP session pool.
     :type ssnpool: SessionPool
     :ivar uuid: The unique endpoint id.
@@ -190,13 +172,13 @@ class Endpoint:
         finally:
             self._unlock()
 
-    def ack(self):
+    def ack(self, message):
         """
         Acknowledge all messages received on the session.
         """
         try:
             self.__session.acknowledge(sync=False)
-        except:
+        except Exception:
             pass
 
     def open(self):
@@ -224,13 +206,6 @@ class Endpoint:
     def _unlock(self):
         self.__mutex.release()
 
-    def __parsedurl(self):
-        urlpart = self.url.split('://', 1)
-        if len(urlpart) == 1:
-            return (urlpart[0], 'tcp')
-        else:
-            return (urlpart[0], urlpart[1])
-
     def __del__(self):
         try:
             self.close()
@@ -239,3 +214,10 @@ class Endpoint:
 
     def __str__(self):
         return 'Endpoint id:%s broker @ %s' % (self.id(), self.url)
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, *unused):
+        self.close()

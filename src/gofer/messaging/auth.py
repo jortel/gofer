@@ -238,7 +238,8 @@ class HMAC:
 # Testing
 #
 
-from gofer.messaging import Envelope
+from gofer.messaging.model import Envelope
+
 
 def test1():
     e = Envelope(routing=('A','B'))

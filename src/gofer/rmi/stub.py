@@ -21,10 +21,8 @@ classes on which we invoke methods.
 
 from new import classobj
 from threading import RLock
-from gofer.messaging import *
 from gofer.rmi.policy import *
 from gofer.rmi.dispatcher import Request
-from gofer.rmi.window import Window
 
 
 class Method:
@@ -75,10 +73,10 @@ class Method:
 class Stub:
     """
     The stub class for remote objects.
-    :ivar __producer: An AMQP producer.
-    :type __producer: gofer.messaging.producer.Producer
+    :ivar url: The agent URL.
+    :type url: str
     :ivar __destination: The AMQP destination
-    :type __destination: Destination
+    :type __destination: gofer.transport.model.Destination
     :ivar __options: Stub options.
     :type __options: Options
     :ivar __mutex: The object mutex.
@@ -88,32 +86,34 @@ class Stub:
     """
     
     @classmethod
-    def stub(cls, name, producer, destination, options):
+    def stub(cls, name, url, destination, options):
         """
         Factory method.
         :param name: The stub class (or module) name.
         :type name: str
+        :param url: The agent URL.
+        :type url: str
         :param destination: The AMQP destination
-        :type destination: Destination
+        :type destination: gofer.transport.model.Destination
         :param options: A dict of gofer options
         :param options: Options
         :return: A stub instance.
         :rtype: Stub
         """
         subclass = classobj(name, (Stub,), {})
-        inst = subclass(producer, destination, options)
+        inst = subclass(url, destination, options)
         return inst
 
-    def __init__(self, producer, destination, options):
+    def __init__(self, url, destination, options):
         """
-        :param producer: An AMQP producer.
-        :type producer: gofer.messaging.producer.Producer
+        :param url: The agent URL.
+        :type url: str
         :param destination: The AMQP destination
-        :type destination: Destination
+        :type destination: gofer.transport.model.Destination
         :param options: Stub options.
         :type options: Options
         """
-        self.__producer = producer
+        self.__url = url
         self.__destination = destination
         self.__options = Options(options)
         self.__called = (0, None)
@@ -148,20 +148,20 @@ class Stub:
         policy = self.__getpolicy()
         if isinstance(self.__destination, (list,tuple)):
             return policy.broadcast(
-                        self.__destination,
-                        request,
-                        window=opts.window,
-                        secret=opts.secret,
-                        pam=self.__getpam(opts),
-                        any=opts.any)
+                self.__destination,
+                request,
+                window=opts.window,
+                secret=opts.secret,
+                pam=self.__getpam(opts),
+                any=opts.any)
         else:
             return policy.send(
-                        self.__destination,
-                        request,
-                        window=opts.window,
-                        secret=opts.secret,
-                        pam=self.__getpam(opts),
-                        any=opts.any)
+                self.__destination,
+                request,
+                window=opts.window,
+                secret=opts.secret,
+                pam=self.__getpam(opts),
+                any=opts.any)
             
     def __getpam(self, opts):
         """
@@ -237,10 +237,10 @@ class Stub:
         """
         if self.__async():
             self.__policy = \
-                Asynchronous(self.__producer, self.__options)
+                Asynchronous(self.__url, self.__options)
         else:
             self.__policy = \
-                Synchronous(self.__producer, self.__options)
+                Synchronous(self.__url, self.__options)
 
     def __async(self):
         """
@@ -253,7 +253,7 @@ class Stub:
              self.__options.async or
              self.__options.trigger):
             return True
-        return isinstance(self.__destination, (list,tuple))
+        return isinstance(self.__destination, (list, tuple))
     
     def __lock(self):
         self.__mutex.acquire()

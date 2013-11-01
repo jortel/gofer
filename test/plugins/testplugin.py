@@ -17,9 +17,8 @@
 from time import sleep
 from gofer.decorators import *
 from gofer.agent.plugin import Plugin
-from gofer.messaging import Topic
-from gofer.messaging.producer import Producer
 from gofer.agent.rmi import Context
+from gofer.messaging import Producer, Exchange, Destination
 from logging import getLogger, INFO, DEBUG
 
 log = getLogger(__name__)
@@ -230,16 +229,6 @@ class Heartbeat:
     Provide agent heartbeat.
     """
 
-    __producer = None
-
-    @classmethod
-    def producer(cls):
-        if not cls.__producer:
-            broker = plugin.getbroker()
-            url = str(broker.url)
-            cls.__producer = Producer(url=url)
-        return cls.__producer
-
     @action(seconds=HEARTBEAT)
     def heartbeat(self):
         return self.send()
@@ -247,10 +236,13 @@ class Heartbeat:
     @remote
     def send(self):
         delay = int(HEARTBEAT)
-        topic = Topic('heartbeat')
+        broker = plugin.getbroker()
+        url = str(broker.url)
+        topic = Exchange.topic(url)
+        destination = Destination(exchange=topic.name, routing_key='heartbeat')
         myid = plugin.getuuid()
         if myid:
-            p = self.producer()
-            body = dict(uuid=myid, next=delay)
-            p.send(topic, ttl=delay, heartbeat=body)
+            with Producer(url=url) as p:
+                body = dict(uuid=myid, next=delay)
+                p.send(destination, ttl=delay, heartbeat=body)
         return myid

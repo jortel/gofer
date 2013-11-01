@@ -22,6 +22,7 @@ from gofer.messaging import Queue
 from gofer.rmi.async import *
 from logging import INFO, basicConfig
 
+
 basicConfig(filename='/tmp/gofer/async.log', level=INFO)
 
 
@@ -48,7 +49,7 @@ if __name__ == '__main__':
     tag = 'XYZ'
     print 'starting, uuid=%s' % tag
     w = WatchDog()
-    queue = Queue(tag)
+    queue = Queue(tag, url='tcp://localhost:5672')
     c = ReplyConsumer(queue)
     #c.start(Listener())
     c.start(onReply, watchdog=w)

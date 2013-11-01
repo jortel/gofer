@@ -11,11 +11,12 @@ sys.path.insert(0, srcdir)
 
 from unittest import TestCase
 from mock import Mock
-from gofer.messaging import Envelope
-from gofer.messaging.producer import Producer
-from gofer.messaging.consumer import Consumer
+from gofer.transport import Transport
 from gofer.rmi import async
 from gofer.rmi.async import WatchDog, Journal, ReplyConsumer
+from gofer.messaging.model import Envelope
+
+transport = Transport('tcp://localhost:5672')
 
 SN = '123'
 REPLYTO = 'xyz'
@@ -31,8 +32,8 @@ class TestWatchDog(TestCase):
     
     def setUp(self):
         global ELAPSED
-        Producer.send = Mock()
-        Consumer.start = Mock()
+        transport.Producer.send = Mock()
+        transport.Consumer.start = Mock()
         self.jdir = tempfile.mkdtemp()
         async.time = Mock(side_effect=now)
         ELAPSED = 0
@@ -95,7 +96,7 @@ class TestWatchDog(TestCase):
 class TestReplyConsumer(TestCase):
     
     def setUp(self):
-        Consumer.start = Mock()
+        transport.Consumer.start = Mock()
 
     def testBasic(self):
         listener = Mock()

@@ -20,7 +20,10 @@ Plugin classes.
 import os
 import imp
 import inspect
+
 from threading import RLock
+from logging import getLogger
+
 from gofer import *
 from gofer.rmi.dispatcher import Dispatcher
 from gofer.rmi.threadpool import ThreadPool
@@ -30,9 +33,9 @@ from gofer.agent.deplist import DepList
 from gofer.agent.config import Base, Config, nvl
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
-from gofer.messaging import Queue
-from gofer.messaging.broker import Broker
-from logging import getLogger
+from gofer.transport import Transport
+from gofer.messaging import Broker, Queue
+
 
 log = getLogger(__name__)
 
@@ -169,10 +172,9 @@ class Plugin(object):
         :return: The broker URL
         :rtype: str
         """
-        main = Config()
-        cfg = self.cfg()
-        return nvl(cfg.messaging.url,
-               nvl(main.messaging.url))
+        agent = Config()
+        plugin = self.cfg()
+        return nvl(plugin.messaging.url, nvl(agent.messaging.url))
     
     def getbroker(self):
         """
@@ -183,16 +185,12 @@ class Plugin(object):
         """
         cfg = self.cfg()
         main = Config()
-        broker = Broker(self.geturl())
-        broker.cacert = \
-            nvl(cfg.messaging.cacert,
-            nvl(main.messaging.cacert))
-        broker.clientcert = \
-            nvl(cfg.messaging.clientcert,
-            nvl(main.messaging.clientcert))
-        log.info('broker (qpid) configured: %s', broker)
+        broker = Broker(url=self.geturl())
+        broker.cacert = nvl(cfg.messaging.cacert, nvl(main.messaging.cacert))
+        broker.clientcert = nvl(cfg.messaging.clientcert, nvl(main.messaging.clientcert))
+        log.debug('broker (qpid) configured: %s', broker)
         return broker
-    
+
     def getpool(self):
         """
         Get the plugin's thread pool.
@@ -236,6 +234,7 @@ class Plugin(object):
             cfg = self.cfg()
             if url:
                 cfg.messaging.url = url
+                self.bind()
             else:
                 delattr(cfg.messaging, 'url')
             if save:
@@ -251,9 +250,7 @@ class Plugin(object):
         """
         main = Config()
         cfg = self.cfg()
-        value = \
-            nvl(cfg.messaging.threads,
-            nvl(main.messaging.threads, 1))
+        value = nvl(cfg.messaging.threads, nvl(main.messaging.threads, 1))
         value = int(value)
         assert(value >= 1)
         return value
@@ -264,13 +261,12 @@ class Plugin(object):
         :param uuid: The (optional) messaging UUID.
         :type uuid: str
         """
-        cfg = self.cfg()
         if not uuid:
             uuid = self.getuuid()
         broker = self.getbroker()
         url = broker.url
-        queue = Queue(uuid)
-        consumer = RequestConsumer(queue, url=url)
+        queue = Queue(uuid, url=url)
+        consumer = RequestConsumer(queue, url)
         consumer.start()
         self.consumer = consumer
     
@@ -330,6 +326,17 @@ class Plugin(object):
             raise TypeError, '(%s) must be class|function' % name
         except AttributeError:
             raise NameError(name)
+
+    def bind(self):
+        """
+        Bind the AMQP transport.
+        """
+        if not self.enabled():
+            return
+        agent = Config()
+        plugin = self.cfg()
+        package = nvl(plugin.messaging.transport, nvl(agent.messaging.transport))
+        Transport.bind(self.geturl(), package)
     
     def __lock(self):
         self.__mutex.acquire()
@@ -457,7 +464,7 @@ class PluginLoader:
                 continue
             p = self.__import(plugin, cfg)
             if not p:
-                continue # load failed
+                continue  # load failed
             if not p.enabled():
                 log.warn('plugin: %s, DISABLED', p.name)
             loaded.append(p)
@@ -474,10 +481,9 @@ class PluginLoader:
         :rtype: bool
         """
         try:
-            return not ( eager or int(cfg.main.enabled) )
+            return not (eager or int(cfg.main.enabled))
         except:
             return False
-
 
     def __import(self, plugin, cfg):
         """
@@ -505,6 +511,7 @@ class PluginLoader:
                 collated = Remote.collated()
                 p.dispatcher = Dispatcher(collated)
                 p.actions = Actions.collated()
+                p.bind()
             return p
         except:
             Plugin.delete(p)

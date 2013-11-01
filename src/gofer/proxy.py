@@ -14,10 +14,6 @@
 #
 
 from gofer.rmi.container import Container
-from gofer.messaging.producer import Producer
-from logging import getLogger
-
-log = getLogger(__name__)
 
 
 def Agent(uuid, **options):
@@ -29,28 +25,9 @@ def agent(uuid, **options):
     """
     Get a proxy for the remote Agent.
     :param uuid: An agent ID.
-        May be tuple (<container>,<agent>)
-    :type uuid: (str|tuple)
+    :type uuid: str
     :return: An agent (proxy).
     :rtype: Container
     """
-    if not isinstance(uuid, tuple):
-        uuid = (None, uuid)
     url = options.pop('url', None)
-    p = Producer(uuid=uuid[0], url=url)
-    return Container(uuid[1], p, **options)
-
-     
-def delete(agent):
-    """
-    Delete associated AMQP resources.
-    :param agent: A gofer agent.
-    :type agent: Container
-    """
-    if isinstance(agent, Container):
-        queue = agent._Container__destination()
-        method = agent._Container__options.method
-        session = method.producer.session()
-        queue.delete(session)
-    else:
-        pass
+    return Container(uuid, url, **options)

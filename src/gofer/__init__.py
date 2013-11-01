@@ -13,6 +13,8 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
+import inspect
+
 from threading import RLock
 
 
@@ -100,12 +102,19 @@ def synchronized(fn):
     using the object's mutex.  The object must have a private
     RLock attribute named __mutex.  Intended only for instance
     methods that have a method body that can be safely mutexed
-    in it's entirety to prevent deadlock senarios.
+    in it's entirety to prevent deadlock scenarios.
     """
     def sfn(*args, **kwargs):
         inst = args[0]
-        cn = inst.__class__.__name__
-        mutex = getattr(inst, '_%s__mutex' % cn)
+        bases = list(inspect.getmro(inst.__class__))
+        mutex = None
+        for cn in [c.__name__ for c in bases]:
+            name = '_%s__mutex' % cn
+            if hasattr(inst, name):
+                mutex = getattr(inst, name)
+                break
+        if mutex is None:
+            raise AttributeError('mutex')
         mutex.acquire()
         try:
             return fn(*args, **kwargs)
@@ -113,18 +122,25 @@ def synchronized(fn):
             mutex.release()
     return sfn
 
+
 def conditional(fn):
     """
-    Decorator that provides reentrant method invocation
-    using the object's mutex.  The object must have a private
-    RLock attribute named __mutex.  Intended only for instance
-    methods that have a method body that can be safely mutexed
-    in it's entirety to prevent deadlock senarios.
+    Decorator that provides event latched method invocation
+    using the object's condition.  The object must have a private
+    Condition attribute named __condition.  Intended only for instance
+    methods that have a method body that can be safely event latched.
     """
     def sfn(*args, **kwargs):
         inst = args[0]
-        cn = inst.__class__.__name__
-        mutex = getattr(inst, '_%s__condition' % cn)
+        bases = list(inspect.getmro(inst.__class__))
+        mutex = None
+        for cn in [c.__name__ for c in bases]:
+            name = '_%s__condition' % cn
+            if hasattr(inst, name):
+                mutex = getattr(inst, name)
+                break
+        if mutex is None:
+            raise AttributeError('condition')
         mutex.acquire()
         try:
             return fn(*args, **kwargs)
