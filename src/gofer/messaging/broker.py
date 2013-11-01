@@ -102,7 +102,9 @@ class Broker:
                     url=url,
                     tcp_nodelay=True,
                     reconnect=True,
-                    transport=transport)
+                    transport=transport,
+                    ssl_trustfile=self.cacert,
+                    ssl_certfile=self.clientcert)
                 con.attach()
                 log.info('{%s} connected to AMQP', self.id())
                 self.connection = con
