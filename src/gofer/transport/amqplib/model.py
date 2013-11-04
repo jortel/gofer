@@ -38,6 +38,10 @@ def reliable(fn):
 class Exchange(BaseExchange):
 
     @staticmethod
+    def default():
+        return Exchange('')
+
+    @staticmethod
     def direct():
         return Exchange('amq.direct')
 
@@ -79,7 +83,7 @@ class Queue(BaseQueue):
         BaseQueue.__init__(
             self,
             name,
-            exchange=exchange or Exchange.direct(),
+            exchange=exchange or Exchange.default(),
             routing_key=routing_key or name)
         self.exclusive = False
 
@@ -97,10 +101,11 @@ class Queue(BaseQueue):
                 auto_delete=self.auto_delete,
                 exclusive=self.exclusive,
                 arguments=arguments)
-            channel.queue_bind(
-                self.name,
-                exchange=self.exchange.name,
-                routing_key=self.routing_key)
+            if self.exchange != Exchange.default():
+                channel.queue_bind(
+                    self.name,
+                    exchange=self.exchange.name,
+                    routing_key=self.routing_key)
         _fn(url)
 
     def delete(self, url):

@@ -38,6 +38,10 @@ class Exchange(BaseExchange):
         BaseExchange.__init__(self, name, policy=policy)
 
     @staticmethod
+    def default():
+        return Exchange('')
+
+    @staticmethod
     def direct():
         return Exchange('amq.direct')
 
@@ -81,12 +85,15 @@ class Queue(BaseQueue):
         BaseQueue.__init__(
             self,
             name,
-            exchange=exchange or Exchange.direct(),
+            exchange=exchange or Exchange.default(),
             routing_key=routing_key or name)
 
     def bindings(self):
-        binding = XBinding(self.exchange, self.routing_key)
-        return XBindings(binding)
+        if self.exchange != Exchange.default():
+            binding = XBinding(self.exchange, self.routing_key)
+            return XBindings(binding)
+        else:
+            return XBindings()
 
     def address(self):
         if self.durable:
@@ -143,10 +150,6 @@ class Queue(BaseQueue):
             return ''
 
     def declare(self, url):
-        if not self.exchange:
-            # not necessary unless an exchange is specified.
-            return
-        self.exchange.declare(url)
         endpoint = Endpoint(url=url)
         try:
             session = endpoint.session()

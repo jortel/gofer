@@ -17,7 +17,7 @@
 Contains request delivery policies.
 """
 
-from gofer.messaging import Queue, Producer, Reader
+from gofer.messaging import Queue, Producer, Reader, Destination
 from gofer.messaging.model import Envelope, getuuid
 from gofer.rmi.dispatcher import *
 from gofer.metrics import Timer
@@ -110,11 +110,11 @@ class Timeout:
         self.duration = self.seconds(duration)
 
     def tuple(self):
-        return (self.start, self.duration)
+        return self.start, self.duration
 
-#
-# Exceptions
-#
+
+# --- exceptions -------------------------------------------------------------
+
 
 class RequestTimeout(Exception):
     """
@@ -135,9 +135,8 @@ class RequestTimeout(Exception):
         return self.args[1]
         
 
-#
-# Policy
-# 
+# --- policy -----------------------------------------------------------------
+
 
 class RequestMethod:
     """
@@ -156,7 +155,7 @@ class RequestMethod:
     def send(self, destination, request, **any):
         """
         Send the request..
-        :param destination: The destination AMQP queue.
+        :param destination: An AMQP destination.
         :type destination: gofer.transport.model.Destination
         :param request: A request to send.
         :type request: object
@@ -203,7 +202,7 @@ class Synchronous(RequestMethod):
     def send(self, destination, request, **any):
         """
         Send the request then read the reply.
-        :param destination: The destination AMQP queue.
+        :param destination: An AMQP destination.
         :type destination: gofer.transport.model.Destination
         :param request: A request to send.
         :type request: object
@@ -336,7 +335,7 @@ class Asynchronous(RequestMethod):
         Send the specified request and redirect the reply to the
         queue for the specified reply I{correlation} tag.
         A trigger(1) specifies a I{manual} trigger.
-        :param destination: The destination AMQP queue.
+        :param destination: An AMQP destination.
         :type destination: gofer.transport.model.Destination
         :param request: A request to send.
         :type request: object
@@ -373,24 +372,25 @@ class Asynchronous(RequestMethod):
 
     def replyto(self):
         """
-        Get replyto based on the correlation I{tag}.
-        :return: The replyto AMQP address.
-        :rtype: str
+        Get replyto based on the correlation tag.
+        The ctag can be a string or a Destination object.
+        :return: The replyto AMQP destination.
+        :rtype: dict
         """
-        if self.ctag:
-            queue = Queue(self.ctag, url=self.url)
-            replyto = queue.destination()
-            return replyto.dict()
-        else:
-            return None
+        if isinstance(self.ctag, str):
+            d = Destination(self.ctag)
+            return d.dict()
+        if isinstance(self.ctag, Destination):
+            d = self.ctag
+            return d.dict()
 
     def notifywatchdog(self, sn, replyto, any):
         """
         Add the request to the I{watchdog} for tacking.
         :param sn: A serial number.
         :type sn: str
-        :param replyto: An AMQP address.
-        :type replyto: str
+        :param replyto: An AMQP destination.
+        :type replyto: dict
         :param any: User defined data.
         :type any: any
         """
@@ -416,7 +416,7 @@ class Trigger:
     :type __sn: str
     :ivar __policy: The policy object.
     :type __policy: Asynchronous
-    :ivar __destination: The AMQP queue.
+    :ivar __destination: An AMQP destination.
     :type __destination: gofer.transport.model.Destination
     :ivar __request: A request to send.
     :type __request: object
@@ -428,7 +428,7 @@ class Trigger:
         """
         :param policy: The policy object.
         :type policy: Asynchronous
-        :param destination: The AMQP queue.
+        :param destination: An AMQP destination.
         :type destination: gofer.transport.model.Destination
         :param request: A request to send.
         :type request: object

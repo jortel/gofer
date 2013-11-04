@@ -74,38 +74,52 @@ class Exchange(Node):
         self.durable = True
         self.auto_delete = False
 
+    def __eq__(self, other):
+        return isinstance(other, Exchange) and \
+            self.name == other.name
+
+    def __ne__(self, other):
+        return not (self == other)
+
 
 class Destination(object):
     """
     An AMQP destination.
-    :ivar exchange: An AMQP exchange.
-    :type exchange: str
     :ivar routing_key: Message routing key.
     :type routing_key: str
+    :ivar exchange: An (optional) AMQP exchange.
+    :type exchange: str
     """
 
-    EXCHANGE = 'exchange'
     ROUTING_KEY = 'routing_key'
+    EXCHANGE = 'exchange'
 
     @staticmethod
     def create(d):
-        return Destination(d[Destination.EXCHANGE], d[Destination.ROUTING_KEY])
+        return Destination(d[Destination.ROUTING_KEY], d[Destination.EXCHANGE])
 
-    def __init__(self, exchange, routing_key):
+    def __init__(self, routing_key, exchange=''):
         """
         :param exchange: An AMQP exchange.
         :type exchange: str
         :param routing_key: Message routing key.
         :type routing_key: str
         """
-        self.exchange = exchange
         self.routing_key = routing_key
+        self.exchange = exchange
 
     def dict(self):
         return {
-            Destination.EXCHANGE: self.exchange,
             Destination.ROUTING_KEY: self.routing_key,
+            Destination.EXCHANGE: self.exchange,
         }
+
+    def __eq__(self, other):
+        return isinstance(other, Destination) and \
+            self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not (self == other)
 
 
 class Queue(Node):
@@ -145,4 +159,11 @@ class Queue(Node):
         :return: A destination for the node.
         :rtype: Destination
         """
-        return Destination(self.exchange.name, self.routing_key)
+        return Destination(self.routing_key, exchange=self.exchange.name)
+
+    def __eq__(self, other):
+        return isinstance(other, Queue) and \
+            self.name == other.name
+
+    def __ne__(self, other):
+        return not (self == other)

@@ -239,7 +239,7 @@ class Heartbeat:
         broker = plugin.getbroker()
         url = str(broker.url)
         topic = Exchange.topic(url)
-        destination = Destination(exchange=topic.name, routing_key='heartbeat')
+        destination = Destination('heartbeat', exchange=topic.name)
         myid = plugin.getuuid()
         if myid:
             with Producer(url=url) as p:

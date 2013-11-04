@@ -45,7 +45,10 @@ class Producer(Endpoint):
         :rtype: str
         """
         sn = getuuid()
-        address = '/'.join((destination.exchange, destination.routing_key))
+        if destination.exchange:
+            address = '/'.join((destination.exchange, destination.routing_key))
+        else:
+            address = destination.routing_key
         routing = (self.id(), address)
         envelope = Envelope(sn=sn, version=VERSION, routing=routing)
         envelope += body
@@ -90,7 +93,10 @@ class BinaryProducer(Endpoint):
         :param ttl: Time to Live (seconds)
         :type ttl: float
         """
-        address = '/'.join((destination.exchange, destination.routing_key))
+        if destination.exchange:
+            address = '/'.join((destination.exchange, destination.routing_key))
+        else:
+            address = destination.routing_key
         message = Message(content=content, durable=True, ttl=ttl)
         sender = self.session().sender(address)
         sender.send(message)

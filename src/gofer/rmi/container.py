@@ -66,15 +66,14 @@ class Container:
         :return: Either a queue destination or a list of destinations.
         :rtype: gofer.transport.model.Destination
         """
-        direct = Exchange.direct(self.__url)
         if isinstance(self.__id, (list, tuple)):
             destinations = []
             for d in self.__id:
-                d = Destination(direct.name, d)
+                d = Destination(d)
                 destinations.append(d)
             return destinations
         else:
-            return Destination(direct.name, self.__id)
+            return Destination(self.__id)
     
     def __getattr__(self, name):
         """
