@@ -18,12 +18,11 @@
 PKG = gofer
 SPEC = $(PKG).spec
 SETUP = setup.py
-DOCTAR = gofer-docs.tar.gz
 FEDORAPEOPLE = jortel@fedorapeople.org
 FEDORAHOSTEDGOFER = fedorahosted.org:gofer
 TITODIR = /tmp/tito
 
-release : rpm rdocs
+release : rpm
 	scp `find $(TITODIR) -name \*$(PKG)\*.rpm` $(FEDORAHOSTEDGOFER)
 	scp `find $(TITODIR) -name \*$(PKG)\*.tar.gz|grep -v git` $(FEDORAHOSTEDGOFER)
 	scp $(SPEC) $(FEDORAHOSTEDGOFER)
@@ -32,20 +31,6 @@ rpm	:
 	mkdir -p $(TITODIR)
 	rm -rf $(TITODIR)/*
 	tito build --rpm
-
-rdocs : docs
-	scp /tmp/$(DOCTAR) $(FEDORAPEOPLE):
-	ssh $(FEDORAPEOPLE) 'cd public_html/gofer; rm -rf doc; tar xmzvf ~/$(DOCTAR)'
-
-docs :
-	rm -rf doc
-	rm -f /tmp/$(DOCTAR)
-	epydoc -vo doc `find src/gofer src/plugins -name "*.py"`
-	tar czvf /tmp/$(DOCTAR) doc
-
-pdf :
-	epydoc -vo doc --pdf `find src/gofer -name \*.py`
-	mv doc/api.pdf doc/gofer.pdf
 
 clean :
 	rm -rf doc
