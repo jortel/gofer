@@ -9,6 +9,8 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+import os
+
 from logging import getLogger
 
 from gofer.transport.broker import URL
@@ -21,9 +23,6 @@ log = getLogger(__name__)
 
 # the default URL
 DEFAULT_URL = 'tcp://localhost:5672'
-
-# the default transport
-DEFAULT_TRANSPORT = 'gofer.transport.amqplib'
 
 
 # symbols required to be provided by all transports
@@ -38,26 +37,55 @@ REQUIRED = [
 ]
 
 
+# --- exceptions -------------------------------------------------------------
+
+
+class NoTransportsLoaded(Exception):
+
+    DESCRIPTION = 'No transports loaded'
+
+    def __str__(self):
+        return self.DESCRIPTION
+
+
+class TransportNotFound(Exception):
+
+    DESCRIPTION = 'Transport: %s, not-found'
+
+    def __init__(self, name):
+        Exception.__init__(self, name)
+
+    def __str__(self):
+        return self.DESCRIPTION % self.args[0]
+
+
 # --- factory ----------------------------------------------------------------
 
 
 class Transport:
     """
     The transport API.
-    :cvar packages: Transport packages mapped by URL.
-    :cvar packages: dict
+    :cvar bindings: Transport packages mapped by URL.
+    :cvar bindings: dict
     """
 
-    packages = {}
+    plugins = {}
+    bindings = {}
 
-    @staticmethod
-    def load(package):
-        try:
-            return __import__(package, {}, {}, REQUIRED)
-        except ImportError:
-            log.exception(package)
-            msg = 'transport: %s - not installed' % package
-            raise ImportError(msg)
+    @classmethod
+    def load_plugins(cls):
+        _dir = os.path.dirname(__file__)
+        for name in os.listdir(_dir):
+            path = os.path.join(_dir, name)
+            if not os.path.isdir(path):
+                continue
+            try:
+                package = '.'.join((__package__, name))
+                pkg = __import__(package, {}, {}, REQUIRED)
+                cls.plugins[name] = pkg
+                cls.plugins[package] = pkg
+            except ImportError:
+                log.debug(name)
 
     @classmethod
     def bind(cls, url=None, package=None):
@@ -69,18 +97,21 @@ class Transport:
         :type package: str
         :return: The bound python module.
         """
+        if not cls.plugins:
+            raise NoTransportsLoaded()
         if not url:
             url = DEFAULT_URL
         if not isinstance(url, URL):
             url = URL(url)
         if not package:
-            package = DEFAULT_TRANSPORT
-        if not '.' in package:
-            package = '.'.join((__package__, package))
-        mod = Transport.load(package)
-        cls.packages[url] = mod
-        log.info('transport: %s bound to url: %s', mod, url)
-        return mod
+            package = sorted(cls.plugins)[0]
+        try:
+            plugin = cls.plugins[package]
+            cls.bindings[url] = plugin
+            log.info('transport: %s bound to url: %s', plugin, url)
+            return plugin
+        except KeyError:
+            raise TransportNotFound(package)
 
     def __init__(self, url=None, package=None):
         """
@@ -95,7 +126,7 @@ class Transport:
             url = URL(url)
         self.url = url
         try:
-            self.package = self.packages[url]
+            self.package = self.bindings[url]
         except KeyError:
             self.package = self.bind(url, package)
 

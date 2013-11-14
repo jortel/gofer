@@ -13,3 +13,6 @@
 
 
 from gofer.transport.factory import Transport
+
+
+Transport.load_plugins()
