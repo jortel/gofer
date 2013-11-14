@@ -40,7 +40,11 @@ REQUIRED = [
 # --- exceptions -------------------------------------------------------------
 
 
-class NoTransportsLoaded(Exception):
+class TransportError(Exception):
+    pass
+
+
+class NoTransportsLoaded(TransportError):
 
     DESCRIPTION = 'No transports loaded'
 
@@ -48,15 +52,15 @@ class NoTransportsLoaded(Exception):
         return self.DESCRIPTION
 
 
-class TransportNotFound(Exception):
+class TransportNotFound(TransportError):
 
     DESCRIPTION = 'Transport: %s, not-found'
 
     def __init__(self, name):
-        Exception.__init__(self, name)
+        self.name = name
 
     def __str__(self):
-        return self.DESCRIPTION % self.args[0]
+        return self.DESCRIPTION % self.name
 
 
 # --- factory ----------------------------------------------------------------

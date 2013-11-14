@@ -12,7 +12,7 @@
 # Jeff Ortel <jortel@redhat.com>
 
 
-from gofer.transport.factory import Transport
+from gofer.transport.factory import Transport, TransportError, TransportNotFound, NoTransportsLoaded
 
 
 Transport.load_plugins()

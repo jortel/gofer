@@ -33,7 +33,7 @@ from gofer.agent.deplist import DepList
 from gofer.agent.config import Base, Config, nvl
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
-from gofer.transport import Transport
+from gofer.transport import Transport, TransportError
 from gofer.messaging import Broker, Queue
 
 
@@ -513,7 +513,10 @@ class PluginLoader:
                 p.actions = Actions.collated()
                 p.bind()
             return p
-        except:
+        except TransportError, te:
+            Plugin.delete(p)
+            log.error('plugin: "%s", unloaded: %s', plugin, te)
+        except Exception:
             Plugin.delete(p)
             log.exception('plugin "%s", import failed', plugin)
             
