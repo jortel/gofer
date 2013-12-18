@@ -22,7 +22,6 @@ class Criteria:
     def __init__(self, criteria):
         """
         :param criteria: The data used for matching.
-        :type criteria: object
         """
         self.criteria = criteria
 
@@ -35,6 +34,31 @@ class Criteria:
         :rtype: bool
         """
         raise NotImplementedError()
+
+    def __call__(self, locator):
+        return self.match(locator)
+
+
+class Match(Criteria):
+
+    def match(self, locator):
+        if not self._valid(locator):
+            return False
+        for k, v in self.criteria.items():
+            if v != locator.get(k, v):
+                return False
+        return True
+
+    def _valid(self, locator):
+        if not isinstance(self.criteria, dict):
+            return False
+        if not isinstance(locator, dict):
+            return False
+        if not self.criteria:
+            return False
+        if not locator:
+            return False
+        return True
 
 
 class Equal(Criteria):
@@ -86,6 +110,7 @@ class Builder:
     Build a criteria object graph based on dictionary representations.
     These representations can be nested.
     Examples:
+      {'match':{'id':100}}
       {'eq':10}
       {'neq':10}
       {'in':[1,2]}
@@ -97,13 +122,14 @@ class Builder:
     """
 
     METHODS = {
-        'eq':Equal,
-        'neq':NotEqual,
-        'in':In,
-        'gt':Greater,
-        'lt':Less,
-        'and':And,
-        'or':Or,
+        'match': Match,
+        'eq': Equal,
+        'neq': NotEqual,
+        'in': In,
+        'gt': Greater,
+        'lt': Less,
+        'and': And,
+        'or': Or,
     }
 
     def build(self, criteria):
@@ -124,16 +150,16 @@ class Builder:
             else:
                 raise InvalidOperator, '%s not supported' % k
 
-    def _resolve(self, object):
+    def _resolve(self, thing):
         if self._criteria(object):
-            return self.build(object)
-        if isinstance(object, (list,tuple)) and len(object) == 2:
-            left, right = object
+            return self.build(thing)
+        if isinstance(thing, (list,tuple)) and len(thing) == 2:
+            left, right = thing
             if self._criteria(left) and self._criteria(right):
                 left = self.build(left)
                 right = self.build(right)
-                return (left, right)
-        return object
+                return left, right
+        return thing
 
     def _criteria(self, object):
         if isinstance(object, dict):

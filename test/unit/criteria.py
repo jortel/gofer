@@ -15,6 +15,23 @@ from gofer.rmi.criteria import *
 
 class TestCriteria(TestCase):
 
+    def test_match(self):
+        match = Match({'id': 44, 'age': 88})
+        self.assertTrue(match({'id': 44}))
+        self.assertTrue(match({'id': 44, 'age': 88}))
+        self.assertTrue(match({'id': 44, 'age': 88}))
+        self.assertTrue(match({'age': 88}))
+        self.assertFalse(match({'id': 88}))
+        self.assertFalse(match({'id': 14, 'age': 18}))
+        self.assertFalse(match(88))
+        self.assertFalse(match(88))
+        self.assertFalse(match({}))
+        match = Match(88)
+        self.assertFalse(match({'id': 44}))
+        self.assertFalse(match({'id': 44, 'age': 88}))
+        self.assertFalse(match({'id': 44, 'age': 88}))
+        self.assertFalse(match({'age': 88}))
+
     def test_eq(self):
         eq = Equal(1)
         self.assertTrue(eq.match(1))
@@ -54,6 +71,24 @@ class TestCriteria(TestCase):
 
 
 class TestBuilder(TestCase):
+
+    def test_match(self):
+        b = Builder()
+        match = b.build({'match': {'id': 44, 'age': 88}})
+        self.assertTrue(match({'id': 44}))
+        self.assertTrue(match({'id': 44, 'age': 88}))
+        self.assertTrue(match({'id': 44, 'age': 88}))
+        self.assertTrue(match({'age': 88}))
+        self.assertFalse(match({'id': 88}))
+        self.assertFalse(match({'id': 14, 'age': 18}))
+        self.assertFalse(match(88))
+        self.assertFalse(match(88))
+        self.assertFalse(match({}))
+        match = b.build({'match': 88})
+        self.assertFalse(match({'id': 44}))
+        self.assertFalse(match({'id': 44, 'age': 88}))
+        self.assertFalse(match({'id': 44, 'age': 88}))
+        self.assertFalse(match({'age': 88}))
 
     def test_eq(self):
         b = Builder()
