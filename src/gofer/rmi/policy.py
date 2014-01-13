@@ -39,8 +39,6 @@ class Timeout:
     :cvar SUFFIX: Suffix to multiplier mapping.
     """
 
-    DEFAULT = 10
-
     SECOND = 1
     MINUTE = 60
     HOUR = (MINUTE * 60)
@@ -115,7 +113,7 @@ class RequestTimeout(Exception):
     def sn(self):
         return self.args[0]
     
-    def index(self):
+    def timeout(self):
         return self.args[1]
         
 

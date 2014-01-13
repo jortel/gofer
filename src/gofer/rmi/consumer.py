@@ -56,5 +56,5 @@ class RequestConsumer(Consumer):
             endpoint = self.reader
             destination = Destination.create(replyto)
             tp.send(endpoint, destination, sn=sn, any=any, status='accepted')
-        except:
+        except Exception:
             log.exception('send (accepted), failed')

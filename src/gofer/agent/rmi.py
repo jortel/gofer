@@ -169,7 +169,7 @@ class EmptyPlugin:
     Used when the appropriate plugin cannot be found.
     """
     
-    def getpool(self):
+    def get_pool(self):
         return Immediate()
     
     def provides(self, classname):

@@ -131,30 +131,11 @@ class Agent:
     Starts (2) threads.  A thread to run actions and
     another to monitor/update plugin sessions on the bus.
     """
-    
+
     WAIT = None
 
-    def __init__(self, plugins):
-        """
-        :param plugins: A list of loaded plugins
-        :type plugins: list
-        """
-        self.plugins = plugins
-        PAM.SERVICE = nvl(cfg.pam.service, PAM.SERVICE)
-        
-    def start(self, block=True):
-        """
-        Start the agent.
-        """
-        plugins = self.plugins
-        actionThread = self.__startActions(plugins)
-        self.__startScheduler(plugins)
-        self.__startPlugins(plugins)
-        log.info('agent started.')
-        if block:
-            actionThread.join(self.WAIT)
-        
-    def __startActions(self, plugins):
+    @staticmethod
+    def __start_actions(plugins):
         """
         Start actions on enabled plugins.
         :param plugins: A list of loaded plugins.
@@ -165,11 +146,12 @@ class Agent:
         actions = []
         for plugin in plugins:
             actions.extend(plugin.actions)
-        actionThread = ActionThread(actions)
-        actionThread.start()
-        return actionThread
-    
-    def __startScheduler(self, plugins):
+        action_thread = ActionThread(actions)
+        action_thread.start()
+        return action_thread
+
+    @staticmethod
+    def __start_scheduler(plugins):
         """
         Start the RMI scheduler.
         :param plugins: A list of loaded plugins.
@@ -180,8 +162,9 @@ class Agent:
         scheduler = Scheduler(plugins)
         scheduler.start()
         return scheduler
-    
-    def __startPlugins(self, plugins):
+
+    @staticmethod
+    def __start_plugins(plugins):
         """
         Start the plugins.
         Create and start a plugin monitor thread for each plugin.
@@ -192,6 +175,26 @@ class Agent:
             if plugin.enabled():
                 pt = PluginMonitorThread(plugin)
                 pt.start()
+
+    def __init__(self, plugins):
+        """
+        :param plugins: A list of loaded plugins
+        :type plugins: list
+        """
+        self.plugins = plugins
+        PAM.SERVICE = nvl(cfg.pam.service, PAM.SERVICE)
+
+    def start(self, block=True):
+        """
+        Start the agent.
+        """
+        plugins = self.plugins
+        action_thread = self.__start_actions(plugins)
+        self.__start_scheduler(plugins)
+        self.__start_plugins(plugins)
+        log.info('agent started.')
+        if block:
+            action_thread.join(self.WAIT)
 
 
 class AgentLock(Lock):
@@ -228,8 +231,10 @@ def start(daemon=True):
     finally:
         lock.release()
 
+
 def eager():
     return int(nvl(cfg.loader.eager, 0))
+
 
 def usage():
     """
@@ -246,6 +251,7 @@ def usage():
     s.append('      Run (foreground) and print code profiling statistics.')
     s.append('\n')
     print '\n'.join(s)
+
 
 def daemonize(lock):
     """
@@ -266,8 +272,9 @@ def daemonize(lock):
         lock.setpid(pid)
         os.waitpid(pid, os.WNOHANG)
         os._exit(0)
-        
-def setupLogging():
+
+
+def setup_logging():
     """
     Set logging levels based on configuration.
     """
@@ -281,7 +288,8 @@ def setupLogging():
             logger.setLevel(L)
         except:
             pass
-        
+
+
 def profile():
     """
     Code profiler using YAPPI
@@ -294,11 +302,12 @@ def profile():
     for pstat in yappi.get_stats(yappi.SORTTYPE_TSUB):
         print pstat
 
+
 def main():
     daemon = True
-    setupLogging()
+    setup_logging()
     try:
-        opts, args = getopt(sys.argv[1:], 'hcp:', ['help','console','prof'])
+        opts, args = getopt(sys.argv[1:], 'hcp:', ['help', 'console', 'prof'])
         for opt,arg in opts:
             if opt in ('-h', '--help'):
                 usage()

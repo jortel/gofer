@@ -58,7 +58,7 @@ if not os.path.exists(PendingQueue.ROOT):
 
 # misc
 from gofer.agent.plugin import PluginDescriptor, PluginLoader
-from gofer.agent.main import Agent, eager, setupLogging
+from gofer.agent.main import Agent, eager, setup_logging
 from logging import getLogger, INFO, DEBUG
 
 log = getLogger(__name__)
@@ -105,7 +105,7 @@ def install(threads=1):
 class TestAgent:
 
     def __init__(self, threads):
-        setupLogging()
+        setup_logging()
         install(threads)
         pl = PluginLoader()
         plugins = pl.load(eager())
