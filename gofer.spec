@@ -63,7 +63,6 @@ mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/plugins
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/conf.d
 mkdir -p %{buildroot}/%{_sysconfdir}/init.d
 mkdir -p %{buildroot}/%{_var}/log/%{name}
-mkdir -p %{buildroot}/%{_var}/lib/%{name}/journal/watchdog
 mkdir -p %{buildroot}/%{_usr}/lib/%{name}/plugins
 mkdir -p %{buildroot}/%{_usr}/share/%{name}/plugins
 mkdir -p %{buildroot}/%{_mandir}/man1
@@ -225,27 +224,6 @@ The system plug-in provides system functionality.
 %defattr(-,root,root,-)
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/system.conf
 %{_usr}/share/%{name}/plugins/system.*
-%doc LICENSE
-
-
-# --- plugin: watchdog -------------------------------------------------------
-
-%package -n gofer-watchdog
-Summary: The watchdog plug-in
-Group: Development/Languages
-BuildRequires: python
-Requires: %{name} >= %{version}
-
-%description -n gofer-watchdog
-Provides the watchdog plug-in.
-This plug-in is used to support time out
-for asynchronous RMI calls.
-
-%files -n gofer-watchdog
-%defattr(-,root,root,-)
-%config(noreplace) %{_sysconfdir}/%{name}/plugins/watchdog.conf
-%{_usr}/share/%{name}/plugins/watchdog.*
-%{_var}/lib/%{name}/journal/watchdog
 %doc LICENSE
 
 

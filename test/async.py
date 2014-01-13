@@ -38,6 +38,9 @@ class Listener:
     def failed(self, reply):
         print reply
 
+    def accepted(self, reply):
+        print reply
+
     def started(self, reply):
         print reply
         
@@ -48,11 +51,10 @@ class Listener:
 if __name__ == '__main__':
     tag = 'XYZ'
     print 'starting, uuid=%s' % tag
-    w = WatchDog()
     queue = Queue(tag, url='tcp://localhost:5672')
     c = ReplyConsumer(queue)
     #c.start(Listener())
-    c.start(onReply, watchdog=w)
+    c.start(onReply)
     while True:
         #print 'ReplyListener: sleeping...'
         sleep(10)

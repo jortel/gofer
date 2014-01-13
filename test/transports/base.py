@@ -42,6 +42,7 @@ def producer_consumer(package, queue):
 
         def __init__(self, queue):
             Consumer.__init__(self, queue, url=URL)
+            self.reader = package.Reader(queue)
             self.received = 0
 
         def dispatch(self, envelope):

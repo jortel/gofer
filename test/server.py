@@ -19,7 +19,7 @@ from time import sleep
 from gofer.messaging import Queue
 from gofer.rmi.window import *
 from gofer.rmi.dispatcher import *
-from gofer.rmi.async import ReplyConsumer, WatchDog, Journal
+from gofer.rmi.async import ReplyConsumer
 from gofer.metrics import Timer
 from gofer.proxy import Agent
 from datetime import datetime as dt
@@ -33,13 +33,6 @@ basicConfig(filename='/opt/gofer/server.log')
 log = getLogger(__name__)
 
 getLogger('gofer.transport').setLevel(DEBUG)
-
-
-# asynchronous RMI timeout watchdog
-jdir = '/opt/gofer/journal/watchdog'
-watchdog = WatchDog(journal=Journal(jdir))
-watchdog.start()
-#watchdog = Agent('xyz').WatchDog()
 
 
 def onReply(reply):
@@ -193,20 +186,7 @@ def demoperftest(uuid, n=50):
         print t
     del agent
     sys.exit(0)
-    
-def demoWatchdog(uuid, exit=0):
-    tag = uuid.upper()
-    print '(watchdog) asynchronous'
-    agent = Agent(uuid, ctag=tag)
-    dog = agent.Dog(watchdog=watchdog, timeout=3, any='jeff')
-    dog.bark('who you calling a watchdog?')
-    dog.sleep(4)
-    dog.sleep(12)
-    sleep(10)
-    print 'END'
-    if exit:
-        sys.exit(0)
-    
+
 def demoWindow(uuid, exit=0):
     tag = uuid.upper()
     print 'demo window, +10, +10min seconds'
@@ -363,15 +343,6 @@ def demoProgress(uuid, exit=0):
     agent = Agent(uuid)
     p = agent.Progress(progress=fn, any={4:5})
     print p.send(4)
-    # asynchronous
-    agent = Agent(uuid, ctag=uuid.upper())
-    p = agent.Progress(timeout=(3,5), watchdog=watchdog, any={1:2})
-    print p.send(12)
-    sleep(20)
-    print '-------- timeout expected ---------'
-    p = agent.Progress(timeout=(3,5), watchdog=watchdog)
-    print p.send_half(12)
-    sleep(20)
     if exit:
         sys.exit(0)
     
@@ -381,7 +352,7 @@ def main(uuid):
 
     # test timeout (not expired)
     agent = Agent(uuid)
-    dog = agent.Dog(timeout=(3,10))
+    dog = agent.Dog(timeout=3)
     print dog.sleep(1)
 
     # TTL
@@ -435,13 +406,6 @@ def main(uuid):
     print dog.wag(3)
     print dog.bark('hello again')
 
-    # watchdog
-    print '(watchdog) asynchronous'
-    agent = Agent(uuid, ctag=tag)
-    dog = agent.Dog(watchdog=watchdog, timeout=3, any='jeff')
-    dog.bark('who you calling a watchdog?')
-    dog.sleep(5)
-
 
 def smokeTest(uuid, exit=0):
     print 'running smoke test ...'
@@ -469,12 +433,11 @@ if __name__ == '__main__':
     url = 'tcp://localhost:5672'
     queue = Queue(uuid.upper(), url=url)
     rcon = ReplyConsumer(queue, url)
-    rcon.start(onReply, watchdog=watchdog)
+    rcon.start(onReply)
     #demoProgress(uuid, 1)
     #demoWindow(uuid, 1)
     #perftest(uuid)
     #demoperftest(uuid)
-    #demoWatchdog(uuid, 1)
     demogetItem(uuid)
     demoauth(uuid, yp)
     democonst(uuid)

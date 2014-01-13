@@ -30,6 +30,32 @@ def message(body, ttl):
     else:
         return Message(body)
 
+@reliable
+def send(endpoint, destination, ttl=None, **body):
+    """
+    Send a message.
+    :param endpoint: An AMQP endpoint.
+    :type endpoint: Endpoint
+    :param destination: An AMQP destination.
+    :type destination: gofer.transport.model.Destination
+    :param ttl: Time to Live (seconds)
+    :type ttl: float
+    :keyword body: envelope body.
+    :return: The message serial number.
+    :rtype: str
+    """
+    sn = getuuid()
+    routing_key = destination.routing_key
+    routing = (endpoint.id(), destination.dict())
+    envelope = Envelope(sn=sn, version=VERSION, routing=routing)
+    envelope += body
+    body = envelope.dump()
+    channel = endpoint.channel()
+    m = message(body, ttl)
+    channel.basic_publish(m, exchange=destination.exchange, routing_key=routing_key)
+    log.debug('{%s} sent (%s)\n%s', endpoint.id(), routing_key, envelope)
+    return sn
+
 
 # --- producers --------------------------------------------------------------
 
@@ -39,7 +65,6 @@ class Producer(Endpoint):
     An AMQP (message producer.
     """
 
-    @reliable
     def send(self, destination, ttl=None, **body):
         """
         Send a message.
@@ -51,19 +76,8 @@ class Producer(Endpoint):
         :return: The message serial number.
         :rtype: str
         """
-        sn = getuuid()
-        routing_key = destination.routing_key
-        routing = (self.id(), destination.dict())
-        envelope = Envelope(sn=sn, version=VERSION, routing=routing)
-        envelope += body
-        body = envelope.dump()
-        channel = self.channel()
-        m = message(body, ttl)
-        channel.basic_publish(m, exchange=destination.exchange, routing_key=routing_key)
-        log.debug('{%s} sent (%s)\n%s', self.id(), routing_key, envelope)
-        return sn
+        return send(self, destination, ttl, **body)
 
-    @reliable
     def broadcast(self, destinations, ttl=None, **body):
         """
         Broadcast a message to (N) queues.
@@ -72,12 +86,12 @@ class Producer(Endpoint):
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: envelope body.
-        :return: A list of (addr,sn).
+        :return: A list of (addr, sn).
         :rtype: list
         """
         sns = []
         for dst in destinations:
-            sn = self.send(dst, ttl, **body)
+            sn = send(self, dst, ttl, **body)
             sns.append((repr(dst), sn))
         return sns
 

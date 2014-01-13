@@ -63,7 +63,7 @@ from logging import getLogger, INFO, DEBUG
 
 log = getLogger(__name__)
 
-getLogger('gofer.transport').setLevel(DEBUG)
+getLogger('gofer').setLevel(DEBUG)
 
 
 def installPlugins(thread):

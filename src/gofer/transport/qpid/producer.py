@@ -28,6 +28,42 @@ from gofer.transport.qpid.endpoint import Endpoint
 log = getLogger(__name__)
 
 
+# --- utils ------------------------------------------------------------------
+
+
+def send(endpoint, destination, ttl=None, **body):
+    """
+    Send a message.
+    :param endpoint: An AMQP endpoint.
+    :type endpoint: Endpoint
+    :param destination: An AMQP destination.
+    :type destination: gofer.transport.model.Destination
+    :param ttl: Time to Live (seconds)
+    :type ttl: float
+    :keyword body: envelope body.
+    :return: The message serial number.
+    :rtype: str
+    """
+    sn = getuuid()
+    if destination.exchange:
+        address = '/'.join((destination.exchange, destination.routing_key))
+    else:
+        address = destination.routing_key
+    routing = (endpoint.id(), address)
+    envelope = Envelope(sn=sn, version=VERSION, routing=routing)
+    envelope += body
+    json = envelope.dump()
+    message = Message(content=json, durable=True, ttl=ttl)
+    sender = endpoint.session().sender(address)
+    sender.send(message)
+    sender.close()
+    log.debug('{%s} sent (%s)\n%s', endpoint.id(), address, envelope)
+    return sn
+
+
+# --- producers --------------------------------------------------------------
+
+
 class Producer(Endpoint):
     """
     An AMQP (message producer.
@@ -44,21 +80,7 @@ class Producer(Endpoint):
         :return: The message serial number.
         :rtype: str
         """
-        sn = getuuid()
-        if destination.exchange:
-            address = '/'.join((destination.exchange, destination.routing_key))
-        else:
-            address = destination.routing_key
-        routing = (self.id(), address)
-        envelope = Envelope(sn=sn, version=VERSION, routing=routing)
-        envelope += body
-        json = envelope.dump()
-        message = Message(content=json, durable=True, ttl=ttl)
-        sender = self.session().sender(address)
-        sender.send(message)
-        sender.close()
-        log.debug('{%s} sent (%s)\n%s', self.id(), address, envelope)
-        return sn
+        return send(self, destination, ttl, **body)
 
     def broadcast(self, destinations, ttl=None, **body):
         """
@@ -73,7 +95,7 @@ class Producer(Endpoint):
         """
         sns = []
         for dst in destinations:
-            sn = self.send(dst, ttl, **body)
+            sn = send(self, dst, ttl, **body)
             sns.append((repr(dst), sn))
         return sns
 

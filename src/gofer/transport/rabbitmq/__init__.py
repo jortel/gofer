@@ -13,5 +13,5 @@
 from gofer.transport.rabbitmq.model import Exchange, Queue
 from gofer.transport.rabbitmq.broker import RabbitMQ as Broker
 from gofer.transport.rabbitmq.consumer import Reader
-from gofer.transport.rabbitmq.producer import Producer
+from gofer.transport.rabbitmq.producer import Producer, send
 from gofer.transport.rabbitmq.endpoint import Endpoint

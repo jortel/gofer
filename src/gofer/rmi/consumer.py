@@ -13,9 +13,11 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-from gofer.rmi.store import PendingQueue
-from gofer.messaging import Consumer
 from logging import getLogger
+
+from gofer.rmi.store import PendingQueue
+from gofer.messaging import Consumer, Destination
+from gofer.transport import Transport
 
 
 log = getLogger(__name__)
@@ -24,8 +26,8 @@ log = getLogger(__name__)
 class RequestConsumer(Consumer):
     """
     Request consumer.
-    Reads messages from AMQP and writes to
-    local pending queue to be consumed by the scheduler.
+    Reads messages from AMQP, sends the accepted status then writes
+    to local pending queue to be consumed by the scheduler.
     """
 
     def dispatch(self, envelope):
@@ -34,6 +36,25 @@ class RequestConsumer(Consumer):
         :param envelope: The received envelope.
         :type envelope: Envelope
         """
-        url = str(self.url)
+        self.__send_accepted(envelope)
         pending = PendingQueue()
-        pending.add(url, envelope)
+        pending.add(str(self.url), envelope)
+
+    def __send_accepted(self, envelope):
+        """
+        Send the ACCEPTED status update when requested.
+        :param envelope: The received envelope.
+        :type envelope: Envelope
+        """
+        sn = envelope.sn
+        any = envelope.any
+        replyto = envelope.replyto
+        tp = Transport(self.url)
+        if not replyto:
+            return
+        try:
+            endpoint = self.reader
+            destination = Destination.create(replyto)
+            tp.send(endpoint, destination, sn=sn, any=any, status='accepted')
+        except:
+            log.exception('send (accepted), failed')

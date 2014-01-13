@@ -13,5 +13,5 @@
 from gofer.transport.amqplib.model import Exchange, Queue
 from gofer.transport.amqplib.broker import Broker
 from gofer.transport.amqplib.consumer import Reader
-from gofer.transport.amqplib.producer import Producer
+from gofer.transport.amqplib.producer import Producer, send
 from gofer.transport.amqplib.endpoint import Endpoint

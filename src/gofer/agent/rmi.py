@@ -15,6 +15,7 @@
 
 from time import time
 from threading import local as Local
+from logging import getLogger
 
 from gofer.rmi.window import *
 from gofer.rmi.tracker import Tracker
@@ -25,16 +26,9 @@ from gofer.messaging.model import Envelope
 from gofer.messaging import Producer
 from gofer.transport.model import Destination
 from gofer.metrics import Timer
-from logging import getLogger
+
 
 log = getLogger(__name__)
-
-
-class Expired(Exception):
-    """
-    TTL expired.
-    """
-    pass
 
 
 class Task:
@@ -48,8 +42,6 @@ class Task:
     :type producer: Producer
     :ivar window: The window in which the task is valid.
     :type window: dict
-    :ivar ttl: The task time-to-live.
-    :type ttl: float
     :ivar ts: Timestamp
     :type ts: float
     """
@@ -69,10 +61,9 @@ class Task:
         self.envelope = envelope
         self.commit = commit
         self.window = envelope.window
-        self.ttl = envelope.ttl
         self.ts = time()
         
-    def __call__(self, *args, **options):
+    def __call__(self):
         """
         Dispatch received request.
         """
@@ -93,21 +84,17 @@ class Task:
         """
         envelope = self.envelope
         try:
-            self.expired()
-            self.missed()
-            self.sendstarted(envelope)
+            self.window_missed()
+            self.send_started(envelope)
             result = self.plugin.dispatch(envelope)
             self.commit(envelope.sn)
-            self.sendreply(envelope, result)
-        except Expired:
-            self.commit(envelope.sn)
-            log.info('expired:\n%s', envelope)
+            self.send_reply(envelope, result)
         except WindowMissed:
             self.commit(envelope.sn)
             log.info('window missed:\n%s', envelope)
-            self.sendreply(envelope, Return.exception())
+            self.send_reply(envelope, Return.exception())
 
-    def missed(self):
+    def window_missed(self):
         """
         Check the window.
         :raise WindowPending: when window in the future.
@@ -120,20 +107,8 @@ class Task:
         envelope = self.envelope
         if window.past():
             raise WindowMissed(envelope.sn)
-        
-    def expired(self):
-        """
-        Check the TTL.
-        :raise Expired: When TTL expired.
-        """
-        ttl = self.ttl
-        if not isinstance(ttl, float):
-            return
-        elapsed = (time()-self.ts)
-        if elapsed > ttl:
-            raise Expired()
-    
-    def sendstarted(self, envelope):
+
+    def send_started(self, envelope):
         """
         Send the a status update if requested.
         :param envelope: The received envelope.
@@ -157,7 +132,7 @@ class Task:
         except:
             log.exception('send (started), failed')
             
-    def sendreply(self, envelope, result):
+    def send_reply(self, envelope, result):
         """
         Send the reply if requested.
         :param envelope: The received envelope.
@@ -230,12 +205,12 @@ class Scheduler(PendingThread):
         :param envelope: A gofer messaging envelope.
         :type envelope: Envelope
         """
-        plugin = self.findplugin(envelope)
+        plugin = self.find_plugin(envelope)
         task = Task(plugin, envelope, self.commit)
         pool = plugin.getpool()
         pool.run(task)
         
-    def findplugin(self, envelope):
+    def find_plugin(self, envelope):
         """
         Find the plugin that provides the class specified in
         the I{request} embedded in the envelope.  Returns
@@ -269,8 +244,8 @@ class Context:
 class Progress:
     """
     Provides support for progress reporting.
-    :ivar __task: The current task.
-    :type __task: Task
+    :ivar task: The current task.
+    :type task: Task
     :ivar total: The total work units.
     :type total: int
     :ivar completed: The completed work units.
@@ -284,7 +259,7 @@ class Progress:
         :param task: The current task.
         :type task: Task
         """
-        self.__task = task
+        self.task = task
         self.total = 0
         self.completed = 0
         self.details = {}
@@ -293,13 +268,13 @@ class Progress:
         """
         Send the progress report.
         """
-        sn = self.__task.envelope.sn
-        any = self.__task.envelope.any
-        replyto = self.__task.envelope.replyto
+        sn = self.task.envelope.sn
+        any = self.task.envelope.any
+        replyto = self.task.envelope.replyto
         if not replyto:
             return
         try:
-            url = self.__task.envelope.url
+            url = self.task.envelope.url
             producer = Producer(url=url)
             try:
                 producer.send(
