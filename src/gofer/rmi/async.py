@@ -13,20 +13,16 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-
 """
 Provides async AMQP message consumer classes.
 """
 
-import os
-from time import sleep, time
-from threading import Thread
-from gofer import NAME, Singleton
-from gofer.messaging.model import Envelope
-from gofer.messaging import Consumer, Producer, Destination
-from gofer.rmi.dispatcher import Reply, Return, RemoteException
-from gofer.rmi.policy import RequestTimeout
 from logging import getLogger
+
+from gofer.messaging.model import Envelope
+from gofer.messaging import Consumer
+from gofer.rmi.dispatcher import Reply, Return, RemoteException
+
 
 log = getLogger(__name__)
 
@@ -36,26 +32,23 @@ class ReplyConsumer(Consumer):
     A request, reply consumer.
     :ivar listener: An reply listener.
     :type listener: any
-    :ivar watchdog: An (optional) watchdog.
-    :type watchdog: WatchDog
     :ivar blacklist: A set of serial numbers to ignore.
     :type blacklist: set
     """
 
     def __init__(self, queue, url=None):
         Consumer.__init__(self, queue, url=url)
+        self.listener = None
+        self.blacklist = set()
 
-    def start(self, listener, watchdog=None):
+    def start(self, listener):
         """
         Start processing messages on the queue and
         forward to the listener.
         :param listener: A reply listener.
         :type listener: Listener
-        :param watchdog: An (optional) watchdog.
-        :type watchdog: WatchDog
         """
         self.listener = listener
-        self.watchdog = watchdog or LazyDog()
         self.blacklist = set()
         Consumer.start(self)
 
@@ -63,10 +56,7 @@ class ReplyConsumer(Consumer):
         """
         Dispatch received request.
         The serial number of failed requests is added to the blacklist
-        help prevent dispatching both failure and success replies.  The
-        primary cause of this is when the watchdog has replied on the agent's
-        behalf but the agent actually completes the request and later sends
-        a reply.
+        help prevent dispatching both failure and success replies.
         :param envelope: The received envelope.
         :type envelope: Envelope
         """
@@ -75,25 +65,25 @@ class ReplyConsumer(Consumer):
             if envelope.sn in self.blacklist:
                 # ignored
                 return
+            if reply.accepted():
+                reply = Accepted(envelope)
+                reply.notify(self.listener)
+                return
             if reply.started():
-                self.watchdog.started(envelope.sn)
                 reply = Started(envelope)
                 reply.notify(self.listener)
                 return
             if reply.progress():
-                self.watchdog.progress(envelope.sn)
                 reply = Progress(envelope)
                 reply.notify(self.listener)
                 return
             if reply.succeeded():
                 self.blacklist.add(envelope.sn)
-                self.watchdog.completed(envelope.sn)
                 reply = Succeeded(envelope)
                 reply.notify(self.listener)
                 return
             if reply.failed():
                 self.blacklist.add(envelope.sn)
-                self.watchdog.completed(envelope.sn)
                 reply = Failed(envelope)
                 reply.notify(self.listener)
                 return
@@ -166,7 +156,7 @@ class FinalReply(AsyncReply):
         :return: True when failed.
         :rtype: bool
         """
-        return ( not self.succeeded() )
+        return not self.succeeded()
 
     def throw(self):
         """
@@ -236,6 +226,25 @@ class Failed(FinalReply):
         s.append('  xclass: %s' % self.xclass)
         s.append('  xstate: %s' % self.xstate)
         s.append('  xargs: %s' % self.xargs)
+        return '\n'.join(s)
+
+
+class Accepted(AsyncReply):
+    """
+    An asynchronous operation accepted.
+    :see: Failed.throw
+    """
+
+    def notify(self, listener):
+        if callable(listener):
+            listener(self)
+        else:
+            listener.started(self)
+
+    def __str__(self):
+        s = []
+        s.append(AsyncReply.__str__(self))
+        s.append('accepted')
         return '\n'.join(s)
 
 
@@ -316,6 +325,14 @@ class Listener:
         """
         pass
 
+    def accepted(self, reply):
+        """
+        Async request has been accepted.
+        :param reply: The request.
+        :type reply: Accepted.
+        """
+        pass
+
     def started(self, reply):
         """
         Async request has started.
@@ -331,378 +348,3 @@ class Listener:
         :type reply: Progress.
         """
         pass
-
-
-class WatchDog:
-    """
-    A watchdog object used to track asynchronous messages
-    by serial number.  Tracking is persisted using journal files.
-    :ivar url: The AMQP broker URL.
-    :type url: str
-    :ivar __jnl: A journal use for persistence.
-    :type __jnl: Journal
-    :ivar __producer: An AMQP message producer.
-    :type __producer: Producer
-    :ivar __run: Run flag.
-    :type __run: bool
-    """
-    
-    __metaclass__ = Singleton
-
-    def __init__(self, url=None, journal=None):
-        """
-        :param url: The (optional) broker URL.
-        :type url: str
-        :param journal: A journal object (default: Journal()).
-        :type journal: Journal
-        """
-        self.url = url
-        self.__jnl = (journal or Journal())
-
-    def start(self):
-        """
-        Start a watchdog thread.
-        :return: The started thread.
-        :rtype: WatchDogThread
-        """
-        thread = WatchDogThread(self)
-        thread.start()
-        return thread
-    
-    def track(self, sn, replyto, any, timeout):
-        """
-        Add a request by serial number for tacking.
-        :param sn: A serial number.
-        :type sn: str
-        :param replyto: An AMQP address.
-        :type replyto: str
-        :param any: User defined data.
-        :type any: any
-        :param timeout: A timeout (start,complete)
-        :type timeout: tuple(2)
-        """
-        now = time()
-        ts = (now+timeout[0], now+timeout[1])
-        je = self.__jnl.write(sn, replyto, any, ts)
-        log.debug('tracking: %s', je)
-            
-    def started(self, sn):
-        """
-        Timeout is a tuple of: (start,complete).
-        A proper status='started' has been received and the timout
-        index is changed from 0 to 1.  This switches the timeout logic
-        to work off the 2nd timeout which indicates the completion timeout.
-        :param sn: An entry serial number.
-        :type sn: str
-        """
-        log.info(sn)
-        je = self.__jnl.find(sn)
-        if je:
-            self.__jnl.update(sn, idx=1)
-        else:
-            pass # ignored
-        
-    def progress(self, sn):
-        """
-        Progress reporting received.
-        Because a progress report has been received, the
-        current timestamp is bumped 5 seconds only if the timestamp
-        is within 5 seconds of expiration.
-        """
-        log.info(sn)
-        je = self.__jnl.find(sn)
-        if not je:
-            # ignored
-            return
-        if je.idx != 1:
-            # invalid state
-            return
-        grace_period = time()+5 # seconds
-        if grace_period > je.ts[1]:
-            ts = (je.ts[0], grace_period)
-            self.__jnl.update(sn, ts=ts)
-        
-    def completed(self, sn):
-        """
-        The request has been properly completed by the agent.
-        Tracking is discontinued.
-        :param sn: An entry serial number.
-        :type sn: str
-        """
-        log.info(sn)
-        self.__jnl.delete(sn)
-
-    def process(self):
-        """
-        Process all I{outstanding} journal entries.
-        When a journal entry (timeout) is detected, a RequestTimeout
-        exception is raised and sent to the I{replyto} AMQP address.
-        The journal entry is deleted.
-        """
-        sent = []
-        now = time()
-        for sn,je in self.__jnl.load().items():
-            if now > je.ts[je.idx]:
-                sent.append(sn)
-                try:
-                    raise RequestTimeout(sn, je.idx)
-                except:
-                    self.__overdue(je)
-        for sn in sent:
-            self.__jnl.delete(sn)
-    
-    def __overdue(self, je):
-        """
-        Send the (timeout) reply to the I{replyto} AMQP address
-        specified in the journal entry.
-        :param je: A journal entry.
-        :type je: Entry
-        """
-        log.info('sn:%s timeout detected', je.sn)
-        try:
-            self.__send_reply(je)
-        except:
-            log.exception(str(je))
-        
-    def __send_reply(self, je):
-        """
-        Send the (timeout) reply to the I{replyto} AMQP address
-        specified in the journal entry.
-        :param je: A journal entry.
-        :type je: Entry
-        """
-        sn = je.sn
-        replyto = Destination.create(je.replyto)
-        any = je.any
-        result = Return.exception()
-        log.info('send (timeout) for sn:%s to:%s', sn, replyto)
-        producer = Producer(url=self.url)
-        try:
-            producer.send(
-                replyto,
-                sn=sn,
-                any=any,
-                result=result,
-                watchdog=producer.uuid)
-        finally:
-            producer.close()
-        
-        
-class WatchDogThread(Thread):
-    """
-    Watchdog thread.
-    """
-
-    def __init__(self, watchdog):
-        Thread.__init__(self, name='watchdog')
-        self.watchdog = watchdog
-        self.__run = True
-        self.setDaemon(True)
-
-    def run(self):
-        watchdog = self.watchdog
-        while self.__run:
-            try:
-                watchdog.process()
-                sleep(1)
-            except:
-                log.exception(self.getName())
-                sleep(3)
-                
-    def stop(self):
-        self.__run = False
-        return self
-
-
-class Journal:
-    """
-    Async message journal
-    :ivar root: The root journal directory.
-    :type root: str
-    :cvar ROOT: The default journal directory root.
-    :type ROOT: str
-    Entry:
-      - sn: serial number
-      - replyto: reply to amqp address.
-      - any: user data
-      - timeout: (start<ctime>, complete<ctime>)
-      - idx: current timeout index.
-    """
-
-    ROOT = '/tmp/%s/journal/watchdog' % NAME
-    
-    def __init__(self, root=ROOT):
-        """
-        :param root: A journal root directory path.
-        :type root: str
-        """
-        self.root = root
-        self.__mkdir()
-        
-    def load(self):
-        """
-        Load all journal entries.
-        :return: A dict of journal entries.
-        :rtype: dict
-        """
-        entries = {}
-        for fn in os.listdir(self.root):
-            path = os.path.join(self.root, fn)
-            if os.path.isdir(path):
-                continue
-            je = self.__read(path)
-            if not je:
-                continue
-            entries[je.sn] = je
-        return entries
-        
-    def write(self, sn, replyto, any, ts):
-        """
-        Write a new journal entry.
-        :param sn: A serial number.
-        :type sn: str
-        :param replyto: An AMQP address.
-        :type replyto: str
-        :param any: User defined data.
-        :type any: any
-        :param ts: A timeout (start<ctime>,complete<ctime>)
-        :type ts: tuple(2)
-        """
-        je = Envelope(
-            sn=sn,
-            replyto=replyto,
-            any=any,
-            ts=ts,
-            idx=0)
-        self.__write(je)
-        return je
-            
-    def update(self, sn, **property):
-        """
-        Update a journal entry for the specified I{sn}.
-        :param sn: An entry serial number.
-        :type sn: str
-        :param property: properties to update.
-        :type property: dict
-        :return: The updated journal entry
-        :rtype: Entry
-        :raise KeyError: On invalid key.
-        """
-        je = self.find(sn)
-        if not je:
-            return None
-        for k,v in property.items():
-            if k in ('sn',):
-                continue
-            if k in je:
-                je[k] = v
-            else:
-                raise KeyError(k)
-        self.__write(je)
-        return je
-        
-    def delete(self, sn):
-        """
-        Delete a journal entry by serial number.
-        :param sn: An entry serial number.
-        :type sn: str
-        """
-        fn = self.__fn(sn)
-        path = os.path.join(self.root, fn)
-        self.__unlink(path)
-        
-    def find(self, sn):
-        """
-        Find a journal entry my serial number.
-        :param sn: An entry serial number.
-        :type sn: str
-        :return: The journal entry.
-        :rtype: Entry
-        """
-        try:
-            fn = self.__fn(sn)
-            path = os.path.join(self.root, fn)
-            return self.__read(path)
-        except (IOError, OSError):
-            log.debug(sn, exc_info=1)
-    
-    def __fn(self, sn):
-        """
-        File name.
-        :param sn: An entry serial number.
-        :type sn: str
-        :return: The journal file name by serial number.
-        :rtype: str
-        """
-        return '%s.jnl' % sn
-    
-    def __read(self, path):
-        """
-        Read the journal file at the specified I{path}.
-        :param path: A journal file path.
-        :type path: str
-        :return: A journal entry.
-        :rtype: Entry
-        """
-        f = open(path)
-        try:
-            try:
-                je = Envelope()
-                je.load(f.read())
-                return je
-            except:
-                log.exception(path)
-                self.__unlink(path)
-        finally:
-            f.close()
-            
-    def __write(self, je):
-        """
-        Write the specified journal entry.
-        :param je: A journal entry
-        :type je: Entry
-        """
-        path = os.path.join(self.root, self.__fn(je.sn))
-        f = open(path, 'w')
-        try:
-            f.write(je.dump())
-        finally:
-            f.close()
-    
-    def __unlink(self, path):
-        """
-        Unlink (delete) the journal file at the specified I{path}.
-        :param path: A journal file path.
-        :type path: str
-        """
-        try:
-            os.unlink(path)
-        except OSError:
-            log.debug(path, exc_info=1)
-    
-    def __mkdir(self):
-        """
-        Ensure the directory exists.
-        """
-        if not os.path.exists(self.root):
-            os.makedirs(self.root)
-
-
-class LazyDog:
-    """
-    A lazy (good-for-nothing) watchdog.
-    Basically a watchdog that does not do anything.
-    """
-    
-    def track(self, sn, replyto, any, timeout):
-        pass
-    
-    def started(self, sn):
-        pass
-    
-    def progress(self, sn):
-        pass
-    
-    def completed(self, sn):
-        pass
-    

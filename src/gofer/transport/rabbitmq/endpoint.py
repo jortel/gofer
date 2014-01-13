@@ -25,16 +25,16 @@ log = getLogger(__name__)
 
 
 def reliable(fn):
-    def _fn(self, *args, **kwargs):
+    def _fn(endpoint, *args, **kwargs):
         while True:
             try:
-                return fn(self, *args, **kwargs)
+                return fn(endpoint, *args, **kwargs)
             except ConnectionError:
-                broker = RabbitMQ(self.url)
-                self.close()
+                broker = RabbitMQ(endpoint.url)
+                endpoint.close()
                 broker.close()
                 sleep(3)
-                self.channel()
+                endpoint.channel()
     return _fn
 
 

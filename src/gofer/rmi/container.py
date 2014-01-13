@@ -13,16 +13,17 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-
 """
 Agent base classes.
 """
 
+from logging import getLogger
+
 from gofer.messaging.model import Options
-from gofer.messaging import Queue, Exchange, Destination
+from gofer.messaging import Destination
 from gofer.rmi.stub import Stub
 from gofer.rmi.window import Window
-from logging import getLogger
+
 
 log = getLogger(__name__)
 
@@ -42,17 +43,7 @@ class Container:
         :type uuid: str
         :param url: The agent URL.
         :type url: str
-        :param options: keyword options.
-            Options:
-              - async : Indicates that requests asynchronous.
-                  Default = False
-              - ctag : The asynchronous correlation tag.
-                  When specified, it implies all requests are asynchronous.
-              - window : The request window.  See I{Window}.
-                  Default = any time.
-              - secret : A shared secret used for request authentication.
-              - timeout : The request timeout (seconds).
-                  Default = (10,90) seconds.
+        :param options: keyword options.  See documentation.
         :type options: dict
         """
         self.__id = uuid

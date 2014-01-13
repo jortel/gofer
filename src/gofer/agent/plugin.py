@@ -153,7 +153,7 @@ class Plugin(object):
         except:
             return 0
         
-    def getuuid(self):
+    def get_uuid(self):
         """
         Get the plugin's messaging UUID.
         :return: The plugin's messaging UUID.
@@ -166,7 +166,7 @@ class Plugin(object):
         finally:
             self.__unlock()
             
-    def geturl(self):
+    def get_url(self):
         """
         Get the broker URL
         :return: The broker URL
@@ -176,7 +176,7 @@ class Plugin(object):
         plugin = self.cfg()
         return nvl(plugin.messaging.url, nvl(agent.messaging.url))
     
-    def getbroker(self):
+    def get_broker(self):
         """
         Get the amqp broker for this plugin.  Each plugin can
         connect to a different broker.
@@ -185,13 +185,13 @@ class Plugin(object):
         """
         cfg = self.cfg()
         main = Config()
-        broker = Broker(url=self.geturl())
+        broker = Broker(url=self.get_url())
         broker.cacert = nvl(cfg.messaging.cacert, nvl(main.messaging.cacert))
         broker.clientcert = nvl(cfg.messaging.clientcert, nvl(main.messaging.clientcert))
         log.debug('broker (qpid) configured: %s', broker)
         return broker
 
-    def getpool(self):
+    def get_pool(self):
         """
         Get the plugin's thread pool.
         :return: ThreadPool.
@@ -201,7 +201,7 @@ class Plugin(object):
             self.__pool = ThreadPool(1, n, duplex=False)
         return self.__pool
     
-    def setuuid(self, uuid, save=False):
+    def set_uuid(self, uuid, save=False):
         """
         Set the plugin's UUID.
         :param uuid: The new UUID.
@@ -221,7 +221,7 @@ class Plugin(object):
         finally:
             self.__unlock()
             
-    def seturl(self, url, save=False):
+    def set_url(self, url, save=False):
         """
         Set the plugin's URL.
         :param url: The new URL.
@@ -262,8 +262,8 @@ class Plugin(object):
         :type uuid: str
         """
         if not uuid:
-            uuid = self.getuuid()
-        broker = self.getbroker()
+            uuid = self.get_uuid()
+        broker = self.get_broker()
         url = broker.url
         queue = Queue(uuid, url=url)
         consumer = RequestConsumer(queue, url)
@@ -336,7 +336,15 @@ class Plugin(object):
         agent = Config()
         plugin = self.cfg()
         package = nvl(plugin.messaging.transport, nvl(agent.messaging.transport))
-        Transport.bind(self.geturl(), package)
+        Transport.bind(self.get_url(), package)
+
+    # deprecated
+    getuuid = get_uuid
+    geturl = get_url
+    getbroker = get_broker
+    getpool = get_pool
+    setuuid = set_uuid
+    seturl = set_url
     
     def __lock(self):
         self.__mutex.acquire()
@@ -501,7 +509,7 @@ class PluginLoader:
         p = Plugin(plugin, cfg, (syn,))
         Plugin.add(p)
         try:
-            path = self.__findplugin(plugin)
+            path = self.__find_plugin(plugin)
             mod = imp.load_source(syn, path)
             p.impl = mod
             log.info('plugin "%s", imported as: "%s"', plugin, syn)
@@ -520,7 +528,7 @@ class PluginLoader:
             Plugin.delete(p)
             log.exception('plugin "%s", import failed', plugin)
             
-    def __findplugin(self, plugin):
+    def __find_plugin(self, plugin):
         """
         Find a plugin module.
         :param plugin: The plugin name.
@@ -536,8 +544,7 @@ class PluginLoader:
                 log.info('using: %s', path)
                 return path
         raise Exception('%s, not found in:%s' % (mod, self.PATH))
-        
-            
+
     def __mangled(self, plugin):
         """
         Get the module name for the specified plugin.

@@ -43,6 +43,7 @@ def ndef(x):
     """
     return isinstance(x, Undefined)
 
+
 def nvl(x, d=None):
     """
     Not define value.
@@ -191,8 +192,6 @@ class Config(Base):
         path = os.path.expanduser(self.USER)
         if os.path.exists(path):
             return path
-        else:
-            None
 
     def __addconfd(self):
         """
@@ -244,7 +243,7 @@ class Properties:
         :return: True when property is to be imported.
         :rtype: bool
         """
-        return ( property in self.plain )
+        return property in self.plain
     
     def var(self, property):
         """
@@ -263,7 +262,7 @@ class Properties:
         :return: True no properties defined.
         :rtype: bool
         """
-        return ( len(self) == 0 )
+        return len(self) == 0
     
     def __iter__(self):
         keys = self.vdict.keys()
@@ -271,7 +270,7 @@ class Properties:
         return iter(keys)
     
     def __len__(self):
-        return ( len(self.vdict)+len(self.plain) )
+        return len(self.vdict) + len(self.plain)
     
     
 class Import:
@@ -333,7 +332,7 @@ class Import:
                 if var:
                     var = '$(%s)' % var.strip()
                     vdict[var] = v
-        return (imported, vdict)
+        return imported, vdict
     
     
 def _cnfvalue(macro):
@@ -365,7 +364,7 @@ class Reader:
         '%{messaging.url}':_cnfvalue,
         '%{messaging.cacert}':_cnfvalue,
         '%{messaging.clientcert}':_cnfvalue,
-        }
+    }
     
     def __init__(self, path):
         self.idx = 0
@@ -413,7 +412,7 @@ class Reader:
 
     def __import(self, ln):
         """
-        Procecss an i{import} directive and return the result.
+        Process an i{import} directive and return the result.
         :param ln: A line containing the directive.
         :type ln: str
         :return: The import result (lines).
@@ -435,7 +434,7 @@ class Reader:
         """
         if ln.startswith('#'):
             return ln
-        for k,v in self.MACROS.items()+self.vdict.items():
+        for k, v in self.MACROS.items()+self.vdict.items():
             if k in ln:
                 if callable(v):
                     v = v(k)

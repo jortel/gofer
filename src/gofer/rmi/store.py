@@ -51,6 +51,50 @@ class PendingQueue:
 
     ROOT = '/var/lib/%s/messaging/pending' % NAME
 
+    @staticmethod
+    def __created(path):
+        """
+        Get create timestamp.
+        :return: The file create timestamp.
+        :rtype: int
+        """
+        stat = os.stat(path)
+        return stat[ST_CTIME]
+
+    @staticmethod
+    def __modified(path):
+        """
+        Get modification timestamp.
+        :return: The file modification timestamp.
+        :rtype: int
+        """
+        stat = os.stat(path)
+        return stat[ST_MTIME]
+
+    @staticmethod
+    def __read(path):
+        with open(path) as fp:
+            return fp.read()
+
+    @staticmethod
+    def __delayed(envelope):
+        """
+        Get whether the envelope has a future window.
+        Cancelled requests are not considered to be delayed and
+        the window is ignored.
+        :param envelope: An Envelope
+        :type envelope: Envelope
+        :return: True when window in the future.
+        :rtype: bool
+        """
+        tracker = Tracker()
+        if envelope.window and not tracker.cancelled(envelope.sn):
+            window = Window(envelope.window)
+            if window.future():
+                log.debug('deferring:\n%s', envelope)
+                return True
+        return False
+
     def __init__(self):
         self.__pending = []
         self.__uncommitted = {}
@@ -70,9 +114,8 @@ class PendingQueue:
         envelope.ts = time()
         envelope.url = url
         fn = self.__fn(envelope)
-        f = open(fn, 'w')
-        f.write(envelope.dump())
-        f.close()
+        with open(fn, 'w') as fp:
+            fp.write(envelope.dump())
         log.debug('add pending:\n%s', envelope)
         self.__lock()
         try:
@@ -128,7 +171,7 @@ class PendingQueue:
         finally:
             self.__unlock()
 
-    def __pendingcommit(self, envelope):
+    def __pending_commit(self, envelope):
         """
         Move the envelope to the uncommitted list.
         :param envelope: An Envelope
@@ -152,8 +195,8 @@ class PendingQueue:
             envelope = self.__import(path)
             if not envelope:
                 continue
-            ctime = self.__created(path)
-            pending.append((ctime, envelope))
+            created = self.__created(path)
+            pending.append((created, envelope))
         pending.sort()
         self.__lock()
         try:
@@ -163,7 +206,7 @@ class PendingQueue:
             
     def __import(self, path):
         """
-        Import a stored envelpoe.
+        Import a stored envelope.
         :param path: An absolute file path.
         :type path: str
         :return: An imported envelope.
@@ -211,22 +254,17 @@ class PendingQueue:
         while queue:
             envelope = queue.pop()
             try:
-                if self.__expired(envelope):
-                    self.__purge(envelope)
-                    # TTL expired
-                    continue
                 if self.__delayed(envelope):
                     # future
                     continue
-                self.__pendingcommit(envelope)
-                self.__adjustTTL(envelope)
+                self.__pending_commit(envelope)
                 popped = envelope
                 break
             except Exception:
                 log.error(envelope, exc_info=1)
                 self.__purge(envelope)
         return popped
-            
+
     def __mkdir(self):
         """
         Ensure the directory exists.
@@ -234,24 +272,6 @@ class PendingQueue:
         path = self.ROOT
         if not os.path.exists(path):
             os.makedirs(path)
-
-    def __created(self, path):
-        """
-        Get create timestamp.
-        :return: The file create timestamp.
-        :rtype: int
-        """
-        stat = os.stat(path)
-        return stat[ST_CTIME]
-
-    def __modified(self, path):
-        """
-        Get modification timestamp.
-        :return: The file modification timestamp.
-        :rtype: int
-        """
-        stat = os.stat(path)
-        return stat[ST_MTIME]
 
     def __fn(self, envelope):
         """
@@ -263,63 +283,12 @@ class PendingQueue:
         """
         return os.path.join(self.ROOT, envelope.sn)
     
-    def __expired(self, envelope):
-        """
-        Get whether the envelope has expired.
-        :param envelope: A queue entry.
-        :type envelope: Envelope
-        :return: True when expired based on TTL.
-        :rtype: bool
-        """
-        now = time()
-        if isinstance(envelope.ttl, float):
-            elapsed = (now-envelope.ts)
-            if envelope.ttl < elapsed:
-                log.info('expired:\n%s', envelope)
-                return True
-        return False
-    
-    def __adjustTTL(self, envelope):
-        """
-        Adjust the TTL based on time spent on the queue.
-        :param envelope: A queue entry.
-        :type envelope: Envelope
-        """
-        if isinstance(envelope.ttl, float):
-            elapsed = (time()-envelope.ts)
-            envelope.ttl -= elapsed
-    
-    def __delayed(self, envelope):
-        """
-        Get whether the envelope has a future window.
-        Cancelled requests are not considered to be delayed and
-        the window is ignored.
-        :param envelope: An Envelope
-        :type envelope: Envelope
-        :return: True when window in the future.
-        :rtype: bool
-        """
-        tracker = Tracker()
-        if envelope.window and not tracker.cancelled(envelope.sn):
-            window = Window(envelope.window)
-            if window.future():
-                log.debug('deferring:\n%s', envelope)
-                return True
-        return False
-    
     def __copy(self, collection):
         self.__lock()
         try:
             return collection[:]
         finally:
             self.__unlock()
-
-    def __read(self, path):
-        f = open(path)
-        try:
-            return f.read()
-        finally:
-            f.close()
 
     def __lock(self):
         self.__mutex.acquire()

@@ -16,14 +16,14 @@ Summary
    The asynchronous RMI reply correlation tag
  *trigger*
    Specifies trigger used for RMI calls. (0=auto <default>, 1=manual)
- *watchdog*
-   The watchdog object used for asynchronous RMI timeouts
  *winndow*
    RMI processing window
  *secret*
    The shared secret (security)
  *timeout*
-   The timout(s).
+   The timeout (seconds) for the agent to accept the RMI request.
+ *wait*
+   The time (seconds) to wait for a result using the synchronous policy.
  *progress*
    A progress callback specified for synchronous RMI. Must have signature: fn(report).
  *user*
@@ -72,7 +72,7 @@ Passed to stub constructor and apply only to calls to this stub.  Assume a class
 ctag
 ----
 
-The **ctag** option specifies the asynchronous correlation tag.  When specified, it implies all requests
+The **ctag** option specifies the asynchronous *correlation tag*.  When specified, it implies all requests
 are asynchronous and that all replies are sent to the AMQP destination (topic or queue) named *ctag*.
 The *async* option can also be specified but is redundant when specifying the *ctag* option.
 
@@ -162,50 +162,6 @@ Passed to stub constructor and apply only to calls to this stub.  Assume a class
      trigger()         # pull the trigger
 
 
-
-watchdog
---------
-
-The **watchdog** option is used to specify a Watchdog object used to implement asynchronous RMI timeouts.
-The watchdog can be a local object or a stub for a Watchdog provided by a plugin on the bus.
-The Watchdog object is persistent and keeps track of RMI calls to watch for in */var/lib/gofer/journal*.
-Specifying the *watchdog* options without either the *async* or *ctag* options has no effect.
-
-
-Passed to proxy.agent() and apply to all RMI calls.
-
-::
-
- from gofer import proxy
- from gofer.rmi.async import WatchDog
-
- watchdog = WatchDog()
- agent = proxy.agent(uuid, watchdog=watchdog)
-
-
-Passed to Agent() and apply to all RMI calls.
-
-::
-
- from gofer.proxy import Agent
- from gofer.rmi.async import WatchDog
-
- watchdog = WatchDog()
- agent = Agent(uuid, watchdog=watchdog)
-
-
-Passed to stub constructor and apply only to calls to this stub.  Assume a class named *Dog*:
-
-::
-
- from gofer import proxy
- from gofer.rmi.async import WatchDog
-
- watchdog = WatchDog()
- agent = proxy.agent(uuid)
- dog = agent.Dog(watchdog=watchdog)
-
-
 window
 ------
 
@@ -291,20 +247,16 @@ Passed to stub constructor and apply only to calls to this stub.  Assume a class
  dog = agent.Dog(secret='foobar')
 
 
-The **timeout** option is used to specify the RMI call timeout.  The message TTL (time-to-live) is set
-to the *start* component for both synchronous and asynchronous RMI call.  Additionally, for synchronous
-RMI, the caller is blocked for the number of seconds specified in the *start* component.  The default
-for synchronous RMI is (10, 90).  10 seconds for the RMI to begin execution and 90 seconds to complete.
+timeout and wait
+----------------
 
-Timeout Components:
+The **timeout** option is used to specify the RMI call timeout. The *timeout* is the time in seconds
+for the agent to *accept* the request.  The message TTL (time-to-live) is set to the *timeout* for both
+synchronous and asynchronous RMI call.  Additionally, for synchronous RMI, the caller is blocked for
+the number of seconds specified in the *wait* option.  The default *timeout* is 10 seconds and the
+default *wait* for synchronous RMI is 90 seconds.
 
-- *start*: The time (seconds) for the RMI to begin executing.
-- *complete*: The time (seconds) for the RMI call to complete.
-
-The value is a tuple (*<start>*, *<complete>*).  A single (int) value may be specified as a short-hand when
-the int is to be used for both timeouts.  Eg: timeout=(10) is interpreted as timeout=(10,10).
-
-In 0.75+, the timeout can be a string and supports a suffix to define the unit of time.
+In 0.75+, the *timeout* and *wait* can be a string and supports a suffix to define the unit of time.
 The supported units are as follows:
 
 - **s** : seconds
@@ -318,14 +270,14 @@ Passed to proxy.agent() and apply to all RMI calls.
 
  from gofer import proxy
 
- # timout start=5 seconds & complete=120 seconds
- agent = proxy.agent(uuid, timeout=(5,120))
+ # 5 seconds
+ agent = proxy.agent(uuid, timeout=5)
 
- # timout start=5 seconds & complete=2 minutes
- agent = proxy.agent(uuid, timeout=(5,'2m'))
+ # timout 5 minutes
+ agent = proxy.agent(uuid, timeout=5m)
 
- # timout start=3 minutes & complete=3 hours
- agent = proxy.agent(uuid, timeout=('3m','3h'))
+ # timeout 30 seconds, wait for 5 seconds
+ agent = proxy.agent(uuid, timeout=30, wait=5)
 
 
 Passed to Agent() and apply to all RMI calls.
@@ -334,7 +286,7 @@ Passed to Agent() and apply to all RMI calls.
 
  from gofer.proxy import Agent
 
- # timout start=10 seconds & complete=10 seconds
+ # timeout 10 seconds
  agent = Agent(uuid,  timeout=10)
 
 
@@ -344,9 +296,9 @@ Passed to stub constructor and apply only to calls to this stub.  Assume a class
 
  from gofer import proxy
 
- # timout start=5 seconds & complete=120 seconds
+ # timeout 10 seconds
  agent = proxy.agent(uuid)
- dog = agent.Dog(timeout=(5, 120))
+ dog = agent.Dog(timeout=10)
 
 
 

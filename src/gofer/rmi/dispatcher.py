@@ -132,7 +132,7 @@ class NotAuthenticated(NotAuthorized):
     """
 
     def __init__(self, method, user):
-        message = '%s(), user "%s" not authenticted' % (method.name, user)
+        message = '%s(), user "%s" not authenticated' % (method.name, user)
         NotAuthorized.__init__(self, message)
         
 
@@ -210,8 +210,7 @@ class Reply(Envelope):
         :return: True when indicates success.
         :rtype: bool
         """
-        return ( self.result and 'retval' in self.result )
-        
+        return self.result and 'retval' in self.result
 
     def failed(self):
         """
@@ -219,7 +218,15 @@ class Reply(Envelope):
         :return: True when indicates failure.
         :rtype: bool
         """
-        return ( self.result and 'exval' in self.result )
+        return self.result and 'exval' in self.result
+
+    def accepted(self):
+        """
+        Test whether the reply indicates status (accepted).
+        :return: True when indicates started.
+        :rtype: bool
+        """
+        return self.status == 'accepted'
     
     def started(self):
         """
@@ -227,7 +234,7 @@ class Reply(Envelope):
         :return: True when indicates started.
         :rtype: bool
         """
-        return ( self.status == 'started' )
+        return self.status == 'started'
     
     def progress(self):
         """
@@ -235,7 +242,7 @@ class Reply(Envelope):
         :return: True when indicates progress.
         :rtype: bool
         """
-        return ( self.status == 'progress' )
+        return self.status == 'progress'
     
 
 class Return(Envelope):

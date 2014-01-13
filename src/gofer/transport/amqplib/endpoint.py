@@ -33,16 +33,16 @@ DELIVERY_TAG = 'delivery_tag'
 
 
 def reliable(fn):
-    def _fn(self, *args, **kwargs):
+    def _fn(endpoint, *args, **kwargs):
         while True:
             try:
-                return fn(self, *args, **kwargs)
-            except CONNECTION_EXCEPTIONS:
-                broker = Broker(self.url)
-                self.close()
+                return fn(endpoint, *args, **kwargs)
+            except CONNECTION_EXCEPTIONS, e:
+                broker = Broker(endpoint.url)
+                endpoint.close()
                 broker.close()
                 sleep(3)
-                self.channel()
+                endpoint.channel()
     return _fn
 
 

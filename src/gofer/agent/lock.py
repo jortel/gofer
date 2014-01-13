@@ -18,14 +18,14 @@ Contains locking classes.
 """
 
 import os
-import re
-import time
 import fcntl
+
 from threading import RLock
 
 
 class LockFailed(Exception):
     pass
+
 
 class NotLocked(Exception):
     pass

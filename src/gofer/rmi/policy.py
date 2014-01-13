@@ -30,24 +30,6 @@ log = getLogger(__name__)
 # --- utils ------------------------------------------------------------------
 
 
-def timeout(options, none=(None,None)):
-    """
-    Extract (and default as necessary) the timeout option.
-    :param options: Policy options.
-    :type options: dict
-    :return: The timeout (<start>,<duration>)
-    :rtype: tuple
-    """
-    tm = options.timeout
-    if tm is None:
-        return none
-    if isinstance(tm, (list,tuple)):
-        timeout = Timeout(*tm)
-    else:
-        timeout = Timeout(tm, tm)
-    return timeout.tuple()
-
-
 class Timeout:
     """
     Policy timeout.
@@ -63,40 +45,40 @@ class Timeout:
     DAY = (HOUR * 24)
 
     SUFFIX = {
-        's' : SECOND,
-        'm' : MINUTE,
-        'h' : HOUR,
-        'd' : DAY,
+        's': SECOND,
+        'm': MINUTE,
+        'h': HOUR,
+        'd': DAY,
     }
 
     @classmethod
-    def seconds(cls, tm):
+    def seconds(cls, thing):
         """
         Convert tm to seconds based on suffix.
-        :param tm: A timeout value.
+        :param thing: A timeout value.
             The string value may have a suffix of:
               (s) = seconds
               (m) = minutes
               (h) = hours
               (d) = days
-        :type tm: (None|int|float|str)
+        :type thing: (None|int|float|str)
 
         """
-        if tm is None:
-            return tm
-        if isinstance(tm, int):
-            return tm
-        if isinstance(tm, float):
-            return int(tm)
-        if not isinstance(tm, (basestring)):
-            raise TypeError(tm)
-        if not len(tm):
-            raise ValueError(tm)
-        if cls.has_suffix(tm):
-            multiplier = cls.SUFFIX[tm[-1]]
-            return (multiplier * int(tm[:-1]))
+        if thing is None:
+            return thing
+        if isinstance(thing, int):
+            return thing
+        if isinstance(thing, float):
+            return int(thing)
+        if not isinstance(thing, basestring):
+            raise TypeError(thing)
+        if not len(thing):
+            raise ValueError(thing)
+        if cls.has_suffix(thing):
+            multiplier = cls.SUFFIX[thing[-1]]
+            return multiplier * int(thing[:-1])
         else:
-            return int(tm)
+            return int(thing)
 
     @classmethod
     def has_suffix(cls, tm):
@@ -121,17 +103,17 @@ class RequestTimeout(Exception):
     Request timeout.
     """
 
-    def __init__(self, sn, index):
+    def __init__(self, sn, timeout):
         """
         :param sn: The request serial number.
         :type sn: str
         """
-        Exception.__init__(self, sn, index)
+        Exception.__init__(self, sn, timeout)
         
     def sn(self):
         return self.args[0]
     
-    def index(self):
+    def timeout(self):
         return self.args[1]
         
 
@@ -182,8 +164,6 @@ class Synchronous(RequestMethod):
     :ivar queue: An AMQP queue.
     :type queue: gofer.transport.model.Queue
     """
-    
-    TIMEOUT = (10, 90)
 
     def __init__(self, url, options):
         """
@@ -193,7 +173,8 @@ class Synchronous(RequestMethod):
         :type options: dict
         """
         RequestMethod.__init__(self, url)
-        self.timeout = timeout(options, self.TIMEOUT)
+        self.timeout = Timeout.seconds(options.timeout or 10)
+        self.wait = Timeout.seconds(options.wait or 90)
         self.progress = options.progress
         self.queue = Queue(getuuid(), url=url)
         self.queue.auto_delete = True
@@ -216,7 +197,7 @@ class Synchronous(RequestMethod):
         try:
             sn = producer.send(
                 destination,
-                ttl=self.timeout[0],
+                ttl=self.timeout,
                 replyto=replyto.dict(),
                 request=request,
                 **any)
@@ -225,12 +206,12 @@ class Synchronous(RequestMethod):
         log.debug('sent (%s):\n%s', repr(destination), request)
         reader = Reader(self.queue, url=self.url)
         try:
-            self.__get_started(sn, reader)
+            self.__get_accepted(sn, reader)
             return self.__get_reply(sn, reader)
         finally:
             reader.close()
 
-    def __get_started(self, sn, reader):
+    def __get_accepted(self, sn, reader):
         """
         Get the STARTED reply matched by serial number.
         :param sn: The request serial number.
@@ -240,14 +221,14 @@ class Synchronous(RequestMethod):
         :return: The matched reply envelope.
         :rtype: Envelope
         """
-        envelope = reader.search(sn, self.timeout[0])
+        envelope = reader.search(sn, self.timeout)
         if envelope:
-            if envelope.status == 'started':
-                log.debug('request (%s), started', sn)
+            if envelope.status == 'accepted':
+                log.debug('request (%s), accepted', sn)
             else:
                 self.__on_reply(envelope)
         else:
-            raise RequestTimeout(sn, 0)
+            raise RequestTimeout(sn, self.timeout)
 
     def __get_reply(self, sn, reader):
         """
@@ -260,23 +241,26 @@ class Synchronous(RequestMethod):
         :rtype: Envelope
         """
         timer = Timer()
-        timeout = float(self.timeout[1])
+        timeout = float(self.wait)
         while True:
             timer.start()
             envelope = reader.search(sn, int(timeout))
             timer.stop()
             elapsed = timer.duration()
             if elapsed > timeout:
-                raise RequestTimeout(sn, 1)
+                raise RequestTimeout(sn, self.wait)
             else:
                 timeout -= elapsed
             if envelope:
+                if envelope.status in ('accepted', 'started'):
+                    # ignored
+                    continue
                 if envelope.status == 'progress':
                     self.__on_progress(envelope)
                 else:
                     return self.__on_reply(envelope)
             else:
-                raise RequestTimeout(sn, 1)
+                raise RequestTimeout(sn, self.wait)
         
     def __on_reply(self, envelope):
         """
@@ -326,9 +310,8 @@ class Asynchronous(RequestMethod):
         """
         RequestMethod.__init__(self, url)
         self.ctag = options.ctag
-        self.timeout = timeout(options)
+        self.timeout = Timeout.seconds(options.timeout or 10)
         self.trigger = options.trigger
-        self.watchdog = options.watchdog
 
     def send(self, destination, request, **any):
         """
@@ -383,28 +366,6 @@ class Asynchronous(RequestMethod):
         if isinstance(self.ctag, Destination):
             d = self.ctag
             return d.dict()
-
-    def notifywatchdog(self, sn, replyto, any):
-        """
-        Add the request to the I{watchdog} for tacking.
-        :param sn: A serial number.
-        :type sn: str
-        :param replyto: An AMQP destination.
-        :type replyto: dict
-        :param any: User defined data.
-        :type any: any
-        """
-        any = Envelope(any)
-        if replyto and \
-           self.ctag and \
-           self.timeout[0] is not None and \
-           self.timeout[1] is not None and \
-           self.watchdog is not None:
-            self.watchdog.track(
-                sn, 
-                replyto,
-                any.any,
-                self.timeout)
 
 
 class Trigger:
@@ -465,14 +426,13 @@ class Trigger:
             producer.send(
                 destination,
                 sn=self.__sn,
-                ttl=policy.timeout[0],
+                ttl=policy.timeout,
                 replyto=replyto,
                 request=request,
                 **any)
         finally:
             producer.close()
         log.debug('sent (%s):\n%s', repr(destination), request)
-        policy.notifywatchdog(self.__sn, replyto, any)
     
     def __str__(self):
         return self.__sn

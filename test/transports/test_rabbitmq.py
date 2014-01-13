@@ -24,5 +24,6 @@ basicConfig()
 
 
 if __name__ == '__main__':
-    package = Transport.load('gofer.transport.rabbitmq')
+    Transport.load_plugins()
+    package = Transport.plugins['gofer.transport.rabbitmq']
     base.test(package)
