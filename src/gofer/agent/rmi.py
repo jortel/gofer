@@ -38,8 +38,8 @@ class Task:
     :type plugin: Plugin
     :ivar envelope: A gofer messaging envelope.
     :type envelope: Envelope
-    :ivar producer: An AMQP message producer.
-    :type producer: Producer
+    :ivar commit: Transaction commit function.
+    :type commit: callable
     :ivar window: The window in which the task is valid.
     :type window: dict
     :ivar ts: Timestamp
@@ -221,9 +221,8 @@ class Scheduler(PendingThread):
         :rtype: Plugin
         """
         request = Envelope(envelope.request)
-        classname = request.classname 
         for plugin in self.plugins:
-            if plugin.provides(classname):
+            if plugin.provides(request.classname):
                 return plugin
         return EmptyPlugin()
     

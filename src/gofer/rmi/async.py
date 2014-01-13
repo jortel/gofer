@@ -156,7 +156,7 @@ class FinalReply(AsyncReply):
         :return: True when failed.
         :rtype: bool
         """
-        return ( not self.succeeded() )
+        return not self.succeeded()
 
     def throw(self):
         """
