@@ -20,7 +20,7 @@ Provides (local) message storage classes.
 import os
 from stat import *
 from gofer import NAME, Singleton
-from gofer.messaging import *
+from gofer.messaging.model import Envelope
 from gofer.rmi.window import Window
 from gofer.rmi.tracker import Tracker
 from time import time
@@ -335,8 +335,6 @@ class PendingThread(Thread):
     :type __run: bool
     :ivar queue: The PendingQueue being read.
     :type queue: PendingQueue
-    :ivar consumer: The queue listener.
-    :type consumer: gofer.messaging.consumer.Consumer
     """
 
     def __init__(self):

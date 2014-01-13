@@ -17,3 +17,11 @@ Start the server (in a terminal):
 > test() # run demo
 >
 > agent.dog.bark(1) # play with API
+
+QPID 0.77
+----------------
+measuring performance ...
+total=14.358 (seconds), percall=71.794400 (ms)
+measuring (async) performance ...
+total=3.206 (seconds), percall=16.032785 (ms)
+DONE

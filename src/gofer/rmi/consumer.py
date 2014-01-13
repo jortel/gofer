@@ -14,15 +14,16 @@
 #
 
 from gofer.rmi.store import PendingQueue
-from gofer.messaging.consumer import Consumer
+from gofer.messaging import Consumer
 from logging import getLogger
+
 
 log = getLogger(__name__)
 
 
 class RequestConsumer(Consumer):
     """
-    Reply consumer.
+    Request consumer.
     Reads messages from AMQP and writes to
     local pending queue to be consumed by the scheduler.
     """

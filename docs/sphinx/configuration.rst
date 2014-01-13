@@ -54,16 +54,19 @@ Examples:
 
 Defines messaging properties:
 
-- **url** - The QPID connection URL.
-  No value indicates that gofer should **not** connect to QPID.
-    *format*: [tcp|ssl]://<host>:<port>
-      - *tcp*: non-SSL transport
-      - *ssl*: SSL transport
- - **cacert** - The (optional) SSL CA certificate used to validate the server certificate.
- - **clientcert** - The (optional) SSL client certificate.
-   A (PEM) file containing **both** the private key and certificate.
- - **threads** - The (optional) number of threads for the RMI dispatcher.
-   Default to (1) when not specified.
+- **url** - The broker connection URL.
+  No value indicates that gofer should **not** connect to the broker.
+    *format*: *<protocol>://<host>:<port>*, protocol is one of:
+      - **tcp**: non-SSL protocol
+      - **amqp**: non-SSL protocol
+      - **ssl**: SSL protocol
+      - **amqps**: SSL protocol
+- **transport** - The transport used to connect to the specified broker.
+- **cacert** - The (optional) SSL CA certificate used to validate the server certificate.
+- **clientcert** - The (optional) SSL client certificate.
+  A (PEM) file containing **both** the private key and certificate.
+- **threads** - The (optional) number of threads for the RMI dispatcher.
+  Default to (1) when not specified.
 
 Example:
 
@@ -71,6 +74,7 @@ Example:
 
  [messaging]
  url = tcp://localhost:5672
+ transport: amqplib
  cacert = /etc/pki/qpid/ca/ca.crt
  clientcert = /etc/pki/qpid/client/client.pem
 
@@ -109,10 +113,13 @@ Defines basic plugin properties.
 - **uuid** - The default agent (UUID) identity.
   This value may be overridden by an *identity* plugin.
 - **'url** - The (optional) QPID connection URL.
-  No value indicates the plugin should **not** connect to QPID.
-    format:[tcp|ssl]://<host>:<port>
-      - **tcp**: non-SSL transport
-      - **ssl**: SSL transport
+  No value indicates the plugin should **not** connect to broker.
+    format:  *<protocol>://<host>:<port>*, protocol is one of:
+      - **tcp**: non-SSL protocol
+      - **amqp**: non-SSL protocol
+      - **ssl**: SSL protocol
+      - **amqps**: SSL protocol
+- **transport** - The transport used to connect to the specified broker.
 - **cacert** - The (optional) SSL CA certificate used to validate the server certificate.
 - **clientcert** - The (optional) SSL client certificate.  A (PEM) file containing **both**
   the private key and certificate.

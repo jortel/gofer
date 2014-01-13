@@ -16,19 +16,11 @@
 
 import socket
 from threading import Thread
-from gofer.messaging import getuuid, Queue
-from gofer.messaging.consumer import Consumer, Reader
-from gofer.messaging.producer import Producer, BinaryProducer
+from gofer.messaging.model import getuuid
+from gofer.messaging import Queue, Reader, Consumer, Producer, BinaryProducer
 from logging import getLogger
 
 log = getLogger(__name__)
-
-#
-# Utils
-#
-
-def toq(uuid):
-    return Queue(uuid, durable=False)
 
 
 #
@@ -42,24 +34,29 @@ class Bridge(Consumer):
     HOST = socket.gethostname()
     
     def __init__(self, url, uuid, port, host=HOST):
-        Consumer.__init__(self, toq(uuid), url=url)
+        Consumer.__init__(self, Queue(uuid), url=url)
         self.uuid = uuid
         self.port = port
         self.host = host
-        
-        
+
     def dispatch(self, env):
         peer = env.peer
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((self.host, self.port))
-        uuid = toq(getuuid())
         p = Producer(url=self.url)
-        p.send(env.peer, peer=str(uuid))
-        reader = Reader(uuid, url=self.url)
-        tr = TunnelReader(reader, sock)
-        tr.start()
-        tw = TunnelWriter(self.url, env.peer, sock)
-        tw.start()
+        try:
+            peer = self.queue.destination()
+            p.send(env.peer, peer=peer.dict())
+        finally:
+            p.close()
+        r = Reader(self.queue, url=self.url)
+        try:
+            tr = TunnelReader(r, sock)
+            tr.start()
+            tw = TunnelWriter(self.url, env.peer, sock)
+            tw.start()
+        finally:
+            r.close()
    
 
 class Gateway(Thread):
@@ -69,6 +66,7 @@ class Gateway(Thread):
         self.url = url
         self.peer = peer
         self.port = int(port)
+        self.url = url
         self.setDaemon(True)
         
     def run(self):
@@ -83,15 +81,22 @@ class Gateway(Thread):
                 log.exception(address)
     
     def accepted(self, sock):
-        uuid = toq(getuuid())
+        queue = Queue(getuuid(), url=self.url)
         p = Producer(url=self.url)
-        p.send(toq(self.peer), peer=str(uuid))
-        r = Reader(uuid, url=self.url)
-        env = r.next()
-        tr = TunnelReader(r, sock)
-        tr.start()
-        tw = TunnelWriter(self.url, env.peer, sock)
-        tw.start()
+        try:
+            peer = queue.destination()
+            p.send(self.peer, peer=peer.dict())
+        finally:
+            p.close()
+        r = Reader(queue, url=self.url)
+        try:
+            env = r.next()
+            tr = TunnelReader(r, sock)
+            tr.start()
+            tw = TunnelWriter(self.url, env.peer, sock)
+            tw.start()
+        finally:
+            r.close()
         
 
 class TunnelReader(Thread):
@@ -151,15 +156,18 @@ class TunnelWriter(Thread):
         self.setDaemon(True)
     
     def run(self):
-        producer = BinaryProducer(url=self.url)
-        while True:
-            content = self.__read()
-            if content:
-                producer.send(self.queue, content)
-            else:
-                producer.send(self.queue, '')
-                self.close()
-                break
+        p = BinaryProducer(url=self.url)
+        try:
+            while True:
+                content = self.__read()
+                if content:
+                    p.send(self.queue, content)
+                else:
+                    p.send(self.queue, '')
+                    self.close()
+                    break
+        finally:
+            p.close()
             
     def __read(self):
         try:

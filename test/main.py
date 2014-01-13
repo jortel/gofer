@@ -47,7 +47,6 @@ class TestAgent:
         self.root = root or mkdtemp()
 
     def start(self, spoofing=None):
-
         self._setup_logging()
         self._setup_spoofing(spoofing)
         self._setup_locking()

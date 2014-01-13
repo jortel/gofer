@@ -12,7 +12,7 @@
 
 from unittest import TestCase
 from gofer.rmi.policy import timeout, Timeout
-from gofer.messaging import Options
+from gofer.messaging.model import Options
 
 
 class TimeoutTests(TestCase):

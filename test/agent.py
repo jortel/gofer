@@ -63,6 +63,8 @@ from logging import getLogger, INFO, DEBUG
 
 log = getLogger(__name__)
 
+getLogger('gofer.transport').setLevel(DEBUG)
+
 
 def installPlugins(thread):
     root = os.path.dirname(__file__)

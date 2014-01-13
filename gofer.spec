@@ -106,9 +106,7 @@ if [ $1 = 0 ] ; then
 fi
 
 
-###############################################################################
-# python lib
-###############################################################################
+# --- python lib -------------------------------------------------------------
 
 %package -n python-%{name}
 Summary: Gofer python lib modules
@@ -116,27 +114,80 @@ Group: Development/Languages
 Obsoletes: %{name}-lib
 BuildRequires: python
 Requires: python-simplejson
-Requires: python-qpid >= 0.7
 Requires: PyPAM
 %if 0%{?rhel} && 0%{?rhel} < 6
 Requires: python-hashlib
 Requires: python-uuid
-Requires: python-ssl
 %endif
 
 %description -n python-%{name}
-Contains gofer python lib modules.
+Provides gofer python lib modules.
 
 %files -n python-%{name}
 %defattr(-,root,root,-)
 %{python_sitelib}/%{name}/*.py*
 %{python_sitelib}/%{name}/rmi/
 %{python_sitelib}/%{name}/messaging/
+%dir %{python_sitelib}/%{name}/transport/
+%{python_sitelib}/%{name}/transport/*.*
 %doc LICENSE
 
-###############################################################################
-# ruby lib
-###############################################################################
+
+# --- python qpid transport --------------------------------------------------
+
+%package -n python-%{name}-qpid
+Summary: Gofer Qpid transport python package
+Group: Development/Languages
+BuildRequires: python
+Requires: python-%{name} >= %{version}
+Requires: python-qpid >= 0.18
+%if 0%{?rhel} && 0%{?rhel} < 6
+Requires: python-ssl
+%endif
+
+%description -n python-%{name}-qpid
+Provides the gofer qpid transport package.
+
+%files -n python-%{name}-qpid
+%{python_sitelib}/%{name}/transport/qpid
+%doc LICENSE
+
+
+# --- python amqplib transport -----------------------------------------------
+
+%package -n python-%{name}-amqplib
+Summary: Gofer amqplib transport python package
+Group: Development/Languages
+BuildRequires: python
+Requires: python-%{name} >= %{version}
+Requires: python-amqplib >= 1.0.2
+
+%description -n python-%{name}-amqplib
+Provides the gofer amqplib transport package.
+
+%files -n python-%{name}-amqplib
+%{python_sitelib}/%{name}/transport/amqplib
+%doc LICENSE
+
+
+# --- python rabbitmq transport -------------------------------------------
+
+%package -n python-%{name}-rabbitmq
+Summary: Gofer rabbitmq transport python package
+Group: Development/Languages
+BuildRequires: python
+Requires: python-%{name} >= %{version}
+Requires: python-librabbitmq >= 1.0.2
+
+%description -n python-%{name}-rabbitmq
+Provides the gofer rabbitmq transport package.
+
+%files -n python-%{name}-rabbitmq
+%{python_sitelib}/%{name}/transport/rabbitmq
+%doc LICENSE
+
+
+# --- ruby lib ---------------------------------------------------------------
 
 %package -n ruby-%{name}
 Summary: Gofer ruby lib modules
@@ -147,7 +198,7 @@ Requires: rubygem(json)
 Requires: rubygem(qpid) >= 0.16.0
 
 %description -n ruby-%{name}
-Contains gofer ruby lib modules.
+Provides gofer ruby lib modules.
 
 %files -n ruby-%{name}
 %defattr(-,root,root,-)
@@ -158,9 +209,7 @@ Contains gofer ruby lib modules.
 %doc LICENSE
 
 
-###############################################################################
-# plugin: system
-###############################################################################
+# --- plugin: system ---------------------------------------------------------
 
 %package -n gofer-system
 Summary: The system plug-in
@@ -169,7 +218,7 @@ BuildRequires: python
 Requires: %{name} >= %{version}
 
 %description -n gofer-system
-Contains the system plug-in.
+Provides the system plug-in.
 The system plug-in provides system functionality.
 
 %files -n gofer-system
@@ -179,9 +228,7 @@ The system plug-in provides system functionality.
 %doc LICENSE
 
 
-###############################################################################
-# plugin: watchdog
-###############################################################################
+# --- plugin: watchdog -------------------------------------------------------
 
 %package -n gofer-watchdog
 Summary: The watchdog plug-in
@@ -190,7 +237,7 @@ BuildRequires: python
 Requires: %{name} >= %{version}
 
 %description -n gofer-watchdog
-Contains the watchdog plug-in.
+Provides the watchdog plug-in.
 This plug-in is used to support time out
 for asynchronous RMI calls.
 
@@ -202,9 +249,7 @@ for asynchronous RMI calls.
 %doc LICENSE
 
 
-###############################################################################
-# plugin: virt
-###############################################################################
+# --- plugin: virt -----------------------------------------------------------
 
 %package -n gofer-virt
 Summary: The virtualization plugin
@@ -214,7 +259,7 @@ Requires: libvirt-python
 Requires: %{name} >= %{version}
 
 %description -n gofer-virt
-Contains the virtualization plugin.
+Provides the virtualization plugin.
 This plug-in provides RMI access to libvirt functionality.
 
 %files -n gofer-virt
@@ -224,9 +269,7 @@ This plug-in provides RMI access to libvirt functionality.
 %doc LICENSE
 
 
-###############################################################################
-# plugin: package
-###############################################################################
+# --- plugin: package --------------------------------------------------------
 
 %package -n gofer-package
 Summary: The package (RPM) plugin
@@ -236,7 +279,7 @@ Requires: yum
 Requires: %{name} >= %{version}
 
 %description -n gofer-package
-Contains the package plugin.
+Provides the package plugin.
 This plug-in provides RMI access to package (RPM) management.
 
 %files -n gofer-package
@@ -245,6 +288,8 @@ This plug-in provides RMI access to package (RPM) management.
 %{_usr}/share/%{name}/plugins/package.*
 %doc LICENSE
 
+
+# --- changelog --------------------------------------------------------------
 
 
 %changelog

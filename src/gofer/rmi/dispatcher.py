@@ -22,7 +22,7 @@ import inspect
 import traceback as tb
 
 from gofer import NAME
-from gofer.messaging import *
+from gofer.messaging.model import Envelope, Options
 from gofer.pam import PAM
 
 from logging import getLogger
@@ -552,7 +552,7 @@ class Security:
             secret = secret()
         if not secret:
             return
-        if not isinstance(secret, (list,tuple)):
+        if not isinstance(secret, (list, tuple)):
             secret = (secret,)
         if not passed.secret:
             raise SecretRequired(self.method)
@@ -606,16 +606,25 @@ class Dispatcher:
             secret=envelope.secret,
             pam=envelope.pam,)
 
+    @staticmethod
+    def log(envelope):
+        request = Options(envelope.request)
+        log.info(
+            'call: %s.%s() sn=%s info=%s',
+            request.classname,
+            request.method,
+            envelope.sn,
+            envelope.any)
+
     def __init__(self, classes):
         """
         :param classes: The (catalog) of target classes.
         :type classes: list
         """
-        self.catalog = \
-            dict([(c.__name__, c) for c in classes])
+        self.catalog = dict([(c.__name__, c) for c in classes])
 
     def provides(self, name):
-        return ( name in self.catalog )
+        return name in self.catalog
 
     def dispatch(self, envelope):
         """
@@ -626,6 +635,7 @@ class Dispatcher:
         :rtype: any
         """
         try:
+            self.log(envelope)
             auth = self.auth(envelope)
             request = Request(envelope.request)
             log.debug('request: %s', request)

@@ -21,8 +21,9 @@ from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import PendingThread
 from gofer.rmi.dispatcher import Dispatcher, Return
 from gofer.rmi.threadpool import Immediate
-from gofer.messaging import Envelope
-from gofer.messaging.producer import Producer
+from gofer.messaging.model import Envelope
+from gofer.messaging import Producer
+from gofer.transport.model import Destination
 from gofer.metrics import Timer
 from logging import getLogger
 
@@ -55,20 +56,17 @@ class Task:
     
     context = Local()
 
-    def __init__(self, plugin, envelope, producer, commit):
+    def __init__(self, plugin, envelope, commit):
         """
         :param plugin: A plugin.
         :type plugin: Plugin
         :param envelope: A gofer messaging envelope.
         :type envelope: Envelope
-        :param producer: An AMQP message producer.
-        :type producer: Producer
         :param commit: Transaction commit function.
         :type commit: callable
         """
         self.plugin = plugin
         self.envelope = envelope
-        self.producer = producer
         self.commit = commit
         self.window = envelope.window
         self.ttl = envelope.ttl
@@ -147,11 +145,15 @@ class Task:
         if not replyto:
             return
         try:
-            self.producer.send(
-                replyto,
-                sn=sn,
-                any=any,
-                status='started')
+            producer = Producer(url=envelope.url)
+            try:
+                producer.send(
+                    Destination.create(replyto),
+                    sn=sn,
+                    any=any,
+                    status='started')
+            finally:
+                producer.close()
         except:
             log.exception('send (started), failed')
             
@@ -173,11 +175,15 @@ class Task:
         if not replyto:
             return
         try:
-            self.producer.send(
-                replyto,
-                sn=sn,
-                any=any,
-                result=result)
+            producer = Producer(url=envelope.url)
+            try:
+                producer.send(
+                    Destination.create(replyto),
+                    sn=sn,
+                    any=any,
+                    result=result)
+            finally:
+                producer.close()
         except:
             log.exception('send failed:\n%s', result)
             
@@ -216,7 +222,6 @@ class Scheduler(PendingThread):
         """
         PendingThread.__init__(self)
         self.plugins = plugins
-        self.producers = {}
         
     def dispatch(self, envelope):
         """
@@ -225,13 +230,8 @@ class Scheduler(PendingThread):
         :param envelope: A gofer messaging envelope.
         :type envelope: Envelope
         """
-        url = envelope.url
         plugin = self.findplugin(envelope)
-        task = Task(
-            plugin,
-            envelope,
-            self.producer(url),
-            self.commit)
+        task = Task(plugin, envelope, self.commit)
         pool = plugin.getpool()
         pool.run(task)
         
@@ -252,20 +252,6 @@ class Scheduler(PendingThread):
                 return plugin
         return EmptyPlugin()
     
-    def producer(self, url):
-        """
-        Find the cached producer by URL.
-        :param url: The URL of the broker the request was received.
-        :type url: str
-        :return: The appropriate producer.
-        :rtype: Producer
-        """
-        p = self.producers.get(url)
-        if p is None:
-            p = Producer(url=url)
-            self.producers[url] = p
-        return p
-
 
 class Context:
     """
@@ -313,14 +299,19 @@ class Progress:
         if not replyto:
             return
         try:
-            self.__task.producer.send(
-                replyto,
-                sn=sn,
-                any=any,
-                status='progress',
-                total=self.total,
-                completed=self.completed,
-                details=self.details)
+            url = self.__task.envelope.url
+            producer = Producer(url=url)
+            try:
+                producer.send(
+                    Destination.create(replyto),
+                    sn=sn,
+                    any=any,
+                    status='progress',
+                    total=self.total,
+                    completed=self.completed,
+                    details=self.details)
+            finally:
+                producer.close()
         except:
             log.exception('send (progress), failed')
 
