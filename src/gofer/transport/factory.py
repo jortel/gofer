@@ -34,6 +34,7 @@ REQUIRED = [
     'Producer',
     'BinaryProducer',
     'Reader',
+    'send',
 ]
 
 
