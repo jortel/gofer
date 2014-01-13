@@ -27,8 +27,8 @@ class Window(Options):
     """
     Represents a maintenance (time) window.
     An empty Window defines an unbounded window.
-    A I{begin} of 'None' = UTC now.
-    An I{end} of 'None' = begin plus 1 hour.
+    A *begin* of 'None' = UTC now.
+    An *end* of 'None' = begin plus 1 hour.
     :cvar FORMAT: The datetime format. ISO 8601
     :type FORMAT: str
     :cvar DURATION: The duration keywords.
@@ -42,7 +42,7 @@ class Window(Options):
         """
         :param D: A (optional) dictionary.
         :type D: [dict,..]
-        :note: An empty I{window} indicates an unbounded window.
+        :note: An empty *window* indicates an unbounded window.
         :keyword window: The window specification:
             - begin
           One of:
@@ -57,8 +57,8 @@ class Window(Options):
             Options.__init__(self, *D)
             return
         if window:
-            self.__setbegin(window)
-            self.__setend(window)
+            self.__set_begin(window)
+            self.__set_end(window)
         Options.__init__(self, **window)
 
     def match(self):
@@ -72,7 +72,7 @@ class Window(Options):
         if self:
             now = dt.utcnow()
             begin, end = self.__dates(now)
-            return ( now >= begin and now <= end )
+            return now >= begin and now <= end
         else:
             return True
 
@@ -80,13 +80,13 @@ class Window(Options):
         """
         Get whether window is in the future.
         :note: Empty = match ALL.
-        :return: True if I{begin} > I{utcnow()}.
+        :return: True if *begin* > *utcnow()*.
         :rtype: bool
         """
         if self:
             now = dt.utcnow()
             begin, end = self.__dates(now)
-            return ( now < begin )
+            return now < begin
         else:
             return False
 
@@ -94,17 +94,17 @@ class Window(Options):
         """
         Get whether window is in the past.
         :note: Empty = match ALL.
-        :return: True if I{utcnow()} > I{end}.
+        :return: True if *utcnow()* > *end*.
         :rtype: bool
         """
         if self:
             now = dt.utcnow()
             begin, end = self.__dates(now)
-            return ( now > end )
+            return now > end
         else:
             return False
 
-    def __setbegin(self, window):
+    def __set_begin(self, window):
         """
         Set the proper window beginning.
         Performs:
@@ -112,7 +112,7 @@ class Window(Options):
           - Default to UTC (now) when value is (None).
         :param window: The window specification.
         :type window: dict
-        :return: The updated I{window}.
+        :return: The updated *window*.
         :rtype: dict
         """
         BEGIN = 'begin'
@@ -127,7 +127,7 @@ class Window(Options):
             raise Exception, 'Window() must specify "begin"'
         return window
 
-    def __setend(self, window):
+    def __set_end(self, window):
         """
         Set the proper window ending.
         Performs:
@@ -135,7 +135,7 @@ class Window(Options):
           - Default begin plus 1 hour when value is (None).
         :param window: The window specification.
         :type window: dict
-        :return: The updated I{window}.
+        :return: The updated *window*.
         :rtype: dict
         """
         END = 'end'
@@ -147,16 +147,16 @@ class Window(Options):
                 v = v.strftime(self.FORMAT)
             window[END] = v
         else:
-            if not self.__hasduration(window):
+            if not self.__has_duration(window):
                 raise Exception,\
                     'Window() must have "end" or one of: %s' % \
                     str(self.DURATION)
         return window
 
-    def __hasduration(self, window):
+    def __has_duration(self, window):
         """
         Get whether one of the duration keywords are specified
-        in the I{window} definition.
+        in the *window* definition.
         :param window: The window specification.
         :type window: dict
         :return: True if found.
@@ -171,7 +171,7 @@ class Window(Options):
         """
         Convert to datetime objects.
         :param now: The current UTC time.
-        :type now: datetime
+        :type now: datetime.datetime
         :return: (begin, end)
         :rtype: (datetime, datetime)
         """
@@ -184,10 +184,10 @@ class Window(Options):
             end = dt.strptime(self.begin, self.FORMAT)
         else:
             end = begin
-        for k,v in self.__dict__.items():
+        for k, v in self.__dict__.items():
             if k in DURATION:
-                end = end+delta(**{k:v})
-        return (begin, end)
+                end = end+delta(**{k: v})
+        return begin, end
 
     def __str__(self):
         if self:
