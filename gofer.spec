@@ -271,6 +271,14 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Tue Jan 14 2014 Jeff Ortel <jortel@redhat.com> 1.0.0-0.1
+- default asynchronous timeout to None. (jortel@redhat.com)
+  add 'send' as required by transports. (jortel@redhat.com)
+- watchdog removed; timeout flows revised. watchdog removed; add 'accepted'
+  status; add 'wait' option; redefine timeout option as single integer
+  pertaining to the accepted. (jortel@redhat.com)
+- Add 'match' criteria operator. (jortel@redhat.com)
+- Support plugable transports. (jortel@redhat.com)
 * Mon Sep 30 2013 Jeff Ortel <jortel@redhat.com> 0.77-1
 - Reduce logging do DEBUG on frequent messaging and RMI processing events.
   (jortel@redhat.com)
