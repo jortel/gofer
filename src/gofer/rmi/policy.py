@@ -310,7 +310,7 @@ class Asynchronous(RequestMethod):
         """
         RequestMethod.__init__(self, url)
         self.ctag = options.ctag
-        self.timeout = Timeout.seconds(options.timeout or 10)
+        self.timeout = Timeout.seconds(options.timeout)
         self.trigger = options.trigger
 
     def send(self, destination, request, **any):
