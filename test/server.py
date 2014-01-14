@@ -15,8 +15,12 @@
 #
 
 import sys
+
 from time import sleep
+from optparse import OptionParser, Option
+
 from gofer.messaging import Queue
+from gofer.transport import Transport
 from gofer.rmi.window import *
 from gofer.rmi.dispatcher import *
 from gofer.rmi.async import ReplyConsumer
@@ -35,13 +39,21 @@ log = getLogger(__name__)
 getLogger('gofer.transport').setLevel(DEBUG)
 
 
-def onReply(reply):
+class ListOption(Option):
+    ACTIONS = Option.ACTIONS + ('extend',)
+    STORE_ACTIONS = Option.STORE_ACTIONS + ('extend',)
+    TYPED_ACTIONS = Option.TYPED_ACTIONS + ('extend',)
+    ALWAYS_TYPED_ACTIONS = Option.ALWAYS_TYPED_ACTIONS + ('extend',)
+
+    def take_action(self, action, dest, opt, value, values, parser):
+        if action == 'extend':
+            values.ensure_value(dest, []).append(value)
+        else:
+            Option.take_action(self, action, dest, opt, value, values, parser)
+
+
+def on_reply(reply):
     print 'REPLY [%s]\n%s' % (dt.now(), reply)
-
-
-def isAsync(agent):
-    options = agent._Container__options
-    return (options.async or options.ctag)
 
 
 def demo(agent):
@@ -433,15 +445,31 @@ def smoke_test(uuid, exit=0):
         sys.exit(0)
 
 
+def get_options():
+    parser = OptionParser(option_class=ListOption)
+    parser.add_option('-i', '--uuid', default='xyz', help='agent UUID')
+    parser.add_option('-u', '--url', help='broker URL')
+    parser.add_option('-t', '--threads', default=0, help='number of threads')
+    parser.add_option('-U', '--user', action='extend', help='list of userid:password')
+    parser.add_option('-T', '--transport', default='qpid', help='transport (qpid|amqplib|rabbitmq)')
+    opts, args = parser.parse_args()
+    return opts
+
+
 if __name__ == '__main__':
-    uuid = 'xyz'
+    options = get_options()
+    uuid = options.uuid
     yp = {}
-    yp['root'] = sys.argv[1]
-    yp['jortel'] = sys.argv[2]
-    url = 'tcp://localhost:5672'
+    for user in options.user:
+        u, p = user.split(':')
+        yp[u] = p
+    url = options.url or 'tcp://localhost:5672'
+    transport = options.transport
+    Transport.bind(url=url, package=transport)
     queue = Queue(uuid.upper(), url=url)
-    rcon = ReplyConsumer(queue, url)
-    rcon.start(onReply)
+    queue.declare(url)
+    reply_consumer = ReplyConsumer(queue, url)
+    reply_consumer.start(on_reply)
     # demo_progress(uuid, 1)
     # demo_window(uuid, 1)
     # test_performance(uuid)
@@ -451,11 +479,11 @@ if __name__ == '__main__':
     demo_constructors(uuid)
     test_triggers(uuid)
     smoke_test(uuid)
-    if len(sys.argv) > 3:
-        n = int(sys.argv[3])
-        print '======= RUNNING %d THREADS ============' % n
+    n_threads = int(options.threads)
+    if n_threads:
+        print '======= RUNNING %d THREADS ============' % n_threads
         sleep(2)
-        last = threads(uuid, n)
+        last = threads(uuid, n_threads)
         last.join()
         sys.exit(0)
     for i in range(0, 100):

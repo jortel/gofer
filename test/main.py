@@ -81,13 +81,13 @@ class TestAgent:
     def _setup_spoofing(self, suffix):
         from gofer.agent.plugin import Plugin
         if suffix:
-            impl = Plugin.getuuid
-            def getuuid(plugin):
+            impl = Plugin.get_uuid
+            def get_uuid(plugin):
                 uuid = impl(plugin)
                 if uuid:
                     uuid = '-'.join((uuid, suffix))
                 return uuid
-            Plugin.getuuid = getuuid
+            Plugin.get_uuid = get_uuid
 
 
 # --- python scripting -------------------------------------------------------

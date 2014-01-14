@@ -335,8 +335,10 @@ class Plugin(object):
             return
         agent = Config()
         plugin = self.cfg()
+        url = self.get_url()
         package = nvl(plugin.messaging.transport, nvl(agent.messaging.transport))
-        Transport.bind(self.get_url(), package)
+        if url and package:
+            Transport.bind(url, package)
 
     # deprecated
     getuuid = get_uuid

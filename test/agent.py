@@ -31,8 +31,9 @@ eager=1
 """
 
 import os
-import sys
+
 from time import sleep
+from optparse import OptionParser
 
 # logging
 from gofer.agent import logutil
@@ -57,6 +58,7 @@ if not os.path.exists(PendingQueue.ROOT):
     os.makedirs(PendingQueue.ROOT)
 
 # misc
+from gofer.transport import Transport
 from gofer.agent.plugin import PluginDescriptor, PluginLoader
 from gofer.agent.main import Agent, eager, setup_logging
 from logging import getLogger, INFO, DEBUG
@@ -66,47 +68,54 @@ log = getLogger(__name__)
 getLogger('gofer').setLevel(DEBUG)
 
 
-def installPlugins(thread):
+def install_plugins(url, uuid, threads):
     root = os.path.dirname(__file__)
     dir = os.path.join(root, 'plugins')
     for fn in os.listdir(dir):
         path = os.path.join(dir, fn)
         if fn.endswith('.conf'):
             pd = PluginDescriptor(path)
+            pd.messaging.url = url
+            pd.messaging.uuid = uuid
             pd.messaging.threads = threads
             path = os.path.join(PluginDescriptor.ROOT, fn)
-            f = open(path, 'w')
-            s = str(pd)
-            f.write(s)
-            f.close()
+            with open(path, 'w') as fp:
+                fp.write(str(pd))
             continue
         if fn.endswith('.py'):
             f = open(path)
             plugin = f.read()
             f.close()
             path = os.path.join(PluginLoader.PATH[0], fn)
-            f = open(path, 'w')
-            f.write(plugin)
-            f.close()
+            with open(path, 'w') as fp:
+                fp.write(plugin)
             continue
 
 
-def install(threads=1):
+def install(url, uuid, threads):
     PluginDescriptor.ROOT = os.path.join(ROOT, 'plugins')
-    PluginLoader.PATH = [
-        os.path.join(ROOT, 'lib/plugins')
-    ]
+    PluginLoader.PATH = [os.path.join(ROOT, 'lib/plugins')]
     for path in (PluginDescriptor.ROOT, PluginLoader.PATH[0]):
         if not os.path.exists(path):
             os.makedirs(path)
-    installPlugins(threads)
-    
+    install_plugins(url, uuid, threads)
+
+
+def get_options():
+    parser = OptionParser()
+    parser.add_option('-i', '--uuid', default='xyz', help='agent UUID')
+    parser.add_option('-u', '--url', help='broker URL')
+    parser.add_option('-t', '--threads', default='3', help='number of threads')
+    parser.add_option('-T', '--transport', default='qpid', help='transport (qpid|amqplib|rabbitmq)')
+    opts, args = parser.parse_args()
+    return opts
+
 
 class TestAgent:
 
-    def __init__(self, threads):
+    def __init__(self, url, uuid, threads):
         setup_logging()
-        install(threads)
+        install(url, uuid, threads)
         pl = PluginLoader()
         plugins = pl.load(eager())
         agent = Agent(plugins)
@@ -117,12 +126,11 @@ class TestAgent:
 
 
 if __name__ == '__main__':
-    uuid = 'xyz'
-    threads = 3
-    if len(sys.argv) > 1:
-        threads = int(sys.argv[1])
-    if len(sys.argv) > 2:
-        uuid = sys.argv[2]
-    log.info('started')
-    print 'starting agent, threads=%d' % threads
-    agent = TestAgent(threads)
+    options = get_options()
+    uuid = options.uuid
+    url = options.url or 'tcp://localhost:5672'
+    threads = int(options.threads)
+    transport = options.transport
+    Transport.bind(url=url, package=transport)
+    print 'starting agent, threads=%d, transport=%s, url=%s' % (threads, transport, url)
+    agent = TestAgent(url, uuid, threads)
