@@ -52,12 +52,12 @@ class _Exchange:
     @staticmethod
     def direct(transport=None):
         tp = Transport(transport)
-        return tp.Exchange.direct()
+        return tp.plugin.Exchange.direct()
 
     @staticmethod
     def topic(transport=None):
         tp = Transport(transport)
-        return tp.Exchange.topic()
+        return tp.plugin.Exchange.topic()
 
     def __init__(self, *unused):
         pass

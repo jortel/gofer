@@ -111,7 +111,7 @@ class Transport:
         :return: The broker provided by the transport.
         :rtype: gofer.transport.broker.Broker
         """
-        return self.Broker(url)
+        return self.plugin.Broker(url)
 
     def exchange(self, name, policy=None):
         """
@@ -123,7 +123,7 @@ class Transport:
         :return: The exchange object provided by the transport.
         :rtype: gofer.transport.model.Exchange
         """
-        return self.Exchange(name, policy=policy)
+        return self.plugin.Exchange(name, policy=policy)
 
     def queue(self, name, exchange=None, routing_key=None):
         """
@@ -137,7 +137,7 @@ class Transport:
         :return: The queue object provided by the transport.
         :rtype: gofer.transport.node.Queue.
         """
-        return self.Queue(name, exchange=exchange, routing_key=routing_key)
+        return self.plugin.Queue(name, exchange=exchange, routing_key=routing_key)
 
     def producer(self, url, uuid=None):
         """
@@ -149,7 +149,7 @@ class Transport:
         :return: The broker provided by the transport.
         :rtype: gofer.transport.endpoint.Endpoint.
         """
-        return self.Producer(uuid, url=url)
+        return self.plugin.Producer(uuid, url=url)
 
     def binary_producer(self, url, uuid=None):
         """
@@ -161,7 +161,7 @@ class Transport:
         :return: The producer provided by the transport.
         :rtype: gofer.transport.endpoint.Endpoint.
         """
-        return self.BinaryProducer(uuid, url=url)
+        return self.plugin.BinaryProducer(uuid, url=url)
 
     def reader(self, url, queue, uuid=None):
         """
@@ -175,7 +175,5 @@ class Transport:
         :return: The reader provided by the transport.
         :rtype: gofer.transport.endpoint.Endpoint.
         """
-        return self.Reader(queue, uuid=uuid, url=url)
+        return self.plugin.Reader(queue, uuid=uuid, url=url)
 
-    def __getattr__(self, name):
-        return getattr(self.plugin, name)

@@ -397,7 +397,7 @@ def main(url, transport, uuid):
 
     # asynchronous
     print '(demo) group asynchronous'
-    group = (uuid, 'ABC',)
+    group = (uuid, uuid)
     window = Window(begin=dt.utcnow(), minutes=1)
     agent = Agent(group, ctag=tag, window=window, url=url, transport=transport)
     demo(agent)
