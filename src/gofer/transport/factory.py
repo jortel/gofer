@@ -13,16 +13,11 @@ import os
 
 from logging import getLogger
 
-from gofer.transport.broker import URL
-
 
 log = getLogger(__name__)
 
 
 # --- constants --------------------------------------------------------------
-
-# the default URL
-DEFAULT_URL = 'tcp://localhost:5672'
 
 
 # symbols required to be provided by all transports
@@ -70,12 +65,11 @@ class TransportNotFound(TransportError):
 class Transport:
     """
     The transport API.
-    :cvar bindings: Transport packages mapped by URL.
-    :cvar bindings: dict
+    :cvar plugins: Loaded transport plugins.
+    :cvar plugins: dict
     """
 
     plugins = {}
-    bindings = {}
 
     @classmethod
     def load_plugins(cls):
@@ -90,58 +84,34 @@ class Transport:
                 cls.plugins[name] = pkg
                 cls.plugins[package] = pkg
             except ImportError:
-                log.debug(name)
+                log.exception(name)
 
-    @classmethod
-    def bind(cls, url=None, package=None):
+    def __init__(self, package=None):
         """
-        Bind a URL to the specified package.
-        :param url: The agent/broker URL.
-        :type url: str, URL
         :param package: The python package providing the transport.
         :type package: str
-        :return: The bound python module.
         """
-        if not cls.plugins:
+        self.package = package
+        loaded = sorted(self.plugins)
+        if not loaded:
             raise NoTransportsLoaded()
-        if not url:
-            url = DEFAULT_URL
-        if not isinstance(url, URL):
-            url = URL(url)
         if not package:
-            package = sorted(cls.plugins)[0]
+            self.plugin = self.plugins[loaded[0]]
+            return
         try:
-            plugin = cls.plugins[package]
-            cls.bindings[url] = plugin
-            log.info('transport: %s bound to url: %s', plugin, url)
-            return plugin
+            self.plugin = self.plugins[package]
         except KeyError:
             raise TransportNotFound(package)
 
-    def __init__(self, url=None, package=None):
-        """
-        :param url: The agent/broker URL.
-        :type url: str, URL
-        :param package: The python package providing the transport.
-        :type package: str
-        """
-        if not url:
-            url = DEFAULT_URL
-        if not isinstance(url, URL):
-            url = URL(url)
-        self.url = url
-        try:
-            self.package = self.bindings[url]
-        except KeyError:
-            self.package = self.bind(url, package)
-
-    def broker(self):
+    def broker(self, url):
         """
         Get an AMQP broker.
+        :param url: The url for the broker.
+        :type url: str
         :return: The broker provided by the transport.
         :rtype: gofer.transport.broker.Broker
         """
-        return self.Broker(self.url)
+        return self.plugin.Broker(url)
 
     def exchange(self, name, policy=None):
         """
@@ -153,7 +123,7 @@ class Transport:
         :return: The exchange object provided by the transport.
         :rtype: gofer.transport.model.Exchange
         """
-        return self.Exchange(name, policy=policy)
+        return self.plugin.Exchange(name, policy=policy)
 
     def queue(self, name, exchange=None, routing_key=None):
         """
@@ -165,41 +135,45 @@ class Transport:
         :param routing_key: An AMQP routing key.
         :type routing_key: str
         :return: The queue object provided by the transport.
-        :rtype: gofer.transport.node.Queue.
+        :rtype: gofer.transport.model.Queue.
         """
-        return self.Queue(name, exchange=exchange, routing_key=routing_key)
+        return self.plugin.Queue(name, exchange=exchange, routing_key=routing_key)
 
-    def producer(self, uuid=None):
+    def producer(self, url, uuid=None):
         """
         Get an AMQP message producer.
+        :param url: The url for the broker.
+        :type url: str
         :param uuid: The (optional) producer ID.
         :type uuid: str
         :return: The broker provided by the transport.
-        :rtype: gofer.transport.endpoint.Endpoint.
+        :rtype: gofer.transport.model.Producer.
         """
-        return self.Producer(uuid, url=self.url)
+        return self.plugin.Producer(uuid, url=url)
 
-    def binary_producer(self, uuid=None):
+    def binary_producer(self, url, uuid=None):
         """
         Get an AMQP binary message producer.
+        :param url: The url for the broker.
+        :type url: str
         :param uuid: The (optional) producer ID.
         :type uuid: str
         :return: The producer provided by the transport.
-        :rtype: gofer.transport.endpoint.Endpoint.
+        :rtype: gofer.transport.model.BinaryProducer.
         """
-        return self.BinaryProducer(uuid, url=self.url)
+        return self.plugin.BinaryProducer(uuid, url=url)
 
-    def reader(self, queue, uuid=None):
+    def reader(self, url, queue, uuid=None):
         """
         Get an AMQP message reader.
+        :param url: The url for the broker.
+        :type url: str
         :param queue: The AMQP node.
         :type queue: gofer.transport.model.Queue
         :param uuid: The (optional) producer ID.
         :type uuid: str
         :return: The reader provided by the transport.
-        :rtype: gofer.transport.endpoint.Endpoint.
+        :rtype: gofer.transport.model.Reader.
         """
-        return self.Reader(queue, uuid=uuid, url=self.url)
+        return self.plugin.Reader(queue, uuid=uuid, url=url)
 
-    def __getattr__(self, name):
-        return getattr(self.package, name)

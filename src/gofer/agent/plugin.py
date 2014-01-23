@@ -19,9 +19,7 @@ Plugin classes.
 
 import os
 import imp
-import inspect
 
-from threading import RLock
 from logging import getLogger
 
 from gofer import *
@@ -33,8 +31,7 @@ from gofer.agent.deplist import DepList
 from gofer.agent.config import Base, Config, nvl
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
-from gofer.transport import Transport, TransportError
-from gofer.messaging import Broker, Queue
+from gofer.transport import Transport
 
 
 log = getLogger(__name__)
@@ -181,11 +178,13 @@ class Plugin(object):
         Get the amqp broker for this plugin.  Each plugin can
         connect to a different broker.
         :return: The broker if configured.
-        :rtype: Broker
+        :rtype: gofer.transport.broker.Broker
         """
         cfg = self.cfg()
         main = Config()
-        broker = Broker(url=self.get_url())
+        url = self.get_url()
+        transport = self.get_transport()
+        broker = transport.broker(url)
         broker.cacert = nvl(cfg.messaging.cacert, nvl(main.messaging.cacert))
         broker.clientcert = nvl(cfg.messaging.clientcert, nvl(main.messaging.clientcert))
         log.debug('broker (qpid) configured: %s', broker)
@@ -234,9 +233,39 @@ class Plugin(object):
             cfg = self.cfg()
             if url:
                 cfg.messaging.url = url
-                self.bind()
             else:
                 delattr(cfg.messaging, 'url')
+            if save:
+                cfg.write()
+        finally:
+            self.__unlock()
+
+    def get_transport(self):
+        """
+        Get the AMQP transport for the plugin.
+        :return: The transport.
+        :rtype: Transport
+        """
+        plugin = self.cfg()
+        agent = Config()
+        package = nvl(plugin.messaging.transport, nvl(agent.messaging.transport))
+        return Transport(package)
+
+    def set_transport(self, transport, save=False):
+        """
+        Set the plugin's transport package (name).
+        :param transport: The new transport package.
+        :type transport: str
+        :param save: Save to plugin descriptor.
+        :type save: bool
+        """
+        self.__lock()
+        try:
+            cfg = self.cfg()
+            if transport:
+                cfg.messaging.transport = transport
+            else:
+                delattr(cfg.messaging, 'transport')
             if save:
                 cfg.write()
         finally:
@@ -263,10 +292,10 @@ class Plugin(object):
         """
         if not uuid:
             uuid = self.get_uuid()
-        broker = self.get_broker()
-        url = broker.url
-        queue = Queue(uuid, url=url)
-        consumer = RequestConsumer(queue, url)
+        url = self.get_url()
+        tp = self.get_transport()
+        queue = tp.queue(uuid)
+        consumer = RequestConsumer(queue, url=url, transport=tp)
         consumer.start()
         self.consumer = consumer
     
@@ -326,19 +355,6 @@ class Plugin(object):
             raise TypeError, '(%s) must be class|function' % name
         except AttributeError:
             raise NameError(name)
-
-    def bind(self):
-        """
-        Bind the AMQP transport.
-        """
-        if not self.enabled():
-            return
-        agent = Config()
-        plugin = self.cfg()
-        url = self.get_url()
-        package = nvl(plugin.messaging.transport, nvl(agent.messaging.transport))
-        if url and package:
-            Transport.bind(url, package)
 
     # deprecated
     getuuid = get_uuid
@@ -521,11 +537,7 @@ class PluginLoader:
                 collated = Remote.collated()
                 p.dispatcher = Dispatcher(collated)
                 p.actions = Actions.collated()
-                p.bind()
             return p
-        except TransportError, te:
-            Plugin.delete(p)
-            log.error('plugin: "%s", unloaded: %s', plugin, te)
         except Exception:
             Plugin.delete(p)
             log.exception('plugin "%s", import failed', plugin)

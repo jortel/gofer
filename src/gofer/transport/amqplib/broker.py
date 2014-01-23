@@ -23,6 +23,7 @@ from gofer.transport.broker import Broker as _Broker
 log = getLogger(__name__)
 
 
+DEFAULT_URL = 'amqp://localhost'
 CONNECTION_EXCEPTIONS = (IOError, SocketError, AMQPConnectionException, AttributeError)
 
 
@@ -30,6 +31,13 @@ class Broker(_Broker):
     """
     A generic AMQP broker.
     """
+
+    def __init__(self, url=DEFAULT_URL):
+        """
+        :param url: The broker url <transport>://<host>:<port>.
+        :type url: str
+        """
+        _Broker.__init__(self, url)
 
     def connect(self):
         """

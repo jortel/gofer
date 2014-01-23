@@ -17,11 +17,10 @@
 Contains request delivery policies.
 """
 
-from gofer.messaging import Queue, Producer, Reader, Destination
+from gofer.messaging import Destination
 from gofer.messaging.model import Envelope, getuuid
 from gofer.rmi.dispatcher import *
 from gofer.metrics import Timer
-from logging import getLogger
 
 
 log = getLogger(__name__)
@@ -125,14 +124,19 @@ class RequestMethod:
     Base class for request methods.
     :ivar url: The agent URL.
     :type url: str
+    :ivar transport: The AMQP transport.
+    :type transport: gofer.transport.Transport
     """
     
-    def __init__(self, url):
+    def __init__(self, url, transport):
         """
         :param url: The agent URL.
         :type url: str
+        :param transport: The AMQP transport.
+        :type transport: gofer.transport.Transport
         """
         self.url = url
+        self.transport = transport
 
     def send(self, destination, request, **any):
         """
@@ -165,18 +169,20 @@ class Synchronous(RequestMethod):
     :type queue: gofer.transport.model.Queue
     """
 
-    def __init__(self, url, options):
+    def __init__(self, url, transport, options):
         """
         :param url: The agent URL.
         :type url: str
+        :param transport: The AMQP transport.
+        :type transport: gofer.transport.Transport
         :param options: Policy options.
         :type options: dict
         """
-        RequestMethod.__init__(self, url)
+        RequestMethod.__init__(self, url, transport)
         self.timeout = Timeout.seconds(options.timeout or 10)
         self.wait = Timeout.seconds(options.wait or 90)
         self.progress = options.progress
-        self.queue = Queue(getuuid(), url=url)
+        self.queue = transport.queue(getuuid())
         self.queue.auto_delete = True
         self.queue.declare(self.url)
 
@@ -193,7 +199,7 @@ class Synchronous(RequestMethod):
         :raise Exception: returned by the peer.
         """
         replyto = self.queue.destination()
-        producer = Producer(url=self.url)
+        producer = self.transport.producer(url=self.url)
         try:
             sn = producer.send(
                 destination,
@@ -204,7 +210,7 @@ class Synchronous(RequestMethod):
         finally:
             producer.close()
         log.debug('sent (%s):\n%s', repr(destination), request)
-        reader = Reader(self.queue, url=self.url)
+        reader = self.transport.reader(self.url, self.queue)
         try:
             self.__get_accepted(sn, reader)
             return self.__get_reply(sn, reader)
@@ -213,18 +219,20 @@ class Synchronous(RequestMethod):
 
     def __get_accepted(self, sn, reader):
         """
-        Get the STARTED reply matched by serial number.
+        Get the ACCEPTED reply matched by serial number.
+        In the event the ACCEPTED message got lost, the STARTED
+        status is also processed.
         :param sn: The request serial number.
         :type sn: str
         :param reader: A reader.
-        :type reader: Reader
+        :type reader: gofer.messaging.Reader
         :return: The matched reply envelope.
         :rtype: Envelope
         """
         envelope = reader.search(sn, self.timeout)
         if envelope:
-            if envelope.status == 'accepted':
-                log.debug('request (%s), accepted', sn)
+            if envelope.status in ('accepted', 'started'):
+                log.debug('request (%s), %s', sn, envelope.status)
             else:
                 self.__on_reply(envelope)
         else:
@@ -236,7 +244,7 @@ class Synchronous(RequestMethod):
         :param sn: The request serial number.
         :type sn: str
         :param reader: A reader.
-        :type reader: Reader
+        :type reader: gofer.messaging.Reader
         :return: The matched reply envelope.
         :rtype: Envelope
         """
@@ -301,14 +309,16 @@ class Asynchronous(RequestMethod):
     The asynchronous request method.
     """
 
-    def __init__(self, url, options):
+    def __init__(self, url, transport, options):
         """
         :param url: The agent URL.
         :type url: str
+        :param transport: The AMQP transport.
+        :type transport: gofer.transport.Transport
         :param options: Policy options.
         :type options: dict
         """
-        RequestMethod.__init__(self, url)
+        RequestMethod.__init__(self, url, transport)
         self.ctag = options.ctag
         self.timeout = Timeout.seconds(options.timeout)
         self.trigger = options.trigger
@@ -421,7 +431,7 @@ class Trigger:
         replyto = policy.replyto()
         request = self.__request
         any = self.__any
-        producer = Producer(url=policy.url)
+        producer = policy.transport.producer(url=policy.url)
         try:
             producer.send(
                 destination,

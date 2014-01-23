@@ -58,7 +58,6 @@ if not os.path.exists(PendingQueue.ROOT):
     os.makedirs(PendingQueue.ROOT)
 
 # misc
-from gofer.transport import Transport
 from gofer.agent.plugin import PluginDescriptor, PluginLoader
 from gofer.agent.main import Agent, eager, setup_logging
 from logging import getLogger, INFO, DEBUG
@@ -68,7 +67,7 @@ log = getLogger(__name__)
 getLogger('gofer').setLevel(DEBUG)
 
 
-def install_plugins(url, uuid, threads):
+def install_plugins(url, transport, uuid, threads):
     root = os.path.dirname(__file__)
     dir = os.path.join(root, 'plugins')
     for fn in os.listdir(dir):
@@ -76,6 +75,7 @@ def install_plugins(url, uuid, threads):
         if fn.endswith('.conf'):
             pd = PluginDescriptor(path)
             pd.messaging.url = url
+            pd.messaging.transport = transport
             pd.messaging.uuid = uuid
             pd.messaging.threads = threads
             path = os.path.join(PluginDescriptor.ROOT, fn)
@@ -92,13 +92,13 @@ def install_plugins(url, uuid, threads):
             continue
 
 
-def install(url, uuid, threads):
+def install(url, transport, uuid, threads):
     PluginDescriptor.ROOT = os.path.join(ROOT, 'plugins')
     PluginLoader.PATH = [os.path.join(ROOT, 'lib/plugins')]
     for path in (PluginDescriptor.ROOT, PluginLoader.PATH[0]):
         if not os.path.exists(path):
             os.makedirs(path)
-    install_plugins(url, uuid, threads)
+    install_plugins(url, transport, uuid, threads)
 
 
 def get_options():
@@ -113,9 +113,9 @@ def get_options():
 
 class TestAgent:
 
-    def __init__(self, url, uuid, threads):
+    def __init__(self, url, transport, uuid, threads):
         setup_logging()
-        install(url, uuid, threads)
+        install(url, transport, uuid, threads)
         pl = PluginLoader()
         plugins = pl.load(eager())
         agent = Agent(plugins)
@@ -131,6 +131,5 @@ if __name__ == '__main__':
     url = options.url or 'tcp://localhost:5672'
     threads = int(options.threads)
     transport = options.transport
-    Transport.bind(url=url, package=transport)
     print 'starting agent, threads=%d, transport=%s, url=%s' % (threads, transport, url)
-    agent = TestAgent(url, uuid, threads)
+    agent = TestAgent(url, transport, uuid, threads)

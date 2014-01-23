@@ -12,17 +12,14 @@
 import os
 import sys
 
-import base
-
 sys.path.insert(0, os.path.join(os.path.curdir, '../../src'))
 
 from logging import basicConfig
 
-from gofer.transport import Transport
-
 basicConfig()
 
+from base import Test
 
 if __name__ == '__main__':
-    Transport.bind(base.URL, 'amqplib')
-    base.test()
+    test = Test('amqp://0.0.0.0:5674', transport='amqplib')
+    test()
