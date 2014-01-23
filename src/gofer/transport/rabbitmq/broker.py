@@ -20,10 +20,20 @@ from gofer.transport.broker import Broker
 log = getLogger(__name__)
 
 
+DEFAULT_URL = 'amqp://localhost'
+
+
 class RabbitMQ(Broker):
     """
     A RabbitMQ broker.
     """
+
+    def __init__(self, url=DEFAULT_URL):
+        """
+        :param url: The broker url <transport>://<host>:<port>.
+        :type url: str
+        """
+        Broker.__init__(self, url)
 
     def connect(self):
         """

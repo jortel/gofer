@@ -12,126 +12,123 @@
 from gofer.messaging import *
 
 
-URL = 'amqp://localhost:5672'
 N = 10
 
 
-def producer_reader(queue):
-    print 'using producer/reader'
-    with Producer(url=URL) as p:
-        for x in range(0, N):
-            d = queue.destination()
-            print '#%d - sent: %s' % (x, d.dict())
-            p.send(d)
-    received = 0
-    with Reader(queue, url=URL) as r:
-        while received < N:
-            m, ack = r.next()
-            if m is None:
-                break
-            ack()
-            print '#%d - received: %s' % (received, m)
-            received += 1
-    print 'end'
+class Test(object):
 
+    def __init__(self, url, transport=None):
+        self.url = url
+        self.transport = transport
 
-def producer_consumer(queue):
-    print 'using producer/consumer'
+    def __call__(self):
+        self.test_no_exchange()
+        self.test_direct_exchange()
+        self.test_custom_direct_exchange()
+        self.test_topic_exchange()
+        self.test_custom_topic_exchange()
+        self.test_consumer()
+        print 'DONE'
 
-    class TestCon(Consumer):
+    def producer_reader(self, queue):
+        print 'using producer/reader'
+        with Producer(url=self.url, transport=self.transport) as p:
+            for x in range(0, N):
+                d = queue.destination()
+                print '#%d - sent: %s' % (x, d.dict())
+                p.send(d)
+        received = 0
+        with Reader(queue, url=self.url, transport=self.transport) as r:
+            while received < N:
+                m, ack = r.next()
+                if m is None:
+                    break
+                ack()
+                print '#%d - received: %s' % (received, m)
+                received += 1
+        print 'end'
 
-        def __init__(self, queue):
-            Consumer.__init__(self, queue, url=URL)
-            self.received = 0
+    def producer_consumer(self, queue):
+        print 'using producer/consumer'
 
-        def dispatch(self, envelope):
-            self.received += 1
-            print '%d/%d - %s' % (self.received, N, envelope)
-            if self.received == N:
-                self.stop()
+        class TestCon(Consumer):
 
-    c = TestCon(queue)
-    c.start()
+            def __init__(self, url, transport):
+                Consumer.__init__(self, queue, url=url, transport=transport)
+                self.received = 0
 
-    with Producer(url=URL) as p:
-        for x in range(0, N):
-            d = queue.destination()
-            print '#%d - sent: %s' % (x, d.dict())
-            p.send(d)
+            def dispatch(self, envelope):
+                self.received += 1
+                print '%d/%d - %s' % (self.received, N, envelope)
+                if self.received == N:
+                    self.stop()
 
-    c.join()
-    print 'end'
+        c = TestCon(self.url, self.transport)
+        c.start()
 
+        with Producer(url=self.url, transport=self.transport) as p:
+            for x in range(0, N):
+                d = queue.destination()
+                print '#%d - sent: %s' % (x, d.dict())
+                p.send(d)
 
-def test_no_exchange():
-    print 'test builtin (direct) exchange'
-    queue = Queue('test_1')
-    queue.durable = False
-    queue.auto_delete = True
-    queue.declare(URL)
-    producer_reader(queue)
+        c.join()
+        print 'end'
 
+    def test_no_exchange(self):
+        print 'test builtin (direct) exchange'
+        queue = Queue('test_1', transport=self.transport)
+        queue.durable = False
+        queue.auto_delete = True
+        queue.declare(self.url)
+        self.producer_reader(queue)
 
-def test_direct_exchange():
-    print 'test explicit (direct) exchange'
-    exchange = Exchange.direct(URL)
-    queue = Queue('test_2', exchange=exchange)
-    queue.durable = False
-    queue.auto_delete = True
-    queue.declare(URL)
-    producer_reader(queue)
+    def test_direct_exchange(self):
+        print 'test explicit (direct) exchange'
+        exchange = Exchange.direct(transport=self.transport)
+        queue = Queue('test_2', exchange=exchange, transport=self.transport)
+        queue.durable = False
+        queue.auto_delete = True
+        queue.declare(self.url)
+        self.producer_reader(queue)
 
+    def test_custom_direct_exchange(self):
+        print 'test custom (direct) exchange'
+        exchange = Exchange('test_1.direct', policy='direct', transport=self.transport)
+        exchange.durable = False
+        exchange.auto_delete = True
+        exchange.declare(self.url)
+        queue = Queue('test_5', exchange=exchange, transport=self.transport)
+        queue.durable = False
+        queue.auto_delete = True
+        queue.declare(self.url)
+        self.producer_reader(queue)
 
-def test_custom_direct_exchange():
-    print 'test custom (direct) exchange'
-    exchange = Exchange('test_1.direct', 'direct')
-    exchange.durable = False
-    exchange.auto_delete = True
-    exchange.declare(URL)
-    queue = Queue('test_5', exchange=exchange)
-    queue.durable = False
-    queue.auto_delete = True
-    queue.declare(URL)
-    producer_reader(queue)
+    def test_topic_exchange(self):
+        print 'test explicit (topic) exchange'
+        exchange = Exchange.topic(transport=self.transport)
+        queue = Queue('test_3', exchange=exchange, routing_key='#', transport=self.transport)
+        queue.durable = False
+        queue.auto_delete = True
+        queue.declare(self.url)
+        self.producer_reader(queue)
 
+    def test_custom_topic_exchange(self):
+        print 'test custom (topic) exchange'
+        exchange = Exchange('test_2.topic', policy='topic', transport=self.transport)
+        exchange.durable = False
+        exchange.auto_delete = True
+        exchange.declare(self.url)
+        queue = Queue('test_6', exchange=exchange, routing_key='#', transport=self.transport)
+        queue.durable = False
+        queue.auto_delete = True
+        queue.declare(self.url)
+        self.producer_reader(queue)
 
-def test_topic_exchange():
-    print 'test explicit (topic) exchange'
-    exchange = Exchange.topic(URL)
-    queue = Queue('test_3', exchange=exchange, routing_key='#')
-    queue.durable = False
-    queue.auto_delete = True
-    queue.declare(URL)
-    producer_reader(queue)
-
-
-def test_custom_topic_exchange():
-    print 'test custom (topic) exchange'
-    exchange = Exchange('test_2.topic', 'topic')
-    exchange.durable = False
-    exchange.auto_delete = True
-    exchange.declare(URL)
-    queue = Queue('test_6', exchange=exchange, routing_key='#')
-    queue.durable = False
-    queue.auto_delete = True
-    queue.declare(URL)
-    producer_reader(queue)
-
-
-def test_consumer():
-    print 'test consumer builtin (direct) exchange'
-    queue = Queue('test_4')
-    queue.durable = False
-    queue.auto_delete = True
-    queue.declare(URL)
-    producer_consumer(queue)
-
-
-def test():
-    test_no_exchange()
-    test_direct_exchange()
-    test_custom_direct_exchange()
-    test_topic_exchange()
-    test_custom_topic_exchange()
-    test_consumer()
-    print 'DONE'
+    def test_consumer(self):
+        print 'test consumer builtin (direct) exchange'
+        queue = Queue('test_4', transport=self.transport)
+        queue.durable = False
+        queue.auto_delete = True
+        queue.declare(self.url)
+        self.producer_consumer(queue)
