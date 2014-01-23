@@ -135,7 +135,7 @@ class Transport:
         :param routing_key: An AMQP routing key.
         :type routing_key: str
         :return: The queue object provided by the transport.
-        :rtype: gofer.transport.node.Queue.
+        :rtype: gofer.transport.model.Queue.
         """
         return self.plugin.Queue(name, exchange=exchange, routing_key=routing_key)
 
@@ -147,7 +147,7 @@ class Transport:
         :param uuid: The (optional) producer ID.
         :type uuid: str
         :return: The broker provided by the transport.
-        :rtype: gofer.transport.endpoint.Endpoint.
+        :rtype: gofer.transport.model.Producer.
         """
         return self.plugin.Producer(uuid, url=url)
 
@@ -159,7 +159,7 @@ class Transport:
         :param uuid: The (optional) producer ID.
         :type uuid: str
         :return: The producer provided by the transport.
-        :rtype: gofer.transport.endpoint.Endpoint.
+        :rtype: gofer.transport.model.BinaryProducer.
         """
         return self.plugin.BinaryProducer(uuid, url=url)
 
@@ -173,7 +173,7 @@ class Transport:
         :param uuid: The (optional) producer ID.
         :type uuid: str
         :return: The reader provided by the transport.
-        :rtype: gofer.transport.endpoint.Endpoint.
+        :rtype: gofer.transport.model.Reader.
         """
         return self.plugin.Reader(queue, uuid=uuid, url=url)
 

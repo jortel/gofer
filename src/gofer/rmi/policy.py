@@ -21,7 +21,6 @@ from gofer.messaging import Destination
 from gofer.messaging.model import Envelope, getuuid
 from gofer.rmi.dispatcher import *
 from gofer.metrics import Timer
-from logging import getLogger
 
 
 log = getLogger(__name__)
@@ -220,7 +219,9 @@ class Synchronous(RequestMethod):
 
     def __get_accepted(self, sn, reader):
         """
-        Get the STARTED reply matched by serial number.
+        Get the ACCEPTED reply matched by serial number.
+        In the event the ACCEPTED message got lost, the STARTED
+        status is also processed.
         :param sn: The request serial number.
         :type sn: str
         :param reader: A reader.
@@ -230,8 +231,8 @@ class Synchronous(RequestMethod):
         """
         envelope = reader.search(sn, self.timeout)
         if envelope:
-            if envelope.status == 'accepted':
-                log.debug('request (%s), accepted', sn)
+            if envelope.status in ('accepted', 'started'):
+                log.debug('request (%s), %s', sn, envelope.status)
             else:
                 self.__on_reply(envelope)
         else:

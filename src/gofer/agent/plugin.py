@@ -19,9 +19,7 @@ Plugin classes.
 
 import os
 import imp
-import inspect
 
-from threading import RLock
 from logging import getLogger
 
 from gofer import *
