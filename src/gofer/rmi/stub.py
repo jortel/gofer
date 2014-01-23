@@ -73,8 +73,10 @@ class Method:
 class Stub:
     """
     The stub class for remote objects.
-    :ivar url: The agent URL.
-    :type url: str
+    :ivar __url: The agent URL.
+    :type __url: str
+    :param __transport: The AMQP transport.
+    :type __transport: gofer.transport.Transport
     :ivar __destination: The AMQP destination
     :type __destination: gofer.transport.model.Destination
     :ivar __options: Stub options.
@@ -86,13 +88,15 @@ class Stub:
     """
     
     @classmethod
-    def stub(cls, name, url, destination, options):
+    def stub(cls, name, url, transport, destination, options):
         """
         Factory method.
         :param name: The stub class (or module) name.
         :type name: str
         :param url: The agent URL.
         :type url: str
+        :param transport: The AMQP transport.
+        :type transport: gofer.transport.Transport
         :param destination: The AMQP destination
         :type destination: gofer.transport.model.Destination
         :param options: A dict of gofer options
@@ -101,19 +105,22 @@ class Stub:
         :rtype: Stub
         """
         subclass = classobj(name, (Stub,), {})
-        inst = subclass(url, destination, options)
+        inst = subclass(url, transport, destination, options)
         return inst
 
-    def __init__(self, url, destination, options):
+    def __init__(self, url, transport, destination, options):
         """
         :param url: The agent URL.
         :type url: str
+        :param transport: The AMQP transport.
+        :type transport: gofer.transport.Transport
         :param destination: The AMQP destination
         :type destination: gofer.transport.model.Destination
         :param options: Stub options.
         :type options: Options
         """
         self.__url = url
+        self.__transport = transport
         self.__destination = destination
         self.__options = Options(options)
         self.__called = (0, None)
@@ -146,7 +153,7 @@ class Stub:
         opts += options
         request.cntr = self.__called[1]
         policy = self.__getpolicy()
-        if isinstance(self.__destination, (list,tuple)):
+        if isinstance(self.__destination, (list, tuple)):
             return policy.broadcast(
                 self.__destination,
                 request,
@@ -237,10 +244,10 @@ class Stub:
         """
         if self.__async():
             self.__policy = \
-                Asynchronous(self.__url, self.__options)
+                Asynchronous(self.__url, self.__transport, self.__options)
         else:
             self.__policy = \
-                Synchronous(self.__url, self.__options)
+                Synchronous(self.__url, self.__transport, self.__options)
 
     def __async(self):
         """
@@ -249,9 +256,7 @@ class Stub:
         :return: True if async.
         :rtype: bool
         """
-        if ( self.__options.ctag or
-             self.__options.async or
-             self.__options.trigger):
+        if self.__options.ctag or self.__options.async or self.__options.trigger:
             return True
         return isinstance(self.__destination, (list, tuple))
     

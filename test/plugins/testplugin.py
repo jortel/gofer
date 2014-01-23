@@ -24,7 +24,7 @@ from logging import getLogger, INFO, DEBUG
 log = getLogger(__name__)
 plugin = Plugin.find(__name__)
 
-HEARTBEAT = 5
+HEARTBEAT = 500
 
 # import
 builtin = Plugin.find('builtin')
@@ -236,13 +236,13 @@ class Heartbeat:
     @remote
     def send(self):
         delay = int(HEARTBEAT)
-        broker = plugin.getbroker()
-        url = str(broker.url)
-        topic = Exchange.topic(url)
+        url = plugin.get_url()
+        transport = plugin.get_transport()
+        topic = Exchange.topic(transport=transport)
         destination = Destination('heartbeat', exchange=topic.name)
         myid = plugin.getuuid()
         if myid:
-            with Producer(url=url) as p:
+            with Producer(url=url, transport=transport) as p:
                 body = dict(uuid=myid, next=delay)
                 p.send(destination, ttl=delay, heartbeat=body)
         return myid

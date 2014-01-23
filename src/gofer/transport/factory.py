@@ -91,6 +91,7 @@ class Transport:
         :param package: The python package providing the transport.
         :type package: str
         """
+        self.package = package
         loaded = sorted(self.plugins)
         if not loaded:
             raise NoTransportsLoaded()

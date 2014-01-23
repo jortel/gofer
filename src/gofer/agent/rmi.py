@@ -23,7 +23,6 @@ from gofer.rmi.store import PendingThread
 from gofer.rmi.dispatcher import Dispatcher, Return
 from gofer.rmi.threadpool import Immediate
 from gofer.messaging.model import Envelope
-from gofer.messaging import Producer
 from gofer.transport.model import Destination
 from gofer.metrics import Timer
 
@@ -120,7 +119,8 @@ class Task:
         if not replyto:
             return
         try:
-            producer = Producer(url=envelope.url)
+            tp = self.plugin.get_transport()
+            producer = tp.producer(url=envelope.url)
             try:
                 producer.send(
                     Destination.create(replyto),
@@ -150,7 +150,8 @@ class Task:
         if not replyto:
             return
         try:
-            producer = Producer(url=envelope.url)
+            tp = self.plugin.get_transport()
+            producer = tp.producer(url=envelope.url)
             try:
                 producer.send(
                     Destination.create(replyto),
@@ -274,7 +275,8 @@ class Progress:
             return
         try:
             url = self.task.envelope.url
-            producer = Producer(url=url)
+            tp = self.task.plugin.get_transport()
+            producer = tp.producer(url=url)
             try:
                 producer.send(
                     Destination.create(replyto),

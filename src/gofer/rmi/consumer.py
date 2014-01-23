@@ -49,12 +49,11 @@ class RequestConsumer(Consumer):
         sn = envelope.sn
         any = envelope.any
         replyto = envelope.replyto
-        tp = Transport(self.url)
         if not replyto:
             return
         try:
             endpoint = self.reader
             destination = Destination.create(replyto)
-            tp.send(endpoint, destination, sn=sn, any=any, status='accepted')
+            self.transport.send(endpoint, destination, sn=sn, any=any, status='accepted')
         except Exception:
             log.exception('send (accepted), failed')

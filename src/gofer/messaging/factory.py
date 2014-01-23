@@ -9,9 +9,29 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from gofer.transport.factory import Transport
+from gofer.transport.factory import Transport as _Transport
 from gofer.transport.consumer import Consumer as BaseConsumer
 from gofer.transport.model import Destination as BaseDestination
+
+
+# --- utils ------------------------------------------------------------------
+
+
+def Transport(thing):
+    """
+    Ensure *thing* is a transport object.
+    :param thing: A transport object or package name.
+    :type thing: (str|Transport)
+    :return: A transport object.
+    :rtype: _Transport
+    """
+    if isinstance(thing, _Transport):
+        return thing
+    if isinstance(thing, str):
+        return _Transport(thing)
+    if thing is None:
+        return _Transport(thing)
+    raise ValueError('must be (str|Transport)')
 
 
 # --- metaclasses ------------------------------------------------------------
@@ -100,8 +120,8 @@ class Broker(object):
         """
         :param url: The broker URL.
         :type url: str
-        :param transport: The transport package name.
-        :type transport: str
+        :param transport: An AMQP transport.
+        :type transport: (str|gofer.transport.Transport)
         :see: gofer.transport.broker.Broker
         """
 
@@ -119,8 +139,8 @@ class Exchange(object):
         :type name: str
         :param policy: The routing policy (direct|topic).
         :type policy: str
-        :param transport: The transport package name.
-        :type transport: str
+        :param transport: An AMQP transport.
+        :type transport: (str|gofer.transport.Transport)
         :see: gofer.transport.broker.Exchange
         """
 
@@ -154,8 +174,8 @@ class Queue(object):
         :param exchange: str
         :param routing_key: An AMQP routing key.
         :type routing_key: str
-        :param transport: The transport package name.
-        :type transport: str
+        :param transport: An AMQP transport.
+        :type transport: (str|gofer.transport.Transport)
         :see: gofer.transport.node.Queue.
         """
 
@@ -194,8 +214,8 @@ class Producer(object):
         :type uuid: str
         :param url: The broker URL.
         :type url: str
-        :param transport: The transport package name.
-        :type transport: str
+        :param transport: An AMQP transport.
+        :type transport: (str|gofer.transport.Transport)
         """
 
     def send(self, destination, ttl=None, **body):
@@ -239,8 +259,8 @@ class BinaryProducer(object):
         :type uuid: str
         :param url: The broker URL.
         :type url: str
-        :param transport: The transport package name.
-        :type transport: str
+        :param transport: An AMQP transport.
+        :type transport: (str|gofer.transport.Transport)
         """
 
     def send(self, destination, content, ttl=None):
@@ -288,8 +308,8 @@ class Reader(object):
         :type queue: gofer.transport.model.Queue
         :param uuid: The (optional) producer ID.
         :type uuid: str
-        :param transport: The transport package name.
-        :type transport: str
+        :param transport: An AMQP transport.
+        :type transport: (str|gofer.transport.Transport)
         """
 
     def next(self, timeout=None):
@@ -332,13 +352,14 @@ class Consumer(BaseConsumer):
         :type queue: gofer.transport.model.Queue
         :param url: The broker URL.
         :type url: str
-        :param transport: The transport package name.
-        :type transport: str
+        :param transport: An AMQP transport.
+        :type transport: (str|gofer.transport.Transport)
         """
         tp = Transport(transport)
         BaseConsumer.__init__(self, tp.reader(url, queue))
         self.url = url
         self.queue = queue
+        self.transport = tp
 
     def dispatch(self, envelope):
         pass
