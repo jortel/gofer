@@ -1,4 +1,4 @@
-# Copyright (c) 2010 Red Hat, Inc.
+# Copyright (c) 2014 Red Hat, Inc.
 #
 # This software is licensed to you under the GNU General Public
 # License as published by the Free Software Foundation; either version
@@ -11,8 +11,7 @@
 
 
 from unittest import TestCase
-from gofer.rmi.policy import timeout, Timeout
-from gofer.messaging.model import Options
+from gofer.rmi.policy import Timeout
 
 
 class TimeoutTests(TestCase):
@@ -92,52 +91,3 @@ class TimeoutTests(TestCase):
         self.assertRaises(ValueError, Timeout, 'x')
         self.assertRaises(ValueError, Timeout, '10x')
         self.assertRaises(ValueError, Timeout, '')
-
-    def test_int_options(self):
-
-        options = Options()
-        no_timeout = (None, None)
-        self.assertEqual(timeout(options), no_timeout)
-        options = Options(timeout=None)
-        self.assertEqual(timeout(options), no_timeout)
-
-        options = Options()
-        self.assertEqual(timeout(options, (5,10)), (5,10))
-        self.assertEqual(timeout(options, (5, None)), (5,None))
-
-        options = Options(timeout=5)
-        self.assertEqual(timeout(options), (5,5))
-
-        options = Options(timeout=(5, 10))
-        self.assertEqual(timeout(options), (5,10))
-
-        options = Options(timeout=(5, None))
-        self.assertEqual(timeout(options), (5,None))
-
-        options = Options(timeout=(5, None))
-        self.assertEqual(timeout(options), (5,None))
-
-    def test_str_options(self):
-
-        options = Options(timeout=('5s', None))
-        self.assertEqual(timeout(options), (5,None))
-
-        options = Options(timeout=('5s', '10m'))
-        expected = (5, 10*Timeout.MINUTE)
-        self.assertEqual(timeout(options), expected)
-
-        options = Options(timeout=('5m', '10m'))
-        expected = (5*Timeout.MINUTE, 10*Timeout.MINUTE)
-        self.assertEqual(timeout(options), expected)
-
-        options = Options(timeout=('5h', '10h'))
-        expected = (5*Timeout.HOUR, 10*Timeout.HOUR)
-        self.assertEqual(timeout(options), expected)
-
-        options = Options(timeout=('5m', '10m'))
-        expected = (5*Timeout.MINUTE, 10*Timeout.MINUTE)
-        self.assertEqual(timeout(options), expected)
-
-        options = Options(timeout=('5d', '10d'))
-        expected = (5*Timeout.DAY, 10*Timeout.DAY)
-        self.assertEqual(timeout(options), expected)
