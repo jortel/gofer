@@ -132,3 +132,4 @@ class Test(object):
         queue.auto_delete = True
         queue.declare(self.url)
         self.producer_consumer(queue)
+

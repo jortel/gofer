@@ -20,6 +20,8 @@ basicConfig()
 
 from base import Test
 
+URL = 'tcp://localhost:5672'
+
 if __name__ == '__main__':
-    test = Test('tcp://localhost:5672', transport='qpid')
+    test = Test(URL, transport='qpid')
     test()

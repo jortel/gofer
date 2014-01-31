@@ -20,6 +20,8 @@ basicConfig()
 
 from base import Test
 
+URL = 'amqp://0.0.0.0:5674'
+
 if __name__ == '__main__':
-    test = Test('amqp://0.0.0.0:5674', transport='rabbitmq')
+    test = Test(URL, transport='rabbitmq')
     test()
