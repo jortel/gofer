@@ -17,7 +17,6 @@ Provides path and process monitoring classes.
 """
 
 import os
-import errno
 from hashlib import sha256
 from time import sleep
 from threading import Thread, RLock
@@ -243,15 +242,15 @@ class MonitorThread(Thread):
     """
     Monitor thread.
     :ivar monitor: A monitor object.
-    :type monitor: Monitor
-    :ivar precision: The level of percision (seconds).
+    :type monitor: PathMonitor
+    :ivar precision: The level of precision (seconds).
     :type precision: float
     """
     
     def __init__(self, monitor, precision):
         """
         :param monitor: A monitor object.
-        :type monitor: Monitor
+        :type monitor: PathMonitor
         :param precision: The level of percision (seconds).
         :type precision: float
         """
@@ -268,8 +267,6 @@ class MonitorThread(Thread):
         while True:
             monitor.check()
             sleep(self.precision)
-
-
 
 
 if __name__ == '__main__':
