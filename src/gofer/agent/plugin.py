@@ -187,6 +187,7 @@ class Plugin(object):
         broker = transport.broker(url)
         broker.cacert = nvl(cfg.messaging.cacert, nvl(main.messaging.cacert))
         broker.clientcert = nvl(cfg.messaging.clientcert, nvl(main.messaging.clientcert))
+        broker.validation = nvl(cfg.messaging.validation, nvl(main.messaging.validation, False))
         log.debug('broker (qpid) configured: %s', broker)
         return broker
 

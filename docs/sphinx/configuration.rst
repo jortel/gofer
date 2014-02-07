@@ -123,6 +123,7 @@ Defines basic plugin properties.
 - **cacert** - The (optional) SSL CA certificate used to validate the server certificate.
 - **clientcert** - The (optional) SSL client certificate.  A (PEM) file containing **both**
   the private key and certificate.
+- **validation** - Enable SSL host validation.
 - **threads** - The (optional) number of threads for the RMI dispatcher.
   Default to (1) when not specified.
 
