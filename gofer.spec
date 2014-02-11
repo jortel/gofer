@@ -121,7 +121,6 @@ Requires: PyPAM
 %if 0%{?rhel} && 0%{?rhel} < 6
 Requires: python-hashlib
 Requires: python-uuid
-Requires: python-ssl
 %endif
 
 %description -n python-%{name}
