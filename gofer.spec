@@ -247,6 +247,11 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Tue Feb 11 2014 Jeff Ortel <jortel@redhat.com> 0.78-1
+- Add support for skipping SSL validation. (jortel@redhat.com)
+- Merge pull request #7 from jortel/gofer-0.77 (jortel@redhat.com)
+- python-ssl no longer required with custom transport gone. (jortel@redhat.com)
+- Add 'match' criteria operator. (jortel@redhat.com)
 * Fri Nov 01 2013 Jeff Ortel <jortel@redhat.com> 0.77.1-1
 - 1023056 - use qpid builtin SSL transport. (jortel@redhat.com)
 * Mon Sep 30 2013 Jeff Ortel <jortel@redhat.com> 0.77-1
