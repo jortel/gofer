@@ -22,7 +22,6 @@ from time import sleep
 from threading import RLock
 from gofer.messaging import *
 from gofer.messaging.broker import Broker
-from gofer.messaging.transport import SSL
 from qpid.messaging import Connection
 from logging import getLogger
 
