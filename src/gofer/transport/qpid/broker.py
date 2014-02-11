@@ -73,7 +73,8 @@ class Qpid(Broker):
                 reconnect=True,
                 transport=self.url.transport,
                 ssl_trustfile=self.cacert,
-                ssl_certfile=self.clientcert)
+                ssl_certfile=self.clientcert,
+                ssl_skip_hostname_check=(not self.validation))
             con.attach()
             self.connection.cached = con
             log.info('{%s} connected to AMQP', self.id())

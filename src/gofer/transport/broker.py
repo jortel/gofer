@@ -52,6 +52,8 @@ class Broker:
     :ivar clientcert: Path to a PEM encoded file containing
         the private key & certificate used for client authentication.
     :type clientcert: str
+    :ivar validation: Enable SSL host validation.
+    :type validation: bool
     """
 
     __metaclass__ = MetaBroker
@@ -68,6 +70,7 @@ class Broker:
         self.connection = Local()
         self.cacert = None
         self.clientcert = None
+        self.validation = False
         self.userid = None
         self.password = None
 
