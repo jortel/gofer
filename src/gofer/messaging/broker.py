@@ -77,6 +77,7 @@ class Broker:
         self.cacert = None
         self.clientcert = None
         self.connection = None
+        self.validation = False
 
     def id(self):
         """
@@ -104,7 +105,8 @@ class Broker:
                     reconnect=True,
                     transport=transport,
                     ssl_trustfile=self.cacert,
-                    ssl_certfile=self.clientcert)
+                    ssl_certfile=self.clientcert,
+                    ssl_skip_hostname_check=(not self.validation))
                 con.attach()
                 log.info('{%s} connected to AMQP', self.id())
                 self.connection = con
