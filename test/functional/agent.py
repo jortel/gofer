@@ -70,6 +70,7 @@ getLogger('gofer').setLevel(DEBUG)
 
 
 def install_plugins(url, transport, uuid, threads):
+    plugin_configured = False
     root = os.path.dirname(__file__)
     dir = os.path.join(root, 'plugins')
     for fn in os.listdir(dir):
@@ -77,10 +78,12 @@ def install_plugins(url, transport, uuid, threads):
         if fn.endswith('.conf'):
             conf = Config(path)
             pd = PluginDescriptor(conf)
-            pd.messaging.url = url
-            pd.messaging.transport = transport
-            pd.messaging.uuid = uuid
-            pd.messaging.threads = threads
+            if not plugin_configured:
+                pd.messaging.url = url
+                pd.messaging.transport = transport
+                pd.messaging.uuid = uuid
+                pd.messaging.threads = threads
+                plugin_configured = True
             path = os.path.join(PluginDescriptor.ROOT, fn)
             with open(path, 'w') as fp:
                 fp.write(str(pd))
