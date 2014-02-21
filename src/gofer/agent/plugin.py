@@ -28,7 +28,8 @@ from gofer.rmi.threadpool import ThreadPool
 from gofer.rmi.consumer import RequestConsumer
 from gofer.rmi.decorators import Remote
 from gofer.agent.deplist import DepList
-from gofer.agent.config import Base, Config, nvl
+from gofer.agent.config import AgentConfig
+from gofer.config import Config, Graph, get_bool
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
 from gofer.transport import Transport
@@ -45,7 +46,7 @@ class Plugin(object):
     :ivar synonyms: The plugin synonyms.
     :type synonyms: list
     :ivar descriptor: The plugin descriptor.
-    :type descriptor: str
+    :type descriptor: PluginDescriptor
     :cvar plugins: The dict of loaded plugins.
     :type plugins: dict
     """
@@ -104,7 +105,7 @@ class Plugin(object):
             unique.append(p)
         return unique
     
-    def __init__(self, name, descriptor, synonyms=[]):
+    def __init__(self, name, descriptor, synonyms=None):
         """
         :param name: The plugin name.
         :type name: str
@@ -116,7 +117,7 @@ class Plugin(object):
         self.name = name
         self.descriptor = descriptor
         self.synonyms = []
-        for syn in synonyms:
+        for syn in synonyms or []:
             if syn == name:
                 continue
             self.synonyms.append(syn)
@@ -144,11 +145,7 @@ class Plugin(object):
         :return: True if enabled.
         :rtype: bool
         """
-        cfg = self.cfg()
-        try:
-            return int(nvl(cfg.main.enabled, 0))
-        except:
-            return 0
+        return get_bool(self.descriptor.main.enabled)
         
     def get_uuid(self):
         """
@@ -156,12 +153,7 @@ class Plugin(object):
         :return: The plugin's messaging UUID.
         :rtype: str
         """
-        self.__lock()
-        try:
-            cfg = self.cfg()
-            return nvl(cfg.messaging.uuid)
-        finally:
-            self.__unlock()
+        return self.descriptor.messaging.uuid
             
     def get_url(self):
         """
@@ -169,25 +161,25 @@ class Plugin(object):
         :return: The broker URL
         :rtype: str
         """
-        agent = Config()
-        plugin = self.cfg()
-        return nvl(plugin.messaging.url, nvl(agent.messaging.url))
+        agent = AgentConfig()
+        plugin = self.descriptor
+        return plugin.messaging.url or agent.messaging.url
     
     def get_broker(self):
         """
-        Get the amqp broker for this plugin.  Each plugin can
-        connect to a different broker.
+        Get the amqp broker for this plugin.
+        Each plugin can connect to a different broker.
         :return: The broker if configured.
         :rtype: gofer.transport.broker.Broker
         """
-        cfg = self.cfg()
-        main = Config()
+        agent = AgentConfig()
+        plugin = self.descriptor
         url = self.get_url()
         transport = self.get_transport()
         broker = transport.broker(url)
-        broker.cacert = nvl(cfg.messaging.cacert, nvl(main.messaging.cacert))
-        broker.clientcert = nvl(cfg.messaging.clientcert, nvl(main.messaging.clientcert))
-        broker.validation = nvl(cfg.messaging.validation, nvl(main.messaging.validation, False))
+        broker.cacert = plugin.messaging.cacert or agent.messaging.cacert
+        broker.clientcert = plugin.messaging.clientcert or agent.messaging.clientcert
+        broker.validation = get_bool(plugin.messaging.validation or agent.messaging.validation)
         log.debug('broker (qpid) configured: %s', broker)
         return broker
 
@@ -201,43 +193,27 @@ class Plugin(object):
             self.__pool = ThreadPool(1, n, duplex=False)
         return self.__pool
     
-    def set_uuid(self, uuid, save=False):
+    def set_uuid(self, uuid):
         """
         Set the plugin's UUID.
         :param uuid: The new UUID.
         :type uuid: str
-        :param save: Save to plugin descriptor.
-        :type save: bool
         """
         self.__lock()
         try:
-            cfg = self.cfg()
-            if uuid:
-                cfg.messaging.uuid = uuid
-            else:
-                delattr(cfg.messaging, 'uuid')
-            if save:
-                cfg.write()
+            self.descriptor.messaging.uuid = uuid
         finally:
             self.__unlock()
             
-    def set_url(self, url, save=False):
+    def set_url(self, url):
         """
         Set the plugin's URL.
         :param url: The new URL.
         :type url: str
-        :param save: Save to plugin descriptor.
-        :type save: bool
         """
         self.__lock()
         try:
-            cfg = self.cfg()
-            if url:
-                cfg.messaging.url = url
-            else:
-                delattr(cfg.messaging, 'url')
-            if save:
-                cfg.write()
+            self.descriptor.messaging.url = url
         finally:
             self.__unlock()
 
@@ -247,28 +223,20 @@ class Plugin(object):
         :return: The transport.
         :rtype: Transport
         """
-        plugin = self.cfg()
-        agent = Config()
-        package = nvl(plugin.messaging.transport, nvl(agent.messaging.transport))
+        agent = AgentConfig()
+        plugin = self.descriptor
+        package = plugin.messaging.transport or agent.messaging.transport
         return Transport(package)
 
-    def set_transport(self, transport, save=False):
+    def set_transport(self, transport):
         """
         Set the plugin's transport package (name).
         :param transport: The new transport package.
         :type transport: str
-        :param save: Save to plugin descriptor.
-        :type save: bool
         """
         self.__lock()
         try:
-            cfg = self.cfg()
-            if transport:
-                cfg.messaging.transport = transport
-            else:
-                delattr(cfg.messaging, 'transport')
-            if save:
-                cfg.write()
+            self.descriptor.messaging.transport = transport
         finally:
             self.__unlock()
             
@@ -278,9 +246,9 @@ class Plugin(object):
         :return: number of theads.
         :rtype: int
         """
-        main = Config()
-        cfg = self.cfg()
-        value = nvl(cfg.messaging.threads, nvl(main.messaging.threads, 1))
+        plugin = self.descriptor
+        agent = AgentConfig()
+        value = plugin.messaging.threads or agent.messaging.threads or 1
         value = int(value)
         assert(value >= 1)
         return value
@@ -372,7 +340,7 @@ class Plugin(object):
         self.__mutex.release()
 
 
-class PluginDescriptor(Base):
+class PluginDescriptor(Graph):
     """
     Provides a plugin descriptor
     """
@@ -395,8 +363,8 @@ class PluginDescriptor(Base):
         cls.__mkdir()
         for name, path in cls.__list():
             try:
-                inst = cls(path)
-                inst.__dict__['__path__'] = path
+                conf = Config(path)
+                inst = PluginDescriptor(conf)
                 unsorted.append((name, inst))
             except:
                 log.exception(path)
@@ -406,8 +374,8 @@ class PluginDescriptor(Base):
     def __list(cls):
         files = os.listdir(cls.ROOT)
         for fn in sorted(files):
-            plugin,ext = fn.split('.',1)
-            if not ext in ('.conf'):
+            plugin, ext = fn.split('.', 1)
+            if not ext in ('conf',):
                 continue
             path = os.path.join(cls.ROOT, fn)
             if os.path.isdir(path):
@@ -427,15 +395,15 @@ class PluginDescriptor(Base):
         index = {}
         for d in descriptors:
             index[d[0]] = d
-        L = DepList()
-        for n,d in descriptors:
+        dl = DepList()
+        for n, d in descriptors:
             r = (n, d.__requires())
-            L.add(r)
-        sorted = []
-        for name in [x[0] for x in L.sort()]:
+            dl.add(r)
+        _sorted = []
+        for name in [x[0] for x in dl.sort()]:
             d = index[name]
-            sorted.append(d)
-        return sorted
+            _sorted.append(d)
+        return _sorted
 
     def __requires(self):
         """
@@ -444,21 +412,11 @@ class PluginDescriptor(Base):
         :rtype: list
         """
         required = []
-        declared = nvl(self.main.requires)
+        declared = self.main.requires
         if declared:
-            plugins =  declared.split(',')
+            plugins = declared.split(',')
             required = [s.strip() for s in plugins]
         return tuple(required)
-    
-    def write(self):
-        """
-        Write the descriptor to the filesystem
-        Written to: __path__.
-        """
-        path = self.__dict__['__path__']
-        f = open(path, 'w')
-        f.write(str(self))
-        f.close()
 
 
 class PluginLoader:
@@ -466,7 +424,7 @@ class PluginLoader:
     Agent plugins loader.
     :cvar PATH: A list of paths to directories containing plugins.
     :type PATH: list
-    :ivar plugins: A dict of plugins and configuratons
+    :ivar plugins: A dict of plugins and descriptors.
     :type plugins: dict
     """
 
@@ -486,10 +444,10 @@ class PluginLoader:
         :rtype: list
         """
         loaded = []
-        for plugin, cfg in PluginDescriptor.load():
-            if self.__noload(cfg, eager):
+        for plugin, descriptor in PluginDescriptor.load():
+            if self.__noload(descriptor, eager):
                 continue
-            p = self.__import(plugin, cfg)
+            p = self.__import(plugin, descriptor)
             if not p:
                 continue  # load failed
             if not p.enabled():
@@ -497,35 +455,35 @@ class PluginLoader:
             loaded.append(p)
         return loaded
     
-    def __noload(self, cfg, eager):
+    def __noload(self, descriptor, eager):
         """
         Determine whether the plugin should be loaded.
-        :param cfg: A plugin descriptor.
-        :type cfg: PluginDescriptor
+        :param descriptor: A plugin descriptor.
+        :type descriptor: PluginDescriptor
         :param eager: The I{eager} load flag.
         :type eager: bool
         :return: True when not loaded.
         :rtype: bool
         """
         try:
-            return not (eager or int(cfg.main.enabled))
+            return not (eager or get_bool(descriptor.main.enabled))
         except:
             return False
 
-    def __import(self, plugin, cfg):
+    def __import(self, plugin, descriptor):
         """
         Import a module by file name.
         :param plugin: The plugin (module) name.
         :type plugin: str
-        :param cfg: A plugin descriptor.
-        :type cfg: PluginDescriptor
+        :param descriptor: A plugin descriptor.
+        :type descriptor: PluginDescriptor
         :return: The loaded module.
-        :rtype: Module
+        :rtype: Plugin
         """
         Remote.clear()
         Actions.clear()
         syn = self.__mangled(plugin)
-        p = Plugin(plugin, cfg, (syn,))
+        p = Plugin(plugin, descriptor, (syn,))
         Plugin.add(p)
         try:
             path = self.__find_plugin(plugin)
