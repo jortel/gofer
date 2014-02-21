@@ -17,12 +17,6 @@ The files are loaded in order and the last value for a property is used.
 Example usage:
   config = Config('base.conf', 'override.conf')
 
-The loaded sections can be filtered by passing in a keyword argument containing
-a list of section names. For example, to only load the "main" and "server"
-sections found in the configurations:
-
-  config = Config('base.conf', filter=['main', 'server'])
-
 The Config object also supports validation of the loaded configuration values.
 The schema is defined in a nested tuple structure that defines each section
 (along with its required/optional flag) and each property within the section.
@@ -54,7 +48,6 @@ cfg.validate(schema)
 """
 
 import re
-import collections
 
 from threading import RLock
 from iniparse import INIConfig
@@ -90,7 +83,7 @@ def get_bool(value):
     if BOOL_RE.match(value):
         return value.upper() in ('YES', 'TRUE', '1')
     else:
-        raise ValueError('"%s" not a boolean' % value)
+        raise ValueError('%s: must be <bool>' % value)
 
 
 # -- exceptions ---------------------------------------------------------------
@@ -164,96 +157,61 @@ class Config(dict):
        value = graph.main.enabled
     """
 
-    def __init__(self, *inputs, **options):
+    def __init__(self, *inputs):
         """
-        Creates a blank configuration and loads one or more files or existing
-        data.
+        Creates a blank configuration and loads one or more files
+        or existing data.
 
         Values to the inputs parameter can be one of three things:
          - the full path to a file to load (str)
          - file object to read from
          - dictionary whose values will be merged into this instance
 
-        The only valid key to options is the "filter" keyword. It is used to
-        selectively load only certain sections from the specified files. Its
-        value can be one of the following:
-         - None: match all sections
-         - str : compiled into a regular expression to match against section names
-         - list/tuple/set: a list of section names to match
-         - callable: a function used to determine acceptance; it must accept
-           a single parameter which is the section name being tested and return
-           a boolean
-
         :param inputs: one or more files to load (see above)
         :param options: see above
         """
         super(Config, self).__init__()
-        filter = options.get('filter')
         for input in inputs:
             if isinstance(input, basestring):
-                self.open(input, filter)
+                self.open([input])
                 continue
             if isinstance(input, dict):
-                self.update(input, filter)
+                self.update(input)
                 continue
-            self.read(input, filter)
+            self.read(input)
 
-    def open(self, paths, filter=None):
+    def open(self, paths):
         """
+        Open and read the files at the specified paths.
         :param paths: A path or list of paths to .conf files
         :type paths: str|list
-        :param filter: A section filtering object.
-            One of:
-              - None: match ALL.
-              - str : compiled as regex.
-              - list: A list of strings to match.
-              - tuple: A tuple of strings to match.
-              - set: A set of strings to match.
-              - callable: A function used to match.  Called as: filter(s).
-        :type filter: object
         """
         if isinstance(paths, basestring):
             paths = (paths,)
         for path in paths:
             with open(path) as fp:
-                self.read(fp, filter)
+                self.read(fp)
 
-    def read(self, fp, filter=None):
+    def read(self, fp):
         """
         Read and parse the fp.
         :param fp: An open file
         :type fp: file-like object.
-        :param filter: A section filtering object.
-            One of:
-              - None: match ALL.
-              - str : compiled as regex.
-              - list: A list of strings to match.
-              - tuple: A tuple of strings to match.
-              - set: A set of strings to match.
-              - callable: A function used to match.  Called as: filter(s).
-        :type filter: object
         """
         cfg = INIConfig(fp)
-        filter = Filter(filter)
         for s in cfg:
-            if not filter.match(s):
-                continue
             section = self.setdefault(s, {})
             for p in cfg[s]:
                 v = getattr(cfg[s], p)
                 section[p] = v
 
-    def update(self, other, filter=None):
+    def update(self, other):
         """
         Copies sections and properties from "other" into this instance.
-
         :param other: values to copy into this instance
         :type other: dict
         """
-        filter = Filter(filter)
-        for k,v in other.items():
-            if not filter.match(k):
-                continue
+        for k, v in other.items():
             if k in self and isinstance(v, dict):
                 self[k].update(v)
             else:
@@ -298,7 +256,7 @@ class Config(dict):
         if isinstance(value, dict):
             dict.__setitem__(self, name, value)
         else:
-            raise ValueError('must be <dict>')
+            raise ValueError('%s: must be <dict>' % value)
 
 
 # -- private ------------------------------------------------------------------
@@ -308,7 +266,7 @@ class Validator(object):
     """
     The main validation object.
     :ivar schema: An INI schema.
-    :type schema: Schema
+    :type schema: tuple
     """
 
     def __init__(self, schema):
@@ -338,7 +296,7 @@ class Validator(object):
         Report section and properties found in the configuration
         that are not defined in the schema.
         :param cfg: An INI configuration object.
-        :type cfg: INIConfig
+        :type cfg: Config
         :return: Two lists: sections, properties
         :rtype: tuple
         """
@@ -508,54 +466,6 @@ class Property(object):
         match = p.match(value)
         if not match:
             raise PropertyNotValid(self.name, value, self.pattern)
-
-
-class Filter(object):
-    """
-    Filter object used to wrap various types of objects
-    that can be used to filter sections.
-    :ivar filter: A filter object.  See: __init__()
-    :type filter: object
-    """
-
-    def __init__(self, filter):
-        """
-        :param filter: A filter object.
-            One of:
-              - None: match ALL.
-              - str : compiled as regex.
-              - list: A list of strings to match.
-              - tuple: A tuple of strings to match.
-              - set: A set of strings to match.
-              - callable: A function used to match.  Called as: filter(s).
-        :type filter: object
-        """
-        self.filter = filter
-
-    def match(self, s):
-        """
-        Match the specified string.
-        Delegated to the contained (filter) based on type.  See: __init__().
-        :param s: A string to match.
-        :type s: str
-        :return: True if matched.
-        :rtype: bool
-        """
-        if self.filter is None:
-            return True
-        if isinstance(self.filter, str):
-            p = Patterns.get(self.filter)
-            return p.match(s)
-        if hasattr(collections, "Iterable"):
-            if isinstance(self.filter, collections.Iterable):
-                return s in self.filter
-        else:
-            if hasattr(self.filter, "__iter__"):
-                return s in self.filter
-        if callable(self.filter):
-            return self.filter(s)
-        fclass = self.filter.__class__.__name__
-        raise Exception('unsupported filter: %s', fclass)
 
 
 class Graph(object):

@@ -22,6 +22,7 @@ from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import PendingThread
 from gofer.rmi.dispatcher import Dispatcher, Return
 from gofer.rmi.threadpool import Immediate
+from gofer.transport import Transport
 from gofer.messaging.model import Envelope
 from gofer.transport.model import Destination
 from gofer.metrics import Timer
@@ -179,8 +180,8 @@ class Task:
         for plugin in self.plugin.all():
             if url == plugin.get_url():
                 return plugin.get_transport()
-        # last resort
-        return self.plugin.get_transport()
+        return Transport()
+
             
 
 class EmptyPlugin:
@@ -331,4 +332,8 @@ class Cancelled:
         return self.tracker.cancelled(self.sn)
 
     def __del__(self):
-        self.tracker.remove(self.sn)
+        try:
+            self.tracker.remove(self.sn)
+        except KeyError:
+            # already cleaned up
+            pass
