@@ -78,15 +78,15 @@ class Options(object):
     (.) dot notation accessors.
     """
 
-    def __init__(self, *objects, **keywords):
-        for obj in objects:
-            if isinstance(obj, dict):
-                self.__dict__.update(obj)
+    def __init__(self, *things, **keywords):
+        for thing in things:
+            if isinstance(thing, dict):
+                self.__dict__.update(thing)
                 continue
-            if isinstance(obj, Options):
-                self.__dict__.update(obj.__dict__)
+            if isinstance(thing, Options):
+                self.__dict__.update(thing.__dict__)
                 continue
-            raise ValueError(obj)
+            raise ValueError(thing)
         self.__dict__.update(keywords)
 
     def __getattr__(self, name):
@@ -98,14 +98,14 @@ class Options(object):
     def __setitem__(self, name, value):
         self.__dict__[name] = value
 
-    def __iadd__(self, obj):
-        if isinstance(obj, dict):
-            self.__dict__.update(obj)
+    def __iadd__(self, thing):
+        if isinstance(thing, dict):
+            self.__dict__.update(thing)
             return self
-        if isinstance(obj, object):
-            self.__dict__.update(object.__dict__)
+        if isinstance(thing, object):
+            self.__dict__.update(thing.__dict__)
             return self
-        raise ValueError(obj)
+        raise ValueError(thing)
 
     def __len__(self):
         return len(self.__dict__)
@@ -142,21 +142,21 @@ class Envelope(Options):
         :return: A json encoded string.
         :rtype: str
         """
-        def fn(obj):
-            if isinstance(obj, Options):
-                obj = dict(obj.__dict__)
-                for k,v in obj.items():
-                    obj[k] = fn(v)
-                return obj
-            if isinstance(obj, dict):
-                obj = dict(obj)
-                for k,v in obj.items():
-                    obj[k] = fn(v)
-                return obj
-            if isinstance(obj, (tuple, list)):
-                obj = [fn(e) for e in obj]
-                return obj
-            return obj
+        def fn(thing):
+            if isinstance(thing, Options):
+                thing = dict(thing.__dict__)
+                for k, v in thing.items():
+                    thing[k] = fn(v)
+                return thing
+            if isinstance(thing, dict):
+                thing = dict(thing)
+                for k, v in thing.items():
+                    thing[k] = fn(v)
+                return thing
+            if isinstance(thing, (tuple, list)):
+                thing = [fn(e) for e in thing]
+                return thing
+            return thing
         d = fn(self)
         return json.dumps(d, indent=2)
 
