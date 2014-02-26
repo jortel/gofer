@@ -60,6 +60,8 @@ if not os.path.exists(PendingQueue.ROOT):
 # misc
 from gofer.agent.plugin import PluginDescriptor, PluginLoader
 from gofer.agent.main import Agent, eager, setup_logging
+from gofer.config import Config
+
 from logging import getLogger, INFO, DEBUG
 
 log = getLogger(__name__)
@@ -68,16 +70,20 @@ getLogger('gofer').setLevel(DEBUG)
 
 
 def install_plugins(url, transport, uuid, threads):
+    plugin_configured = False
     root = os.path.dirname(__file__)
     dir = os.path.join(root, 'plugins')
     for fn in os.listdir(dir):
         path = os.path.join(dir, fn)
         if fn.endswith('.conf'):
-            pd = PluginDescriptor(path)
-            pd.messaging.url = url
-            pd.messaging.transport = transport
-            pd.messaging.uuid = uuid
-            pd.messaging.threads = threads
+            conf = Config(path)
+            pd = PluginDescriptor(conf)
+            if not plugin_configured:
+                pd.messaging.url = url
+                pd.messaging.transport = transport
+                pd.messaging.uuid = uuid
+                pd.messaging.threads = threads
+                plugin_configured = True
             path = os.path.join(PluginDescriptor.ROOT, fn)
             with open(path, 'w') as fp:
                 fp.write(str(pd))

@@ -25,13 +25,14 @@ from gofer import *
 from gofer.pam import PAM
 from gofer.agent.plugin import PluginLoader, Plugin
 from gofer.agent.lock import Lock, LockFailed
-from gofer.agent.config import Config, nvl
+from gofer.agent.config import AgentConfig
+from gofer.config import get_bool
 from gofer.agent.logutil import getLogger
 from gofer.agent.rmi import Scheduler
 
 
 log = getLogger(__name__)
-cfg = Config()
+cfg = AgentConfig()
 
 
 class ActionThread(Thread):
@@ -182,7 +183,7 @@ class Agent:
         :type plugins: list
         """
         self.plugins = plugins
-        PAM.SERVICE = nvl(cfg.pam.service, PAM.SERVICE)
+        PAM.SERVICE = cfg.pam.service or PAM.SERVICE
 
     def start(self, block=True):
         """
@@ -233,7 +234,7 @@ def start(daemon=True):
 
 
 def eager():
-    return int(nvl(cfg.loader.eager, 0))
+    return get_bool(cfg.loader.eager)
 
 
 def usage():
@@ -278,7 +279,7 @@ def setup_logging():
     """
     Set logging levels based on configuration.
     """
-    for p in nvl(cfg.logging, []):
+    for p in cfg.logging or []:
         level = cfg.logging[p]
         if not level:
             continue
