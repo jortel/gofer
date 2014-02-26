@@ -17,7 +17,6 @@
 Contains request delivery policies.
 """
 
-from gofer.messaging import Destination
 from gofer.messaging.model import Envelope, getuuid
 from gofer.rmi.dispatcher import *
 from gofer.metrics import Timer
@@ -183,6 +182,7 @@ class Synchronous(RequestMethod):
         self.wait = Timeout.seconds(options.wait or 90)
         self.progress = options.progress
         self.queue = transport.queue(getuuid())
+        self.authenticator = options.authenticator
         self.queue.auto_delete = True
         self.queue.declare(self.url)
 
@@ -200,6 +200,7 @@ class Synchronous(RequestMethod):
         """
         replyto = self.queue.destination()
         producer = self.transport.producer(url=self.url)
+        producer.authenticator = self.authenticator
         try:
             sn = producer.send(
                 destination,
@@ -211,6 +212,7 @@ class Synchronous(RequestMethod):
             producer.close()
         log.debug('sent (%s):\n%s', repr(destination), request)
         reader = self.transport.reader(self.url, self.queue)
+        reader.authenticator = self.authenticator
         try:
             self.__get_accepted(sn, reader)
             return self.__get_reply(sn, reader)
@@ -322,6 +324,7 @@ class Asynchronous(RequestMethod):
         self.ctag = options.ctag
         self.timeout = Timeout.seconds(options.timeout)
         self.trigger = options.trigger
+        self.authenticator = options.authenticator
 
     def send(self, destination, request, **any):
         """
@@ -432,6 +435,7 @@ class Trigger:
         request = self.__request
         any = self.__any
         producer = policy.transport.producer(url=policy.url)
+        producer.authenticator = self.authenticator
         try:
             producer.send(
                 destination,

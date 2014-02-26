@@ -104,7 +104,7 @@ class Plugin(object):
             unique.append(p)
         return unique
     
-    def __init__(self, name, descriptor, synonyms=[]):
+    def __init__(self, name, descriptor, synonyms=None):
         """
         :param name: The plugin name.
         :type name: str
@@ -116,7 +116,7 @@ class Plugin(object):
         self.name = name
         self.descriptor = descriptor
         self.synonyms = []
-        for syn in synonyms:
+        for syn in synonyms or []:
             if syn == name:
                 continue
             self.synonyms.append(syn)
@@ -126,6 +126,7 @@ class Plugin(object):
         self.actions = []
         self.dispatcher = Dispatcher([])
         self.whiteboard = Whiteboard()
+        self.authenticator = None
         self.consumer = None
         
     def names(self):
@@ -297,6 +298,7 @@ class Plugin(object):
         tp = self.get_transport()
         queue = tp.queue(uuid)
         consumer = RequestConsumer(queue, url=url, transport=tp)
+        consumer.reader.authenticator = self.authenticator
         consumer.start()
         self.consumer = consumer
     

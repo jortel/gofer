@@ -22,7 +22,7 @@ import atexit
 from threading import RLock, local as Local
 from logging import getLogger
 
-from gofer.messaging.model import getuuid
+from gofer.transport.endpoint import Endpoint as Base
 from gofer.transport.qpid.broker import Qpid
 
 
@@ -117,15 +117,11 @@ class SessionPool:
         return pool
 
 
-class Endpoint:
+class Endpoint(Base):
     """
     Base class for an AMQP endpoint.
     :cvar ssnpool: An AMQP session pool.
     :type ssnpool: SessionPool
-    :ivar uuid: The unique endpoint id.
-    :type uuid: str
-    :ivar url: The broker URL.
-    :type url: str
     :ivar __mutex: The endpoint mutex.
     :type __mutex: RLock
     :ivar __session: An AMQP session.
@@ -136,15 +132,14 @@ class Endpoint:
     
     ssnpool = SessionPool()
 
-    def __init__(self, uuid=None, url=None):
+    def __init__(self, uuid=None, url=LOCALHOST):
         """
         :param uuid: The endpoint uuid.
         :type uuid: str
         :param url: The broker url <transport>://<user>/<pass>@<host>:<port>.
         :type url: str
         """
-        self.uuid = (uuid or getuuid())
-        self.url = (url or self.LOCALHOST)
+        Base.__init__(self, uuid, url)
         self.__mutex = RLock()
         self.__session = None
         atexit.register(self.close)

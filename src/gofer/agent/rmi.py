@@ -34,7 +34,7 @@ class Task:
     """
     An RMI task to be scheduled on the plugin's thread pool.
     :ivar plugin: A plugin.
-    :type plugin: Plugin
+    :type plugin: gofer.agent.plugin.Plugin
     :ivar envelope: A gofer messaging envelope.
     :type envelope: Envelope
     :ivar commit: Transaction commit function.
@@ -61,6 +61,10 @@ class Task:
         self.commit = commit
         self.window = envelope.window
         self.ts = time()
+
+    @property
+    def authenticator(self):
+        return self.plugin.authenticator
         
     def __call__(self):
         """
@@ -121,6 +125,7 @@ class Task:
         try:
             tp = self.plugin.get_transport()
             producer = tp.producer(url=envelope.url)
+            producer.authenticator = self.authenticator
             try:
                 producer.send(
                     Destination.create(replyto),
@@ -152,6 +157,7 @@ class Task:
         try:
             tp = self.plugin.get_transport()
             producer = tp.producer(url=envelope.url)
+            producer.authenticator = self.authenticator
             try:
                 producer.send(
                     Destination.create(replyto),
@@ -277,6 +283,7 @@ class Progress:
             url = self.task.envelope.url
             tp = self.task.plugin.get_transport()
             producer = tp.producer(url=url)
+            producer.authenticator = self.task.authenticator
             try:
                 producer.send(
                     Destination.create(replyto),

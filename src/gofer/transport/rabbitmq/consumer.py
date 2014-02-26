@@ -12,6 +12,7 @@
 from time import sleep
 from logging import getLogger
 
+from gofer.messaging import auth
 from gofer.messaging.model import Envelope, is_valid, search
 from gofer.transport.consumer import Ack
 from gofer.transport.rabbitmq.endpoint import Endpoint, reliable
@@ -57,7 +58,11 @@ class Reader(Endpoint):
         """
         channel = self.channel()
         self.queue.declare(self.url)
-        return channel.basic_get(self.queue.name)
+        message = channel.basic_get(self.queue.name)
+        if message and not auth.is_valid(self.authenticator, message.body):
+            message = None
+            self.ack(message)
+        return message
 
     @reliable
     def next(self, timeout=90):
@@ -78,6 +83,8 @@ class Reader(Endpoint):
                 if is_valid(envelope):
                     log.debug('{%s} read next:\n%s', self.id(), envelope)
                     return envelope, Ack(self, message)
+                else:
+                    self.ack(message)
             if timer > 0:
                 sleep(delay)
                 timer -= delay

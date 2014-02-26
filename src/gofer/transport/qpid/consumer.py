@@ -23,6 +23,7 @@ from logging import getLogger
 
 from qpid.messaging import Empty
 
+from gofer.messaging import auth
 from gofer.messaging.model import Envelope, is_valid, search
 from gofer.transport.consumer import Ack
 from gofer.transport.qpid.endpoint import Endpoint
@@ -109,7 +110,11 @@ class Reader(Endpoint):
         """
         try:
             self.open()
-            return self.__receiver.fetch(timeout=timeout)
+            message = self.__receiver.fetch(timeout=timeout)
+            if not auth.is_valid(self.authenticator, message.content):
+                self.ack(message)
+                message = None
+            return message
         except Empty:
             pass
         except Exception:
@@ -133,6 +138,8 @@ class Reader(Endpoint):
             if is_valid(envelope):
                 log.debug('{%s} read next:\n%s', self.id(), envelope)
                 return envelope, Ack(self, message)
+            else:
+                self.ack(message)
         return None, None
 
     def search(self, sn, timeout=90):

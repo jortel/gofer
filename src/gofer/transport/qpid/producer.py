@@ -21,6 +21,7 @@ from logging import getLogger
 
 from qpid.messaging import Message
 
+from gofer.messaging import auth
 from gofer.messaging.model import getuuid, VERSION, Envelope
 from gofer.transport.qpid.endpoint import Endpoint
 
@@ -53,6 +54,7 @@ def send(endpoint, destination, ttl=None, **body):
     envelope = Envelope(sn=sn, version=VERSION, routing=routing)
     envelope += body
     json = envelope.dump()
+    auth.sign(endpoint.authenticator, json)
     message = Message(content=json, durable=True, ttl=ttl)
     sender = endpoint.session().sender(address)
     sender.send(message)
