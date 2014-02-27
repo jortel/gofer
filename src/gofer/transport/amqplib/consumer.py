@@ -59,9 +59,12 @@ class Reader(Endpoint):
         channel = self.channel()
         self.queue.declare(self.url)
         message = channel.basic_get(self.queue.name)
-        if message and not auth.is_valid(self.authenticator, message.body):
-            message = None
-            self.ack(message)
+        if message:
+            body = message.body
+            if not auth.is_valid(self.authenticator, body):
+                self.ack(message)
+                log.warn('{%s} message discarded', self.id())
+                message = None
         return message
 
     @reliable
@@ -84,6 +87,7 @@ class Reader(Endpoint):
                     log.debug('{%s} read next:\n%s', self.id(), envelope)
                     return envelope, Ack(self, message)
                 else:
+                    log.warn('{%s} request sn=%s (discarded)', self.id(), envelope.sn)
                     self.ack(message)
             if timer > 0:
                 sleep(delay)

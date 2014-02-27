@@ -53,9 +53,9 @@ def send(endpoint, destination, ttl=None, **body):
     routing = (endpoint.id(), address)
     envelope = Envelope(sn=sn, version=VERSION, routing=routing)
     envelope += body
-    json = envelope.dump()
-    auth.sign(endpoint.authenticator, json)
-    message = Message(content=json, durable=True, ttl=ttl)
+    unsigned = envelope.dump()
+    signed = auth.sign(endpoint.authenticator, unsigned)
+    message = Message(content=signed, durable=True, ttl=ttl)
     sender = endpoint.session().sender(address)
     sender.send(message)
     sender.close()

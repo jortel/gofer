@@ -31,17 +31,18 @@ def getuuid():
     return str(uuid4())
 
 
-def is_valid(envelope):
+def is_valid(request):
     """
-    Test if the specified envelope is valid.
-    :param envelope: The envelope to evaluate.
+    Determine whether the specified request is valid.
+    :param request: The envelope to evaluate.
+    :type request: Envelope
     :return: True if valid.
     :rtype: bool
     """
     valid = True
-    if envelope.version != VERSION:
+    if request.version != VERSION:
         valid = False
-        log.warn('version mismatch (discarded):\n%s', envelope)
+        log.warn('version mismatch %s/%s', request.version, VERSION)
     return valid
 
 
@@ -158,5 +159,5 @@ class Envelope(Options):
                 return thing
             return thing
         d = fn(self)
-        return json.dumps(d, indent=2)
+        return json.dumps(d, sort_keys=True, indent=2)
 

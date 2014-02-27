@@ -49,11 +49,11 @@ def send(endpoint, destination, ttl=None, **body):
     routing = (endpoint.id(), destination.dict())
     envelope = Envelope(sn=sn, version=VERSION, routing=routing)
     envelope += body
-    json = envelope.dump()
-    auth.sign(endpoint.authenticator, json)
+    unsigned = envelope.dump()
+    signed = auth.sign(endpoint.authenticator, unsigned)
     channel = endpoint.channel()
     channel.basic_publish(
-        json,
+        signed,
         exchange=destination.exchange,
         routing_key=routing_key,
         **properties(ttl))

@@ -113,6 +113,7 @@ class Reader(Endpoint):
             message = self.__receiver.fetch(timeout=timeout)
             if not auth.is_valid(self.authenticator, message.content):
                 self.ack(message)
+                log.warn('{%s} message discarded', self.id())
                 message = None
             return message
         except Empty:
@@ -139,6 +140,7 @@ class Reader(Endpoint):
                 log.debug('{%s} read next:\n%s', self.id(), envelope)
                 return envelope, Ack(self, message)
             else:
+                log.warn('{%s} request sn=%s (discarded)', self.id(), envelope.sn)
                 self.ack(message)
         return None, None
 

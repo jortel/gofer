@@ -50,10 +50,10 @@ def send(endpoint, destination, ttl=None, **body):
     routing = (endpoint.id(), destination.dict())
     envelope = Envelope(sn=sn, version=VERSION, routing=routing)
     envelope += body
-    json = envelope.dump()
-    auth.sign(endpoint.authenticator, json)
+    unsigned = envelope.dump()
+    signed = auth.sign(endpoint.authenticator, unsigned)
     channel = endpoint.channel()
-    m = message(json, ttl)
+    m = message(signed, ttl)
     channel.basic_publish(m, exchange=destination.exchange, routing_key=routing_key)
     log.debug('{%s} sent (%s)\n%s', endpoint.id(), routing_key, envelope)
     return sn

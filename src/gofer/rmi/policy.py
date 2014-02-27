@@ -17,8 +17,11 @@
 Contains request delivery policies.
 """
 
+from logging import getLogger
+
 from gofer.messaging.model import Envelope, getuuid
-from gofer.rmi.dispatcher import *
+from gofer.messaging import Destination
+from gofer.rmi.dispatcher import Return, RemoteException
 from gofer.metrics import Timer
 
 
@@ -435,7 +438,7 @@ class Trigger:
         request = self.__request
         any = self.__any
         producer = policy.transport.producer(url=policy.url)
-        producer.authenticator = self.authenticator
+        producer.authenticator = policy.authenticator
         try:
             producer.send(
                 destination,
