@@ -19,7 +19,7 @@ Thread Pool classes.
 
 from uuid import uuid4
 from threading import Thread
-from Queue import Queue, Empty
+from Queue import Queue
 from logging import getLogger
 
 

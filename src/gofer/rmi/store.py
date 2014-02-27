@@ -18,41 +18,35 @@ Provides (local) message storage classes.
 """
 
 import os
+import errno
+
 from stat import *
+from time import sleep, time
+from threading import Thread
+from Queue import Queue
+from logging import getLogger
+
 from gofer import NAME, Singleton
 from gofer.messaging.model import Envelope
 from gofer.rmi.window import Window
 from gofer.rmi.tracker import Tracker
-from time import time
-from threading import Thread, RLock, Event
-from logging import getLogger
+
 
 log = getLogger(__name__)
 
 
-class PendingQueue:
+class Pending(object):
     """
-    Persistent (local) storage of I{pending} envelopes that have
-    been processed of an AMQP queue.  Most likely use is for messages
-    with a future I{window} which cannot be processed immediately.
-    :cvar ROOT: The root directory used for storage.
-    :type ROOT: str
-    :ivar id: The queue id.
-    :type id: str
-    :ivar lastmod: Last (directory) modification.
-    :type lastmod: int
-    :ivar pending: The queue of pending envelopes.
-    :type pending: [Envelope,..]
-    :ivar uncommitted: A list (removed) of files pending commit.
-    :type uncommitted: [path,..]
+    Persistent store and queuing for pending requests.
     """
-    
+
     __metaclass__ = Singleton
 
-    ROOT = '/var/lib/%s/messaging/pending' % NAME
+    PENDING = '/var/lib/%s/messaging/pending' % NAME
+    DELAYED = '/var/lib/%s/messaging/delayed' % NAME
 
     @staticmethod
-    def __created(path):
+    def _created(path):
         """
         Get create timestamp.
         :return: The file create timestamp.
@@ -62,290 +56,171 @@ class PendingQueue:
         return stat[ST_CTIME]
 
     @staticmethod
-    def __modified(path):
+    def _mkdir(path):
         """
-        Get modification timestamp.
-        :return: The file modification timestamp.
-        :rtype: int
+        Ensure the directory exists.
+        :param: A directory path.
+        :type path: str
         """
-        stat = os.stat(path)
-        return stat[ST_MTIME]
+        try:
+            os.makedirs(path)
+        except OSError, e:
+            if e.errno != errno.EEXIST:
+                raise
 
     @staticmethod
-    def __read(path):
-        with open(path) as fp:
-            return fp.read()
+    def _write(request, path):
+        """
+        Write a request to the journal.
+        :param request: An AMQP request.
+        :type request: Envelope
+        :param path: The destination path.
+        :type path: str
+        """
+        fp = open(path, 'w+')
+        try:
+            body = request.dump()
+            fp.write(body)
+            log.debug('wrote [%s]:\n%s', path, body)
+        finally:
+            fp.close()
 
     @staticmethod
-    def __delayed(envelope):
+    def _read(path):
+        """
+        Read a request.
+        :param path: The path to the journal file.
+        :type path: str
+        :return: The read request.
+        :rtype: Envelope
+        """
+        fp = open(path)
+        try:
+            try:
+                request = Envelope()
+                body = fp.read()
+                request.load(body)
+                log.debug('read [%s]:\n%s', path, body)
+                return request
+            except ValueError:
+                log.error('%s corrupt (discarded)', path)
+                os.unlink(path)
+        finally:
+            fp.close()
+
+    @staticmethod
+    def _delayed(request):
         """
         Get whether the envelope has a future window.
         Cancelled requests are not considered to be delayed and
         the window is ignored.
-        :param envelope: An Envelope
-        :type envelope: Envelope
+        :param request: An AMQP request.
+        :type request: Envelope
         :return: True when window in the future.
         :rtype: bool
         """
         tracker = Tracker()
-        if envelope.window and not tracker.cancelled(envelope.sn):
-            window = Window(envelope.window)
+        if request.window and not tracker.cancelled(request.sn):
+            window = Window(request.window)
             if window.future():
-                log.debug('deferring:\n%s', envelope)
+                log.debug('%s delayed', request.sn)
                 return True
         return False
 
-    def __init__(self):
-        self.__pending = []
-        self.__uncommitted = {}
-        self.__mutex = RLock()
-        self.__event = Event()
-        self.__mkdir()
-        self.__load()
-
-    def add(self, url, envelope):
+    @staticmethod
+    def commit(sn):
         """
-        Enqueue the specified envelope.
-        :param url: The broker URL.
-        :type url: str
-        :param envelope: An Envelope
-        :type envelope: Envelope
-        """
-        envelope.ts = time()
-        envelope.url = url
-        fn = self.__fn(envelope)
-        with open(fn, 'w') as fp:
-            fp.write(envelope.dump())
-        log.debug('add pending:\n%s', envelope)
-        self.__lock()
-        try:
-            tracker = Tracker()
-            tracker.add(envelope.sn, envelope.any)
-            self.__pending.insert(0, envelope)
-        finally:
-            self.__unlock()
-        self.__event.set()
-
-    def get(self, wait=10):
-        """
-        Get the next pending envelope.
-        :param wait: The number of seconds to block.
-        :type wait: int
-        :return: An Envelope
-        :rtype: Envelope
-        """
-        assert(wait >= 0)
-        try:
-            return self.__get(wait)
-        finally:
-            self.__event.clear()
-                
-    def commit(self, sn):
-        """
-        Commit an entry returned by get().
-        :param sn: The serial number to commit.
-        :type sn: str
-        :raise KeyError: when no found.
-        """
-        self.__lock()
-        try:
-            log.debug('commit: %s', sn)
-            envelope = self.__uncommitted.pop(sn)
-            fn = self.__fn(envelope)
-            os.unlink(fn)
-        finally:
-            self.__unlock()
-
-    def __purge(self, envelope):
-        """
-        Purge the queue entry.
-        :param envelope: An Envelope
-        :type envelope: Envelope
-        """
-        self.__lock()
-        try:
-            log.info('purge:%s', envelope.sn)
-            fn = self.__fn(envelope)
-            os.unlink(fn)
-            self.__pending.remove(envelope)
-        finally:
-            self.__unlock()
-
-    def __pending_commit(self, envelope):
-        """
-        Move the envelope to the uncommitted list.
-        :param envelope: An Envelope
-        :type envelope: Envelope
-        """
-        self.__lock()
-        try:
-            self.__pending.remove(envelope)
-            self.__uncommitted[envelope.sn] = envelope
-        finally:
-            self.__unlock()
-
-    def __load(self):
-        """
-        Load the in-memory queue from filesystem.
-        """
-        path = os.path.join(self.ROOT)
-        pending = []
-        for fn in os.listdir(path):
-            path = os.path.join(self.ROOT, fn)
-            envelope = self.__import(path)
-            if not envelope:
-                continue
-            created = self.__created(path)
-            pending.append((created, envelope))
-        pending.sort()
-        self.__lock()
-        try:
-            self.__pending = [p[1] for p in pending]
-        finally:
-            self.__unlock()
-            
-    def __import(self, path):
-        """
-        Import a stored envelope.
-        :param path: An absolute file path.
-        :type path: str
-        :return: An imported envelope.
-        :rtype: Envelope
+        The request referenced by the serial number has been completely
+        processed and can be deleted from the journal.
+        :param sn: A request serial number.
+        :param sn: str
         """
         try:
-            s = self.__read(path)
-            envelope = Envelope()
-            envelope.load(s)
-            return envelope
-        except:
-            log.exception(path)
-            log.error('%s, discarded', path)
+            path = os.path.join(Pending.PENDING, sn)
             os.unlink(path)
-            
-    def __get(self, wait=1):
-        """
-        Get the next pending envelope.
-        :param wait: The number of seconds to wait for a pending item.
-        :type wait: int
-        :return: (url, Envelope)
-        :rtype: Envelope
-        """
-        while wait:
-            queue = self.__copy(self.__pending)
-            popped = self.__pop(queue)
-            if popped:
-                log.debug('popped: (%s) %s', popped.url, popped.sn)
-                return popped
-            else:
-                wait -= 1
-                self.__event.wait(1)
+            log.debug('%s committed', sn)
+        except OSError, e:
+            if e.errno != errno.ENOENT:
+                raise
 
-    def __pop(self, queue):
+    @staticmethod
+    def _list(path):
         """
-        Pop and return the next I{ready} entry.
-        Entries that have expired (TTL), are purged.
-        Entries that have a future I{window} are excluded.
-        :param queue: An ordered list of candidate entries.
-        :type queue: list
-        :return: An Envelope
-        :rtype: Envelope
+        Directory listing sorted by when it was created.
+        :param path: The path to a directory.
+        :type path: str
+        :return: A sorted directory listing (absolute paths).
+        :rtype: list
         """
-        popped = None
-        while queue:
-            envelope = queue.pop()
-            try:
-                if self.__delayed(envelope):
-                    # future
+        paths = []
+        _dir = path
+        for path in [os.path.join(_dir, name) for name in os.listdir(_dir)]:
+            paths.append((Pending._created(path), path))
+        paths.sort()
+        return [p[1] for p in paths]
+
+    def __init__(self, backlog=100):
+        """
+        :param backlog: The queue capacity.
+        :type backlog: int
+        """
+        Pending._mkdir(Pending.PENDING)
+        Pending._mkdir(Pending.DELAYED)
+        self.queue = Queue(backlog)
+        self.is_open = False
+        self.thread = Thread(target=self._open)
+        self.thread.setDaemon(True)
+        self.thread.start()
+
+    def _open(self):
+        """
+        Open for operations.
+        - Load journal(ed) requests. These are requests were in the queuing pipeline
+          when the process was terminated. put() is blocked until this has completed.
+        - Then, continuously attempt to queue delayed messages.
+        """
+        for path in Pending._list(Pending.PENDING):
+            request = Pending._read(path)
+            self.queue.put(request)
+        self.is_open = True
+        # queue delayed messages
+        while True:
+            sleep(1)
+            for path in Pending._list(Pending.DELAYED):
+                request = Pending._read(path)
+                if Pending._delayed(request):
                     continue
-                self.__pending_commit(envelope)
-                popped = envelope
-                break
-            except Exception:
-                log.error(envelope, exc_info=1)
-                self.__purge(envelope)
-        return popped
+                self.put(request)
+                os.unlink(path)
 
-    def __mkdir(self):
+    def put(self, request):
         """
-        Ensure the directory exists.
+        Enqueue a pending request.
+        This is blocked until the _open() has re-queued journal(ed) entries.
+        :param request: An AMQP request.
+        :type request: Envelope
         """
-        path = self.ROOT
-        if not os.path.exists(path):
-            os.makedirs(path)
+        while not self.is_open:
+            # block puts until opened
+            sleep(1)
 
-    def __fn(self, envelope):
-        """
-        Get the qualified file name for an entry.
-        :param envelope: A queue entry.
-        :type envelope: Envelope
-        :return: The absolute file path.
-        :rtype: str
-        """
-        return os.path.join(self.ROOT, envelope.sn)
-    
-    def __copy(self, collection):
-        self.__lock()
-        try:
-            return collection[:]
-        finally:
-            self.__unlock()
+        if not Pending._delayed(request):
+            path = os.path.join(Pending.PENDING, request.sn)
+            Pending._write(request, path)
+            tracker = Tracker()
+            tracker.add(request.sn, request.any)
+            request.ts = time()
+            self.queue.put(request)
+        else:
+            path = os.path.join(Pending.DELAYED, request.sn)
+            Pending._write(request, path)
 
-    def __lock(self):
-        self.__mutex.acquire()
+    def get(self):
+        """
+        Get the next pending request to be dispatched.
+        Blocks until a request is available.
+        :return: The next pending request.
+        :rtype: Envelope
+        """
+        return self.queue.get()
 
-    def __unlock(self):
-        self.__mutex.release()
-
-
-class PendingThread(Thread):
-    """
-    A pending queue receiver.
-    :ivar __run: The main run loop flag.
-    :type __run: bool
-    :ivar queue: The PendingQueue being read.
-    :type queue: PendingQueue
-    """
-
-    def __init__(self):
-        self.__run = True
-        self.queue = PendingQueue()
-        Thread.__init__(self, name='pending')
-        self.setDaemon(True)
-
-    def run(self):
-        """
-        Main receiver (thread).
-        Read and dispatch envelopes.
-        """
-        log.info('started')
-        while self.__run:
-            envelope = self.queue.get(3)
-            if not envelope:
-                continue
-            self.dispatch(envelope)
-        log.info('stopped')
-        
-    def dispatch(self, envelope):
-        """
-        Dispatch the envelope.
-        :param envelope: An Envelope
-        :type envelope: Envelope        
-        """
-        pass
-    
-    def commit(self, sn):
-        """
-        Commit a dispatched envelope.
-        :param sn: The serial number to commit.
-        :type sn: str
-        """
-        try:
-            self.queue.commit(sn)
-        except KeyError:
-            log.error('%s, not valid for commit', sn)
-
-    def stop(self):
-        """
-        Stop the receiver.
-        """
-        self.__run = False

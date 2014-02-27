@@ -34,13 +34,14 @@ import os
 
 from time import sleep
 from optparse import OptionParser
+from logging import getLogger, DEBUG
 
 # logging
 from gofer.agent import logutil
 logutil.LOGDIR = ROOT
 
 # configuration
-from gofer.agent.config import Config
+from gofer.config import Config
 Config.PATH = '/opt/gofer/agent.conf'
 Config.CNFD = '/opt/gofer/conf.d'
 if not os.path.exists(Config.PATH):
@@ -52,17 +53,13 @@ from gofer.agent.main import AgentLock
 AgentLock.PATH = os.path.join(ROOT, 'gofer.pid')
 
 # pending queue
-from gofer.rmi.store import PendingQueue
-PendingQueue.ROOT = os.path.join(ROOT, 'messaging/pending')
-if not os.path.exists(PendingQueue.ROOT):
-    os.makedirs(PendingQueue.ROOT)
+from gofer.rmi.store import Pending
+Pending.PENDING = os.path.join(ROOT, 'messaging/pending')
+Pending.DELAYED = os.path.join(ROOT, 'messaging/delayed')
 
 # misc
 from gofer.agent.plugin import PluginDescriptor, PluginLoader
 from gofer.agent.main import Agent, eager, setup_logging
-from gofer.config import Config
-
-from logging import getLogger, INFO, DEBUG
 
 log = getLogger(__name__)
 

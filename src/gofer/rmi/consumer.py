@@ -15,7 +15,7 @@
 
 from logging import getLogger
 
-from gofer.rmi.store import PendingQueue
+from gofer.rmi.store import Pending
 from gofer.messaging import Consumer, Destination
 
 
@@ -29,25 +29,26 @@ class RequestConsumer(Consumer):
     to local pending queue to be consumed by the scheduler.
     """
 
-    def dispatch(self, envelope):
+    def dispatch(self, request):
         """
         Dispatch received request.
-        :param envelope: The received envelope.
-        :type envelope: Envelope
+        :param request: The received request.
+        :type request: Envelope
         """
-        self.__send_accepted(envelope)
-        pending = PendingQueue()
-        pending.add(str(self.url), envelope)
+        self.__send_accepted(request)
+        request.url = self.url
+        pending = Pending()
+        pending.put(request)
 
-    def __send_accepted(self, envelope):
+    def __send_accepted(self, request):
         """
         Send the ACCEPTED status update when requested.
-        :param envelope: The received envelope.
-        :type envelope: Envelope
+        :param request: The received request.
+        :type request: Envelope
         """
-        sn = envelope.sn
-        any = envelope.any
-        replyto = envelope.replyto
+        sn = request.sn
+        any = request.any
+        replyto = request.replyto
         if not replyto:
             return
         try:

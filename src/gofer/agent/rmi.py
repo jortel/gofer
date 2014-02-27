@@ -14,12 +14,12 @@
 #
 
 from time import time
-from threading import local as Local
+from threading import Thread, local as Local
 from logging import getLogger
 
 from gofer.rmi.window import *
 from gofer.rmi.tracker import Tracker
-from gofer.rmi.store import PendingThread
+from gofer.rmi.store import Pending
 from gofer.rmi.dispatcher import Dispatcher, Return
 from gofer.rmi.threadpool import Trashed
 from gofer.transport import Transport
@@ -200,7 +200,7 @@ class TrashPlugin:
         return d.dispatch(request)
     
 
-class Scheduler(PendingThread):
+class Scheduler(Thread):
     """
     The pending request scheduler.
     Processes the I{pending} queue.
@@ -215,19 +215,20 @@ class Scheduler(PendingThread):
         :param plugins: A collection of loaded plugins.
         :type plugins: list
         """
-        PendingThread.__init__(self)
+        Thread.__init__(self, name='scheduler')
         self.plugins = plugins
-        
-    def dispatch(self, envelope):
-        """
-        Dispatch the specified envelope to plugin that
-        provides the specified class.
-        :param envelope: A gofer messaging envelope.
-        :type envelope: Envelope
-        """
-        plugin = self.find_plugin(envelope)
-        task = Task(plugin, envelope, self.commit)
-        plugin.pool.run(task)
+        self.pending = Pending()
+        self.setDaemon(True)
+
+    def run(self):
+        while True:
+            request = self.pending.get()
+            try:
+                plugin = self.find_plugin(request)
+                task = Task(plugin, request, self.pending.commit)
+                plugin.pool.run(task)
+            except Exception:
+                log.exception(request.sn)
         
     def find_plugin(self, envelope):
         """
