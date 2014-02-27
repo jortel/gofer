@@ -181,6 +181,9 @@ class Pending(object):
         """
         for path in Pending._list(Pending.PENDING):
             request = Pending._read(path)
+            if not request:
+                # read failed
+                continue
             self.queue.put(request)
         self.is_open = True
         # queue delayed messages
@@ -188,6 +191,9 @@ class Pending(object):
             sleep(1)
             for path in Pending._list(Pending.DELAYED):
                 request = Pending._read(path)
+                if not request:
+                    # read failed
+                    continue
                 if Pending._delayed(request):
                     continue
                 self.put(request)
