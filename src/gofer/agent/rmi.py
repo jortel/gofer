@@ -14,14 +14,14 @@
 #
 
 from time import time
-from threading import local as Local
+from threading import Thread, local as Local
 from logging import getLogger
 
 from gofer.rmi.window import *
 from gofer.rmi.tracker import Tracker
-from gofer.rmi.store import PendingThread
+from gofer.rmi.store import Pending
 from gofer.rmi.dispatcher import Dispatcher, Return
-from gofer.rmi.threadpool import Immediate
+from gofer.rmi.threadpool import Trashed
 from gofer.transport import Transport
 from gofer.messaging.model import Envelope
 from gofer.transport.model import Destination
@@ -182,16 +182,15 @@ class Task:
                 return plugin.get_transport()
         return Transport()
 
-            
 
-class EmptyPlugin:
+class TrashPlugin:
     """
     An I{empty} plugin.
     Used when the appropriate plugin cannot be found.
     """
-    
-    def get_pool(self):
-        return Immediate()
+
+    def __init__(self):
+        self.pool = Trashed()
     
     def provides(self, classname):
         return False
@@ -201,7 +200,7 @@ class EmptyPlugin:
         return d.dispatch(request)
     
 
-class Scheduler(PendingThread):
+class Scheduler(Thread):
     """
     The pending request scheduler.
     Processes the I{pending} queue.
@@ -216,20 +215,20 @@ class Scheduler(PendingThread):
         :param plugins: A collection of loaded plugins.
         :type plugins: list
         """
-        PendingThread.__init__(self)
+        Thread.__init__(self, name='scheduler')
         self.plugins = plugins
-        
-    def dispatch(self, envelope):
-        """
-        Dispatch the specified envelope to plugin that
-        provides the specified class.
-        :param envelope: A gofer messaging envelope.
-        :type envelope: Envelope
-        """
-        plugin = self.find_plugin(envelope)
-        task = Task(plugin, envelope, self.commit)
-        pool = plugin.get_pool()
-        pool.run(task)
+        self.pending = Pending()
+        self.setDaemon(True)
+
+    def run(self):
+        while True:
+            request = self.pending.get()
+            try:
+                plugin = self.find_plugin(request)
+                task = Task(plugin, request, self.pending.commit)
+                plugin.pool.run(task)
+            except Exception:
+                log.exception(request.sn)
         
     def find_plugin(self, envelope):
         """
@@ -245,7 +244,7 @@ class Scheduler(PendingThread):
         for plugin in self.plugins:
             if plugin.provides(request.classname):
                 return plugin
-        return EmptyPlugin()
+        return TrashPlugin()
     
 
 class Context:
