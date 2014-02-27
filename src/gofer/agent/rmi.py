@@ -22,6 +22,7 @@ from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import PendingThread
 from gofer.rmi.dispatcher import Dispatcher, Return
 from gofer.rmi.threadpool import Immediate
+from gofer.transport import Transport
 from gofer.messaging.model import Envelope
 from gofer.transport.model import Destination
 from gofer.metrics import Timer
@@ -34,7 +35,7 @@ class Task:
     """
     An RMI task to be scheduled on the plugin's thread pool.
     :ivar plugin: A plugin.
-    :type plugin: Plugin
+    :type plugin: gofer.agent.plugin.Plugin
     :ivar envelope: A gofer messaging envelope.
     :type envelope: Envelope
     :ivar commit: Transaction commit function.
@@ -116,11 +117,12 @@ class Task:
         sn = envelope.sn
         any = envelope.any
         replyto = envelope.replyto
+        url = envelope.url
         if not replyto:
             return
         try:
-            tp = self.plugin.get_transport()
-            producer = tp.producer(url=envelope.url)
+            tp = self.find_transport(url)
+            producer = tp.producer(url=url)
             try:
                 producer.send(
                     Destination.create(replyto),
@@ -146,12 +148,13 @@ class Task:
         now = time()
         duration = Timer(ts, now)
         replyto = envelope.replyto
+        url = envelope.url
         log.info('%s processed in: %s', sn, duration)
         if not replyto:
             return
         try:
-            tp = self.plugin.get_transport()
-            producer = tp.producer(url=envelope.url)
+            tp = self.find_transport(url)
+            producer = tp.producer(url=url)
             try:
                 producer.send(
                     Destination.create(replyto),
@@ -162,6 +165,23 @@ class Task:
                 producer.close()
         except:
             log.exception('send failed:\n%s', result)
+
+    def find_transport(self, url):
+        """
+        Find a transport by url.
+        Search plugins and find the plugin that has declared
+        The specified uuid.  The assumption is that the plugin that
+        has defined the url has also defined a suitable transport.
+        :param url:  The destination url.
+        :type url: str
+        :return: The transport.
+        :rtype: gofer.transport.Transport
+        """
+        for plugin in self.plugin.all():
+            if url == plugin.get_url():
+                return plugin.get_transport()
+        return Transport()
+
             
 
 class EmptyPlugin:
@@ -208,7 +228,7 @@ class Scheduler(PendingThread):
         """
         plugin = self.find_plugin(envelope)
         task = Task(plugin, envelope, self.commit)
-        pool = plugin.getpool()
+        pool = plugin.get_pool()
         pool.run(task)
         
     def find_plugin(self, envelope):
@@ -219,7 +239,7 @@ class Scheduler(PendingThread):
         :param envelope: A gofer messaging envelope.
         :type envelope: Envelope
         :return: The appropriate plugin.
-        :rtype: Plugin
+        :rtype: gofer.agent.plugin.Plugin
         """
         request = Envelope(envelope.request)
         for plugin in self.plugins:
@@ -312,4 +332,8 @@ class Cancelled:
         return self.tracker.cancelled(self.sn)
 
     def __del__(self):
-        self.tracker.remove(self.sn)
+        try:
+            self.tracker.remove(self.sn)
+        except KeyError:
+            # already cleaned up
+            pass
