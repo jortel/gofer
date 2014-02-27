@@ -21,7 +21,7 @@ from gofer.rmi.window import *
 from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import PendingThread
 from gofer.rmi.dispatcher import Dispatcher, Return
-from gofer.rmi.threadpool import Immediate
+from gofer.rmi.threadpool import Trashed
 from gofer.transport import Transport
 from gofer.messaging.model import Envelope
 from gofer.transport.model import Destination
@@ -182,16 +182,15 @@ class Task:
                 return plugin.get_transport()
         return Transport()
 
-            
 
-class EmptyPlugin:
+class TrashPlugin:
     """
     An I{empty} plugin.
     Used when the appropriate plugin cannot be found.
     """
-    
-    def get_pool(self):
-        return Immediate()
+
+    def __init__(self):
+        self.pool = Trashed()
     
     def provides(self, classname):
         return False
@@ -228,8 +227,7 @@ class Scheduler(PendingThread):
         """
         plugin = self.find_plugin(envelope)
         task = Task(plugin, envelope, self.commit)
-        pool = plugin.get_pool()
-        pool.run(task)
+        plugin.pool.run(task)
         
     def find_plugin(self, envelope):
         """
@@ -245,7 +243,7 @@ class Scheduler(PendingThread):
         for plugin in self.plugins:
             if plugin.provides(request.classname):
                 return plugin
-        return EmptyPlugin()
+        return TrashPlugin()
     
 
 class Context:

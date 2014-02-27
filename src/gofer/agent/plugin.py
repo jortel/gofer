@@ -121,8 +121,7 @@ class Plugin(object):
             if syn == name:
                 continue
             self.synonyms.append(syn)
-        self.__mutex = RLock()
-        self.__pool = None
+        self.pool = ThreadPool(descriptor.messaging.nthreads or 1)
         self.impl = None
         self.actions = []
         self.dispatcher = Dispatcher([])
@@ -182,16 +181,6 @@ class Plugin(object):
         broker.validation = get_bool(plugin.messaging.validation or agent.messaging.validation)
         log.debug('broker (qpid) configured: %s', broker)
         return broker
-
-    def get_pool(self):
-        """
-        Get the plugin's thread pool.
-        :return: ThreadPool.
-        """
-        if self.__pool is None:
-            n = self.nthreads()
-            self.__pool = ThreadPool(1, n, duplex=False)
-        return self.__pool
     
     def set_uuid(self, uuid):
         """
@@ -199,11 +188,7 @@ class Plugin(object):
         :param uuid: The new UUID.
         :type uuid: str
         """
-        self.__lock()
-        try:
-            self.descriptor.messaging.uuid = uuid
-        finally:
-            self.__unlock()
+        self.descriptor.messaging.uuid = uuid
             
     def set_url(self, url):
         """
@@ -211,11 +196,7 @@ class Plugin(object):
         :param url: The new URL.
         :type url: str
         """
-        self.__lock()
-        try:
-            self.descriptor.messaging.url = url
-        finally:
-            self.__unlock()
+        self.descriptor.messaging.url = url
 
     def get_transport(self):
         """
@@ -234,24 +215,7 @@ class Plugin(object):
         :param transport: The new transport package.
         :type transport: str
         """
-        self.__lock()
-        try:
-            self.descriptor.messaging.transport = transport
-        finally:
-            self.__unlock()
-            
-    def nthreads(self):
-        """
-        Get the number of theads in the plugin's pool.
-        :return: number of theads.
-        :rtype: int
-        """
-        plugin = self.descriptor
-        agent = AgentConfig()
-        value = plugin.messaging.threads or agent.messaging.threads or 1
-        value = int(value)
-        assert(value >= 1)
-        return value
+        self.descriptor.messaging.transport = transport
 
     def attach(self, uuid=None):
         """
@@ -321,7 +285,7 @@ class Plugin(object):
             valid = inspect.isclass(obj) or inspect.isfunction(obj)
             if valid:
                 return obj
-            raise TypeError, '(%s) must be class|function' % name
+            raise TypeError('(%s) must be class|function' % name)
         except AttributeError:
             raise NameError(name)
 
@@ -329,15 +293,8 @@ class Plugin(object):
     getuuid = get_uuid
     geturl = get_url
     getbroker = get_broker
-    getpool = get_pool
     setuuid = set_uuid
     seturl = set_url
-    
-    def __lock(self):
-        self.__mutex.acquire()
-        
-    def __unlock(self):
-        self.__mutex.release()
 
 
 class PluginDescriptor(Graph):
