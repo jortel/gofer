@@ -15,7 +15,7 @@
 
 from logging import getLogger
 
-from gofer.rmi.store import PendingQueue
+from gofer.rmi.store import Pending
 from gofer.messaging import Consumer, Destination
 
 
@@ -36,8 +36,9 @@ class RequestConsumer(Consumer):
         :type request: Envelope
         """
         self.__send_accepted(request)
-        pending = PendingQueue()
-        pending.add(str(self.url), request)
+        request.url = self.url
+        pending = Pending()
+        pending.put(request)
 
     def __send_accepted(self, request):
         """
