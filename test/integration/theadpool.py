@@ -43,7 +43,7 @@ def fn2(n, results):
     results.append(n)
 
 
-def test(calls=1000):
+def test(calls=100):
     results = []
     pool = ThreadPool(9)
     for n in range(calls):

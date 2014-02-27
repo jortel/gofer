@@ -60,9 +60,19 @@ class Worker(Thread):
                 log.exception(str(call))
 
     def put(self, call):
+        """
+        Enqueue a call.
+        :param call: A call to queue.
+        :type call: Call
+        """
         self.queue.put(call)
 
     def backlog(self):
+        """
+        Get the number of call already queued to this worker.
+        :return: The number of queued calls.
+        :rtype: int
+        """
         return self.queue.qsize()
 
 
@@ -161,7 +171,7 @@ class ThreadPool:
         pool = [(t.backlog(), t) for t in self.threads]
         pool.sort()
         backlog, worker = pool[0]
-        worker.queue.put(call)
+        worker.put(call)
 
     def shutdown(self):
         """
@@ -170,7 +180,7 @@ class ThreadPool:
         """
         # send stop request
         for t in self.threads:
-            t.queue.put(0)
+            t.put(0)
         for t in self.threads:
             t.join()
 
