@@ -16,29 +16,18 @@
 """
 Builtin plugin.
 """
-import os
+
 import socket
-import inspect
+
 from uuid import uuid4
+
 from gofer.decorators import *
-from gofer.rmi.tracker import Tracker
-from gofer.rmi.criteria import Builder
 from gofer.agent.plugin import Plugin
-from gofer.agent.action import Actions
-from gofer.agent.config import Config
 
 from logging import getLogger
 
 log = getLogger(__name__)
 plugin = Plugin.find(__name__)
-
-
-def indent(v, n, *args):
-    s = []
-    for n in range(0,n):
-        s.append(' ')
-    s.append(str(v) % args)
-    return ''.join(s)
 
 
 class TestAction:
@@ -49,109 +38,13 @@ class TestAction:
         log.info('Hello:\n%s', plugin.cfg())
 
 
-class Admin:
+class TestAdmin:
 
     @remote
-    def cancel(self, sn=None, criteria=None):
-        """
-        Cancel by serial number or user defined property.
-        :param sn: An RMI serial number.
-        :type sn: str
-        :param criteria: The criteria used to match the
-            I{any} property on an RMI request.
-        :type criteria: str
-        :return: The list of cancelled serial numbers.
-        :rtype: list
-        :raise Exception, on (sn) not found.
-        :see: gofer.rmi.criteria
-        """
-        sn_list = []
-        cancelled = []
-        tracker = Tracker()
-        if sn:
-            sn_list = [sn]
-        if criteria:
-            b = Builder()
-            criteria = b.build(criteria)
-            sn_list = tracker.find(criteria)
-        for sn in sn_list:
-            _sn = tracker.cancel(sn)
-            if _sn:
-                cancelled.append(_sn)
-        return cancelled
+    def echo(self, thing):
+        return thing
 
-    @remote
-    def hello(self):
-        s = []
-        cfg = Config()
-        s.append('Hello, I am gofer agent "%s"' % plugin.getuuid())
-        s.append('Here is my configuration:\n%s' % cfg)
-        s.append('Status: ready')
-        return '\n'.join(s)
-    
-    @remote
-    def help(self):
-        s = []
-        s.append('Plugins:')
-        for p in Plugin.all():
-            if not p.enabled():
-                continue
-            # plugin
-            s.append('')
-            if p.synonyms:
-                s.append(indent('<plugin> %s %s', 2, p.name, p.synonyms))
-            else:
-                s.append(indent('<plugin> %s', 2, p.name))
-            # classes
-            s.append(indent('Classes:', 4))
-            for n,v in p.dispatcher.catalog.items():
-                if inspect.ismodule(v):
-                    continue
-                s.append(indent('<class> %s', 6, n))
-                s.append(indent('methods:', 8))
-                for n,v in inspect.getmembers(v, inspect.ismethod):
-                    fn = v.im_func
-                    if not hasattr(fn, 'gofer'):
-                        continue
-                    s.append(indent(self.__signature(n, fn), 10))
-            # functions
-            s.append(indent('Functions:', 4))
-            for n,v in p.dispatcher.catalog.items():
-                if not inspect.ismodule(v):
-                    continue
-                for n,v in inspect.getmembers(v, inspect.isfunction):
-                    fn = v
-                    if not hasattr(fn, 'gofer'):
-                        continue
-                    s.append(indent(self.__signature(n, fn), 6))
-        s.append('')
-        s.append('Actions:')
-        for a in self.__actions():
-            s.append('  %s %s' % a)
-        return '\n'.join(s)
-    
-    def __actions(self):
-        actions = []
-        for a in Actions().collated():
-            actions.append((a.name(), a.interval))
-        return actions
-    
-    def __signature(self, n, fn):
-        s = []
-        s.append(n)
-        s.append('(')
-        spec = inspect.getargspec(fn)
-        if 'self' in spec[0]:
-            spec[0].remove('self')
-        if spec[1]:
-            spec[0].append('*%s' % spec[1])
-        if spec[2]:
-            spec[0].append('**%s' % spec[2])
-        s.append(', '.join(spec[0]))
-        s.append(')')
-        return ''.join(s)
-            
-            
+
 @remote
 def echo(something):
     return something
@@ -160,6 +53,7 @@ def echo(something):
 # Set the uuid to the hostname when not
 # specified in the config.
 #
+
 if not plugin.getuuid():
     hostname = socket.gethostname()
     uuid = str(uuid4())

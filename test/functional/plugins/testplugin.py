@@ -16,13 +16,14 @@
 
 from time import sleep
 from hashlib import sha256
+from logging import getLogger, INFO, DEBUG
 
 from gofer.decorators import *
 from gofer.agent.plugin import Plugin
 from gofer.agent.rmi import Context
 from gofer.messaging import Producer, Exchange, Destination
 from gofer.messaging.auth import Authenticator
-from logging import getLogger, INFO, DEBUG
+
 
 log = getLogger(__name__)
 plugin = Plugin.find(__name__)
@@ -32,7 +33,7 @@ HEARTBEAT = 500
 
 # import
 builtin = Plugin.find('builtin')
-_Admin = builtin.export('Admin')
+_Admin = builtin.export('TestAdmin')
 
 try:
     log = builtin.export('log')
@@ -74,8 +75,8 @@ class MyError(Exception):
         self.b = b
 
 
-class Admin(_Admin):
-    
+class TestAdmin(_Admin):
+
     @remote
     def help(self):
         return _Admin.help(self)

@@ -167,7 +167,6 @@ def later(**offset):
 def threads(uuid, n=10):
     t = None
     for i in range(0, n):
-        agent = Agent(uuid, url=url, transport=transport)
         name = 'Test%d' % i
         t = Thread(name=name, target=main, args=(uuid,))
         t.setDaemon(True)
@@ -511,7 +510,7 @@ if __name__ == '__main__':
 
     # demo_progress(uuid, 1)
     # demo_window(uuid, 1)
-    test_performance(uuid)
+    # test_performance(uuid)
     # demotest_performance(uuid)
 
     demo_getitem(uuid)
