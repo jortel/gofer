@@ -22,6 +22,7 @@ from logging import getLogger
 from gofer.messaging.model import Envelope
 from gofer.messaging import Consumer
 from gofer.rmi.dispatcher import Reply, Return, RemoteException
+from gofer.constants import ACCEPTED, REJECTED, STARTED, PROGRESS
 
 
 log = getLogger(__name__)
@@ -77,6 +78,10 @@ class ReplyConsumer(Consumer):
                 reply = Accepted(envelope)
                 reply.notify(self.listener)
                 return
+            if reply.rejected():
+                reply = Rejected(envelope)
+                reply.notify(self.listener)
+                return
             if reply.started():
                 reply = Started(envelope)
                 reply.notify(self.listener)
@@ -128,7 +133,7 @@ class AsyncReply:
         pass
 
     def __str__(self):
-        s = []
+        s = list()
         s.append(self.__class__.__name__)
         s.append('  sn : %s' % self.sn)
         s.append('  origin : %s' % self.origin)
@@ -194,7 +199,7 @@ class Succeeded(FinalReply):
         return True
 
     def __str__(self):
-        s = []
+        s = list()
         s.append(AsyncReply.__str__(self))
         s.append('  retval:')
         s.append(str(self.retval))
@@ -227,7 +232,7 @@ class Failed(FinalReply):
         raise self.exval
 
     def __str__(self):
-        s = []
+        s = list()
         s.append(AsyncReply.__str__(self))
         s.append('  exval: %s' % str(self.exval))
         s.append('  xmodule: %s' % self.xmodule)
@@ -247,12 +252,31 @@ class Accepted(AsyncReply):
         if callable(listener):
             listener(self)
         else:
-            listener.started(self)
+            listener.accepted(self)
 
     def __str__(self):
-        s = []
+        s = list()
         s.append(AsyncReply.__str__(self))
-        s.append('accepted')
+        s.append(ACCEPTED)
+        return '\n'.join(s)
+
+
+class Rejected(AsyncReply):
+    """
+    An asynchronous operation rejected.
+    :see: Failed.throw
+    """
+
+    def notify(self, listener):
+        if callable(listener):
+            listener(self)
+        else:
+            listener.rejected(self)
+
+    def __str__(self):
+        s = list()
+        s.append(AsyncReply.__str__(self))
+        s.append(REJECTED)
         return '\n'.join(s)
 
 
@@ -269,9 +293,9 @@ class Started(AsyncReply):
             listener.started(self)
 
     def __str__(self):
-        s = []
+        s = list()
         s.append(AsyncReply.__str__(self))
-        s.append('started')
+        s.append(STARTED)
         return '\n'.join(s)
 
 
@@ -304,7 +328,7 @@ class Progress(AsyncReply):
             listener.progress(self)
 
     def __str__(self):
-        s = []
+        s = list()
         s.append(AsyncReply.__str__(self))
         s.append('     total: %s' % str(self.total))
         s.append(' completed: %s' % str(self.completed))
@@ -336,6 +360,14 @@ class Listener:
     def accepted(self, reply):
         """
         Async request has been accepted.
+        :param reply: The request.
+        :type reply: Accepted.
+        """
+        pass
+
+    def rejected(self, reply):
+        """
+        Async request has been rejected.
         :param reply: The request.
         :type reply: Accepted.
         """

@@ -18,13 +18,26 @@ Message authentication plumbing.
 
 from logging import getLogger
 
-from gofer.messaging.model import Envelope
+from gofer.constants import SIGNATURE, AUTHENTICATION
+from gofer.messaging.model import Envelope, InvalidRequest
 
 
 log = getLogger(__name__)
 
 
-SIGNATURE = 'signature'
+class ValidationFailed(InvalidRequest):
+    """
+    Message validation failed.
+    """
+
+    def __init__(self, message, details):
+        """
+        :param message: The AMQP message that failed.
+        :type message: str
+        :param details: A detailed description.
+        :type details: str
+        """
+        InvalidRequest.__init__(self, AUTHENTICATION, message, details)
 
 
 class Authenticator(object):
@@ -42,7 +55,7 @@ class Authenticator(object):
         """
         raise NotImplementedError()
 
-    def is_valid(self, uuid, message, signature):
+    def validate(self, uuid, message, signature):
         """
         Validate the specified message and signature.
         :param uuid: The uuid of the sender.
@@ -51,8 +64,7 @@ class Authenticator(object):
         :type message: str
         :param signature: A message signature.
         :type signature: str
-        :return: True if validated.
-        :rtype: bool
+        :raises ValidationFailed: when message is not valid.
         """
         raise NotImplementedError()
 
@@ -78,7 +90,7 @@ def sign(authenticator, message):
     return message
 
 
-def is_valid(authenticator, message):
+def validate(authenticator, message):
     """
     Validate the envelope using the specified validator.
     Extracts the SIGNATURE attribute
@@ -86,24 +98,21 @@ def is_valid(authenticator, message):
     :type authenticator: Authenticator
     :param message: A json encoded AMQP message.
     :rtype message: str
-    :return: True if valid.
-    :rtype: bool
+    :raises ValidationFailed: when message is not valid.
     """
+    if not message:
+        return
     if not authenticator:
-        return True
+        return
     try:
         signed = Envelope()
         signed.load(message)
         uuid = signed.routing[0]
         signature = signed.__dict__.pop(SIGNATURE, '')
         original = signed.dump()
-        valid = authenticator.is_valid(uuid, original, signature)
-        if not valid:
-            log.info(
-                'message: sn=%s signature=%s, rejected',
-                signed.sn,
-                signed.signature)
-        return valid
+        authenticator.validate(uuid, original, signature)
+    except ValidationFailed:
+        raise
     except Exception:
         log.debug(message, exc_info=True)
         return False

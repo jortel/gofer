@@ -361,9 +361,6 @@ class Consumer(BaseConsumer):
         self.queue = queue
         self.transport = tp
 
-    def dispatch(self, envelope):
-        pass
-
 
 class Destination(BaseDestination):
     pass

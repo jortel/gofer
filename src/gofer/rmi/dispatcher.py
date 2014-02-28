@@ -23,6 +23,7 @@ import traceback as tb
 
 from gofer import NAME
 from gofer.messaging.model import Envelope, Options
+from gofer.constants import ACCEPTED, REJECTED, STARTED, RETVAL, EXVAL, PROGRESS
 from gofer.pam import PAM
 
 from logging import getLogger
@@ -210,7 +211,7 @@ class Reply(Envelope):
         :return: True when indicates success.
         :rtype: bool
         """
-        return self.result and 'retval' in self.result
+        return self.result and RETVAL in self.result
 
     def failed(self):
         """
@@ -218,7 +219,7 @@ class Reply(Envelope):
         :return: True when indicates failure.
         :rtype: bool
         """
-        return self.result and 'exval' in self.result
+        return self.result and EXVAL in self.result
 
     def accepted(self):
         """
@@ -226,7 +227,15 @@ class Reply(Envelope):
         :return: True when indicates started.
         :rtype: bool
         """
-        return self.status == 'accepted'
+        return self.status == ACCEPTED
+
+    def rejected(self):
+        """
+        Test whether the reply indicates status (rejected).
+        :return: True when indicates started.
+        :rtype: bool
+        """
+        return self.status == REJECTED
     
     def started(self):
         """
@@ -234,7 +243,7 @@ class Reply(Envelope):
         :return: True when indicates started.
         :rtype: bool
         """
-        return self.status == 'started'
+        return self.status == STARTED
     
     def progress(self):
         """
@@ -242,7 +251,7 @@ class Reply(Envelope):
         :return: True when indicates progress.
         :rtype: bool
         """
-        return self.status == 'progress'
+        return self.status == PROGRESS
     
 
 class Return(Envelope):
@@ -260,7 +269,7 @@ class Return(Envelope):
         :rtype: Return
         """
         inst = Return(retval=x)
-        inst.dump() # validate
+        inst.dump()  # validate
         return inst
 
     @classmethod
@@ -281,7 +290,7 @@ class Return(Envelope):
         :return: True when indicates success.
         :rtype: bool
         """
-        return ( 'retval' in self )
+        return RETVAL in self
 
     def failed(self):
         """
@@ -289,8 +298,8 @@ class Return(Envelope):
         :return: True when indicates failure.
         :rtype: bool
         """
-        return ( 'exval' in self )
-    
+        return EXVAL in self
+
     @classmethod
     def __exception(cls):
         """
@@ -315,7 +324,7 @@ class Return(Envelope):
                       xclass=xclass.__name__,
                       xstate=state,
                       xargs=args)
-        inst.dump() # validate
+        inst.dump()  # validate
         return inst
 
 
