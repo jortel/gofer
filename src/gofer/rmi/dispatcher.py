@@ -83,16 +83,6 @@ class AuthMethod(NotAuthorized):
         message = \
             '%s(), auth (%s) not supported' % (method.name, name)
         NotAuthorized.__init__(self, message)
-        
-        
-class NotShared(NotAuthorized):
-    """
-    Method not shared between UUIDs.
-    """
-
-    def __init__(self, method):
-        message = '%s(), not shared' % method.name
-        DispatchError.__init__(self, message)
 
 
 class SecretRequired(NotAuthorized):
@@ -434,25 +424,6 @@ class RMI(object):
             cntr = ([],{})
         return cntr
 
-    def __shared(self, fninfo):
-        """
-        Validate the method is either marked as I{shared}
-        or that the request was received on the method's
-        contributing plugin UUID.
-        :param fninfo: The decorated function info.
-        :type fninfo: Options
-        :raise NotShared: On sharing violation.
-        """
-        if fninfo.shared:
-            return
-        uuid = fninfo.plugin.getuuid()
-        if not uuid:
-            return
-        log.debug('match uuid: "%s" = "%s"', self.auth.uuid, uuid)
-        if self.auth.uuid == uuid:
-            return
-        raise NotShared(self)
-
     def permitted(self):
         """
         Check whether remote invocation of the specified method is permitted.
@@ -461,7 +432,6 @@ class RMI(object):
         fninfo = RMI.__fninfo(self.method)
         if fninfo is None:
             raise NotPermitted(self)
-        self.__shared(fninfo)
         security = Security(self, fninfo)
         security.apply(self.auth)
 

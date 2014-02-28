@@ -500,6 +500,6 @@ class PluginLoader:
                 p.dispatcher = Dispatcher(collated)
                 p.actions = Actions.collated()
             return p
-        except Exception, e:
+        except Exception:
             Plugin.delete(p)
             log.exception('plugin "%s", import failed', plugin)

@@ -61,7 +61,8 @@ class Remote:
         for m in functions.keys():
             collated.append(m)
         return collated
-    
+
+
 def __options(fn):
     """
     Ensure funtion has the gofer options attribute
@@ -86,11 +87,9 @@ def remote(*args, **kwargs):
       - shared: method shared across plugins.
       - secret: authorization secret.
     """
-    shared = bool(kwargs.get('shared', 1))
-    secret = kwargs.get('secret',())
+    secret = kwargs.get('secret', ())
     def df(fn):
         opt = __options(fn)
-        opt.shared = shared
         if secret:
             required = Options()
             required.secret = secret

@@ -184,6 +184,7 @@ class Pending(object):
             if not request:
                 # read failed
                 continue
+            request.ts = time()
             self.queue.put(request)
         self.is_open = True
         # queue delayed messages

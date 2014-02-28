@@ -61,10 +61,6 @@ class Task:
         self.commit = commit
         self.window = request.window
         self.ts = time()
-
-    @property
-    def authenticator(self):
-        return self.plugin.authenticator
         
     def __call__(self):
         """
@@ -120,11 +116,10 @@ class Task:
         sn = request.sn
         any = request.any
         replyto = request.replyto
-        url = request.url
         if not replyto:
             return
         try:
-            producer = self.producer(request)
+            producer = self.producer()
             try:
                 producer.send(
                     Destination.create(replyto),
@@ -133,7 +128,7 @@ class Task:
                     status='started')
             finally:
                 producer.close()
-        except:
+        except Exception:
             log.exception('send (started), failed')
             
     def send_reply(self, request, result):
@@ -154,7 +149,7 @@ class Task:
         if not replyto:
             return
         try:
-            producer = self.producer(request)
+            producer = self.producer()
             try:
                 producer.send(
                     Destination.create(replyto),
@@ -163,26 +158,15 @@ class Task:
                     result=result)
             finally:
                 producer.close()
-        except:
+        except Exception:
             log.exception('send failed:\n%s', result)
 
-    def producer(self, reply):
-        """
-        Get the producer for the specified reply.
-        Based on which plugin owns the uuid.
-        :param reply: The reply message.
-        :type reply: Envelope
-        :return: An appropriately configured producer.
-        """
-        url = reply.url
-        uuid = self.request.routing[1]
-        for plugin in self.plugin.all():
-            if uuid == plugin.get_uuid():
-                tp = plugin.get_transport()
-                p = tp.producer(url=url)
-                p.authenticator = plugin.authenticator
-                return p
-        return TrashProducer()
+    def producer(self):
+        url = self.request.url
+        tp = self.plugin.get_transport()
+        producer = tp.producer(url=url)
+        producer.authenticator = self.plugin.authenticator
+        return producer
 
 
 class TrashPlugin:
@@ -252,9 +236,9 @@ class Scheduler(Thread):
         :return: The appropriate plugin.
         :rtype: gofer.agent.plugin.Plugin
         """
-        request = Envelope(request.request)
+        uuid = request.routing[1]
         for plugin in self.plugins:
-            if plugin.provides(request.classname):
+            if plugin.get_uuid() == uuid:
                 return plugin
         return TrashPlugin()
     
@@ -305,10 +289,7 @@ class Progress:
         if not replyto:
             return
         try:
-            url = self.task.request.url
-            tp = self.task.plugin.get_transport()
-            producer = tp.producer(url=url)
-            producer.authenticator = self.task.authenticator
+            producer = self.task.producer()
             try:
                 producer.send(
                     Destination.create(replyto),
