@@ -121,7 +121,7 @@ class Plugin(object):
             if syn == name:
                 continue
             self.synonyms.append(syn)
-        self.pool = ThreadPool(descriptor.messaging.threads or 1)
+        self.pool = ThreadPool(int(descriptor.messaging.threads or 1))
         self.impl = None
         self.actions = []
         self.dispatcher = Dispatcher([])

@@ -503,16 +503,16 @@ if __name__ == '__main__':
     reply_consumer = ReplyConsumer(queue, url=url, transport=transport)
     reply_consumer.start(on_reply)
 
-    # demo_progress(uuid, 1)
-    # demo_window(uuid, 1)
-    # test_performance(uuid)
-    # demotest_performance(uuid)
-
     Agent.base_options['url'] = url
     Agent.base_options['transport'] = transport
 
     if options.auth:
         Agent.base_options['authenticator'] = TestAuthenticator()
+
+    # demo_progress(uuid, 1)
+    # demo_window(uuid, 1)
+    test_performance(uuid)
+    # demotest_performance(uuid)
 
     demo_getitem(uuid)
     demo_authentication(uuid, yp)

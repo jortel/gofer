@@ -22,7 +22,6 @@ from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import Pending
 from gofer.rmi.dispatcher import Dispatcher, Return
 from gofer.rmi.threadpool import Trashed
-from gofer.transport import Transport
 from gofer.messaging.model import Envelope
 from gofer.transport.model import Destination
 from gofer.metrics import Timer
