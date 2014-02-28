@@ -457,7 +457,7 @@ def main(uuid):
 def smoke_test(uuid, exit=0):
     print 'running smoke test ...'
     agent = Agent(uuid)
-    for T in range(0, 10):
+    for T in range(0, 50):
         print 'test: %d' % T
         agent.testplugin.echo('have a nice day')
         admin = agent.Admin()

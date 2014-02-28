@@ -184,8 +184,7 @@ class Pending(object):
             if not request:
                 # read failed
                 continue
-            request.ts = time()
-            self.queue.put(request)
+            self._put(request)
         self.is_open = True
         # queue delayed messages
         while True:
@@ -210,14 +209,10 @@ class Pending(object):
         while not self.is_open:
             # block puts until opened
             sleep(1)
-
         if not Pending._delayed(request):
             path = os.path.join(Pending.PENDING, request.sn)
             Pending._write(request, path)
-            tracker = Tracker()
-            tracker.add(request.sn, request.any)
-            request.ts = time()
-            self.queue.put(request)
+            self._put(request)
         else:
             path = os.path.join(Pending.DELAYED, request.sn)
             Pending._write(request, path)
@@ -230,4 +225,15 @@ class Pending(object):
         :rtype: Envelope
         """
         return self.queue.get()
+
+    def _put(self, request):
+        """
+        Enqueue the request.
+        :param request: An AMQP request.
+        :type request: Envelope
+        """
+        tracker = Tracker()
+        tracker.add(request.sn, request.any)
+        request.ts = time()
+        self.queue.put(request)
 
