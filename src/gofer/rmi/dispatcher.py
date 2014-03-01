@@ -22,7 +22,7 @@ import inspect
 import traceback as tb
 
 from gofer import NAME
-from gofer.messaging.model import Envelope, Options
+from gofer.messaging.model import Document, Options
 from gofer.constants import ACCEPTED, REJECTED, STARTED, RETVAL, EXVAL, PROGRESS
 from gofer.pam import PAM
 
@@ -190,9 +190,9 @@ class RemoteException(Exception):
 # --- RMI Classes ------------------------------------------------------------
 
 
-class Reply(Envelope):
+class Reply(Document):
     """
-    Envelope for examining replies.
+    Document for examining replies.
     """
 
     def succeeded(self):
@@ -244,9 +244,9 @@ class Reply(Envelope):
         return self.status == PROGRESS
     
 
-class Return(Envelope):
+class Return(Document):
     """
-    Return envelope.
+    Return document.
     """
 
     @classmethod
@@ -255,7 +255,7 @@ class Return(Envelope):
         Return successful
         :param x: The returned value.
         :type x: any
-        :return: A return envelope.
+        :return: A return document.
         :rtype: Return
         """
         inst = Return(retval=x)
@@ -266,7 +266,7 @@ class Return(Envelope):
     def exception(cls):
         """
         Return raised exception.
-        :return: A return envelope.
+        :return: A return document.
         :rtype: Return
         """
         try:
@@ -294,7 +294,7 @@ class Return(Envelope):
     def __exception(cls):
         """
         Return raised exception.
-        :return: A return envelope.
+        :return: A return document.
         :rtype: Return
         """
         info = sys.exc_info()
@@ -318,9 +318,9 @@ class Return(Envelope):
         return inst
 
 
-class Request(Envelope):
+class Request(Document):
     """
-    An RMI request envelope.
+    An RMI request document.
     """
     pass
 
@@ -328,7 +328,7 @@ class Request(Envelope):
 class RMI(object):
     """
     The RMI object performs the invocation.
-    :ivar request: The request envelope.
+    :ivar request: The request document.
     :type request: Request
     :ivar catalog: A dict of class mappings.
     :type catalog: dict
@@ -336,7 +336,7 @@ class RMI(object):
 
     def __init__(self, request, auth, catalog):
         """
-        :param request: The request envelope.
+        :param request: The request document.
         :type request: Request
         :param auth: Authentication properties.
         :type auth: Options
@@ -356,7 +356,7 @@ class RMI(object):
         """
         Get an instance of the class or module specified in
         the request using the catalog.
-        :param request: The request envelope.
+        :param request: The request document.
         :type request: Request
         :param catalog: A dict of class mappings.
         :type catalog: dict
@@ -378,7 +378,7 @@ class RMI(object):
         """
         Get method of the class specified in the request.
         Ensures that remote invocation is permitted.
-        :param request: The request envelope.
+        :param request: The request document.
         :type request: Request
         :param inst: A class or module object.
         :type inst: (class|module)
@@ -586,21 +586,21 @@ class Dispatcher:
     """
 
     @staticmethod
-    def auth(envelope):
+    def auth(document):
         return Options(
-            uuid=envelope.routing[-1],
-            secret=envelope.secret,
-            pam=envelope.pam,)
+            uuid=document.routing[-1],
+            secret=document.secret,
+            pam=document.pam,)
 
     @staticmethod
-    def log(envelope):
-        request = Options(envelope.request)
+    def log(document):
+        request = Options(document.request)
         log.info(
             'call: %s.%s() sn=%s info=%s',
             request.classname,
             request.method,
-            envelope.sn,
-            envelope.any)
+            document.sn,
+            document.any)
 
     def __init__(self, classes):
         """
@@ -612,22 +612,22 @@ class Dispatcher:
     def provides(self, name):
         return name in self.catalog
 
-    def dispatch(self, envelope):
+    def dispatch(self, document):
         """
         Dispatch the requested RMI.
-        :param envelope: A request envelope.
-        :type envelope: Envelope
+        :param document: A request document.
+        :type document: Document
         :return: The result.
         :rtype: any
         """
         try:
-            self.log(envelope)
-            auth = self.auth(envelope)
-            request = Request(envelope.request)
+            self.log(document)
+            auth = self.auth(document)
+            request = Request(document.request)
             log.debug('request: %s', request)
             method = RMI(request, auth, self.catalog)
             log.debug('method: %s', method)
             return method()
         except Exception:
-            log.exception(str(envelope))
+            log.exception(str(document))
             return Return.exception()

@@ -22,7 +22,7 @@ from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import Pending
 from gofer.rmi.dispatcher import Dispatcher, Return
 from gofer.rmi.threadpool import Trashed
-from gofer.messaging.model import Envelope
+from gofer.messaging.model import Document
 from gofer.transport.model import Destination
 from gofer.constants import STARTED, PROGRESS
 from gofer.metrics import Timer
@@ -37,7 +37,7 @@ class Task:
     :ivar plugin: A plugin.
     :type plugin: gofer.agent.plugin.Plugin
     :ivar request: A gofer messaging request.
-    :type request: Envelope
+    :type request: Document
     :ivar commit: Transaction commit function.
     :type commit: callable
     :ivar window: The window in which the task is valid.
@@ -53,7 +53,7 @@ class Task:
         :param plugin: A plugin.
         :type plugin: Plugin
         :param request: The inbound request to be dispatched.
-        :type request: Envelope
+        :type request: Document
         :param commit: Transaction commit function.
         :type commit: callable
         """
@@ -112,7 +112,7 @@ class Task:
         """
         Send the a status update if requested.
         :param request: The received request.
-        :type request: Envelope
+        :type request: Document
         """
         sn = request.sn
         any = request.any
@@ -136,7 +136,7 @@ class Task:
         """
         Send the reply if requested.
         :param request: The received request.
-        :type request: Envelope
+        :type request: Document
         :param result: The request result.
         :type result: object
         """
@@ -236,7 +236,7 @@ class Scheduler(Thread):
         the I{request} embedded in the request.  Returns
         EmptyPlugin when not found.
         :param request: A gofer messaging request.
-        :type request: Envelope
+        :type request: Document
         :return: The appropriate plugin.
         :rtype: gofer.agent.plugin.Plugin
         """

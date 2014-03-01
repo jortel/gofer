@@ -37,7 +37,7 @@ class Consumer(Thread):
 
     def stop(self):
         """
-        Stop processing requests.
+        Stop processing documents.
         """
         self._run = False
 
@@ -54,18 +54,18 @@ class Consumer(Thread):
 
     def __read(self):
         """
-        Read and process incoming requests.
+        Read and process incoming documents.
         """
         try:
-            request, ack = self.reader.next(10)
-            if request is None:
+            document, ack = self.reader.next(10)
+            if document is None:
                 return
-            self.dispatch(request)
+            self.dispatch(document)
             ack()
         except auth.ValidationFailed, vf:
-            self.message_rejected(vf.code, vf.request, vf.details)
-        except model.InvalidRequest, ir:
-            self.request_rejected(ir.code, ir.request, ir.details)
+            self.message_rejected(vf.code, vf.document, vf.details)
+        except model.InvalidDocument, ir:
+            self.document_rejected(ir.code, ir.document, ir.details)
         except Exception:
             log.exception(self.name)
 
@@ -75,35 +75,35 @@ class Consumer(Thread):
         This method intended to be overridden by subclasses.
         :param code: The validation code.
         :type code: str
-        :param message: The received request.
+        :param message: The received document.
         :type message: str
         :param details: The explanation.
         :type details: str
         """
         log.debug('%s, reason: %s\n%s', code, details, message)
 
-    def request_rejected(self, code, request, details):
+    def document_rejected(self, code, document, details):
         """
-        Called to process the received (invalid) request.
+        Called to process the received (invalid) document.
         This method intended to be overridden by subclasses.
         :param code: The validation code.
         :type code: str
-        :param request: The received request.
-        :type request: Envelope
+        :param document: The received document.
+        :type document: Document
         :param details: The explanation.
         :type details: str
         """
-        log.debug('%s, sn:%s reason:%s\n%s', code, details, request)
+        log.debug('%s, sn:%s reason:%s\n%s', code, details, document)
 
     @staticmethod
-    def dispatch(request):
+    def dispatch(document):
         """
-        Called to process the received request.
+        Called to process the received document.
         This method intended to be overridden by subclasses.
-        :param request: The received request.
-        :type request: Envelope
+        :param document: The received document.
+        :type document: Document
         """
-        log.debug('dispatched:\n%s', request)
+        log.debug('dispatched:\n%s', document)
 
 
 class Ack:

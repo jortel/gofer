@@ -258,7 +258,7 @@ class Plugin(object):
         """
         Dispatch (invoke) the specified RMI request.
         :param request: An RMI request
-        :type request: Envelope
+        :type request: Document
         :return: The RMI returned.
         """
         return self.dispatcher.dispatch(request)

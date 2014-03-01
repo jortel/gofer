@@ -29,9 +29,9 @@ VERSION = '0.5'
 # --- exceptions -------------------------------------------------------------
 
 
-class InvalidRequest(Exception):
+class InvalidDocument(Exception):
     """
-    Base for all message/request validation.
+    Base for all message/document validation.
     """
 
     CODE = {
@@ -39,29 +39,29 @@ class InvalidRequest(Exception):
         AUTHENTICATION: 'SECURITY: message authentication failed'
     }
 
-    def __init__(self, code, request, details):
+    def __init__(self, code, document, details):
         """
         :param code: The validation code.  Must be in: CODE.
-        :param request: The invalid request.
+        :param document: The invalid document.
         :param details: A detailed description of what failed.
         """
         Exception.__init__(self, ' : '.join((self.CODE[code], details)))
-        assert code in InvalidRequest.CODE
+        assert code in InvalidDocument.CODE
         self.code = code
-        self.request = request
+        self.document = document
         self.details = details
 
 
-class InvalidVersion(InvalidRequest):
+class InvalidVersion(InvalidDocument):
 
-    def __init__(self, request, details):
+    def __init__(self, document, details):
         """
-        :param request: The invalid request.
-        :type request: str
+        :param document: The invalid document.
+        :type document: str
         :param details: A detailed description.
         :type details: str
         """
-        InvalidRequest.__init__(self, MODEL_VERSION, request, details)
+        InvalidDocument.__init__(self, MODEL_VERSION, document, details)
 
 
 # --- utils ------------------------------------------------------------------
@@ -71,41 +71,41 @@ def getuuid():
     return str(uuid4())
 
 
-def validate(request):
+def validate(document):
     """
-    Determine whether the specified request is valid.
-    :param request: The envelope to evaluate.
-    :type request: Envelope
-    :raises InvalidRequest: when invalid.
+    Determine whether the specified document is valid.
+    :param document: The document to evaluate.
+    :type document: Document
+    :raises InvalidDocument: when invalid.
     """
-    if request.version != VERSION:
-        reason = 'Invalid version %s/%s' % (request.version, VERSION)
+    if document.version != VERSION:
+        reason = 'Invalid version %s/%s' % (document.version, VERSION)
         log.warn(reason)
-        raise InvalidVersion(request.sn, reason)
+        raise InvalidVersion(document.sn, reason)
 
 
 def search(reader, sn, timeout=90):
     """
-    Search the reply queue for the envelope with the matching serial #.
+    Search the reply queue for the document with the matching serial #.
     :param sn: The expected serial number.
     :type sn: str
     :param timeout: The read timeout.
     :type timeout: int
-    :return: The next envelope.
-    :rtype: Envelope
+    :return: The next document.
+    :rtype: Document
     """
     log.debug('searching for: sn=%s', sn)
     while True:
-        envelope, ack = reader.next(timeout)
-        if envelope:
+        document, ack = reader.next(timeout)
+        if document:
             ack()
         else:
             return
-        if sn == envelope.sn:
-            log.debug('search found:\n%s', envelope)
-            return envelope
+        if sn == document.sn:
+            log.debug('search found:\n%s', document)
+            return document
         else:
-            log.debug('search discarding:\n%s', envelope)
+            log.debug('search discarding:\n%s', document)
 
 
 # --- model ------------------------------------------------------------------
@@ -159,7 +159,7 @@ class Options(object):
         return str(self.__dict__)
 
 
-class Envelope(Options):
+class Document(Options):
     """
     Extends the dict-like object that also provides
     JSON serialization.
@@ -198,4 +198,5 @@ class Envelope(Options):
             return thing
         d = fn(self)
         return json.dumps(d, sort_keys=True, indent=2)
+
 

@@ -57,9 +57,9 @@ class Test(object):
                 Consumer.__init__(self, queue, url=url, transport=transport)
                 self.received = 0
 
-            def dispatch(self, envelope):
+            def dispatch(self, document):
                 self.received += 1
-                print '%d/%d - %s' % (self.received, N, envelope)
+                print '%d/%d - %s' % (self.received, N, document)
                 if self.received == N:
                     self.stop()
 

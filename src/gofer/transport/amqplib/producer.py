@@ -14,7 +14,7 @@ from logging import getLogger
 from amqplib.client_0_8 import Message
 
 from gofer.messaging import auth
-from gofer.messaging.model import getuuid, VERSION, Envelope
+from gofer.messaging.model import getuuid, VERSION, Document
 from gofer.transport.amqplib.endpoint import Endpoint, reliable
 
 
@@ -41,21 +41,21 @@ def send(endpoint, destination, ttl=None, **body):
     :type destination: gofer.transport.model.Destination
     :param ttl: Time to Live (seconds)
     :type ttl: float
-    :keyword body: request body.
+    :keyword body: document body.
     :return: The message serial number.
     :rtype: str
     """
     sn = getuuid()
     routing_key = destination.routing_key
     routing = (endpoint.id(), routing_key)
-    request = Envelope(sn=sn, version=VERSION, routing=routing)
-    request += body
-    unsigned = request.dump()
+    document = Document(sn=sn, version=VERSION, routing=routing)
+    document += body
+    unsigned = document.dump()
     signed = auth.sign(endpoint.authenticator, unsigned)
     channel = endpoint.channel()
     m = message(signed, ttl)
     channel.basic_publish(m, exchange=destination.exchange, routing_key=routing_key)
-    log.debug('{%s} sent (%s)\n%s', endpoint.id(), routing_key, request)
+    log.debug('{%s} sent (%s)\n%s', endpoint.id(), routing_key, document)
     return sn
 
 
@@ -74,7 +74,7 @@ class Producer(Endpoint):
         :type destination: gofer.transport.model.Destination
         :param ttl: Time to Live (seconds)
         :type ttl: float
-        :keyword body: request body.
+        :keyword body: document body.
         :return: The message serial number.
         :rtype: str
         """
@@ -87,7 +87,7 @@ class Producer(Endpoint):
         :type destinations: [gofer.transport.node.Destination,..]
         :param ttl: Time to Live (seconds)
         :type ttl: float
-        :keyword body: request body.
+        :keyword body: document body.
         :return: A list of (addr, sn).
         :rtype: list
         """

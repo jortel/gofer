@@ -22,7 +22,7 @@ from logging import getLogger
 from qpid.messaging import Message
 
 from gofer.messaging import auth
-from gofer.messaging.model import getuuid, VERSION, Envelope
+from gofer.messaging.model import getuuid, VERSION, Document
 from gofer.transport.qpid.endpoint import Endpoint
 
 
@@ -41,7 +41,7 @@ def send(endpoint, destination, ttl=None, **body):
     :type destination: gofer.transport.model.Destination
     :param ttl: Time to Live (seconds)
     :type ttl: float
-    :keyword body: request body.
+    :keyword body: document body.
     :return: The message serial number.
     :rtype: str
     """
@@ -51,15 +51,15 @@ def send(endpoint, destination, ttl=None, **body):
     else:
         address = destination.routing_key
     routing = (endpoint.id(), destination.routing_key)
-    request = Envelope(sn=sn, version=VERSION, routing=routing)
-    request += body
-    unsigned = request.dump()
+    document = Document(sn=sn, version=VERSION, routing=routing)
+    document += body
+    unsigned = document.dump()
     signed = auth.sign(endpoint.authenticator, unsigned)
     message = Message(content=signed, durable=True, ttl=ttl)
     sender = endpoint.session().sender(address)
     sender.send(message)
     sender.close()
-    log.debug('{%s} sent (%s)\n%s', endpoint.id(), address, request)
+    log.debug('{%s} sent (%s)\n%s', endpoint.id(), address, document)
     return sn
 
 
@@ -78,7 +78,7 @@ class Producer(Endpoint):
         :type destination: gofer.transport.model.Destination
         :param ttl: Time to Live (seconds)
         :type ttl: float
-        :keyword body: request body.
+        :keyword body: document body.
         :return: The message serial number.
         :rtype: str
         """
@@ -91,7 +91,7 @@ class Producer(Endpoint):
         :type destinations: [gofer.transport.node.Node,..]
         :param ttl: Time to Live (seconds)
         :type ttl: float
-        :keyword body: request body.
+        :keyword body: document body.
         :return: A list of (addr,sn).
         :rtype: list
         """

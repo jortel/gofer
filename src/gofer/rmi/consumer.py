@@ -17,7 +17,7 @@ from logging import getLogger
 
 from gofer.rmi.store import Pending
 from gofer.messaging import Consumer, Destination
-from gofer.messaging.model import Envelope
+from gofer.messaging.model import Document
 from gofer.constants import ACCEPTED, REJECTED
 
 log = getLogger(__name__)
@@ -34,7 +34,7 @@ class RequestConsumer(Consumer):
         """
         Dispatch received request.
         :param request: The received request.
-        :type request: Envelope
+        :type request: Document
         """
         self.__send_status(request, ACCEPTED)
         pending = Pending()
@@ -51,7 +51,7 @@ class RequestConsumer(Consumer):
         :param details: The explanation.
         :type details: str
         """
-        request = Envelope()
+        request = Document()
         request.load(message)
         self.__send_status(request, REJECTED, code=code, details=details)
 
@@ -62,7 +62,7 @@ class RequestConsumer(Consumer):
         :param code: The validation code.
         :type code: str
         :param request: The received request.
-        :type request: Envelope
+        :type request: Document
         :param details: The explanation.
         :type details: str
         """
@@ -74,7 +74,7 @@ class RequestConsumer(Consumer):
         :param status: The status to send ('accepted'|'rejected')
         :type status: str
         :param request: The received request.
-        :type request: Envelope
+        :type request: Document
         """
         sn = request.sn
         any = request.any

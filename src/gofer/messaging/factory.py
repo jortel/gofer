@@ -225,7 +225,7 @@ class Producer(object):
         :type destination: gofer.transport.model.Destination
         :param ttl: Time to Live (seconds)
         :type ttl: float
-        :keyword body: envelope body.
+        :keyword body: document body.
         :return: The message serial number.
         :rtype: str
         """
@@ -235,7 +235,7 @@ class Producer(object):
         Broadcast a message to (N) queues.
         :param destinations: A list of AMQP destinations.
         :type destinations: [gofer.transport.node.Destination,..]
-        :keyword body: envelope body.
+        :keyword body: document body.
         :return: A list of serial numbers.
         :rtype: list
         """
@@ -314,22 +314,22 @@ class Reader(object):
 
     def next(self, timeout=None):
         """
-        Get the next envelope from the queue.
+        Get the next document from the queue.
         :param timeout: The read timeout in seconds.
         :type timeout: int
-        :return: A tuple of: (envelope, ack())
-        :rtype: (Envelope, callable)
+        :return: A tuple of: (document, ack())
+        :rtype: (Document, callable)
         """
 
     def search(self, sn, timeout=None):
         """
-        Search the reply queue for the envelope with the matching serial #.
+        Search the reply queue for the document with the matching serial #.
         :param sn: The expected serial number.
         :type sn: str
         :param timeout: The read timeout.
         :type timeout: int
-        :return: The next envelope.
-        :rtype: Envelope
+        :return: The next document.
+        :rtype: Document
         """
 
     def close(self):
@@ -342,7 +342,7 @@ class Consumer(BaseConsumer):
     """
     An AMQP consumer.
     Thread used to consumer messages from the specified queue.
-    On receipt, each message is used to build an envelope
+    On receipt, each message is used to build an document
     and passed to dispatch().
     """
 

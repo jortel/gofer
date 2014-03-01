@@ -19,7 +19,7 @@ Provides async AMQP message consumer classes.
 
 from logging import getLogger
 
-from gofer.messaging.model import Envelope
+from gofer.messaging.model import Document
 from gofer.messaging import Consumer
 from gofer.rmi.dispatcher import Reply, Return, RemoteException
 from gofer.constants import ACCEPTED, REJECTED, STARTED, PROGRESS
@@ -61,47 +61,47 @@ class ReplyConsumer(Consumer):
         self.blacklist = set()
         Consumer.start(self)
 
-    def dispatch(self, envelope):
+    def dispatch(self, document):
         """
         Dispatch received request.
         The serial number of failed requests is added to the blacklist
         help prevent dispatching both failure and success replies.
-        :param envelope: The received envelope.
-        :type envelope: Envelope
+        :param document: The received document.
+        :type document: Document
         """
         try:
-            reply = Reply(envelope)
-            if envelope.sn in self.blacklist:
+            reply = Reply(document)
+            if document.sn in self.blacklist:
                 # ignored
                 return
             if reply.accepted():
-                reply = Accepted(envelope)
+                reply = Accepted(document)
                 reply.notify(self.listener)
                 return
             if reply.rejected():
-                reply = Rejected(envelope)
+                reply = Rejected(document)
                 reply.notify(self.listener)
                 return
             if reply.started():
-                reply = Started(envelope)
+                reply = Started(document)
                 reply.notify(self.listener)
                 return
             if reply.progress():
-                reply = Progress(envelope)
+                reply = Progress(document)
                 reply.notify(self.listener)
                 return
             if reply.succeeded():
-                self.blacklist.add(envelope.sn)
-                reply = Succeeded(envelope)
+                self.blacklist.add(document.sn)
+                reply = Succeeded(document)
                 reply.notify(self.listener)
                 return
             if reply.failed():
-                self.blacklist.add(envelope.sn)
-                reply = Failed(envelope)
+                self.blacklist.add(document.sn)
+                reply = Failed(document)
                 reply.notify(self.listener)
                 return
         except Exception:
-            log.exception(envelope)
+            log.exception(document)
 
 
 class AsyncReply:
@@ -115,14 +115,14 @@ class AsyncReply:
     :type any: object
     """
 
-    def __init__(self, envelope):
+    def __init__(self, document):
         """
-        :param envelope: The received envelope.
-        :type envelope: Envelope
+        :param document: The received document.
+        :type document: Document
         """
-        self.sn = envelope.sn
-        self.origin = envelope.routing[0]
-        self.any = envelope.any
+        self.sn = document.sn
+        self.origin = document.routing[0]
+        self.any = document.any
 
     def notify(self, listener):
         """
@@ -186,13 +186,13 @@ class Succeeded(FinalReply):
     :type retval: object
     """
 
-    def __init__(self, envelope):
+    def __init__(self, document):
         """
-        :param envelope: The received envelope.
-        :type envelope: Envelope
+        :param document: The received document.
+        :type document: Document
         """
-        AsyncReply.__init__(self, envelope)
-        reply = Return(envelope.result)
+        AsyncReply.__init__(self, document)
+        reply = Return(document.result)
         self.retval = reply.retval
 
     def succeeded(self):
@@ -215,13 +215,13 @@ class Failed(FinalReply):
     :see: Failed.throw
     """
 
-    def __init__(self, envelope):
+    def __init__(self, document):
         """
-        :param envelope: The received envelope.
-        :type envelope: Envelope
+        :param document: The received document.
+        :type document: Document
         """
-        AsyncReply.__init__(self, envelope)
-        reply = Return(envelope.result)
+        AsyncReply.__init__(self, document)
+        reply = Return(document.result)
         self.exval = RemoteException.instance(reply)
         self.xmodule = reply.xmodule,
         self.xclass = reply.xclass
@@ -311,15 +311,15 @@ class Progress(AsyncReply):
     :see: Failed.throw
     """
 
-    def __init__(self, envelope):
+    def __init__(self, document):
         """
-        :param envelope: The received envelope.
-        :type envelope: Envelope
+        :param document: The received document.
+        :type document: Document
         """
-        AsyncReply.__init__(self, envelope)
-        self.total = envelope.total
-        self.completed = envelope.completed
-        self.details = envelope.details
+        AsyncReply.__init__(self, document)
+        self.total = document.total
+        self.completed = document.completed
+        self.details = document.details
 
     def notify(self, listener):
         if callable(listener):

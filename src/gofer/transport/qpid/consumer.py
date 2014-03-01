@@ -25,7 +25,7 @@ from qpid.messaging import Empty
 
 from gofer.messaging import auth
 from gofer.messaging import model
-from gofer.messaging.model import Envelope, search
+from gofer.messaging.model import Document, search
 from gofer.transport.consumer import Ack
 from gofer.transport.qpid.endpoint import Endpoint
 
@@ -120,36 +120,36 @@ class Reader(Endpoint):
 
     def next(self, timeout=90):
         """
-        Get the next envelope from the queue.
+        Get the next document from the queue.
         :param timeout: The read timeout.
         :type timeout: int
-        :return: A tuple of: (envelope, ack())
-        :rtype: (Envelope, callable)
-        :raises: model.InvalidRequest
+        :return: A tuple of: (document, ack())
+        :rtype: (Document, callable)
+        :raises: model.InvalidDocument
         """
         uuid = self.queue.name
         message = self.get(timeout)
         if message:
             try:
-                request = auth.validate(self.authenticator, uuid, message.content)
-                request.subject = subject(message)
-                request.ttl = message.ttl
-                model.validate(request)
-            except model.InvalidRequest:
+                document = auth.validate(self.authenticator, uuid, message.content)
+                document.subject = subject(message)
+                document.ttl = message.ttl
+                model.validate(document)
+            except model.InvalidDocument:
                 self.ack(message)
                 raise
-            log.debug('{%s} read next:\n%s', self.id(), request)
-            return request, Ack(self, message)
+            log.debug('{%s} read next:\n%s', self.id(), document)
+            return document, Ack(self, message)
         return None, None
 
     def search(self, sn, timeout=90):
         """
-        Search the reply queue for the envelope with the matching serial #.
+        Search the reply queue for the document with the matching serial #.
         :param sn: The expected serial number.
         :type sn: str
         :param timeout: The read timeout.
         :type timeout: int
-        :return: The next envelope.
-        :rtype: Envelope
+        :return: The next document.
+        :rtype: Document
         """
         return search(self, sn, timeout)

@@ -50,9 +50,9 @@ class Test(object):
                 self.reader = package.Reader(queue, url=url)
                 self.received = 0
     
-            def dispatch(self, envelope):
+            def dispatch(self, document):
                 self.received += 1
-                print '%d/%d - %s' % (self.received, N, envelope)
+                print '%d/%d - %s' % (self.received, N, document)
                 if self.received == N:
                     self.stop()
     

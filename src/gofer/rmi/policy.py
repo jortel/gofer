@@ -19,7 +19,7 @@ Contains request delivery policies.
 
 from logging import getLogger
 
-from gofer.messaging.model import Envelope, InvalidRequest, getuuid
+from gofer.messaging.model import Document, InvalidDocument, getuuid
 from gofer.messaging import Destination
 from gofer.rmi.dispatcher import Return, RemoteException
 from gofer.constants import ACCEPTED, REJECTED, STARTED, PROGRESS
@@ -232,19 +232,19 @@ class Synchronous(RequestMethod):
         :type sn: str
         :param reader: A reader.
         :type reader: gofer.messaging.factory.Reader
-        :return: The matched reply envelope.
-        :rtype: Envelope
+        :return: The matched reply document.
+        :rtype: Document
         """
-        envelope = reader.search(sn, self.timeout)
-        if envelope:
-            if envelope.status == REJECTED:
+        document = reader.search(sn, self.timeout)
+        if document:
+            if document.status == REJECTED:
                 # rejected
-                raise InvalidRequest(envelope.code, sn, envelope.details)
-            if envelope.status in (ACCEPTED, STARTED):
+                raise InvalidDocument(document.code, sn, document.details)
+            if document.status in (ACCEPTED, STARTED):
                 # accepted
-                log.debug('request (%s), %s', sn, envelope.status)
+                log.debug('request (%s), %s', sn, document.status)
             else:
-                self.__on_reply(envelope)
+                self.__on_reply(document)
         else:
             raise RequestTimeout(sn, self.timeout)
 
@@ -255,64 +255,64 @@ class Synchronous(RequestMethod):
         :type sn: str
         :param reader: A reader.
         :type reader: gofer.messaging.factory.Reader
-        :return: The matched reply envelope.
-        :rtype: Envelope
+        :return: The matched reply document.
+        :rtype: Document
         """
         timer = Timer()
         timeout = float(self.wait)
         while True:
             timer.start()
-            envelope = reader.search(sn, int(timeout))
+            document = reader.search(sn, int(timeout))
             timer.stop()
             elapsed = timer.duration()
             if elapsed > timeout:
                 raise RequestTimeout(sn, self.wait)
             else:
                 timeout -= elapsed
-            if envelope:
-                if envelope.status == REJECTED:
+            if document:
+                if document.status == REJECTED:
                     # rejected
-                    raise InvalidRequest(envelope.code, sn, envelope.details)
-                if envelope.status in (ACCEPTED, STARTED):
+                    raise InvalidDocument(document.code, sn, document.details)
+                if document.status in (ACCEPTED, STARTED):
                     # ignored
                     continue
-                if envelope.status == PROGRESS:
+                if document.status == PROGRESS:
                     # progress
-                    self.__on_progress(envelope)
+                    self.__on_progress(document)
                 else:
-                    return self.__on_reply(envelope)
+                    return self.__on_reply(document)
             else:
                 raise RequestTimeout(sn, self.wait)
         
-    def __on_reply(self, envelope):
+    def __on_reply(self, document):
         """
         Handle the reply.
-        :param envelope: The reply envelope.
-        :type envelope: Envelope
-        :return: The matched reply envelope.
-        :rtype: Envelope
+        :param document: The reply document.
+        :type document: Document
+        :return: The matched reply document.
+        :rtype: Document
         """
-        reply = Return(envelope.result)
+        reply = Return(document.result)
         if reply.succeeded():
             return reply.retval
         else:
             raise RemoteException.instance(reply)
         
-    def __on_progress(self, envelope):
+    def __on_progress(self, document):
         """
         Handle the progress report.
-        :param envelope: The status envelope.
-        :type envelope: Envelope
+        :param document: The status document.
+        :type document: Document
         """
         try:
             callback = self.progress
             if callable(callback):
                 report = dict(
-                    sn=envelope.sn,
-                    any=envelope.any,
-                    total=envelope.total,
-                    completed=envelope.completed,
-                    details=envelope.details)
+                    sn=document.sn,
+                    any=document.any,
+                    total=document.total,
+                    completed=document.completed,
+                    details=document.details)
                 callback(report)
         except:
             log.error('progress callback failed', exc_info=1)

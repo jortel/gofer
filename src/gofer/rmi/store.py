@@ -26,7 +26,7 @@ from logging import getLogger
 from Queue import Queue
 
 from gofer import NAME, Singleton
-from gofer.messaging.model import Envelope
+from gofer.messaging.model import Document
 from gofer.rmi.window import Window
 from gofer.rmi.tracker import Tracker
 
@@ -62,7 +62,7 @@ class Pending(object):
         """
         Write a request to the journal.
         :param request: An AMQP request.
-        :type request: Envelope
+        :type request: Document
         :param path: The destination path.
         :type path: str
         """
@@ -81,12 +81,12 @@ class Pending(object):
         :param path: The path to the journal file.
         :type path: str
         :return: The read request.
-        :rtype: Envelope
+        :rtype: Document
         """
         fp = open(path)
         try:
             try:
-                request = Envelope()
+                request = Document()
                 body = fp.read()
                 request.load(body)
                 log.debug('read [%s]:\n%s', path, body)
@@ -100,11 +100,11 @@ class Pending(object):
     @staticmethod
     def _delayed(request):
         """
-        Get whether the envelope has a future window.
+        Get whether the document has a future window.
         Cancelled requests are not considered to be delayed and
         the window is ignored.
         :param request: An AMQP request.
-        :type request: Envelope
+        :type request: Document
         :return: True when window in the future.
         :rtype: bool
         """
@@ -176,7 +176,7 @@ class Pending(object):
         Enqueue a pending request.
         This is blocked until the _open() has re-queued journal(ed) entries.
         :param request: An AMQP request.
-        :type request: Envelope
+        :type request: Document
         """
         while not self.is_open:
             # block until opened
@@ -196,7 +196,7 @@ class Pending(object):
         Get the next pending request to be dispatched.
         Blocks until a request is available.
         :return: The next pending request.
-        :rtype: Envelope
+        :rtype: Document
         """
         return self.queue.get()
 
@@ -221,7 +221,7 @@ class Pending(object):
         """
         Enqueue the request.
         :param request: An AMQP request.
-        :type request: Envelope
+        :type request: Document
         :param jnl_path: Path to the associated journal file.
         :type jnl_path: str
         """

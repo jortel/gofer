@@ -14,7 +14,7 @@ from logging import getLogger
 
 from gofer.messaging import auth
 from gofer.messaging import model
-from gofer.messaging.model import Envelope, search
+from gofer.messaging.model import Document, search
 from gofer.transport.consumer import Ack
 from gofer.transport.rabbitmq.endpoint import Endpoint, reliable
 
@@ -64,12 +64,12 @@ class Reader(Endpoint):
     @reliable
     def next(self, timeout=90):
         """
-        Get the next request from the queue.
+        Get the next document from the queue.
         :param timeout: The read timeout in seconds.
         :type timeout: int
-        :return: A tuple of: (request, ack())
-        :rtype: (Envelope, callable)
-        :raises model.InvalidRequest:
+        :return: A tuple of: (document, ack())
+        :rtype: (Document, callable)
+        :raises model.InvalidDocument:
         """
         delay = DELAY
         uuid = self.queue.name
@@ -78,13 +78,13 @@ class Reader(Endpoint):
             message = self.get()
             if message:
                 try:
-                    request = auth.validate(self.authenticator, uuid, message.body)
-                    model.validate(request)
-                except model.InvalidRequest:
+                    document = auth.validate(self.authenticator, uuid, message.body)
+                    model.validate(document)
+                except model.InvalidDocument:
                     self.ack(message)
                     raise
-                log.debug('{%s} read next:\n%s', self.id(), request)
-                return request, Ack(self, message)
+                log.debug('{%s} read next:\n%s', self.id(), document)
+                return document, Ack(self, message)
             if timer > 0:
                 sleep(delay)
                 timer -= delay
@@ -96,12 +96,12 @@ class Reader(Endpoint):
 
     def search(self, sn, timeout=90):
         """
-        Search the reply queue for the request with the matching serial #.
+        Search the reply queue for the document with the matching serial #.
         :param sn: The expected serial number.
         :type sn: str
         :param timeout: The read timeout.
         :type timeout: int
-        :return: The next request.
-        :rtype: Envelope
+        :return: The next document.
+        :rtype: Document
         """
         return search(self, sn, timeout)

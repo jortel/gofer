@@ -19,13 +19,13 @@ Message authentication plumbing.
 from logging import getLogger
 
 from gofer.constants import AUTHENTICATION
-from gofer.messaging.model import Envelope, InvalidRequest
+from gofer.messaging.model import Document, InvalidDocument
 
 
 log = getLogger(__name__)
 
 
-class ValidationFailed(InvalidRequest):
+class ValidationFailed(InvalidDocument):
     """
     Message validation failed.
     """
@@ -37,7 +37,7 @@ class ValidationFailed(InvalidRequest):
         :param details: A detailed description.
         :type details: str
         """
-        InvalidRequest.__init__(self, AUTHENTICATION, message, details)
+        InvalidDocument.__init__(self, AUTHENTICATION, message, details)
 
 
 class Authenticator(object):
@@ -86,7 +86,7 @@ def sign(authenticator, message):
         return message
     try:
         signature = authenticator.sign(message)
-        signed = Envelope(signature=signature, payload=message)
+        signed = Document(signature=signature, payload=message)
         message = signed.dump()
     except Exception:
         log.debug(message, exc_info=True)
@@ -95,7 +95,7 @@ def sign(authenticator, message):
 
 def validate(authenticator, uuid, message):
     """
-    Validate the request using the specified validator.
+    Validate the document using the specified validator.
     signed document:
       {
         signature: <signature>,
@@ -107,25 +107,25 @@ def validate(authenticator, uuid, message):
     :type authenticator: Authenticator
     :param message: A json encoded AMQP message.
     :rtype message: str
-    :return: The authenticated request.
-    :rtype: Envelope
+    :return: The authenticated document.
+    :rtype: Document
     :raises ValidationFailed: when message is not valid.
     """
     if not message:
         return
     try:
-        signed = Envelope()
+        signed = Document()
         signed.load(message)
         signature = signed.signature
         payload = signed.payload
-        request = Envelope()
+        document = Document()
         if payload:
-            request.load(payload)
+            document.load(payload)
         else:
-            request = signed
+            document = signed
         if authenticator:
             authenticator.validate(uuid, payload, signature)
-        return request
+        return document
     except ValidationFailed:
         raise
     except Exception:
