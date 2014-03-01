@@ -20,7 +20,6 @@ Provides (local) message storage classes.
 import os
 import errno
 
-from stat import *
 from time import sleep, time
 from threading import Thread
 from Queue import Queue
@@ -44,16 +43,6 @@ class Pending(object):
 
     PENDING = '/var/lib/%s/messaging/pending' % NAME
     DELAYED = '/var/lib/%s/messaging/delayed' % NAME
-
-    @staticmethod
-    def _created(path):
-        """
-        Get create timestamp.
-        :return: The file create timestamp.
-        :rtype: int
-        """
-        stat = os.stat(path)
-        return stat[ST_CTIME]
 
     @staticmethod
     def _mkdir(path):
@@ -152,12 +141,8 @@ class Pending(object):
         :return: A sorted directory listing (absolute paths).
         :rtype: list
         """
-        paths = []
-        _dir = path
-        for path in [os.path.join(_dir, name) for name in os.listdir(_dir)]:
-            paths.append((Pending._created(path), path))
-        paths.sort()
-        return [p[1] for p in paths]
+        paths = [os.path.join(path, name) for name in os.listdir(path)]
+        return sorted(paths)
 
     def __init__(self, backlog=100):
         """
@@ -168,6 +153,7 @@ class Pending(object):
         Pending._mkdir(Pending.DELAYED)
         self.queue = Queue(backlog)
         self.is_open = False
+        self.sequential = Sequential()
         self.thread = Thread(target=self._open)
         self.thread.setDaemon(True)
         self.thread.start()
@@ -180,6 +166,7 @@ class Pending(object):
         - Then, continuously attempt to queue delayed messages.
         """
         for path in Pending._list(Pending.PENDING):
+            log.info('restoring [%s]', path)
             request = Pending._read(path)
             if not request:
                 # read failed
@@ -210,15 +197,16 @@ class Pending(object):
             # block puts until opened
             sleep(1)
 
+        fn = self.sequential.next()
         if not Pending._delayed(request):
-            path = os.path.join(Pending.PENDING, request.sn)
+            path = os.path.join(Pending.PENDING, fn)
             Pending._write(request, path)
             tracker = Tracker()
             tracker.add(request.sn, request.any)
             request.ts = time()
             self.queue.put(request)
         else:
-            path = os.path.join(Pending.DELAYED, request.sn)
+            path = os.path.join(Pending.DELAYED, fn)
             Pending._write(request, path)
 
     def get(self):
@@ -230,3 +218,35 @@ class Pending(object):
         """
         return self.queue.get()
 
+
+class Sequential(object):
+    """
+    Generate unique, sequential file names for journal entries.
+    :ivar n: Appended to the new in the unlikely that subsequent calls
+        to time() returns the same value.
+    :type n: int
+    :ivar last: The last time() value.
+    :type last: float
+    """
+
+    FORMAT = '%f-%04d.json'
+
+    def __init__(self):
+        self.n = 0
+        self.last = 0.0
+
+    def next(self):
+        """
+        Get next (sequential) name to be used for the next journal file.
+        :return: The next (sequential) name.
+        :rtype: str
+        """
+        now = time()
+        if now > self.last:
+            self.n = 0
+        else:
+            self.n += 1
+        self.last = now
+        val = Sequential.FORMAT % (now, self.n)
+        val = val.replace('.', '-', 1)
+        return val
