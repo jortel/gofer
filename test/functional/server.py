@@ -30,7 +30,7 @@ from gofer.rmi.async import ReplyConsumer
 from gofer.metrics import Timer
 from gofer.proxy import Agent as RealAgent
 from gofer.messaging import Queue
-from gofer.messaging.auth import Authenticator
+from gofer.messaging.auth import Authenticator, ValidationFailed
 
 from plugins import *
 
@@ -60,11 +60,14 @@ class TestAuthenticator(Authenticator):
         # print 'signed: %s' % digest
         return digest
 
-    def is_valid(self, uuid, message, signature):
+    def validate(self, uuid, message, signature):
         digest = self.sign(message)
         valid = signature == digest
         # print 'matching signatures: [%s, %s]' % (signature, digest)
-        return valid
+        if valid:
+            return
+        raise ValidationFailed(
+            message, 'matching signatures: [%s, %s]' % (signature, digest))
 
 
 class ListOption(Option):

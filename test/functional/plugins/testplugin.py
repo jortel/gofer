@@ -16,14 +16,13 @@
 
 from time import sleep
 from hashlib import sha256
-from logging import getLogger, INFO, DEBUG
+from logging import getLogger
 
 from gofer.decorators import *
 from gofer.agent.plugin import Plugin
 from gofer.agent.rmi import Context
 from gofer.messaging import Producer, Exchange, Destination
-from gofer.messaging.auth import Authenticator
-
+from gofer.messaging.auth import Authenticator, ValidationFailed
 
 log = getLogger(__name__)
 plugin = Plugin.find(__name__)
@@ -53,11 +52,14 @@ class TestAuthenticator(Authenticator):
         # print 'signed: %s' % digest
         return digest
 
-    def is_valid(self, uuid, message, signature):
+    def validate(self, uuid, message, signature):
         digest = self.sign(message)
         valid = signature == digest
         # print 'matching signatures: [%s, %s]' % (signature, digest)
-        return valid
+        if valid:
+            return
+        raise ValidationFailed(
+            message, 'matching signatures: [%s, %s]' % (signature, digest))
 
 if cfg.messaging.auth:
     plugin.authenticator = TestAuthenticator()

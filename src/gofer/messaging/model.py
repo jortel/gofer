@@ -15,6 +15,8 @@ import simplejson as json
 from uuid import uuid4
 from logging import getLogger
 
+from gofer.constants import MODEL_VERSION, AUTHENTICATION
+
 
 log = getLogger(__name__)
 
@@ -24,6 +26,44 @@ log = getLogger(__name__)
 VERSION = '0.5'
 
 
+# --- exceptions -------------------------------------------------------------
+
+
+class InvalidRequest(Exception):
+    """
+    Base for all message/request validation.
+    """
+
+    CODE = {
+        MODEL_VERSION: 'MODEL: version not valid',
+        AUTHENTICATION: 'SECURITY: message authentication failed'
+    }
+
+    def __init__(self, code, request, details):
+        """
+        :param code: The validation code.  Must be in: CODE.
+        :param request: The invalid request.
+        :param details: A detailed description of what failed.
+        """
+        Exception.__init__(self, ' : '.join((self.CODE[code], details)))
+        assert code in InvalidRequest.CODE
+        self.code = code
+        self.request = request
+        self.details = details
+
+
+class InvalidVersion(InvalidRequest):
+
+    def __init__(self, request, details):
+        """
+        :param request: The invalid request.
+        :type request: str
+        :param details: A detailed description.
+        :type details: str
+        """
+        InvalidRequest.__init__(self, MODEL_VERSION, request, details)
+
+
 # --- utils ------------------------------------------------------------------
 
 
@@ -31,19 +71,17 @@ def getuuid():
     return str(uuid4())
 
 
-def is_valid(request):
+def validate(request):
     """
     Determine whether the specified request is valid.
     :param request: The envelope to evaluate.
     :type request: Envelope
-    :return: True if valid.
-    :rtype: bool
+    :raises InvalidRequest: when invalid.
     """
-    valid = True
     if request.version != VERSION:
-        valid = False
-        log.warn('version mismatch %s/%s', request.version, VERSION)
-    return valid
+        reason = 'Invalid version %s/%s' % (request.version, VERSION)
+        log.warn(reason)
+        raise InvalidVersion(request.sn, reason)
 
 
 def search(reader, sn, timeout=90):

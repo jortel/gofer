@@ -19,9 +19,10 @@ Contains request delivery policies.
 
 from logging import getLogger
 
-from gofer.messaging.model import Envelope, getuuid
+from gofer.messaging.model import Envelope, InvalidRequest, getuuid
 from gofer.messaging import Destination
 from gofer.rmi.dispatcher import Return, RemoteException
+from gofer.constants import ACCEPTED, REJECTED, STARTED, PROGRESS
 from gofer.metrics import Timer
 
 
@@ -230,13 +231,17 @@ class Synchronous(RequestMethod):
         :param sn: The request serial number.
         :type sn: str
         :param reader: A reader.
-        :type reader: gofer.messaging.Reader
+        :type reader: gofer.messaging.factory.Reader
         :return: The matched reply envelope.
         :rtype: Envelope
         """
         envelope = reader.search(sn, self.timeout)
         if envelope:
-            if envelope.status in ('accepted', 'started'):
+            if envelope.status == REJECTED:
+                # rejected
+                raise InvalidRequest(envelope.code, sn, envelope.details)
+            if envelope.status in (ACCEPTED, STARTED):
+                # accepted
                 log.debug('request (%s), %s', sn, envelope.status)
             else:
                 self.__on_reply(envelope)
@@ -249,7 +254,7 @@ class Synchronous(RequestMethod):
         :param sn: The request serial number.
         :type sn: str
         :param reader: A reader.
-        :type reader: gofer.messaging.Reader
+        :type reader: gofer.messaging.factory.Reader
         :return: The matched reply envelope.
         :rtype: Envelope
         """
@@ -265,10 +270,14 @@ class Synchronous(RequestMethod):
             else:
                 timeout -= elapsed
             if envelope:
-                if envelope.status in ('accepted', 'started'):
+                if envelope.status == REJECTED:
+                    # rejected
+                    raise InvalidRequest(envelope.code, sn, envelope.details)
+                if envelope.status in (ACCEPTED, STARTED):
                     # ignored
                     continue
-                if envelope.status == 'progress':
+                if envelope.status == PROGRESS:
+                    # progress
                     self.__on_progress(envelope)
                 else:
                     return self.__on_reply(envelope)
