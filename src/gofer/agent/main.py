@@ -225,8 +225,7 @@ def start(daemon=True):
     if daemon:
         daemonize(lock)
     try:
-        pl = PluginLoader()
-        plugins = pl.load(eager())
+        plugins = PluginLoader.load(eager())
         agent = Agent(plugins)
         agent.start()
     finally:

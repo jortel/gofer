@@ -29,10 +29,6 @@ The *remote* decorator is used to designate a function or class method as being 
 
 Options:
 
-- **shared** - indicates the class/method is shared across plugins.
-    - required: No
-    - type: bool
-    - default: True
 - **secret** - used to specify a *shared* secret that must be passed for authorization.
     - required: No
     - type: str|callable

@@ -121,8 +121,7 @@ class TestAgent:
     def __init__(self, url, transport, uuid, threads, auth):
         setup_logging()
         install(url, transport, uuid, threads, auth)
-        pl = PluginLoader()
-        plugins = pl.load(eager())
+        plugins = PluginLoader.load(eager())
         agent = Agent(plugins)
         agent.start(False)
         while True:

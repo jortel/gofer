@@ -37,7 +37,6 @@ class RequestConsumer(Consumer):
         :type request: Envelope
         """
         self.__send_status(request, ACCEPTED)
-        request.url = self.url
         pending = Pending()
         pending.put(request)
 

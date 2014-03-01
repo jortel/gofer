@@ -190,7 +190,7 @@ class Stub:
     def __getattr__(self, name):
         """
         Python vodo.
-        Get a I{Method} object for any requested attribte.
+        Get a I{Method} object for any requested attribute.
         :param name: The attribute name.
         :type name: str
         :return: A method object.
@@ -202,7 +202,7 @@ class Stub:
     def __getitem__(self, name):
         """
         Python vodo.
-        Get a I{Method} object for any requested attribte.
+        Get a I{Method} object for any requested attribute.
         :param name: The attribute name.
         :type name: str
         :return: A method object.

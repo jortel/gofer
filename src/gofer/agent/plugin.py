@@ -19,6 +19,7 @@ Plugin classes.
 
 import os
 import imp
+import errno
 
 from logging import getLogger
 
@@ -306,43 +307,46 @@ class PluginDescriptor(Graph):
     
     ROOT = '/etc/%s/plugins' % NAME
     
-    @classmethod
-    def __mkdir(cls):
-        if not os.path.exists(cls.ROOT):
-            os.makedirs(cls.ROOT)
+    @staticmethod
+    def __mkdir():
+        try:
+            os.makedirs(PluginDescriptor.ROOT)
+        except OSError, e:
+            if e.errno != errno.EEXIST:
+                raise
     
-    @classmethod
-    def load(cls):
+    @staticmethod
+    def load():
         """
         Load the plugin descriptors.
         :return: A list of descriptors.
         :rtype: list
         """
         unsorted = []
-        cls.__mkdir()
-        for name, path in cls.__list():
+        PluginDescriptor.__mkdir()
+        for name, path in PluginDescriptor.__list():
             try:
                 conf = Config(path)
                 inst = PluginDescriptor(conf)
                 unsorted.append((name, inst))
-            except:
+            except Exception:
                 log.exception(path)
-        return cls.__sort(unsorted)
+        return PluginDescriptor.__sort(unsorted)
     
-    @classmethod
-    def __list(cls):
-        files = os.listdir(cls.ROOT)
+    @staticmethod
+    def __list():
+        files = os.listdir(PluginDescriptor.ROOT)
         for fn in sorted(files):
             plugin, ext = fn.split('.', 1)
             if not ext in ('conf',):
                 continue
-            path = os.path.join(cls.ROOT, fn)
+            path = os.path.join(PluginDescriptor.ROOT, fn)
             if os.path.isdir(path):
                 continue
             yield (plugin, path)
     
-    @classmethod
-    def __sort(cls, descriptors):
+    @staticmethod
+    def __sort(descriptors):
         """
         Sort descriptors based on defined dependencies.
         Dependencies defined by [main].requires
@@ -383,8 +387,6 @@ class PluginLoader:
     Agent plugins loader.
     :cvar PATH: A list of paths to directories containing plugins.
     :type PATH: list
-    :ivar plugins: A dict of plugins and descriptors.
-    :type plugins: dict
     """
 
     PATH = [
@@ -394,73 +396,11 @@ class PluginLoader:
         '/opt/%s/plugins' % NAME,
     ]
 
-    def load(self, eager=True):
-        """
-        Load the plugins.
-        :param eager: Load disabled plugins.
-        :type eager: bool
-        :return: A list of loaded plugins
-        :rtype: list
-        """
-        loaded = []
-        for plugin, descriptor in PluginDescriptor.load():
-            if self.__noload(descriptor, eager):
-                continue
-            p = self.__import(plugin, descriptor)
-            if not p:
-                continue  # load failed
-            if not p.enabled():
-                log.warn('plugin: %s, DISABLED', p.name)
-            loaded.append(p)
-        return loaded
-    
-    def __noload(self, descriptor, eager):
-        """
-        Determine whether the plugin should be loaded.
-        :param descriptor: A plugin descriptor.
-        :type descriptor: PluginDescriptor
-        :param eager: The I{eager} load flag.
-        :type eager: bool
-        :return: True when not loaded.
-        :rtype: bool
-        """
-        try:
-            return not (eager or get_bool(descriptor.main.enabled))
-        except:
-            return False
+    BUILTIN = __import__('gofer.agent.builtin')
+    BUILTINS = Remote.collated()
 
-    def __import(self, plugin, descriptor):
-        """
-        Import a module by file name.
-        :param plugin: The plugin (module) name.
-        :type plugin: str
-        :param descriptor: A plugin descriptor.
-        :type descriptor: PluginDescriptor
-        :return: The loaded module.
-        :rtype: Plugin
-        """
-        Remote.clear()
-        Actions.clear()
-        syn = self.__mangled(plugin)
-        p = Plugin(plugin, descriptor, (syn,))
-        Plugin.add(p)
-        try:
-            path = self.__find_plugin(plugin)
-            mod = imp.load_source(syn, path)
-            p.impl = mod
-            log.info('plugin "%s", imported as: "%s"', plugin, syn)
-            for fn in Remote.find(syn):
-                fn.gofer.plugin = p
-            if p.enabled():
-                collated = Remote.collated()
-                p.dispatcher = Dispatcher(collated)
-                p.actions = Actions.collated()
-            return p
-        except Exception:
-            Plugin.delete(p)
-            log.exception('plugin "%s", import failed', plugin)
-            
-    def __find_plugin(self, plugin):
+    @staticmethod
+    def find_plugin(plugin):
         """
         Find a plugin module.
         :param plugin: The plugin name.
@@ -470,14 +410,15 @@ class PluginLoader:
         :raise Exception: When not found.
         """
         mod = '%s.py' % plugin
-        for root in self.PATH:
+        for root in PluginLoader.PATH:
             path = os.path.join(root, mod)
             if os.path.exists(path):
                 log.info('using: %s', path)
                 return path
-        raise Exception('%s, not found in:%s' % (mod, self.PATH))
+        raise Exception('%s, not found in:%s' % (mod, PluginLoader.PATH))
 
-    def __mangled(self, plugin):
+    @staticmethod
+    def mangled(plugin):
         """
         Get the module name for the specified plugin.
         :param plugin: The name of the plugin.
@@ -490,5 +431,75 @@ class PluginLoader:
             log.warn('"%s" found in python-path', plugin)
             log.info('"%s" mangled to avoid collisions', plugin)
             return '%s_plugin' % plugin
-        except:
+        except Exception:
             return plugin
+
+    @staticmethod
+    def load(eager=True):
+        """
+        Load the plugins.
+        :param eager: Load disabled plugins.
+        :type eager: bool
+        :return: A list of loaded plugins
+        :rtype: list
+        """
+        loaded = []
+        for plugin, descriptor in PluginDescriptor.load():
+            if PluginLoader.no_load(descriptor, eager):
+                continue
+            p = PluginLoader._import(plugin, descriptor)
+            if not p:
+                continue  # load failed
+            if not p.enabled():
+                log.warn('plugin: %s, DISABLED', p.name)
+            loaded.append(p)
+        return loaded
+
+    @staticmethod
+    def no_load(descriptor, eager):
+        """
+        Determine whether the plugin should be loaded.
+        :param descriptor: A plugin descriptor.
+        :type descriptor: PluginDescriptor
+        :param eager: The I{eager} load flag.
+        :type eager: bool
+        :return: True when not loaded.
+        :rtype: bool
+        """
+        try:
+            return not (eager or get_bool(descriptor.main.enabled))
+        except Exception:
+            return False
+
+    @staticmethod
+    def _import(plugin, descriptor):
+        """
+        Import a module by file name.
+        :param plugin: The plugin (module) name.
+        :type plugin: str
+        :param descriptor: A plugin descriptor.
+        :type descriptor: PluginDescriptor
+        :return: The loaded module.
+        :rtype: Plugin
+        """
+        Remote.clear()
+        Actions.clear()
+        syn = PluginLoader.mangled(plugin)
+        p = Plugin(plugin, descriptor, [syn])
+        Plugin.add(p)
+        try:
+            path = PluginLoader.find_plugin(plugin)
+            mod = imp.load_source(syn, path)
+            p.impl = mod
+            log.info('plugin "%s", imported as: "%s"', plugin, syn)
+            for fn in Remote.find(syn):
+                fn.gofer.plugin = p
+            if p.enabled():
+                collated = Remote.collated()
+                collated += PluginLoader.BUILTINS
+                p.dispatcher = Dispatcher(collated)
+                p.actions = Actions.collated()
+            return p
+        except Exception:
+            Plugin.delete(p)
+            log.exception('plugin "%s", import failed', plugin)

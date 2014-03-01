@@ -137,7 +137,7 @@ class Builder:
         Build a Criteria object based on the specified
         dict representation.
         :param criteria: The criteria to build.
-        :type criteria: dict
+        :type criteria: str
         :rtype: Criteria
         :raise Exception, on invalid criteria.
         """

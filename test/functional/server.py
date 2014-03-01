@@ -170,7 +170,6 @@ def later(**offset):
 def threads(uuid, n=10):
     t = None
     for i in range(0, n):
-        agent = Agent(uuid, url=url, transport=transport)
         name = 'Test%d' % i
         t = Thread(name=name, target=main, args=(uuid,))
         t.setDaemon(True)
@@ -461,7 +460,7 @@ def main(uuid):
 def smoke_test(uuid, exit=0):
     print 'running smoke test ...'
     agent = Agent(uuid)
-    for T in range(0, 10):
+    for T in range(0, 50):
         print 'test: %d' % T
         agent.testplugin.echo('have a nice day')
         admin = agent.Admin()

@@ -22,8 +22,8 @@ import errno
 
 from time import sleep, time
 from threading import Thread
-from Queue import Queue
 from logging import getLogger
+from Queue import Queue
 
 from gofer import NAME, Singleton
 from gofer.messaging.model import Envelope
@@ -117,22 +117,6 @@ class Pending(object):
         return False
 
     @staticmethod
-    def commit(sn):
-        """
-        The request referenced by the serial number has been completely
-        processed and can be deleted from the journal.
-        :param sn: A request serial number.
-        :param sn: str
-        """
-        try:
-            path = os.path.join(Pending.PENDING, sn)
-            os.unlink(path)
-            log.debug('%s committed', sn)
-        except OSError, e:
-            if e.errno != errno.ENOENT:
-                raise
-
-    @staticmethod
     def _list(path):
         """
         Directory listing sorted by when it was created.
@@ -154,6 +138,7 @@ class Pending(object):
         self.queue = Queue(backlog)
         self.is_open = False
         self.sequential = Sequential()
+        self.journal = {}
         self.thread = Thread(target=self._open)
         self.thread.setDaemon(True)
         self.thread.start()
@@ -171,7 +156,7 @@ class Pending(object):
             if not request:
                 # read failed
                 continue
-            self.queue.put(request)
+            self._put(request, path)
         self.is_open = True
         # queue delayed messages
         while True:
@@ -194,17 +179,14 @@ class Pending(object):
         :type request: Envelope
         """
         while not self.is_open:
-            # block puts until opened
+            # block until opened
             sleep(1)
 
         fn = self.sequential.next()
         if not Pending._delayed(request):
             path = os.path.join(Pending.PENDING, fn)
             Pending._write(request, path)
-            tracker = Tracker()
-            tracker.add(request.sn, request.any)
-            request.ts = time()
-            self.queue.put(request)
+            self._put(request, path)
         else:
             path = os.path.join(Pending.DELAYED, fn)
             Pending._write(request, path)
@@ -217,6 +199,37 @@ class Pending(object):
         :rtype: Envelope
         """
         return self.queue.get()
+
+    def commit(self, sn):
+        """
+        The request referenced by the serial number has been completely
+        processed and can be deleted from the journal.
+        :param sn: A request serial number.
+        :param sn: str
+        """
+        try:
+            path = self.journal[sn]
+            os.unlink(path)
+            log.debug('%s committed', sn)
+        except KeyError:
+            log.warn('%s not found for commit', sn)
+        except OSError, e:
+            if e.errno != errno.ENOENT:
+                raise
+
+    def _put(self, request, jnl_path):
+        """
+        Enqueue the request.
+        :param request: An AMQP request.
+        :type request: Envelope
+        :param jnl_path: Path to the associated journal file.
+        :type jnl_path: str
+        """
+        request.ts = time()
+        tracker = Tracker()
+        tracker.add(request.sn, request.any)
+        self.journal[request.sn] = jnl_path
+        self.queue.put(request)
 
 
 class Sequential(object):
