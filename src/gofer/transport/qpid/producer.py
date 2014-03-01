@@ -50,7 +50,7 @@ def send(endpoint, destination, ttl=None, **body):
         address = '/'.join((destination.exchange, destination.routing_key))
     else:
         address = destination.routing_key
-    routing = (endpoint.id(), address)
+    routing = (endpoint.id(), destination.routing_key)
     envelope = Envelope(sn=sn, version=VERSION, routing=routing)
     envelope += body
     unsigned = envelope.dump()

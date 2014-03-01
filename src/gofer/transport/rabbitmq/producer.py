@@ -46,7 +46,7 @@ def send(endpoint, destination, ttl=None, **body):
     """
     sn = getuuid()
     routing_key = destination.routing_key
-    routing = (endpoint.id(), destination.dict())
+    routing = (endpoint.id(), routing_key)
     envelope = Envelope(sn=sn, version=VERSION, routing=routing)
     envelope += body
     unsigned = envelope.dump()

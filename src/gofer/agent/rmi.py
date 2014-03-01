@@ -213,7 +213,10 @@ class TrashProducer(object):
         Send replies into the bit bucket.
         """
         pass
-    
+
+    def close(self):
+        pass
+
 
 class Scheduler(Thread):
     """

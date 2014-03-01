@@ -61,11 +61,12 @@ class Reader(Endpoint):
         channel = self.channel()
         self.queue.declare(self.url)
         message = channel.basic_get(self.queue.name)
-        try:
-            auth.validate(self.authenticator, message.body)
-        except auth.ValidationFailed:
-            self.ack(message)
-            raise
+        if message:
+            try:
+                auth.validate(self.authenticator, message.body)
+            except auth.ValidationFailed:
+                self.ack(message)
+                raise
         return message
 
     @reliable
