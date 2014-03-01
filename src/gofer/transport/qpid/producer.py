@@ -41,7 +41,7 @@ def send(endpoint, destination, ttl=None, **body):
     :type destination: gofer.transport.model.Destination
     :param ttl: Time to Live (seconds)
     :type ttl: float
-    :keyword body: envelope body.
+    :keyword body: request body.
     :return: The message serial number.
     :rtype: str
     """
@@ -51,15 +51,15 @@ def send(endpoint, destination, ttl=None, **body):
     else:
         address = destination.routing_key
     routing = (endpoint.id(), destination.routing_key)
-    envelope = Envelope(sn=sn, version=VERSION, routing=routing)
-    envelope += body
-    unsigned = envelope.dump()
+    request = Envelope(sn=sn, version=VERSION, routing=routing)
+    request += body
+    unsigned = request.dump()
     signed = auth.sign(endpoint.authenticator, unsigned)
     message = Message(content=signed, durable=True, ttl=ttl)
     sender = endpoint.session().sender(address)
     sender.send(message)
     sender.close()
-    log.debug('{%s} sent (%s)\n%s', endpoint.id(), address, envelope)
+    log.debug('{%s} sent (%s)\n%s', endpoint.id(), address, request)
     return sn
 
 
@@ -78,7 +78,7 @@ class Producer(Endpoint):
         :type destination: gofer.transport.model.Destination
         :param ttl: Time to Live (seconds)
         :type ttl: float
-        :keyword body: envelope body.
+        :keyword body: request body.
         :return: The message serial number.
         :rtype: str
         """
@@ -91,7 +91,7 @@ class Producer(Endpoint):
         :type destinations: [gofer.transport.node.Node,..]
         :param ttl: Time to Live (seconds)
         :type ttl: float
-        :keyword body: envelope body.
+        :keyword body: request body.
         :return: A list of (addr,sn).
         :rtype: list
         """

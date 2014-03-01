@@ -108,21 +108,12 @@ class Reader(Endpoint):
         :type timeout: int
         :return: The next message, or (None).
         :rtype: qpid.messaging.Message
-        :raises: auth.ValidationFailed
         """
         try:
             self.open()
-            message = self.__receiver.fetch(timeout=timeout)
-            try:
-                auth.validate(self.authenticator, message.content)
-            except auth.ValidationFailed:
-                self.ack(message)
-                raise
-            return message
+            return self.__receiver.fetch(timeout=timeout)
         except Empty:
             pass
-        except auth.ValidationFailed:
-            raise
         except Exception:
             log.error(self.id(), exc_info=1)
             sleep(10)
@@ -136,13 +127,13 @@ class Reader(Endpoint):
         :rtype: (Envelope, callable)
         :raises: model.InvalidRequest
         """
+        uuid = self.queue.name
         message = self.get(timeout)
         if message:
-            request = Envelope()
-            request.load(message.content)
-            request.subject = subject(message)
-            request.ttl = message.ttl
             try:
+                request = auth.validate(self.authenticator, uuid, message.content)
+                request.subject = subject(message)
+                request.ttl = message.ttl
                 model.validate(request)
             except model.InvalidRequest:
                 self.ack(message)

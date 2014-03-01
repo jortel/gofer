@@ -20,7 +20,6 @@ PROGRESS = 'progress'
 
 # --- message body -----------------------------------------------------------
 
-SIGNATURE = 'signature'
 RETVAL = 'retval'
 EXVAL = 'exval'
 

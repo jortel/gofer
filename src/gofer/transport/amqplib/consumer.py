@@ -56,18 +56,10 @@ class Reader(Endpoint):
         Get the next message from the queue.
         :return: The next message or None.
         :rtype: amqplib.Message
-        :raises: model.InvalidRequest
         """
         channel = self.channel()
         self.queue.declare(self.url)
-        message = channel.basic_get(self.queue.name)
-        if message:
-            try:
-                auth.validate(self.authenticator, message.body)
-            except auth.ValidationFailed:
-                self.ack(message)
-                raise
-        return message
+        return channel.basic_get(self.queue.name)
 
     @reliable
     def next(self, timeout=90):
@@ -75,18 +67,18 @@ class Reader(Endpoint):
         Get the next request from the queue.
         :param timeout: The read timeout in seconds.
         :type timeout: int
-        :return: A tuple of: (envelope, ack())
+        :return: A tuple of: (request, ack())
         :rtype: (Envelope, callable)
         :raises: model.InvalidRequest
         """
         delay = DELAY
         timer = float(timeout or 0)
+        uuid = self.queue.name
         while True:
             message = self.get()
             if message:
-                request = Envelope()
-                request.load(message.body)
                 try:
+                    request = auth.validate(self.authenticator, uuid, message.body)
                     model.validate(request)
                 except model.InvalidRequest:
                     self.ack(message)
@@ -104,12 +96,12 @@ class Reader(Endpoint):
 
     def search(self, sn, timeout=90):
         """
-        Search the reply queue for the envelope with the matching serial #.
+        Search the reply queue for the request with the matching serial #.
         :param sn: The expected serial number.
         :type sn: str
         :param timeout: The read timeout.
         :type timeout: int
-        :return: The next envelope.
+        :return: The next request.
         :rtype: Envelope
         """
         return search(self, sn, timeout)
