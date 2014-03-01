@@ -163,7 +163,7 @@ class Task:
             log.exception('send failed:\n%s', result)
 
     def producer(self):
-        url = self.request.url
+        url = self.plugin.get_url()
         tp = self.plugin.get_transport()
         producer = tp.producer(url=url)
         producer.authenticator = self.plugin.authenticator
