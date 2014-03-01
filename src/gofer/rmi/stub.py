@@ -21,7 +21,9 @@ classes on which we invoke methods.
 
 from new import classobj
 from threading import RLock
-from gofer.rmi.policy import *
+
+from gofer.messaging.model import Options
+from gofer.rmi.policy import Synchronous, Asynchronous
 from gofer.rmi.dispatcher import Request
 
 

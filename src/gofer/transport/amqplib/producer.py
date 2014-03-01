@@ -13,6 +13,7 @@ from logging import getLogger
 
 from amqplib.client_0_8 import Message
 
+from gofer.messaging import auth
 from gofer.messaging.model import getuuid, VERSION, Envelope
 from gofer.transport.amqplib.endpoint import Endpoint, reliable
 
@@ -46,12 +47,13 @@ def send(endpoint, destination, ttl=None, **body):
     """
     sn = getuuid()
     routing_key = destination.routing_key
-    routing = (endpoint.id(), destination.dict())
+    routing = (endpoint.id(), routing_key)
     envelope = Envelope(sn=sn, version=VERSION, routing=routing)
     envelope += body
-    body = envelope.dump()
+    unsigned = envelope.dump()
+    signed = auth.sign(endpoint.authenticator, unsigned)
     channel = endpoint.channel()
-    m = message(body, ttl)
+    m = message(signed, ttl)
     channel.basic_publish(m, exchange=destination.exchange, routing_key=routing_key)
     log.debug('{%s} sent (%s)\n%s', endpoint.id(), routing_key, envelope)
     return sn

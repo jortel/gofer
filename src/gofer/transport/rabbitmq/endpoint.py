@@ -14,7 +14,7 @@ from threading import RLock
 from logging import getLogger
 
 from gofer import synchronized
-from gofer.messaging.model import getuuid
+from gofer.transport.endpoint import Endpoint as Base
 from gofer.transport.rabbitmq.broker import RabbitMQ, ConnectionError
 
 
@@ -54,13 +54,9 @@ def endpoint(fn):
 # --- endpoint ---------------------------------------------------------------
 
 
-class Endpoint:
+class Endpoint(Base):
     """
     Base class for an AMQP endpoint.
-    :ivar uuid: The unique endpoint id.
-    :type uuid: str
-    :ivar url: The broker URL.
-    :type url: str
     :ivar __mutex: The endpoint mutex.
     :type __mutex: RLock
     :ivar __channel: An AMQP channel.
@@ -69,15 +65,16 @@ class Endpoint:
 
     LOCALHOST = 'amqp://localhost:5672'
 
-    def __init__(self, uuid=None, url=None):
+    def __init__(self, uuid=None, url=LOCALHOST):
         """
         :param uuid: The endpoint uuid.
         :type uuid: str
         :param url: The broker url <transport>://<user>/<pass>@<host>:<port>.
         :type url: str
+        :param authenticator: A message authenticator.
+        :type authenticator: gofer.messaging.auth.Authenticator
         """
-        self.uuid = uuid or getuuid()
-        self.url = url or self.LOCALHOST
+        Base.__init__(self, uuid, url)
         self.__mutex = RLock()
         self.__channel = None
 

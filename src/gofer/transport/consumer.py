@@ -13,6 +13,9 @@
 from threading import Thread
 from logging import getLogger
 
+from gofer.messaging import auth
+from gofer.messaging import model
+
 
 log = getLogger(__name__)
 
@@ -25,7 +28,7 @@ class Consumer(Thread):
     def __init__(self, reader):
         """
         :param reader: An AMQP queue reader.
-        :type reader: Reader
+        :type reader: gofer.transport.model.Reader
         """
         Thread.__init__(self, name=reader.queue.name)
         self.reader = reader
@@ -39,28 +42,68 @@ class Consumer(Thread):
         self._run = False
 
     def run(self):
+        """
+        Main consumer loop.
+        """
         self.reader.open()
         try:
             while self._run:
-                envelope, ack = self.reader.next(10)
-                if envelope is None:
-                    continue
-                try:
-                    self.dispatch(envelope)
-                    ack()
-                except Exception:
-                    log.exception(self.name)
+                self.__read()
         finally:
             self.reader.close()
 
-    def dispatch(self, envelope):
+    def __read(self):
         """
-        Called to process the received envelope.
+        Read and process incoming requests.
+        """
+        try:
+            request, ack = self.reader.next(10)
+            if request is None:
+                return
+            self.dispatch(request)
+            ack()
+        except auth.ValidationFailed, vf:
+            self.message_rejected(vf.code, vf.request, vf.details)
+        except model.InvalidRequest, ir:
+            self.request_rejected(ir.code, ir.request, ir.details)
+        except Exception:
+            log.exception(self.name)
+
+    def message_rejected(self, code, message, details):
+        """
+        Called to process the received (invalid) AMQP message.
         This method intended to be overridden by subclasses.
-        :param envelope: The received envelope.
-        :type envelope: Envelope
+        :param code: The validation code.
+        :type code: str
+        :param message: The received request.
+        :type message: str
+        :param details: The explanation.
+        :type details: str
         """
-        log.debug('{%s} dispatched:\n%s', self.name, envelope)
+        log.debug('%s, reason: %s\n%s', code, details, message)
+
+    def request_rejected(self, code, request, details):
+        """
+        Called to process the received (invalid) request.
+        This method intended to be overridden by subclasses.
+        :param code: The validation code.
+        :type code: str
+        :param request: The received request.
+        :type request: Envelope
+        :param details: The explanation.
+        :type details: str
+        """
+        log.debug('%s, sn:%s reason:%s\n%s', code, details, request)
+
+    @staticmethod
+    def dispatch(request):
+        """
+        Called to process the received request.
+        This method intended to be overridden by subclasses.
+        :param request: The received request.
+        :type request: Envelope
+        """
+        log.debug('dispatched:\n%s', request)
 
 
 class Ack:

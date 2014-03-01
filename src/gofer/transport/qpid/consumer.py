@@ -23,7 +23,9 @@ from logging import getLogger
 
 from qpid.messaging import Empty
 
-from gofer.messaging.model import Envelope, is_valid, search
+from gofer.messaging import auth
+from gofer.messaging import model
+from gofer.messaging.model import Envelope, search
 from gofer.transport.consumer import Ack
 from gofer.transport.qpid.endpoint import Endpoint
 
@@ -106,12 +108,21 @@ class Reader(Endpoint):
         :type timeout: int
         :return: The next message, or (None).
         :rtype: qpid.messaging.Message
+        :raises: auth.ValidationFailed
         """
         try:
             self.open()
-            return self.__receiver.fetch(timeout=timeout)
+            message = self.__receiver.fetch(timeout=timeout)
+            try:
+                auth.validate(self.authenticator, message.content)
+            except auth.ValidationFailed:
+                self.ack(message)
+                raise
+            return message
         except Empty:
             pass
+        except auth.ValidationFailed:
+            raise
         except Exception:
             log.error(self.id(), exc_info=1)
             sleep(10)
@@ -123,16 +134,21 @@ class Reader(Endpoint):
         :type timeout: int
         :return: A tuple of: (envelope, ack())
         :rtype: (Envelope, callable)
+        :raises: model.InvalidRequest
         """
         message = self.get(timeout)
         if message:
-            envelope = Envelope()
-            envelope.load(message.content)
-            envelope.subject = subject(message)
-            envelope.ttl = message.ttl
-            if is_valid(envelope):
-                log.debug('{%s} read next:\n%s', self.id(), envelope)
-                return envelope, Ack(self, message)
+            request = Envelope()
+            request.load(message.content)
+            request.subject = subject(message)
+            request.ttl = message.ttl
+            try:
+                model.validate(request)
+            except model.InvalidRequest:
+                self.ack(message)
+                raise
+            log.debug('{%s} read next:\n%s', self.id(), request)
+            return request, Ack(self, message)
         return None, None
 
     def search(self, sn, timeout=90):

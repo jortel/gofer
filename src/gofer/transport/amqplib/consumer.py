@@ -12,7 +12,9 @@
 from time import sleep
 from logging import getLogger
 
-from gofer.messaging.model import Envelope, is_valid, search
+from gofer.messaging import auth
+from gofer.messaging import model
+from gofer.messaging.model import Envelope, search
 from gofer.transport.consumer import Ack
 from gofer.transport.amqplib.endpoint import Endpoint, reliable
 
@@ -54,30 +56,43 @@ class Reader(Endpoint):
         Get the next message from the queue.
         :return: The next message or None.
         :rtype: amqplib.Message
+        :raises: model.InvalidRequest
         """
         channel = self.channel()
         self.queue.declare(self.url)
-        return channel.basic_get(self.queue.name)
+        message = channel.basic_get(self.queue.name)
+        if message:
+            try:
+                auth.validate(self.authenticator, message.body)
+            except auth.ValidationFailed:
+                self.ack(message)
+                raise
+        return message
 
     @reliable
     def next(self, timeout=90):
         """
-        Get the next envelope from the queue.
+        Get the next request from the queue.
         :param timeout: The read timeout in seconds.
         :type timeout: int
         :return: A tuple of: (envelope, ack())
         :rtype: (Envelope, callable)
+        :raises: model.InvalidRequest
         """
         delay = DELAY
         timer = float(timeout or 0)
         while True:
             message = self.get()
             if message:
-                envelope = Envelope()
-                envelope.load(message.body)
-                if is_valid(envelope):
-                    log.debug('{%s} read next:\n%s', self.id(), envelope)
-                    return envelope, Ack(self, message)
+                request = Envelope()
+                request.load(message.body)
+                try:
+                    model.validate(request)
+                except model.InvalidRequest:
+                    self.ack(message)
+                    raise
+                log.debug('{%s} read next:\n%s', self.id(), request)
+                return request, Ack(self, message)
             if timer > 0:
                 sleep(delay)
                 timer -= delay

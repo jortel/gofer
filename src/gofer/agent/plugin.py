@@ -121,11 +121,12 @@ class Plugin(object):
             if syn == name:
                 continue
             self.synonyms.append(syn)
-        self.pool = ThreadPool(descriptor.messaging.threads or 1)
+        self.pool = ThreadPool(int(descriptor.messaging.threads or 1))
         self.impl = None
         self.actions = []
         self.dispatcher = Dispatcher([])
         self.whiteboard = Whiteboard()
+        self.authenticator = None
         self.consumer = None
         
     def names(self):
@@ -229,6 +230,7 @@ class Plugin(object):
         tp = self.get_transport()
         queue = tp.queue(uuid)
         consumer = RequestConsumer(queue, url=url, transport=tp)
+        consumer.reader.authenticator = self.authenticator
         consumer.start()
         self.consumer = consumer
     

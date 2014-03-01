@@ -15,14 +15,18 @@
 #
 
 from time import sleep
+from hashlib import sha256
+
 from gofer.decorators import *
 from gofer.agent.plugin import Plugin
 from gofer.agent.rmi import Context
 from gofer.messaging import Producer, Exchange, Destination
+from gofer.messaging.auth import Authenticator, ValidationFailed
 from logging import getLogger, INFO, DEBUG
 
 log = getLogger(__name__)
 plugin = Plugin.find(__name__)
+cfg = plugin.cfg()
 
 HEARTBEAT = 500
 
@@ -39,14 +43,39 @@ except Exception, e:
 plugin.whiteboard['secret'] = 'garfield'
 
 
+class TestAuthenticator(Authenticator):
+
+    def sign(self, message):
+        h = sha256()
+        h.update(message)
+        digest = h.hexdigest()
+        # print 'signed: %s' % digest
+        return digest
+
+    def validate(self, uuid, message, signature):
+        digest = self.sign(message)
+        valid = signature == digest
+        # print 'matching signatures: [%s, %s]' % (signature, digest)
+        if valid:
+            return
+        raise ValidationFailed(
+            message, 'matching signatures: [%s, %s]' % (signature, digest))
+
+if cfg.messaging.auth:
+    plugin.authenticator = TestAuthenticator()
+
+
+
 class BadException(Exception):
     def __init__(self):
         self.cat = Cat()
+
 
 class MyError(Exception):
     def __init__(self, a, b):
         Exception.__init__(self, a)
         self.b = b
+
 
 class Admin(_Admin):
     
@@ -54,11 +83,13 @@ class Admin(_Admin):
     def help(self):
         return _Admin.help(self)
 
+
 class RepoLib:
     @remote
     def update(self):
         print 'Repo updated'
-        
+
+
 class Cat:
     
     @remote(secret=plugin.whiteboard['secret'])

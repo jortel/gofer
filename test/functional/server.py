@@ -18,17 +18,20 @@ import sys
 
 from time import sleep
 from optparse import OptionParser, Option
+from hashlib import sha256
+from datetime import datetime as dt
+from datetime import timedelta as delta
+from logging import DEBUG, INFO, basicConfig, getLogger
+from threading import Thread
 
 from gofer.rmi.window import *
 from gofer.rmi.dispatcher import *
 from gofer.rmi.async import ReplyConsumer
 from gofer.metrics import Timer
-from gofer.proxy import Agent
+from gofer.proxy import Agent as RealAgent
 from gofer.messaging import Queue
-from datetime import datetime as dt
-from datetime import timedelta as delta
-from logging import DEBUG, INFO, basicConfig, getLogger
-from threading import Thread
+from gofer.messaging.auth import Authenticator, ValidationFailed
+
 from plugins import *
 
 basicConfig(filename='/opt/gofer/server.log')
@@ -36,6 +39,35 @@ basicConfig(filename='/opt/gofer/server.log')
 log = getLogger(__name__)
 
 getLogger('gofer.transport').setLevel(DEBUG)
+
+
+class Agent(object):
+
+    base_options = {}
+
+    def __new__(cls, *args, **options):
+        all_options = dict(Agent.base_options)
+        all_options.update(options)
+        return RealAgent(*args, **all_options)
+
+
+class TestAuthenticator(Authenticator):
+
+    def sign(self, message):
+        h = sha256()
+        h.update(message)
+        digest = h.hexdigest()
+        # print 'signed: %s' % digest
+        return digest
+
+    def validate(self, uuid, message, signature):
+        digest = self.sign(message)
+        valid = signature == digest
+        # print 'matching signatures: [%s, %s]' % (signature, digest)
+        if valid:
+            return
+        raise ValidationFailed(
+            message, 'matching signatures: [%s, %s]' % (signature, digest))
 
 
 class ListOption(Option):
@@ -147,9 +179,9 @@ def threads(uuid, n=10):
     return t
 
 
-def test_performance(url, transport, uuid):
+def test_performance(uuid):
     N = 200
-    agent = Agent(uuid, url=url, transport=transport)
+    agent = Agent(uuid)
     dog = agent.Dog()
     t = Timer()
     t.start()
@@ -171,14 +203,14 @@ def test_performance(url, transport, uuid):
     sys.exit(0)
 
 
-def test_triggers(url, transport, uuid):
-    agent = Agent(uuid, url=url, transport=transport)
+def test_triggers(uuid):
+    agent = Agent(uuid)
     dog = agent.Dog(trigger=1)
     t = dog.bark('delayed!')
     print t
     t()
     # broadcast
-    agent = Agent([uuid,], url=url, transport=transport)
+    agent = Agent([uuid,])
     dog = agent.Dog(trigger=1)
     for t in dog.bark('delayed!'):
         print t
@@ -186,10 +218,10 @@ def test_triggers(url, transport, uuid):
     print 'Manual trigger, OK'
     
 
-def demotest_performance(url, transport, uuid, n=50):
+def demotest_performance(uuid, n=50):
     benchmarks = []
     print 'measuring performance using demo() ...'
-    agent = Agent(uuid, url=url, transport=transport)
+    agent = Agent(uuid)
     timer = Timer()
     for i in range(0,n):
         timer.start()
@@ -204,7 +236,7 @@ def demotest_performance(url, transport, uuid, n=50):
     sys.exit(0)
 
 
-def demo_window(url, transport, uuid, exit=0):
+def demo_window(uuid, exit=0):
     tag = uuid.upper()
     print 'demo window, +10, +10min seconds'
     begin = later(seconds=10)
@@ -220,8 +252,8 @@ def demo_window(url, transport, uuid, exit=0):
         sys.exit(0)
     
 
-def demo_pam_authentication(url, transport, uuid, yp, exit=0):
-    agent = Agent(uuid, url=url, transport=transport)
+def demo_pam_authentication(uuid, yp, exit=0):
+    agent = Agent(uuid)
     # basic success
     dog = agent.Dog(user='jortel', password=yp['jortel'])
     print dog.testpam()
@@ -270,8 +302,8 @@ def demo_pam_authentication(url, transport, uuid, yp, exit=0):
         sys.exit(0)
 
 
-def demo_layered_security(url, transport, uuid, yp, exit=0):
-    agent = Agent(uuid, url=url, transport=transport)
+def demo_layered_security(uuid, yp, exit=0):
+    agent = Agent(uuid)
     # multi-user
     for user in ('jortel', 'root'):
         dog = agent.Dog(user=user, password=yp[user])
@@ -291,8 +323,8 @@ def demo_layered_security(url, transport, uuid, yp, exit=0):
         sys.exit(0)
 
         
-def demo_shared_secret(url, transport, uuid, exit=0):
-    agent = Agent(uuid, url=url, transport=transport)
+def demo_shared_secret(uuid, exit=0):
+    agent = Agent(uuid)
     # success
     cat = agent.Cat(secret='garfield')
     print cat.meow('secret, OK')
@@ -314,16 +346,16 @@ def demo_shared_secret(url, transport, uuid, exit=0):
         sys.exit(0)
         
 
-def demo_authentication(url, transport, uuid, yp, exit=0):
-    demo_shared_secret(url, transport, uuid)
-    demo_pam_authentication(url, transport, uuid, yp)
-    demo_layered_security(url, transport, uuid, yp)
+def demo_authentication(uuid, yp, exit=0):
+    demo_shared_secret(uuid)
+    demo_pam_authentication(uuid, yp)
+    demo_layered_security(uuid, yp)
     if exit:
         sys.exit(0)
 
 
-def demo_constructors(url, transport, uuid, exit=0):
-    agent = Agent(uuid, url=url, transport=transport)
+def demo_constructors(uuid, exit=0):
+    agent = Agent(uuid)
     cowboy = agent.Cowboy()
     for name,age in (('jeff', 10), ('bart', 45),):
         cowboy(name, age=age)
@@ -340,15 +372,15 @@ def demo_constructors(url, transport, uuid, exit=0):
         sys.exit(0)
         
         
-def demo_getitem(url, transport, uuid, exit=0):
-    agent = Agent(uuid, url=url, transport=transport)
+def demo_getitem(uuid, exit=0):
+    agent = Agent(uuid)
     fn = agent['Dog']['bark']
     print fn('RUF')
     if exit:
         sys.exit(0)
         
 
-def demo_progress(url, transport, uuid, exit=0):
+def demo_progress(uuid, exit=0):
     # synchronous
     def fn(report):
         pct = (float(report['completed'])/float(report['total']))*100
@@ -359,47 +391,47 @@ def demo_progress(url, transport, uuid, exit=0):
              report['completed'],
              int(pct),
              report['details'])
-    agent = Agent(uuid, url=url, transport=transport)
+    agent = Agent(uuid)
     p = agent.Progress(progress=fn, any={4:5})
     print p.send(4)
     if exit:
         sys.exit(0)
     
 
-def main(url, transport, uuid):
+def main(uuid):
     tag = uuid.upper()
 
     # test timeout (not expired)
-    agent = Agent(uuid, url=url, transport=transport)
+    agent = Agent(uuid)
     dog = agent.Dog(timeout=3)
     print dog.sleep(1)
 
     # TTL
-    agent = Agent(uuid, timeout=10, url=url, transport=transport)
+    agent = Agent(uuid, timeout=10)
     dog = agent.Dog()
     print dog.sleep(1)
     
     # synchronous
     print '(demo) synchronous'
-    agent = Agent(uuid, url=url, transport=transport)
+    agent = Agent(uuid)
     demo(agent)
 
     # asynchronous (fire and forget)
     print '(demo) asynchronous fire-and-forget'
-    agent = Agent(uuid, async=True, url=url, transport=transport)
+    agent = Agent(uuid, async=True, url=url)
     demo(agent)
 
     # asynchronous
     print '(demo) asynchronous'
     window = Window(begin=dt.utcnow(), minutes=1)
-    agent = Agent(uuid, ctag=tag, window=window, url=url, transport=transport)
+    agent = Agent(uuid, ctag=tag, window=window)
     demo(agent)
 
     # asynchronous
     print '(demo) group asynchronous'
     group = (uuid, uuid)
     window = Window(begin=dt.utcnow(), minutes=1)
-    agent = Agent(group, ctag=tag, window=window, url=url, transport=transport)
+    agent = Agent(group, ctag=tag, window=window)
     demo(agent)
 
     # future
@@ -426,9 +458,9 @@ def main(url, transport, uuid):
     print dog.bark('hello again')
 
 
-def smoke_test(url, transport, uuid, exit=0):
+def smoke_test(uuid, exit=0):
     print 'running smoke test ...'
-    agent = Agent(uuid, url=url, transport=transport)
+    agent = Agent(uuid)
     for T in range(0, 10):
         print 'test: %d' % T
         agent.testplugin.echo('have a nice day')
@@ -451,6 +483,7 @@ def get_options():
     parser.add_option('-t', '--threads', default=0, help='number of threads')
     parser.add_option('-U', '--user', action='extend', help='list of userid:password')
     parser.add_option('-T', '--transport', default='qpid', help='transport (qpid|amqplib|rabbitmq)')
+    parser.add_option('-a', '--auth', default='', help='enable message auth')
     opts, args = parser.parse_args()
     return opts
 
@@ -458,25 +491,38 @@ def get_options():
 if __name__ == '__main__':
     options = get_options()
     uuid = options.uuid
+
     yp = {}
     for user in options.user:
         u, p = user.split(':')
         yp[u] = p
+
     url = options.url
+
     transport = options.transport or 'qpid'
+
     queue = Queue(uuid.upper(), transport=transport)
     queue.declare(url)
     reply_consumer = ReplyConsumer(queue, url=url, transport=transport)
     reply_consumer.start(on_reply)
-    # demo_progress(url, transport, uuid, 1)
-    # demo_window(url, transport, uuid, 1)
-    # test_performance(url, transport, uuid)
-    # demotest_performance(url, transport, uuid)
-    demo_getitem(url, transport, uuid)
-    demo_authentication(url, transport, uuid, yp)
-    demo_constructors(url, transport, uuid)
-    test_triggers(url, transport, uuid)
-    smoke_test(url, transport, uuid)
+
+    Agent.base_options['url'] = url
+    Agent.base_options['transport'] = transport
+
+    if options.auth:
+        Agent.base_options['authenticator'] = TestAuthenticator()
+
+    # demo_progress(uuid, 1)
+    # demo_window(uuid, 1)
+    # test_performance(uuid)
+    # demotest_performance(uuid)
+
+    demo_getitem(uuid)
+    demo_authentication(uuid, yp)
+    demo_constructors(uuid)
+    test_triggers(uuid)
+    smoke_test(uuid)
+
     n_threads = int(options.threads)
     if n_threads:
         print '======= RUNNING %d THREADS ============' % n_threads
@@ -486,8 +532,8 @@ if __name__ == '__main__':
         sys.exit(0)
     for i in range(0, 100):
         print '======= %d ========' % i
-        main(url, transport, uuid)
-    test_performance(url, transport, uuid)
+        main(uuid)
+    test_performance(uuid)
     print 'finished.'
 
 

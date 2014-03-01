@@ -11,6 +11,7 @@
 
 from logging import getLogger
 
+from gofer.messaging import auth
 from gofer.messaging.model import getuuid, VERSION, Envelope
 from gofer.transport.rabbitmq.endpoint import Endpoint, reliable
 
@@ -45,13 +46,14 @@ def send(endpoint, destination, ttl=None, **body):
     """
     sn = getuuid()
     routing_key = destination.routing_key
-    routing = (endpoint.id(), destination.dict())
+    routing = (endpoint.id(), routing_key)
     envelope = Envelope(sn=sn, version=VERSION, routing=routing)
     envelope += body
-    body = envelope.dump()
+    unsigned = envelope.dump()
+    signed = auth.sign(endpoint.authenticator, unsigned)
     channel = endpoint.channel()
     channel.basic_publish(
-        body,
+        signed,
         exchange=destination.exchange,
         routing_key=routing_key,
         **properties(ttl))
