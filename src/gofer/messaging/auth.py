@@ -114,5 +114,6 @@ def validate(authenticator, message):
     except ValidationFailed:
         raise
     except Exception:
-        log.debug(message, exc_info=True)
-        return False
+        details = 'authenticator failed'
+        log.debug(details, exc_info=True)
+        raise ValidationFailed(message, details)
