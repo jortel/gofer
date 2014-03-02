@@ -74,8 +74,8 @@ def sign(authenticator, message):
     Sign the message using the specified validator.
     signed document:
       {
-        signature: <signature>,
-        payload: <payload>
+        message: <message>,
+        signature: <signature>
       }
     :param authenticator: A message authenticator.
     :type authenticator: Authenticator
@@ -86,7 +86,7 @@ def sign(authenticator, message):
         return message
     try:
         signature = authenticator.sign(message)
-        signed = Document(signature=signature, payload=message)
+        signed = Document(message=message, signature=signature)
         message = signed.dump()
     except Exception:
         log.debug(message, exc_info=True)
@@ -98,8 +98,8 @@ def validate(authenticator, uuid, message):
     Validate the document using the specified validator.
     signed document:
       {
-        signature: <signature>,
-        payload: <payload>
+        message: <message>,
+        signature: <signature>
       }
     :param uuid: The destination uuid.
     :type uuid: str
@@ -117,14 +117,14 @@ def validate(authenticator, uuid, message):
         signed = Document()
         signed.load(message)
         signature = signed.signature
-        payload = signed.payload
+        original = signed.message
         document = Document()
-        if payload:
-            document.load(payload)
+        if original:
+            document.load(original)
         else:
             document = signed
         if authenticator:
-            authenticator.validate(uuid, payload, signature)
+            authenticator.validate(uuid, original, signature)
         return document
     except ValidationFailed:
         raise
