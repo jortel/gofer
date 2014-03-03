@@ -17,6 +17,7 @@ Message authentication plumbing.
 """
 
 from logging import getLogger
+from base64 import b64encode, b64decode
 
 from gofer.constants import AUTHENTICATION
 from gofer.messaging.model import Document, InvalidDocument
@@ -30,7 +31,7 @@ class ValidationFailed(InvalidDocument):
     Message validation failed.
     """
 
-    def __init__(self, message, details):
+    def __init__(self, message, details=None):
         """
         :param message: The AMQP message that failed.
         :type message: str
@@ -86,7 +87,7 @@ def sign(authenticator, message):
         return message
     try:
         signature = authenticator.sign(message)
-        signed = Document(message=message, signature=signature)
+        signed = Document(message=message, signature=encode(signature))
         message = signed.dump()
     except Exception:
         log.debug(message, exc_info=True)
@@ -114,17 +115,17 @@ def validate(authenticator, uuid, message):
     if not message:
         return
     try:
-        signed = Document()
-        signed.load(message)
-        signature = signed.signature
-        original = signed.message
         document = Document()
+        document.load(message)
+        signature = document.signature
+        original = document.message
         if original:
+            document = Document()
             document.load(original)
         else:
-            document = signed
+            original = message
         if authenticator:
-            authenticator.validate(uuid, original, signature)
+            authenticator.validate(uuid, original, decode(signature))
         return document
     except ValidationFailed:
         raise
@@ -132,3 +133,17 @@ def validate(authenticator, uuid, message):
         details = 'authenticator failed'
         log.debug(details, exc_info=True)
         raise ValidationFailed(message, details)
+
+
+def encode(signature):
+    if signature:
+        return b64encode(signature)
+    else:
+        return ''
+
+
+def decode(signature):
+    if signature:
+        return b64decode(signature)
+    else:
+        return ''
