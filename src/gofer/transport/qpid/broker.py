@@ -72,6 +72,8 @@ class Qpid(Broker):
                 tcp_nodelay=True,
                 reconnect=True,
                 transport=self.url.transport,
+                username=self.userid,
+                password=self.password,
                 ssl_trustfile=self.cacert,
                 ssl_certfile=self.clientcert,
                 ssl_skip_hostname_check=(not self.validation))

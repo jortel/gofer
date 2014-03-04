@@ -61,7 +61,11 @@ class RabbitMQ(Broker):
         while True:
             try:
                 log.info('connecting:\n%s', self)
-                con = Connection(host=self.url.host, port=self.url.port)
+                con = Connection(
+                    host=self.url.host,
+                    port=self.url.port,
+                    userid=self.userid or 'guest',
+                    password=self.password or 'guest')
                 return con
             except ConnectionError:
                 log.exception(str(self.url))

@@ -65,7 +65,11 @@ class Broker(_Broker):
         while True:
             try:
                 log.info('connecting:\n%s', self)
-                con = Connection(host=self.url.simple(), ssl=self._ssl())
+                con = Connection(
+                    host=self.url.simple(),
+                    ssl=self._ssl(),
+                    userid=self.userid or 'guest',
+                    password=self.password or 'guest')
                 return con
             except CONNECTION_EXCEPTIONS:
                 log.exception(str(self.url))
