@@ -20,6 +20,8 @@ from gofer.transport.broker import Broker
 log = getLogger(__name__)
 
 
+USERID = 'guest'
+PASSWORD = 'guest'
 DEFAULT_URL = 'amqp://localhost'
 
 
@@ -34,6 +36,8 @@ class RabbitMQ(Broker):
         :type url: str
         """
         Broker.__init__(self, url)
+        self.userid = USERID
+        self.password = PASSWORD
 
     def connect(self):
         """
@@ -64,8 +68,8 @@ class RabbitMQ(Broker):
                 con = Connection(
                     host=self.url.host,
                     port=self.url.port,
-                    userid=self.userid or 'guest',
-                    password=self.password or 'guest')
+                    userid=self.userid,
+                    password=self.password)
                 return con
             except ConnectionError:
                 log.exception(str(self.url))

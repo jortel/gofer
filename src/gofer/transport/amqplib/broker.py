@@ -23,7 +23,10 @@ from gofer.transport.broker import Broker as _Broker
 log = getLogger(__name__)
 
 
+USERID = 'guest'
+PASSWORD = 'guest'
 DEFAULT_URL = 'amqp://localhost'
+
 CONNECTION_EXCEPTIONS = (IOError, SocketError, AMQPConnectionException, AttributeError)
 
 
@@ -38,6 +41,8 @@ class Broker(_Broker):
         :type url: str
         """
         _Broker.__init__(self, url)
+        self.userid = USERID
+        self.password = PASSWORD
 
     def connect(self):
         """
@@ -68,8 +73,8 @@ class Broker(_Broker):
                 con = Connection(
                     host=self.url.simple(),
                     ssl=self._ssl(),
-                    userid=self.userid or 'guest',
-                    password=self.password or 'guest')
+                    userid=self.userid,
+                    password=self.password)
                 return con
             except CONNECTION_EXCEPTIONS:
                 log.exception(str(self.url))
