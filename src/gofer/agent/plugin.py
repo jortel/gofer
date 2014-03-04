@@ -178,12 +178,21 @@ class Plugin(object):
         url = self.get_url()
         transport = self.get_transport()
         broker = transport.broker(url)
-        broker.cacert = plugin.messaging.cacert or agent.messaging.cacert
-        broker.clientcert = plugin.messaging.clientcert or agent.messaging.clientcert
-        broker.validation = get_bool(plugin.messaging.validation or agent.messaging.validation)
+        broker.virtual_host = \
+            plugin.messaging.virtual_host or agent.messaging.virtual_host
+        broker.userid = \
+            plugin.messaging.userid or agent.messaging.userid
+        broker.password = \
+            plugin.messaging.password or agent.messaging.password
+        broker.cacert = \
+            plugin.messaging.cacert or agent.messaging.cacert
+        broker.clientcert = \
+            plugin.messaging.clientcert or agent.messaging.clientcert
+        broker.host_validation = \
+            get_bool(plugin.messaging.host_validation or agent.messaging.host_validation)
         log.debug('broker (qpid) configured: %s', broker)
         return broker
-    
+
     def set_uuid(self, uuid):
         """
         Set the plugin's UUID.

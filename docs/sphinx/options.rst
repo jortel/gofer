@@ -30,6 +30,8 @@ Summary
    A user (name), used for PAM authenticated access to remote methods.
  *password*
    A password, used for PAM authenticated access to remote methods.
+ *authenticator*
+   A subclass of pulp.messaging.auth.Authenticator that provides message authentication.
    
 
 Details

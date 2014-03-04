@@ -22,7 +22,7 @@ from gofer.transport.broker import Broker as _Broker
 
 log = getLogger(__name__)
 
-
+VIRTUAL_HOST = '/'
 USERID = 'guest'
 PASSWORD = 'guest'
 DEFAULT_URL = 'amqp://localhost'
@@ -41,8 +41,6 @@ class Broker(_Broker):
         :type url: str
         """
         _Broker.__init__(self, url)
-        self.userid = USERID
-        self.password = PASSWORD
 
     def connect(self):
         """
@@ -72,9 +70,10 @@ class Broker(_Broker):
                 log.info('connecting:\n%s', self)
                 con = Connection(
                     host=self.url.simple(),
+                    virtual_host=self.virtual_host or VIRTUAL_HOST,
                     ssl=self._ssl(),
-                    userid=self.userid,
-                    password=self.password)
+                    userid=self.userid or USERID,
+                    password=self.password or PASSWORD)
                 return con
             except CONNECTION_EXCEPTIONS:
                 log.exception(str(self.url))

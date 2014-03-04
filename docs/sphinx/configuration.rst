@@ -63,7 +63,11 @@ Defines messaging properties:
       - **amqps**: SSL protocol
 - **transport** - The transport used to connect to the specified broker.
 - **cacert** - The (optional) SSL CA certificate used to validate the server certificate.
+- **virtual_host** - The A
 - **clientcert** - The (optional) SSL client certificate.
+- **host_validation** - The (optional) flag indicates SSL host validation should be performed.
+- **userid** - The (optional) userid used for authentication.
+- **password** - The (optional) password used for authentication.
   A (PEM) file containing **both** the private key and certificate.
 - **threads** - The (optional) number of threads for the RMI dispatcher.
   Default to (1) when not specified.

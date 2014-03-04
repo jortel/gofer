@@ -52,8 +52,10 @@ class Broker:
     :ivar clientcert: Path to a PEM encoded file containing
         the private key & certificate used for client authentication.
     :type clientcert: str
-    :ivar validation: Enable SSL host validation.
-    :type validation: bool
+    :ivar host_validation: Enable SSL host validation.
+    :type host_validation: bool
+    :ivar virtual_host: The AMQP virtual host.
+    :type virtual_host: str
     """
 
     __metaclass__ = MetaBroker
@@ -68,9 +70,10 @@ class Broker:
         else:
             self.url = URL(url)
         self.connection = Local()
+        self.virtual_host = None
         self.cacert = None
         self.clientcert = None
-        self.validation = False
+        self.host_validation = False
         self.userid = None
         self.password = None
 
