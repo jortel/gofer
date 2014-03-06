@@ -16,6 +16,7 @@
 Message authentication plumbing.
 """
 
+from hashlib import sha256
 from logging import getLogger
 from base64 import b64encode, b64decode
 
@@ -31,14 +32,12 @@ class ValidationFailed(InvalidDocument):
     Message validation failed.
     """
 
-    def __init__(self, message, details=None):
+    def __init__(self, details=None):
         """
-        :param message: The AMQP message that failed.
-        :type message: str
         :param details: A detailed description.
         :type details: str
         """
-        InvalidDocument.__init__(self, AUTHENTICATION, message, details)
+        InvalidDocument.__init__(self, AUTHENTICATION, '{}', details)
 
 
 class Authenticator(object):
@@ -46,23 +45,23 @@ class Authenticator(object):
     Document the message authenticator API.
     """
 
-    def sign(self, message):
+    def sign(self, digest):
         """
         Sign the specified message.
-        :param message: An AMQP message body.
-        :type message: str
+        :param digest: An AMQP message digest.
+        :type digest: str
         :return: The message signature.
         :rtype: str
         """
         raise NotImplementedError()
 
-    def validate(self, uuid, message, signature):
+    def validate(self, uuid, digest, signature):
         """
         Validate the specified message and signature.
         :param uuid: The uuid of the sender.
         :type uuid: str
-        :param message: An AMQP message body.
-        :type message: str
+        :param digest: An AMQP message digest.
+        :type digest: str
         :param signature: A message signature.
         :type signature: str
         :raises ValidationFailed: when message is not valid.
@@ -86,7 +85,10 @@ def sign(authenticator, message):
     if not authenticator:
         return message
     try:
-        signature = authenticator.sign(message)
+        h = sha256()
+        h.update(message)
+        digest = h.hexdigest()
+        signature = authenticator.sign(digest)
         signed = Document(message=message, signature=encode(signature))
         message = signed.dump()
     except Exception, e:
@@ -115,26 +117,35 @@ def validate(authenticator, uuid, message):
     """
     if not message:
         return
-    try:
+
+    document = Document()
+    document.load(message)
+    signature = document.signature
+    original = document.message
+
+    if original:
         document = Document()
-        document.load(message)
-        signature = document.signature
-        original = document.message
-        if original:
-            document = Document()
-            document.load(original)
-        else:
-            original = message
+        document.load(original)
+    else:
+        original = message
+
+    try:
         if authenticator:
-            authenticator.validate(uuid, original, decode(signature))
+            h = sha256()
+            h.update(original)
+            digest = h.hexdigest()
+            authenticator.validate(uuid, digest, decode(signature))
         return document
-    except ValidationFailed:
-        raise
+    except ValidationFailed, failed:
+        failed.document = original
+        raise failed
     except Exception, e:
         details = str(e)
         log.info(details)
         log.debug(details, exc_info=True)
-        raise ValidationFailed(message, details)
+        failed = ValidationFailed(details)
+        failed.document = original
+        raise failed
 
 
 def encode(signature):

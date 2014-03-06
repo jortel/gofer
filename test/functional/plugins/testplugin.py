@@ -59,7 +59,7 @@ class TestAuthenticator(Authenticator):
         if valid:
             return
         raise ValidationFailed(
-            message, 'matching signatures: [%s, %s]' % (signature, digest))
+            'matching signatures: [%s, %s]' % (signature, digest))
 
 if cfg.messaging.auth:
     plugin.authenticator = TestAuthenticator()

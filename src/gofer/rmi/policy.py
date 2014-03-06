@@ -238,10 +238,8 @@ class Synchronous(RequestMethod):
         document = reader.search(sn, self.timeout)
         if document:
             if document.status == REJECTED:
-                # rejected
                 raise InvalidDocument(document.code, sn, document.details)
             if document.status in (ACCEPTED, STARTED):
-                # accepted
                 log.debug('request (%s), %s', sn, document.status)
             else:
                 self.__on_reply(document)
@@ -271,13 +269,10 @@ class Synchronous(RequestMethod):
                 timeout -= elapsed
             if document:
                 if document.status == REJECTED:
-                    # rejected
                     raise InvalidDocument(document.code, sn, document.details)
                 if document.status in (ACCEPTED, STARTED):
-                    # ignored
                     continue
                 if document.status == PROGRESS:
-                    # progress
                     self.__on_progress(document)
                 else:
                     return self.__on_reply(document)
