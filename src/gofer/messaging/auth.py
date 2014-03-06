@@ -89,7 +89,8 @@ def sign(authenticator, message):
         signature = authenticator.sign(message)
         signed = Document(message=message, signature=encode(signature))
         message = signed.dump()
-    except Exception:
+    except Exception, e:
+        log.info(str(e))
         log.debug(message, exc_info=True)
     return message
 
@@ -129,8 +130,9 @@ def validate(authenticator, uuid, message):
         return document
     except ValidationFailed:
         raise
-    except Exception:
-        details = 'authenticator failed'
+    except Exception, e:
+        details = str(e)
+        log.info(details)
         log.debug(details, exc_info=True)
         raise ValidationFailed(message, details)
 
