@@ -235,6 +235,7 @@ class Plugin(object):
         :param uuid: The (optional) messaging UUID.
         :type uuid: str
         """
+        self.detach()
         if not uuid:
             uuid = self.get_uuid()
         url = self.get_url()
@@ -253,7 +254,10 @@ class Plugin(object):
         """
         Detach (disconnect) from AMQP broker.
         """
-        self.consumer.close()
+        if not self.consumer:
+            return
+        self.consumer.stop()
+        self.consumer.join()
         self.consumer = None
         log.info('plugin uuid="%s", detached', self.get_uuid())
         
