@@ -65,7 +65,6 @@ if cfg.messaging.auth:
     plugin.authenticator = TestAuthenticator()
 
 
-
 class BadException(Exception):
     def __init__(self):
         self.cat = Cat()

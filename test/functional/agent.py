@@ -25,9 +25,6 @@ gofer.messaging = info
 
 [pam]
 service = passwd
-
-[loader]
-eager=1
 """
 
 import os
@@ -59,7 +56,7 @@ Pending.DELAYED = os.path.join(ROOT, 'messaging/delayed')
 
 # misc
 from gofer.agent.plugin import PluginDescriptor, PluginLoader
-from gofer.agent.main import Agent, eager, setup_logging
+from gofer.agent.main import Agent, setup_logging
 
 log = getLogger(__name__)
 
@@ -121,7 +118,7 @@ class TestAgent:
     def __init__(self, url, transport, uuid, threads, auth):
         setup_logging()
         install(url, transport, uuid, threads, auth)
-        plugins = PluginLoader.load(eager())
+        plugins = PluginLoader.load()
         agent = Agent(plugins)
         agent.start(False)
         while True:

@@ -346,13 +346,13 @@ class RMI(object):
         self.name = '.'.join((request.classname, request.method))
         self.request = request
         self.auth = auth
-        self.inst = self.getclass(request, catalog)
-        self.method = self.getmethod(request, self.inst)
+        self.inst = self.find_class(request, catalog)
+        self.method = self.find_method(request, self.inst)
         self.args = request.args
         self.kwargs = request.kws
 
     @staticmethod
-    def getclass(request, catalog):
+    def find_class(request, catalog):
         """
         Get an instance of the class or module specified in
         the request using the catalog.
@@ -374,7 +374,7 @@ class RMI(object):
             return inst
 
     @staticmethod
-    def getmethod(request, inst):
+    def find_method(request, inst):
         """
         Get method of the class specified in the request.
         Ensures that remote invocation is permitted.
@@ -581,8 +581,8 @@ class Security:
 class Dispatcher:
     """
     The remote invocation dispatcher.
-    :ivar __catalog: The (catalog) of target classes.
-    :type __catalog: dict
+    :ivar catalog: The (catalog) of target classes.
+    :type catalog: dict
     """
 
     @staticmethod
@@ -610,6 +610,13 @@ class Dispatcher:
         self.catalog = dict([(c.__name__, c) for c in classes])
 
     def provides(self, name):
+        """
+        Get whether the dispatcher provides an object.
+        :param name: The name of a *remote* object.
+        :type name: str
+        :return: True if provided.
+        :rtype: bool
+        """
         return name in self.catalog
 
     def dispatch(self, document):

@@ -88,13 +88,6 @@ Example:
 
 Defines plugin loading properties.
 
-.. _note: added 0.51.
-
-- **eager** - Eager loading of plugins (default: 1)
-   - 0 - disabled plugins not loaded
-   - 1 - disabled plugins loaded but not started or exposed
-
-
 Plugin Descriptors
 ^^^^^^^^^^^^^^^^^^
 

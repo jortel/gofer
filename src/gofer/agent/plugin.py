@@ -129,6 +129,7 @@ class Plugin(object):
         self.whiteboard = Whiteboard()
         self.authenticator = None
         self.consumer = None
+        self.imported = {}
         
     def names(self):
         """
@@ -237,23 +238,24 @@ class Plugin(object):
         if not uuid:
             uuid = self.get_uuid()
         url = self.get_url()
-        tp = self.get_transport()
-        queue = tp.queue(uuid)
-        consumer = RequestConsumer(queue, url=url, transport=tp)
-        consumer.reader.authenticator = self.authenticator
-        consumer.start()
-        self.consumer = consumer
-    
+        if uuid and url:
+            tp = self.get_transport()
+            queue = tp.queue(uuid)
+            consumer = RequestConsumer(queue, url=url, transport=tp)
+            consumer.reader.authenticator = self.authenticator
+            consumer.start()
+            log.info('plugin uuid="%s", attached', uuid)
+            self.consumer = consumer
+        else:
+            log.error('plugin attach requires uuid and url')
+
     def detach(self):
         """
-        Detach (disconnect) from AMQP broker (if connected).
+        Detach (disconnect) from AMQP broker.
         """
-        if self.consumer:
-            self.consumer.close()
-            self.consumer = None
-            return True
-        else:
-            return False
+        self.consumer.close()
+        self.consumer = None
+        log.info('plugin uuid="%s", detached', self.get_uuid())
         
     def cfg(self):
         """
@@ -295,9 +297,9 @@ class Plugin(object):
         try:
             obj = getattr(self.impl, name)
             valid = inspect.isclass(obj) or inspect.isfunction(obj)
-            if valid:
-                return obj
-            raise TypeError('(%s) must be class|function' % name)
+            if not valid:
+                raise TypeError('(%s) must be class|function' % name)
+            return obj
         except AttributeError:
             raise NameError(name)
 
@@ -444,17 +446,15 @@ class PluginLoader:
             return plugin
 
     @staticmethod
-    def load(eager=True):
+    def load():
         """
         Load the plugins.
-        :param eager: Load disabled plugins.
-        :type eager: bool
         :return: A list of loaded plugins
         :rtype: list
         """
         loaded = []
         for plugin, descriptor in PluginDescriptor.load():
-            if PluginLoader.no_load(descriptor, eager):
+            if not get_bool(descriptor.main.enabled):
                 continue
             p = PluginLoader._import(plugin, descriptor)
             if not p:
@@ -463,22 +463,6 @@ class PluginLoader:
                 log.warn('plugin: %s, DISABLED', p.name)
             loaded.append(p)
         return loaded
-
-    @staticmethod
-    def no_load(descriptor, eager):
-        """
-        Determine whether the plugin should be loaded.
-        :param descriptor: A plugin descriptor.
-        :type descriptor: PluginDescriptor
-        :param eager: The I{eager} load flag.
-        :type eager: bool
-        :return: True when not loaded.
-        :rtype: bool
-        """
-        try:
-            return not (eager or get_bool(descriptor.main.enabled))
-        except Exception:
-            return False
 
     @staticmethod
     def _import(plugin, descriptor):

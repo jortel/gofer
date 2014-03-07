@@ -23,10 +23,9 @@ from getopt import getopt, GetoptError
 
 from gofer import *
 from gofer.pam import PAM
-from gofer.agent.plugin import PluginLoader, Plugin
+from gofer.agent.plugin import PluginLoader
 from gofer.agent.lock import Lock, LockFailed
 from gofer.agent.config import AgentConfig
-from gofer.config import get_bool
 from gofer.agent.logutil import getLogger
 from gofer.agent.rmi import Scheduler
 
@@ -59,72 +58,7 @@ class ActionThread(Thread):
             for action in self.actions:
                 action()
             sleep(1)
-            
 
-class Snapshot(dict):
-    """
-    Plugin property snapshot.
-    Used to track changes in plugin properties.
-    """
-    __getattr__ = dict.get
-
-    def changed(self, **properties):
-        keys = []
-        for k,v in properties.items():
-            if self.get(k) != v:
-                keys.append(k)
-        return keys
-
-
-class PluginMonitorThread(Thread):
-    """
-    Run actions independantly of main thread.
-    :ivar plugin: A plugin to monitor.
-    :type plugin: Plugin
-    """
-
-    def __init__(self, plugin):
-        """
-        :param plugin: A plugin to monitor.
-        :type plugin: Plugin
-        """
-        self.plugin = plugin
-        self.snapshot = Snapshot()
-        Thread.__init__(self, name='%s-monitor' % plugin.name)
-        self.setDaemon(True)
-   
-    def run(self):
-        """
-        Monitor plugin attach/detach.
-        """
-        while True:
-            try:
-                self.update()
-            except:
-                log.exception('plugin %s', self.plugin.name)
-            sleep(1)
-            
-    def update(self):
-        """
-        Update plugin messaging sessions.
-        When a change in URL or UUID is detected the
-        associated plugin is:
-          - detached
-          - attached (URL and UUID specified)
-        """
-        plugin = self.plugin
-        snapshot = self.snapshot
-        url = plugin.geturl()
-        uuid = plugin.getuuid()
-        if not snapshot.changed(url=url, uuid=uuid):
-            return # unchanged
-        if plugin.detach():
-            log.info('uuid="%s", detached', snapshot.uuid)
-        snapshot.update(url=url, uuid=uuid)
-        if url and uuid:
-            plugin.attach(uuid)
-            log.info('uuid="%s", attached', uuid)
-                   
 
 class Agent:
     """
@@ -173,9 +107,13 @@ class Agent:
         :type plugins: list
         """
         for plugin in plugins:
-            if plugin.enabled():
-                pt = PluginMonitorThread(plugin)
-                pt.start()
+            uuid = plugin.get_uuid()
+            url = plugin.get_url()
+            if uuid and url and plugin.enabled():
+                try:
+                    plugin.attach()
+                except Exception:
+                    log.exception(uuid)
 
     def __init__(self, plugins):
         """
@@ -223,17 +161,13 @@ def start(daemon=True):
     except LockFailed, e:
         raise Exception('Agent already running')
     if daemon:
-        daemonize(lock)
+        start_daemon(lock)
     try:
-        plugins = PluginLoader.load(eager())
+        plugins = PluginLoader.load()
         agent = Agent(plugins)
         agent.start()
     finally:
         lock.release()
-
-
-def eager():
-    return get_bool(cfg.loader.eager)
 
 
 def usage():
@@ -253,25 +187,25 @@ def usage():
     print '\n'.join(s)
 
 
-def daemonize(lock):
+def start_daemon(lock):
     """
     Daemon configuration.
     """
     pid = os.fork()
-    if pid == 0: # child
+    if pid == 0:  # child
         os.setsid()
         os.chdir('/')
         os.close(0)
         os.close(1)
         os.close(2)
-        dn = os.open('/dev/null', os.O_RDWR)
-        os.dup(dn)
-        os.dup(dn)
-        os.dup(dn)
-    else: # parent
+        fp = os.open('/dev/null', os.O_RDWR)
+        os.dup(fp)
+        os.dup(fp)
+        os.dup(fp)
+    else:  # parent
         lock.setpid(pid)
         os.waitpid(pid, os.WNOHANG)
-        os._exit(0)
+        sys.exit(0)
 
 
 def setup_logging():
@@ -283,24 +217,11 @@ def setup_logging():
         if not level:
             continue
         try:
-            L = getattr(logging, level.upper())
+            _level = getattr(logging, level.upper())
             logger = logging.getLogger(p)
-            logger.setLevel(L)
-        except:
+            logger.setLevel(_level)
+        except Exception:
             pass
-
-
-def profile():
-    """
-    Code profiler using YAPPI
-    http://code.google.com/p/yappi
-    """
-    import yappi
-    yappi.start()
-    start(False)
-    yappi.stop()
-    for pstat in yappi.get_stats(yappi.SORTTYPE_TSUB):
-        print pstat
 
 
 def main():
@@ -315,11 +236,6 @@ def main():
             if opt in ('-c', '--console'):
                 daemon = False
                 continue
-            if opt in ('-p', '--prof'):
-                __start = profile
-                Agent.WAIT = int(arg)
-                profile()
-                return
         start(daemon)
     except GetoptError, e:
         print e

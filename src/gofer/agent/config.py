@@ -25,28 +25,47 @@ from gofer.config import REQUIRED, OPTIONAL, ANY, BOOL, NUMBER
 log = getLogger(__name__)
 
 
-SCHEMA = (
-    ('logging', OPTIONAL,
+AGENT_SCHEMA = (
+    ('logging', REQUIRED,
         []
     ),
     ('messaging', REQUIRED,
         (
             ('url', OPTIONAL, ANY),
+            ('virtual_host', OPTIONAL, ANY),
+            ('userid', OPTIONAL, ANY),
+            ('password', OPTIONAL, ANY),
+            ('cacert', OPTIONAL, ANY),
+            ('clientcert', OPTIONAL, ANY),
+            ('host_validation', OPTIONAL, BOOL),
+            ('transport', OPTIONAL, ANY),
+        )
+    ),
+    ('pam', REQUIRED,
+        (
+            ('service', OPTIONAL, ANY),
+        )
+    ),
+)
+
+
+PLUGIN_SCHEMA = (
+    ('main', REQUIRED,
+        ('enabled', REQUIRED, BOOL),
+        ('requires', OPTIONAL, ANY)
+    ),
+    ('messaging', REQUIRED,
+        (
+            ('uuid', OPTIONAL, ANY),
+            ('url', OPTIONAL, ANY),
+            ('virtual_host', OPTIONAL, ANY),
+            ('userid', OPTIONAL, ANY),
+            ('password', OPTIONAL, ANY),
             ('cacert', OPTIONAL, ANY),
             ('clientcert', OPTIONAL, ANY),
             ('validation', OPTIONAL, BOOL),
             ('transport', OPTIONAL, ANY),
             ('threads', OPTIONAL, NUMBER),
-        )
-    ),
-    ('pam', OPTIONAL,
-        (
-            ('service', OPTIONAL, ANY),
-        )
-    ),
-    ('loader', OPTIONAL,
-        (
-            ('eager', OPTIONAL, BOOL),
         )
     ),
 )
@@ -86,5 +105,5 @@ class AgentConfig(Graph):
         if os.path.exists(self.USER):
             paths.append(self.USER)
         conf = Config(*paths)
-        conf.validate(SCHEMA)
+        conf.validate(AGENT_SCHEMA)
         Graph.__init__(self, conf)

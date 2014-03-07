@@ -52,10 +52,10 @@ class TestAgent:
         self._setup_locking()
         self._setup_pending_queue()
 
-        from gofer.agent.main import PluginLoader, Agent, eager
+        from gofer.agent.main import PluginLoader, Agent
 
         pl = PluginLoader()
-        plugins = pl.load(eager())
+        plugins = pl.load()
         agent = Agent(plugins)
         agent.start(False)
         print 'Agent pid:%s started. Working directory [ %s ]' % (os.getpid(), self.root)
