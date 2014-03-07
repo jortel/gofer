@@ -117,18 +117,7 @@ def validate(authenticator, uuid, message):
     """
     if not message:
         return
-
-    document = Document()
-    document.load(message)
-    signature = document.signature
-    original = document.message
-
-    if original:
-        document = Document()
-        document.load(original)
-    else:
-        original = message
-
+    document, original, signature = peal(message)
     try:
         if authenticator:
             h = sha256()
@@ -146,6 +135,36 @@ def validate(authenticator, uuid, message):
         failed = ValidationFailed(details)
         failed.document = original
         raise failed
+
+
+def peal(message):
+    """
+    Peal the incoming message. The message one of:
+     - A signed document:
+        {
+          message: <message>,
+          signature: <signature>
+        }
+     - A plain (unsigned) RMI request.
+    Returns:
+    - The document to be passed along.
+    - The original (signed) AMQP message to be validated.
+    - The signature.
+    :param message: A json encoded AMQP message.
+    :type message: str
+    :return: tuple of: (document, original, signature)
+    :rtype: tuple
+    """
+    document = Document()
+    document.load(message)
+    signature = document.signature
+    original = document.message
+    if original:
+        document = Document()
+        document.load(original)
+    else:
+        original = message
+    return document, original, signature
 
 
 def encode(signature):
