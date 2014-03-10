@@ -212,16 +212,14 @@ def setup_logging():
     """
     Set logging levels based on configuration.
     """
-    for p in cfg.logging or []:
-        level = cfg.logging[p]
+    for name, level in cfg.logging:
         if not level:
             continue
         try:
-            _level = getattr(logging, level.upper())
-            logger = logging.getLogger(p)
-            logger.setLevel(_level)
-        except Exception:
-            pass
+            logger = logging.getLogger(name)
+            logger.setLevel(level.upper())
+        except Exception, e:
+            log.error(str(e))
 
 
 def main():

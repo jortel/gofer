@@ -503,7 +503,7 @@ class Graph(object):
             raise AttributeError(name)
 
     def __iter__(self):
-        return iter(self.__dict)
+        return iter(self.__dict.items())
 
     def __repr__(self):
         return repr(self.__dict)
@@ -547,7 +547,7 @@ class GraphSection(object):
                 raise AttributeError(name)
 
         def _iter(self):
-            return iter(content)
+            return iter(content.items())
 
         def _repr(self):
             return repr(content)
