@@ -60,6 +60,7 @@ class Consumer(Thread):
             document, ack = self.reader.next(10)
             if document is None:
                 return
+            log.debug('{%s} read:\n%s', self.name, document)
             self.dispatch(document)
             ack()
         except auth.ValidationFailed, vf:
