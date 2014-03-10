@@ -3,7 +3,7 @@
 
 Name: gofer
 Version: 1.0.0
-Release: 0.1%{?dist}
+Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
 License: LGPLv2
