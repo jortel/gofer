@@ -271,6 +271,30 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Mon Mar 10 2014 Jeff Ortel <jortel@redhat.com> 1.0.0-1
+- Detach before attach and make detach idempotent. (jortel@redhat.com)
+- Explicit manual plugin attach; get rid of plugin monitor thread.
+  (jortel@redhat.com)
+- Support virtual_host and host_validation configuration options.
+  (jortel@redhat.com)
+- Support userid and password configuration options. (jortel@redhat.com)
+- Change envelope/document and Envelope/Document. (jortel@redhat.com)
+- Support pluggable message authentication. (jortel@redhat.com)
+- Send 'accepted' status when RMI request is added to the pending queue.
+  (jortel@redhat.com)
+- Send 'rejected' status report when message validation failed.
+  (jortel@redhat.com)
+- Direct routing by uuid; no more blending of plugin APIs. (jortel@redhat.com)
+- Move Admin class from builtin plugin to internal. (jortel@redhat.com)
+- Improved pending queue. (jortel@redhat.com)
+- Improved thread pool. (jortel@redhat.com)
+- Purge unused filter in configuration. (jortel@redhat.com)
+- Discontinue support for configuration directives. (jortel@redhat.com)
+- Purge mocks in favor of python mock. (jortel@redhat.com)
+- Support multiple transports (amqplib, rabbmitmq, python-qpid).
+- Discontinue support for deprectated watchdog. (jortel@redhat.com)
+- Simplified RMI timeout.  No longer supporting timeout for RMI completion.
+  (jortel@redhat.com)
 * Tue Jan 14 2014 Jeff Ortel <jortel@redhat.com> 1.0.0-0.1
 - default asynchronous timeout to None. (jortel@redhat.com)
   add 'send' as required by transports. (jortel@redhat.com)
