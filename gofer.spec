@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 1.0.0
+Version: 1.0.1
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -271,6 +271,9 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Mon Mar 10 2014 Jeff Ortel <jortel@redhat.com> 1.0.1-1
+- Improved agent logging. (jortel@redhat.com)
+
 * Mon Mar 10 2014 Jeff Ortel <jortel@redhat.com> 1.0.0-1
 - Detach before attach and make detach idempotent. (jortel@redhat.com)
 - Explicit manual plugin attach; get rid of plugin monitor thread.
