@@ -151,7 +151,7 @@ class Queue(Node):
         self.routing_key = routing_key
         self.durable = True
         self.auto_delete = False
-        self.exclusive = True
+        self.exclusive = False
 
     def destination(self):
         """

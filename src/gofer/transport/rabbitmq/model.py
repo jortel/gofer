@@ -85,7 +85,6 @@ class Queue(BaseQueue):
             name,
             exchange=exchange or Exchange.default(),
             routing_key=routing_key or name)
-        self.exclusive = False
 
     def declare(self, url):
         @reliable
