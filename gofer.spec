@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 1.0.2
+Version: 1.0.3
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -271,6 +271,9 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Tue Mar 11 2014 Jeff Ortel <jortel@redhat.com> 1.0.3-1
+- make queue non-exclusive by default. (jortel@redhat.com)
+
 * Mon Mar 10 2014 Jeff Ortel <jortel@redhat.com> 1.0.2-1
 - Log consumed messages. (jortel@redhat.com)
 
