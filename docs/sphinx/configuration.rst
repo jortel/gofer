@@ -56,11 +56,11 @@ Defines messaging properties:
 
 - **url** - The broker connection URL.
   No value indicates that gofer should **not** connect to the broker.
-    *format*: *<protocol>://<host>:<port>*, protocol is one of:
-      - **tcp**: non-SSL protocol
-      - **amqp**: non-SSL protocol
-      - **ssl**: SSL protocol
-      - **amqps**: SSL protocol
+  *format*: *<protocol>://<host>:<port>*, protocol is one of:
+  - **tcp**: non-SSL protocol
+  - **amqp**: non-SSL protocol
+  - **ssl**: SSL protocol
+  - **amqps**: SSL protocol
 - **transport** - The transport used to connect to the specified broker.
 - **cacert** - The (optional) SSL CA certificate used to validate the server certificate.
 - **virtual_host** - The A
@@ -111,11 +111,11 @@ Defines basic plugin properties.
   This value may be overridden by an *identity* plugin.
 - **'url** - The (optional) QPID connection URL.
   No value indicates the plugin should **not** connect to broker.
-    format:  *<protocol>://<host>:<port>*, protocol is one of:
-      - **tcp**: non-SSL protocol
-      - **amqp**: non-SSL protocol
-      - **ssl**: SSL protocol
-      - **amqps**: SSL protocol
+  format:  *<protocol>://<host>:<port>*, protocol is one of:
+  - **tcp**: non-SSL protocol
+  - **amqp**: non-SSL protocol
+  - **ssl**: SSL protocol
+  - **amqps**: SSL protocol
 - **transport** - The transport used to connect to the specified broker.
 - **cacert** - The (optional) SSL CA certificate used to validate the server certificate.
 - **clientcert** - The (optional) SSL client certificate.  A (PEM) file containing **both**
@@ -179,3 +179,4 @@ the plugin(s) as follows:
         cfg = Plugin.find(__name__).cfg()
         timeout = cfg.foobar.timeout
         ...
+
