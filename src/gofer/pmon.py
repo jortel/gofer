@@ -113,9 +113,9 @@ class PathMonitor:
     def __sniff(self, path, stat):
         """
         Sniff and compare the stats of the file at the
-        specified I{path}.
+        specified *path*.
         First, check the modification time, if different, then
-        check the I{hash} of the file content to see if it really
+        check the *hash* of the file content to see if it really
         changed.  If changed, notify the registered listener.
         :param path: The path of the file to sniff.
         :type path: str

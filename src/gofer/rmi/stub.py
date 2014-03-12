@@ -15,7 +15,7 @@
 
 """
 Contains stub classes.
-Proxies (stubs) are the I{local} representation of I{remote}
+Proxies (stubs) are the *local* representation of *remote*
 classes on which we invoke methods.
 """
 
@@ -56,7 +56,7 @@ class Method:
         Invoke the method .
         :param args: The args.
         :type args: list
-        :param kws: The I{keyword} arguments.
+        :param kws: The *keyword* arguments.
         :type kws: dict
         """
         opts = Options()
@@ -190,7 +190,7 @@ class Stub:
     def __getattr__(self, name):
         """
         Python vodo.
-        Get a I{Method} object for any requested attribute.
+        Get a *Method* object for any requested attribute.
         :param name: The attribute name.
         :type name: str
         :return: A method object.
@@ -202,7 +202,7 @@ class Stub:
     def __getitem__(self, name):
         """
         Python vodo.
-        Get a I{Method} object for any requested attribute.
+        Get a *Method* object for any requested attribute.
         :param name: The attribute name.
         :type name: str
         :return: A method object.
@@ -253,7 +253,7 @@ class Stub:
 
     def __async(self):
         """
-        Get whether an I{asynchronous} request method
+        Get whether an *asynchronous* request method
         should be used based on selected options.
         :return: True if async.
         :rtype: bool

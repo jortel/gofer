@@ -14,12 +14,13 @@
 #
 
 """
-The I{metrics} module defines classes and other resources
+The *metrics* module defines classes and other resources
 designed for collecting and reporting performance metrics.
 """
 
 import time
 from math import modf
+
 
 class Timer:
 

@@ -336,8 +336,8 @@ class Asynchronous(RequestMethod):
     def send(self, destination, request, **any):
         """
         Send the specified request and redirect the reply to the
-        queue for the specified reply I{correlation} tag.
-        A trigger(1) specifies a I{manual} trigger.
+        queue for the specified reply *correlation* tag.
+        A trigger(1) specifies a *manual* trigger.
         :param destination: An AMQP destination.
         :type destination: gofer.transport.model.Destination
         :param request: A request to send.
@@ -355,8 +355,8 @@ class Asynchronous(RequestMethod):
     def broadcast(self, destinations, request, **any):
         """
         Send the specified request and redirect the reply to the
-        queue for the specified reply I{correlation} tag.
-        A trigger(1) specifies a I{manual} trigger.
+        queue for the specified reply *correlation* tag.
+        A trigger(1) specifies a *manual* trigger.
         :param destinations: A list of destinations.
         :type destinations: [gofer.transport.model.Destination,..]
         :param request: A request to send.

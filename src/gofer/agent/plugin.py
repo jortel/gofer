@@ -134,7 +134,7 @@ class Plugin(object):
         
     def names(self):
         """
-        Get I{all} the names by which the plugin can be found.
+        Get *all* the names by which the plugin can be found.
         :return: A list of name and synonyms.
         :rtype: list
         """

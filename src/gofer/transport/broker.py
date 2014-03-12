@@ -80,7 +80,7 @@ class Broker:
     def id(self):
         """
         Get broker identifier.
-        :return: The broker I{simple} url.
+        :return: The broker *simple* url.
         :rtype: str
         """
         return self.url.simple()
@@ -89,7 +89,7 @@ class Broker:
         """
         Connect to the broker.
         :return: The AMQP connection object.
-        :rtype: I{Connection}
+        :rtype: *Connection*
         """
         raise NotImplemented()
 
@@ -194,7 +194,7 @@ class URL:
 
     def simple(self):
         """
-        Get the I{simple} string representation: <host>:<port>
+        Get the *simple* string representation: <host>:<port>
         :return: "<host>:<port>"
         :rtype: str
         """

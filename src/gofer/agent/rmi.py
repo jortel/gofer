@@ -202,7 +202,7 @@ class TrashProducer(object):
 class Scheduler(Thread):
     """
     The pending request scheduler.
-    Processes the I{pending} queue.
+    Processes the *pending* queue.
     :ivar plugins: A collection of loaded plugins.
     :type plugins: list
     """
@@ -230,7 +230,7 @@ class Scheduler(Thread):
     def find_plugin(self, request):
         """
         Find the plugin that provides the class specified in
-        the I{request} embedded in the request.  Returns
+        the *request* embedded in the request.  Returns
         EmptyPlugin when not found.
         :param request: A gofer messaging request.
         :type request: Document

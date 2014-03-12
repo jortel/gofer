@@ -86,7 +86,7 @@ class Yum(YumBase):
 class Package:
     """
     Package management.
-    Returned I{Package} NEVRA+ objects:
+    Returned *Package* NEVRA+ objects:
       - qname   : qualified name
       - repoid  : repository id
       - name    : package name

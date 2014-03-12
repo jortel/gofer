@@ -15,7 +15,7 @@
 # written by: Jeff Ortel ( jortel@redhat.com )
 
 """
-The I{depsolve} module defines a class for performing dependancy solving.
+The *depsolve* module defines a class for performing dependancy solving.
 """
 
 
@@ -29,7 +29,7 @@ class DepList:
     :type index: list
     :ivar stack: The sorting stack.
     :type stack: list
-    :ivar pushed: The I{pushed} set tracks items that have been
+    :ivar pushed: The *pushed* set tracks items that have been
         processed.
     :type pushed: set
     :ivar sorted: The sorted list of items.
@@ -48,7 +48,7 @@ class DepList:
         """
         Add items to be sorted.
         :param items: One or more items to be added.
-        :type items: I{item}
+        :type items: *item*
         :return: self
         :rtype: DepList
         """
@@ -97,7 +97,7 @@ class DepList:
         """
         Push and item onto the sorting stack.
         :param item: An item to push.
-        :type item: I{item}
+        :type item: *item*
         :return: The number of items pushed.
         :rtype: int
         """
@@ -112,7 +112,7 @@ class DepList:
         Pop the top item off the stack and append
         it to the sorted list.
         :return: The popped item.
-        :rtype: I{item}
+        :rtype: *item*
         """
         try:
             frame = self.stack.pop()

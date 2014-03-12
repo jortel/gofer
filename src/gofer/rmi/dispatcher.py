@@ -60,7 +60,7 @@ class MethodNotFound(DispatchError):
 
 class NotPermitted(DispatchError):
     """
-    Called method not decorated as I{remote}.
+    Called method not decorated as *remote*.
     """
 
     def __init__(self, method):
@@ -395,7 +395,7 @@ class RMI(object):
     def fn(method):
         """
         Return the method's function (if a method) or
-        the I{method} assuming it's a function.
+        the *method* assuming it's a function.
         :param method: An instance method.
         :type method: instancemethod
         :return: The function
@@ -410,11 +410,11 @@ class RMI(object):
     @staticmethod
     def fninfo(method):
         """
-        Get the I{gofer} metadata embedded in the function
+        Get the *gofer* metadata embedded in the function
         by the @remote decorator.
         :param method: An instance method.
         :type method: instancemethod
-        :return: The I{gofer} attribute.
+        :return: The *gofer* attribute.
         :rtype: Options
         """
         try:
@@ -490,7 +490,7 @@ class Security:
     def apply(self, passed):
         """
         Apply auth specifications.
-        :param passed: The request's I{auth} info passed.
+        :param passed: The request's *auth* info passed.
         :type passed: Options.
         :raise SecretRequired: On secret required and not passed.
         :raise SecretNotMatched: On not matched.
