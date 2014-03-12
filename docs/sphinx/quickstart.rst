@@ -264,33 +264,14 @@ Another useful tool, it invoke *Admin.help()* from within interactive python as 
 Security
 --------
 
-In gofer 0.20, the @remote decorator and gofer infrastructure supports (2) *new* options:
+The @remote decorator and gofer infrastructure supports (1) option:
 
-- shared (default=1): The method may be shared across UUIDs.
 - secret (default=None): A shared secret used for authentication.  The value may be:
 
   - str
   - [str,..]
   - (str,..)
   -  *callable*
-
-
-Eg: MyClass.hello() may only be invoked via the UUID defined in the plugin descriptor.
-MyClass.world() is shared with other plugins and my be invoked using *any* UUID.
-
-::
-
- from gofer.decorators import  *
-
- class MyClass:
-
-    @remote(shared=0)
-    def hello(self):
-        return 'MyPlugin says, "hello".'
-
-    @remote(shared=1)
-    def world(self):
-        return 'MyPlugin says, "world".'
 
 
 In this example, MyClass.hello() must provide the *secret* to be invoked.
@@ -310,11 +291,6 @@ In this example, MyClass.hello() must provide the *secret* to be invoked.
     @remote(secret='mycathas9lives')
     def hello(self):
         return 'MyPlugin says, "hello".'
-
-    @remote(shared=1)
-    def world(self):
-        return 'MyPlugin says, "world".'
-
 
 The decorator also support the *secret* being a callable that returns the secret matched to the request.
 
