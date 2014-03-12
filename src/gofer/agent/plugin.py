@@ -34,6 +34,7 @@ from gofer.config import Config, Graph, get_bool
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
 from gofer.transport import Transport
+from gofer.collator import Module
 
 
 log = getLogger(__name__)
@@ -76,7 +77,7 @@ class Plugin(object):
         :param plugin: The plugin to delete.
         :type plugin: Plugin
         """
-        for k,v in cls.plugins.items():
+        for k, v in cls.plugins.items():
             if v == plugin:
                 del cls.plugins[k]
         return plugin
@@ -125,7 +126,7 @@ class Plugin(object):
         self.pool = ThreadPool(int(descriptor.messaging.threads or 1))
         self.impl = None
         self.actions = []
-        self.dispatcher = Dispatcher([])
+        self.dispatcher = Dispatcher()
         self.whiteboard = Whiteboard()
         self.authenticator = None
         self.consumer = None
@@ -277,35 +278,6 @@ class Plugin(object):
         :return: The RMI returned.
         """
         return self.dispatcher.dispatch(request)
-    
-    def provides(self, name):
-        """
-        Get whether a plugin provides the specified class.
-        :param name: A class (or module) name.
-        :type name: str
-        :return: True if provides.
-        :rtype: bool
-        """
-        return self.dispatcher.provides(name)
-    
-    def export(self, name):
-        """
-        Export an object defined in the plugin (module).
-        The name must reference a class or function object.
-        :param name: A name (class|function)
-        :type name: str
-        :return: The named item.
-        :rtype: (class|function)
-        :raise NameError: when not found
-        """
-        try:
-            obj = getattr(self.impl, name)
-            valid = inspect.isclass(obj) or inspect.isfunction(obj)
-            if not valid:
-                raise TypeError('(%s) must be class|function' % name)
-            return obj
-        except AttributeError:
-            raise NameError(name)
 
     # deprecated
     getuuid = get_uuid
@@ -313,6 +285,33 @@ class Plugin(object):
     getbroker = get_broker
     setuuid = set_uuid
     seturl = set_url
+
+    def __getitem__(self, key):
+        try:
+            return self.dispatcher[key]
+        except KeyError:
+            return self.dispatcher[self.name][key]
+
+    def __iter__(self):
+        return iter(self.dispatcher)
+
+    def __iadd__(self, other):
+        if isinstance(other, Plugin):
+            for thing in other:
+                self.__iadd__(thing)
+            return self
+        if inspect.isclass(other):
+            self.dispatcher[other.__name__] = other
+            return self
+        if inspect.isfunction(other):
+            try:
+                mod = self.dispatcher[self.name]
+            except KeyError:
+                mod = Module(self.name)
+                self.dispatcher[self.name] = mod
+            mod += other
+            return self
+        return self
 
 
 class PluginDescriptor(Graph):
@@ -494,7 +493,7 @@ class PluginLoader:
             if p.enabled():
                 collated = Remote.collated()
                 collated += PluginLoader.BUILTINS
-                p.dispatcher = Dispatcher(collated)
+                p.dispatcher += collated
                 p.actions = Actions.collated()
             return p
         except Exception:

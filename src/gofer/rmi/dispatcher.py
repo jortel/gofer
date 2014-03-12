@@ -392,7 +392,7 @@ class RMI(object):
             raise MethodNotFound(cn, fn)
 
     @staticmethod
-    def __fn(method):
+    def fn(method):
         """
         Return the method's function (if a method) or
         the I{method} assuming it's a function.
@@ -408,7 +408,7 @@ class RMI(object):
         return fn
 
     @staticmethod
-    def __fninfo(method):
+    def fninfo(method):
         """
         Get the I{gofer} metadata embedded in the function
         by the @remote decorator.
@@ -418,7 +418,7 @@ class RMI(object):
         :rtype: Options
         """
         try:
-            return getattr(RMI.__fn(method), NAME)
+            return getattr(RMI.fn(method), NAME)
         except:
             pass
 
@@ -430,7 +430,7 @@ class RMI(object):
         """
         cntr = request.cntr
         if not cntr:
-            cntr = ([],{})
+            cntr = ([], {})
         return cntr
 
     def permitted(self):
@@ -438,7 +438,7 @@ class RMI(object):
         Check whether remote invocation of the specified method is permitted.
         Applies security model using Security.
         """
-        fninfo = RMI.__fninfo(self.method)
+        fninfo = RMI.fninfo(self.method)
         if fninfo is None:
             raise NotPermitted(self)
         security = Security(self, fninfo)
@@ -602,22 +602,12 @@ class Dispatcher:
             document.sn,
             document.any)
 
-    def __init__(self, classes):
+    def __init__(self, classes=None):
         """
-        :param classes: The (catalog) of target classes.
+        :param classes: The (cataloged) of target classes.
         :type classes: list
         """
-        self.catalog = dict([(c.__name__, c) for c in classes])
-
-    def provides(self, name):
-        """
-        Get whether the dispatcher provides an object.
-        :param name: The name of a *remote* object.
-        :type name: str
-        :return: True if provided.
-        :rtype: bool
-        """
-        return name in self.catalog
+        self.catalog = dict([(c.__name__, c) for c in classes or []])
 
     def dispatch(self, document):
         """
@@ -638,3 +628,31 @@ class Dispatcher:
         except Exception:
             log.exception(str(document))
             return Return.exception()
+
+    def __iadd__(self, other):
+        if isinstance(other, Dispatcher):
+            self.catalog.update(other.catalog)
+            return self
+        if isinstance(other, list):
+            other = dict([(c.__name__, c) for c in other])
+            self.catalog.update(other)
+            return self
+        return self
+
+    def __getitem__(self, key):
+        return self.catalog[key]
+
+    def __setitem__(self, key, value):
+        self.catalog[key] = value
+
+    def __iter__(self):
+        _list = []
+        for n, v in self.catalog.items():
+            if inspect.isclass(v):
+                _list.append(v)
+                continue
+            for fn in inspect.getmembers(v, inspect.isfunction):
+                if RMI.fninfo(fn[1]):
+                    _list.append(fn[1])
+                continue
+        return iter(_list)

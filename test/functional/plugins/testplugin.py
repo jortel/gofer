@@ -26,19 +26,14 @@ from gofer.messaging.auth import Authenticator, ValidationFailed
 
 log = getLogger(__name__)
 plugin = Plugin.find(__name__)
+builtin = Plugin.find('builtin')
 cfg = plugin.cfg()
 
 HEARTBEAT = 500
 
-# import
-builtin = Plugin.find('builtin')
-_Admin = builtin.export('TestAdmin')
+plugin += builtin
+plugin += builtin['Rabbit']
 
-try:
-    log = builtin.export('log')
-except Exception, e:
-    print e
-    
 # whiteboard
 plugin.whiteboard['secret'] = 'garfield'
 
@@ -74,13 +69,6 @@ class MyError(Exception):
     def __init__(self, a, b):
         Exception.__init__(self, a)
         self.b = b
-
-
-class TestAdmin(_Admin):
-
-    @remote
-    def help(self):
-        return _Admin.help(self)
 
 
 class RepoLib:
@@ -243,11 +231,7 @@ class Progress:
                 ctx.progress.report()
             sleep(1)
         return 'sent, boss'
-    
-@remote
-def echo(s):
-    fn = builtin.export('echo')
-    return fn(s)
+
 
 @action(minutes=5)
 def testAction():

@@ -179,11 +179,8 @@ class TrashPlugin:
     def __init__(self):
         self.pool = Trashed()
     
-    def provides(self, classname):
-        return False
-    
     def dispatch(self, request):
-        d = Dispatcher({})
+        d = Dispatcher()
         return d.dispatch(request)
 
 

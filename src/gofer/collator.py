@@ -22,8 +22,13 @@ import inspect
 
 class Collator:
     """
-    Docorated method/function collator.
+    Decorated method/function collator.
     """
+
+    def __init__(self):
+        self.classes = {}
+        self.bound = set()
+        self.functions = []
     
     def collate(self, functions):
         """
@@ -46,7 +51,7 @@ class Collator:
                 continue
             self.__map(g)
             mapped.append(g)
-        return (self.classes, self.__functions())
+        return self.classes, self.__functions()
     
     def __map(self, g):
         for cls in self.__classes(g):
@@ -74,11 +79,10 @@ class Collator:
         return classes
     
     def __methods(self, cls):
-        return [v for n,v in \
-                inspect.getmembers(cls, inspect.ismethod)]
+        return [v for n, v in inspect.getmembers(cls, inspect.ismethod)]
         
     def __function(self, method):
-        for n,v in inspect.getmembers(method, inspect.isfunction):
+        for n, v in inspect.getmembers(method, inspect.isfunction):
             return v
         
     def __functions(self):
@@ -87,16 +91,34 @@ class Collator:
             if fn in self.bound:
                 continue
             mod = inspect.getmodule(fn)
+            mod = Module(mod.__name__)
             functions = modules.get(mod)
             if not functions:
                 functions = []
                 modules[mod] = functions
             functions.append(self.__decorated(fn))
+            mod += fn
         return modules
     
     def __decorated(self, fn):
         if fn in self.functions:
             if isinstance(self.functions, dict):
-                return (fn, self.functions[fn])
+                return fn, self.functions[fn]
             else:
-                return (fn, None)
+                return fn, None
+
+
+class Module(object):
+    """
+    A module-like container of functions.
+    """
+
+    def __init__(self, name):
+        self.__name__ = name
+
+    def __hash__(self):
+        return hash(self.__name__)
+
+    def __iadd__(self, fn):
+        setattr(self, fn.__name__, fn)
+        return self

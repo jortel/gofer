@@ -470,6 +470,8 @@ def smoke_test(uuid, exit=0):
         print dog.bark('hello')
         print dog.wag(3)
         print dog.bark('hello again')
+        rabbit = agent.Rabbit()
+        print rabbit.hop(T)
     print 'DONE'
     if exit:
         sys.exit(0)
