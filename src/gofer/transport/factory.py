@@ -10,11 +10,12 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 import os
+import logging
 
-from logging import getLogger
+import gofer
 
 
-log = getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 # --- constants --------------------------------------------------------------
@@ -79,7 +80,7 @@ class Transport:
             if not os.path.isdir(path):
                 continue
             try:
-                package = '.'.join((__package__, name))
+                package = import_path(path)
                 pkg = __import__(package, {}, {}, REQUIRED)
                 cls.plugins[name] = pkg
                 cls.plugins[package] = pkg
@@ -177,3 +178,27 @@ class Transport:
         """
         return self.plugin.Reader(queue, uuid=uuid, url=url)
 
+
+# --- utils ------------------------------------------------------------------
+
+
+def import_path(path):
+    """
+    Convert the specified plugin path to an import path
+    that can be used with __import__.
+    :param path: An absolute path.
+    :type path: str
+    :return: A path used with __import__.
+    :rtype: str
+    """
+    parts = []
+    path = path.split('/')
+    path.reverse()
+    for part in path:
+        if not part:
+            continue
+        parts.append(part)
+        if part == gofer.__name__:
+            break
+    parts.reverse()
+    return '.'.join(parts)
