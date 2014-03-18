@@ -107,7 +107,7 @@ def get_options():
     parser.add_option('-i', '--uuid', default='xyz', help='agent UUID')
     parser.add_option('-u', '--url', help='broker URL')
     parser.add_option('-t', '--threads', default='3', help='number of threads')
-    parser.add_option('-T', '--transport', default='qpid', help='transport (qpid|amqplib|rabbitmq)')
+    parser.add_option('-T', '--transport', default='qpid', help='transport (qpid|amqplib)')
     parser.add_option('-a', '--auth', default='', help='enable message auth')
     opts, args = parser.parse_args()
     return opts
