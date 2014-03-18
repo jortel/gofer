@@ -189,8 +189,11 @@ class Config(dict):
         if isinstance(paths, basestring):
             paths = (paths,)
         for path in paths:
-            with open(path) as fp:
+            fp = open(path)
+            try:
                 self.read(fp)
+            finally:
+                fp.close()
 
     def read(self, fp):
         """
