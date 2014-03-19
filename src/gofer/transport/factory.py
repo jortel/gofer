@@ -23,6 +23,7 @@ log = logging.getLogger(__name__)
 
 # symbols required to be provided by all transports
 REQUIRED = [
+    'PROVIDES',
     'Exchange',
     'Broker',
     'Endpoint',
@@ -84,6 +85,8 @@ class Transport:
                 pkg = __import__(package, {}, {}, REQUIRED)
                 cls.plugins[name] = pkg
                 cls.plugins[package] = pkg
+                for capability in pkg.PROVIDES:
+                    cls.plugins[capability] = pkg
             except ImportError:
                 log.exception(name)
 

@@ -14,3 +14,9 @@ from gofer.transport.qpid.broker import Qpid as Broker
 from gofer.transport.qpid.consumer import Reader
 from gofer.transport.qpid.producer import Producer, send
 from gofer.transport.qpid.endpoint import Endpoint
+
+
+PROVIDES = [
+    'amqp-0-10',
+    'qpid'
+]

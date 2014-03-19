@@ -62,20 +62,24 @@ class Broker:
 
     def __init__(self, url):
         """
-        :param url: The broker url <transport>://<host>:<port>.
-        :type url: str
+        :param url: The broker url:
+            <transport>://<host>:<port>.
+            userid/password@<transport>://<host>:<port>.
+        :type url: str|URL
         """
-        if isinstance(url, URL):
-            self.url = url
-        else:
-            self.url = URL(url)
+        if not isinstance(url, URL):
+            url = URL(url)
+        self.url = url
         self.connection = Local()
         self.virtual_host = None
+        self.host = url.host
+        self.port = url.port
+        self.transport = url.transport
         self.cacert = None
         self.clientcert = None
         self.host_validation = False
-        self.userid = None
-        self.password = None
+        self.userid = url.userid
+        self.password = url.password
 
     def id(self):
         """
@@ -100,11 +104,11 @@ class Broker:
         raise NotImplemented()
 
     def __str__(self):
-        s = []
+        s = list()
         s.append('{%s}:' % self.id())
-        s.append('transport=%s' % self.url.transport.upper())
-        s.append('host=%s' % self.url.host)
-        s.append('port=%d' % self.url.port)
+        s.append('transport=%s' % self.transport.upper())
+        s.append('host=%s' % self.host)
+        s.append('port=%d' % self.port)
         s.append('cacert=%s' % self.cacert)
         s.append('clientcert=%s' % self.clientcert)
         s.append('userid=%s' % self.userid)
@@ -123,7 +127,8 @@ class URL:
     :type port: int
     """
 
-    SSL = ('ssl', 'amqps')
+    TCP = ('amqp', 'tcp')
+    SSL = ('amqps', 'ssl')
 
     @staticmethod
     def split(s):
@@ -131,12 +136,18 @@ class URL:
         Split the url string.
         :param s: A url string format: <transport>://<host>:<port>.
         :type s: str
-        :return: The url parts: (transport, host, port)
+        :return: The url parts: (transport, host, port, userid, password)
         :rtype: tuple
         """
-        transport, hp = URL.split_url(s)
-        host, port = URL.split_port(hp, URL._port(transport))
-        return transport, host, port
+        userid = None
+        password = None
+        part = s.split('@', 1)
+        if len(part) > 1:
+            userid, password = part[0].split('/', 1)
+            s = part[1]
+        transport, host_port = URL.split_url(s)
+        host, port = URL.split_port(host_port, URL._port(transport))
+        return transport, host, port, userid, password
 
     @staticmethod
     def split_url(s):
@@ -144,15 +155,15 @@ class URL:
         Split the transport and url parts.
         :param s: A url string format: <transport>://<host>:<port>.
         :type s: str
-        :return: The urlparts: (transport, hostport)
+        :return: The url parts: (transport, host-port)
         :rtype: tuple
         """
         part = s.split('://', 1)
         if len(part) > 1:
-            transport, hp = (part[0], part[1])
+            transport, host_port = (part[0], part[1])
         else:
-            transport, hp = ('tcp', part[0])
-        return transport, hp
+            transport, host_port = (URL.TCP[0], part[0])
+        return transport, host_port
 
     @staticmethod
     def split_port(s, default):
@@ -160,7 +171,7 @@ class URL:
         Split the host and port.
         :param s: A url string format: <host>:<port>.
         :type s: str
-        :return: The urlparts: (host, port)
+        :return: The url parts: (host, port)
         :rtype: tuple
         """
         part = s.split(':')
@@ -187,10 +198,16 @@ class URL:
 
     def __init__(self, s):
         """
-        :param s: A url string format: <transport>://<host>:<port>.
+        :param s: A url string format:
+            <transport>://<host>:<port>
+            userid/password@<transport>://<host>:<port>.
         :type s: str
         """
-        self.transport, self.host, self.port = self.split(s)
+        self.transport,\
+            self.host, \
+            self.port, \
+            self.userid, \
+            self.password = self.split(s)
 
     def simple(self):
         """
@@ -210,7 +227,4 @@ class URL:
         return self.simple() == other.simple()
 
     def __str__(self):
-        return '%s://%s:%d' % \
-            (self.transport,
-             self.host,
-             self.port)
+        return '%s://%s:%d' % (self.transport, self.host, self.port)

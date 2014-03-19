@@ -68,10 +68,11 @@ class Qpid(Broker):
             url = self.url.simple()
             log.info('connecting:\n%s', self)
             con = Connection(
-                url=url,
+                host=self.host,
+                port=self.port,
                 tcp_nodelay=True,
                 reconnect=True,
-                transport=self.url.transport,
+                transport=self.transport,
                 username=self.userid,
                 password=self.password,
                 ssl_trustfile=self.cacert,

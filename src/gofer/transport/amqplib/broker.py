@@ -69,7 +69,7 @@ class Broker(_Broker):
             try:
                 log.info('connecting:\n%s', self)
                 con = Connection(
-                    host=self.url.simple(),
+                    host=':'.join((self.host, str(self.port))),
                     virtual_host=self.virtual_host or VIRTUAL_HOST,
                     ssl=self._ssl(),
                     userid=self.userid or USERID,
