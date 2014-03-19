@@ -18,6 +18,6 @@ from gofer.transport.amqplib.endpoint import Endpoint
 
 
 PROVIDES = [
-    'amqp-0-8',
+    'AMQP-0-8',
     'rabbitmq'
 ]

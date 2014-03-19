@@ -17,6 +17,7 @@ from gofer.transport.qpid.endpoint import Endpoint
 
 
 PROVIDES = [
-    'amqp-0-10',
+    'AMQP-0-10',
+    'qpid-messaging',
     'qpid'
 ]
