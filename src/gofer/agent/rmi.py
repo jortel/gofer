@@ -91,7 +91,7 @@ class Task:
             self.send_reply(request, result)
         except WindowMissed:
             self.commit(request.sn)
-            log.info('window missed:\n%s', request)
+            log.info('window missed: %s', request)
             self.send_reply(request, Return.exception())
 
     def window_missed(self):
@@ -146,7 +146,7 @@ class Task:
         now = time()
         duration = Timer(ts, now)
         replyto = request.replyto
-        log.info('%s processed in: %s', sn, duration)
+        log.info('sn=%s processed in: %s', sn, duration)
         if not replyto:
             return
         try:
@@ -160,7 +160,7 @@ class Task:
             finally:
                 producer.close()
         except Exception:
-            log.exception('send failed:\n%s', result)
+            log.exception('send failed: %s', result)
 
     def producer(self):
         url = self.plugin.get_url()

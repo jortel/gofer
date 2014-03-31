@@ -138,7 +138,7 @@ class Reader(Endpoint):
             except model.InvalidDocument:
                 self.ack(message)
                 raise
-            log.debug('{%s} read next:\n%s', self.id(), document)
+            log.debug('read next: %s', document)
             return document, Ack(self, message)
         return None, None
 

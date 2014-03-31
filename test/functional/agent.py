@@ -31,11 +31,13 @@ import os
 
 from time import sleep
 from optparse import OptionParser
-from logging import getLogger, DEBUG
+from logging import getLogger, DEBUG, root
+from logging.handlers import RotatingFileHandler
 
 # logging
 from gofer.agent import logutil
-logutil.LOGDIR = ROOT
+
+logutil.LogHandler.install()
 
 # configuration
 from gofer.config import Config
@@ -58,9 +60,11 @@ Pending.DELAYED = os.path.join(ROOT, 'messaging/delayed')
 from gofer.agent.plugin import PluginDescriptor, PluginLoader
 from gofer.agent.main import Agent, setup_logging
 
-log = getLogger(__name__)
-
 getLogger('gofer').setLevel(DEBUG)
+log_path = os.path.join(ROOT, 'agent.log')
+log_handler = RotatingFileHandler(log_path, maxBytes=0x100000, backupCount=5)
+log_handler.setFormatter(logutil.FORMATTER)
+root.addHandler(log_handler)
 
 
 def install_plugins(url, transport, uuid, threads, auth):

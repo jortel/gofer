@@ -79,8 +79,6 @@ class Endpoint(Base):
         :type uuid: str
         :param url: The broker url <transport>://<user>/<pass>@<host>:<port>.
         :type url: str
-        :param authenticator: A message authenticator.
-        :type authenticator: gofer.messaging.auth.Authenticator
         """
         Base.__init__(self, uuid, url)
         self.__mutex = RLock()

@@ -59,7 +59,7 @@ def send(endpoint, destination, ttl=None, **body):
     sender = endpoint.session().sender(address)
     sender.send(message)
     sender.close()
-    log.debug('{%s} sent (%s)\n%s', endpoint.id(), address, document)
+    log.debug('sent (%s) %s', destination, document)
     return sn
 
 
@@ -125,7 +125,7 @@ class BinaryProducer(Endpoint):
         sender = self.session().sender(address)
         sender.send(message)
         sender.close()
-        log.debug('{%s} sent (%s)\n%s', self.id(), address)
+        log.debug('sent (%s) <binary>', destination)
 
     def broadcast(self, destinations, content, ttl=None):
         """

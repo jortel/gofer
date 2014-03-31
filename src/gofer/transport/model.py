@@ -121,6 +121,12 @@ class Destination(object):
     def __ne__(self, other):
         return not (self == other)
 
+    def __str__(self):
+        return str(self.__dict__)
+
+    def __repr__(self):
+        return repr(self.__dict__)
+
 
 class Queue(Node):
     """

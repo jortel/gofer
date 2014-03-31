@@ -214,7 +214,7 @@ class Synchronous(RequestMethod):
                 **any)
         finally:
             producer.close()
-        log.debug('sent (%s):\n%s', repr(destination), request)
+        log.debug('sent (%s): %s', repr(destination), request)
         reader = self.transport.reader(self.url, self.queue)
         reader.authenticator = self.authenticator
         try:
@@ -453,7 +453,7 @@ class Trigger:
                 **any)
         finally:
             producer.close()
-        log.debug('sent (%s):\n%s', repr(destination), request)
+        log.debug('sent (%s): %s', repr(destination), request)
     
     def __str__(self):
         return self.__sn

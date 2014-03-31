@@ -100,7 +100,7 @@ class Broker:
         raise NotImplemented()
 
     def __str__(self):
-        s = []
+        s = list()
         s.append('{%s}:' % self.id())
         s.append('transport=%s' % self.url.transport.upper())
         s.append('host=%s' % self.url.host)
@@ -109,7 +109,7 @@ class Broker:
         s.append('clientcert=%s' % self.clientcert)
         s.append('userid=%s' % self.userid)
         s.append('password=%s' % self.password)
-        return '\n'.join(s)
+        return '|'.join(s)
 
 
 class URL:

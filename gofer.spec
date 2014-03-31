@@ -62,7 +62,6 @@ mkdir -p %{buildroot}/%{_sysconfdir}/%{name}
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/plugins
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/conf.d
 mkdir -p %{buildroot}/%{_sysconfdir}/init.d
-mkdir -p %{buildroot}/%{_var}/log/%{name}
 mkdir -p %{buildroot}/%{_usr}/lib/%{name}/plugins
 mkdir -p %{buildroot}/%{_usr}/share/%{name}/plugins
 mkdir -p %{buildroot}/%{_mandir}/man1
@@ -85,7 +84,6 @@ rm -rf %{buildroot}
 %dir %{_usr}/lib/%{name}/plugins/
 %dir %{_usr}/share/%{name}/plugins/
 %dir %{_sysconfdir}/%{name}/conf.d/
-%dir %{_var}/log/%{name}/
 %{python_sitelib}/%{name}/agent/
 %{_bindir}/%{name}d
 %attr(755,root,root) %{_sysconfdir}/init.d/%{name}d

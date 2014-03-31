@@ -67,7 +67,7 @@ class Broker(_Broker):
         """
         while True:
             try:
-                log.info('connecting:\n%s', self)
+                log.info('connecting: %s', self)
                 con = Connection(
                     host=self.url.simple(),
                     virtual_host=self.virtual_host or VIRTUAL_HOST,

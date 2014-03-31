@@ -47,7 +47,6 @@ class TestAgent:
         self.root = root or mkdtemp()
 
     def start(self, spoofing=None):
-        self._setup_logging()
         self._setup_spoofing(spoofing)
         self._setup_locking()
         self._setup_pending_queue()
@@ -62,11 +61,6 @@ class TestAgent:
         while True:
             time.sleep(10)
 
-    def _setup_logging(self):
-        from gofer.agent import logutil
-        logutil.LOGDIR = os.path.join(self.root, 'var/log/gofer')
-        mkdir(logutil.LOGDIR)
-
     def _setup_locking(self):
         from gofer.agent.main import AgentLock
         lock_dir = 'var/lock'
@@ -74,9 +68,9 @@ class TestAgent:
         mkdir(lock_dir)
 
     def _setup_pending_queue(self):
-        from gofer.rmi.store import PendingQueue
-        PendingQueue.ROOT = os.path.join(self.root, 'messaging/pending')
-        mkdir(PendingQueue.ROOT)
+        from gofer.rmi.store import Pending
+        Pending.ROOT = os.path.join(self.root, 'messaging/pending')
+        mkdir(Pending.ROOT)
 
     def _setup_spoofing(self, suffix):
         from gofer.agent.plugin import Plugin
