@@ -28,6 +28,10 @@ import shutil
 from tempfile import mkdtemp
 from optparse import OptionParser
 from multiprocessing import Process
+from logging import getLogger
+from logging.handlers import RotatingFileHandler
+
+from gofer.agent import logutil
 
 
 # --- utils ------------------------------------------------------------------
@@ -47,6 +51,7 @@ class TestAgent:
         self.root = root or mkdtemp()
 
     def start(self, spoofing=None):
+        self._setup_logging()
         self._setup_spoofing(spoofing)
         self._setup_locking()
         self._setup_pending_queue()
@@ -60,6 +65,13 @@ class TestAgent:
         print 'Agent pid:%s started. Working directory [ %s ]' % (os.getpid(), self.root)
         while True:
             time.sleep(10)
+
+    def _setup_logging(self):
+        log_path = os.path.join(self.root, 'agent.log')
+        log_handler = RotatingFileHandler(log_path, maxBytes=0x100000, backupCount=5)
+        log_handler.setFormatter(logutil.FORMATTER)
+        root = getLogger()
+        root.addHandler(log_handler)
 
     def _setup_locking(self):
         from gofer.agent.main import AgentLock

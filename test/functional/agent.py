@@ -31,7 +31,7 @@ import os
 
 from time import sleep
 from optparse import OptionParser
-from logging import getLogger, DEBUG, root
+from logging import getLogger, DEBUG
 from logging.handlers import RotatingFileHandler
 
 # logging
@@ -64,7 +64,8 @@ getLogger('gofer').setLevel(DEBUG)
 log_path = os.path.join(ROOT, 'agent.log')
 log_handler = RotatingFileHandler(log_path, maxBytes=0x100000, backupCount=5)
 log_handler.setFormatter(logutil.FORMATTER)
-root.addHandler(log_handler)
+root = getLogger()
+root.handlers = [log_handler]
 
 
 def install_plugins(url, transport, uuid, threads, auth):

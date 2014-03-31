@@ -21,13 +21,16 @@ from time import sleep
 from threading import Thread
 from getopt import getopt, GetoptError
 
+from gofer.agent.logutil import LogHandler
+
+LogHandler.install()
+
 from gofer import *
 from gofer.pam import PAM
 from gofer.agent.plugin import PluginLoader
 from gofer.agent.lock import Lock, LockFailed
 from gofer.agent.config import AgentConfig
 from gofer.agent.rmi import Scheduler
-from gofer.agent.logutil import LogHandler
 
 log = logging.getLogger(__name__)
 cfg = AgentConfig()
@@ -223,7 +226,6 @@ def setup_logging():
 
 def main():
     daemon = True
-    LogHandler.install()
     setup_logging()
     try:
         opts, args = getopt(sys.argv[1:], 'hcp:', ['help', 'console', 'prof'])

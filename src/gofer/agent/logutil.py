@@ -32,21 +32,42 @@ HANDLER = None
 
 
 class LogHandler(SysLogHandler):
+    """
+    Custom syslog handler.
+    """
 
     @staticmethod
     def install():
+        """
+        Install the handler.
+        """
         handler = LogHandler(address='/dev/log', facility=SysLogHandler.LOG_DAEMON)
         handler.setFormatter(FORMATTER)
         root = getLogger()
         root.setLevel(INFO)
-        root.addHandler(handler)
+        root.handlers = [handler]
 
     @staticmethod
     def clean(message):
+        """
+        Clean messages to be emitted.
+        :param message: A message to be emitted.
+        :type message: str
+        :return: The cleaned message.
+        :rtype: str
+        """
         lines = message.split('\n')
         return ' '.join([ln.strip() for ln in lines])
 
     def emit(self, record):
+        """
+        Emit the specified log record.
+        Provides the following:
+        - Replace newlines with spaces per syslog RFCs.
+        - Emit stack traces in a following cleaned log record.
+        :param record: A log record.
+        :type record: LogRecord
+        """
         records = [record]
         message = record.getMessage()
         record.msg = LogHandler.clean(message)
