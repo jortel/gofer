@@ -31,8 +31,6 @@ from multiprocessing import Process
 from logging import getLogger
 from logging.handlers import RotatingFileHandler
 
-from gofer.agent import logutil
-
 
 # --- utils ------------------------------------------------------------------
 
@@ -67,6 +65,7 @@ class TestAgent:
             time.sleep(10)
 
     def _setup_logging(self):
+        from gofer.agent import logutil
         log_path = os.path.join(self.root, 'agent.log')
         log_handler = RotatingFileHandler(log_path, maxBytes=0x100000, backupCount=5)
         log_handler.setFormatter(logutil.FORMATTER)

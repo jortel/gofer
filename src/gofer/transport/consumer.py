@@ -94,7 +94,7 @@ class Consumer(Thread):
         :param details: The explanation.
         :type details: str
         """
-        log.debug('%s, sn:%s reason: %s %s', code, details, document)
+        log.debug('%s, reason: %s %s', code, details, document)
 
     @staticmethod
     def dispatch(document):

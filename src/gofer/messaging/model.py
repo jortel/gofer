@@ -200,6 +200,6 @@ class Document(Options):
                 return thing
             return thing
         d = fn(self)
-        return json.dumps(d, sort_keys=True, indent=2)
+        return json.dumps(d, sort_keys=True)
 
 
