@@ -15,7 +15,7 @@ Then,
      yum install gofer
 
 2. Edit the ``/etc/gofer/plugins/builtin.conf`` and set the url to point at your broker.
-   Then, set uuid=123. Or, look in ``/var/log/gofer/agent.log`` to find the auto-assigned UUID
+   Then, set uuid=123. Or, look in ``/var/log/messages`` to find the auto-assigned UUID
    for your system.
 
    ::
@@ -210,7 +210,7 @@ at: /var/log/gofer/agent.  At start up, you should see something like:
  2010-11-08 08:49:04,909 [INFO][MainThread] __import() @ plugin.py:103 - plugin "myplugin", imported as: "myplugin"
 
 
-The gofer log (/var/log/gofer/agent.log) may be examined to verify that *Actions* are running as expected.
+The gofer log (/var/log/messages) may be examined to verify that *Actions* are running as expected.
 Also, RMI requests (massages) are logged upon receipt in the gofer agent log.
 
 Testing added *remote methods*, can be done easily using an interactive python (shell).  Be sure your
