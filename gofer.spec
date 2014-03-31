@@ -167,23 +167,6 @@ Provides the gofer amqplib transport package.
 %doc LICENSE
 
 
-# --- python rabbitmq transport -------------------------------------------
-
-%package -n python-%{name}-rabbitmq
-Summary: Gofer rabbitmq transport python package
-Group: Development/Languages
-BuildRequires: python
-Requires: python-%{name} >= %{version}
-Requires: python-librabbitmq >= 1.0.2
-
-%description -n python-%{name}-rabbitmq
-Provides the gofer rabbitmq transport package.
-
-%files -n python-%{name}-rabbitmq
-%{python_sitelib}/%{name}/transport/rabbitmq
-%doc LICENSE
-
-
 # --- ruby lib ---------------------------------------------------------------
 
 %package -n ruby-%{name}

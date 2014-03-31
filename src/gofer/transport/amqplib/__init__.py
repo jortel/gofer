@@ -15,3 +15,9 @@ from gofer.transport.amqplib.broker import Broker
 from gofer.transport.amqplib.consumer import Reader
 from gofer.transport.amqplib.producer import Producer, send
 from gofer.transport.amqplib.endpoint import Endpoint
+
+
+PROVIDES = [
+    'AMQP-0-8',
+    'rabbitmq'
+]

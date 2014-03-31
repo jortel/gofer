@@ -15,46 +15,32 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-from platform import python_version
 from setuptools import setup, find_packages
-
-
-major, minor, micro = python_version().split('.')
-
-if major != '2' or minor not in ['4', '5', '6', '7']:
-    raise Exception('unsupported version of python')
-
-requires = [
-]
-
-if minor not in ['6', '7']:
-    requires.extend([
-        'simplejson == 2.0.9',
-    ])
 
 setup(
     name='gofer',
-    version='0.1',
+    version='1.0.4',
     description='Universal python agent',
     author='Jeff Ortel',
     author_email='jortel@redhat.com',
-    url='',
+    url='https://github.com/jortel/gofer',
     license='GPLv2+',
     packages=find_packages(),
-    scripts = [
+    scripts=[
         '../bin/goferd',
     ],
     include_package_data=False,
     data_files=[],
     classifiers=[
-        'License :: OSI Approved :: GNU General Puclic License (GPL)',
+        'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
         'Programming Language :: Python',
-        'Operating System :: POSIX',
-        'Topic :: Content Management and Delivery',
+        'Operating System :: POSIX :: Linux',
+        'Topic :: System :: Distributed Computing',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Intended Audience :: Developers',
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
     ],
-    install_requires=requires,
+    install_requires=[
+    ],
 )
 

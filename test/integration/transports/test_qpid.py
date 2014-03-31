@@ -26,6 +26,15 @@ URL = 'tcp://localhost:5672'
 
 if __name__ == '__main__':
     Transport.load_plugins()
+    # AMQP-0-10
+    package = Transport.plugins['AMQP-0-10']
+    test = Test(URL, package)
+    test()
+    # qpid
     package = Transport.plugins['qpid']
+    test = Test(URL, package)
+    test()
+    # qpid-messaging
+    package = Transport.plugins['qpid-messaging']
     test = Test(URL, package)
     test()

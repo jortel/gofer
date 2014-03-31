@@ -29,7 +29,7 @@ from threading import RLock
 #   /var/run/<NAME>d.pid
 #   /var/log/<NAME>/agent.log
 #   ~/.<NAME>/agent.conf
-NAME = 'gofer'
+NAME = __name__
 
 
 class Singleton(type):

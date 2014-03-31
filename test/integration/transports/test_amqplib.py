@@ -22,10 +22,15 @@ from gofer.transport import Transport
 
 basicConfig()
 
-URL = 'amqp://localhost:5674'
+URL = 'amqp://localhost:5673'
 
 if __name__ == '__main__':
     Transport.load_plugins()
+    # AMQP-0-8
+    package = Transport.plugins['AMQP-0-8']
+    test = Test(URL, package)
+    test()
+    # amqplib
     package = Transport.plugins['amqplib']
     test = Test(URL, package)
     test()
