@@ -65,7 +65,7 @@ log_path = os.path.join(ROOT, 'agent.log')
 log_handler = RotatingFileHandler(log_path, maxBytes=0x100000, backupCount=5)
 log_handler.setFormatter(logutil.FORMATTER)
 root = getLogger()
-root.handlers = [log_handler]
+root.addHandler(log_handler)
 
 
 def install_plugins(url, transport, uuid, threads, auth):

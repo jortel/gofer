@@ -74,7 +74,6 @@ class LogHandler(SysLogHandler):
         record.args = tuple()
         if record.exc_info:
             msg = self.formatter.formatException(record.exc_info)
-            record.exc_info = None
             new_record = LogRecord(
                 name=record.name,
                 level=record.levelno,
@@ -85,6 +84,7 @@ class LogHandler(SysLogHandler):
                 exc_info=None,
                 func=record.funcName)
             records.append(new_record)
+            record.exc_info = None
         for r in records:
             SysLogHandler.emit(self, r)
 
