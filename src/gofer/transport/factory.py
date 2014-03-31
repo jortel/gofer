@@ -10,7 +10,9 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 import os
+import sys
 import logging
+import traceback
 
 import gofer
 
@@ -87,8 +89,8 @@ class Transport:
                 cls.plugins[package] = pkg
                 for capability in pkg.PROVIDES:
                     cls.plugins[capability] = pkg
-            except ImportError:
-                log.exception(name)
+            except (ImportError, AttributeError):
+                log.exception(path)
 
     def __init__(self, package=None):
         """

@@ -113,7 +113,7 @@ class Broker:
         s.append('clientcert=%s' % self.clientcert)
         s.append('userid=%s' % self.userid)
         s.append('password=%s' % self.password)
-        return '\n'.join(s)
+        return '|'.join(s)
 
 
 class URL:

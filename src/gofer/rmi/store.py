@@ -70,7 +70,7 @@ class Pending(object):
         try:
             body = request.dump()
             fp.write(body)
-            log.debug('wrote [%s]:\n%s', path, body)
+            log.debug('wrote [%s]: %s', path, body)
         finally:
             fp.close()
 
@@ -89,7 +89,7 @@ class Pending(object):
                 request = Document()
                 body = fp.read()
                 request.load(body)
-                log.debug('read [%s]:\n%s', path, body)
+                log.debug('read [%s]: %s', path, body)
                 return request
             except ValueError:
                 log.error('%s corrupt (discarded)', path)

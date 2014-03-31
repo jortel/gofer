@@ -66,7 +66,7 @@ class Qpid(Broker):
             return self.connection.cached
         except AttributeError:
             url = self.url.simple()
-            log.info('connecting:\n%s', self)
+            log.info('connecting: %s', self)
             con = Connection(
                 host=self.host,
                 port=self.port,

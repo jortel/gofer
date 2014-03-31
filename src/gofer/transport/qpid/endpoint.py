@@ -162,7 +162,6 @@ class Endpoint(Base):
         try:
             if self.__session is None:
                 self.__session = self.ssnpool.get(self.url)
-                log.debug('{%s} connected to AMQP' % self.id())
             return self.__session
         finally:
             self._unlock()

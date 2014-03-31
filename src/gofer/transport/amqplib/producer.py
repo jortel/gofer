@@ -55,7 +55,7 @@ def send(endpoint, destination, ttl=None, **body):
     channel = endpoint.channel()
     m = message(signed, ttl)
     channel.basic_publish(m, exchange=destination.exchange, routing_key=routing_key)
-    log.debug('{%s} sent (%s)\n%s', endpoint.id(), routing_key, document)
+    log.debug('sent (%s) %s', destination, document)
     return sn
 
 
@@ -106,7 +106,7 @@ class BinaryProducer(Endpoint):
         channel = self.channel()
         m = message(content, ttl)
         channel.basic_publish(m, exchange=destination.exchange, routing_key=routing_key)
-        log.debug('{%s} sent (binary)\n%s', self.id(), routing_key)
+        log.debug('sent (%s) <binary>', destination)
 
     @reliable
     def broadcast(self, destinations, content, ttl=None):

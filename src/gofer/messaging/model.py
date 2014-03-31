@@ -105,10 +105,10 @@ def search(reader, sn, timeout=90):
         else:
             return
         if sn == document.sn:
-            log.debug('search found:\n%s', document)
+            log.debug('search found: %s', document)
             return document
         else:
-            log.debug('search discarding:\n%s', document)
+            log.debug('search discarding: %s', document)
 
 
 # --- model ------------------------------------------------------------------
@@ -200,6 +200,6 @@ class Document(Options):
                 return thing
             return thing
         d = fn(self)
-        return json.dumps(d, sort_keys=True, indent=2)
+        return json.dumps(d, sort_keys=True)
 
 

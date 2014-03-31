@@ -21,16 +21,18 @@ from time import sleep
 from threading import Thread
 from getopt import getopt, GetoptError
 
+from gofer.agent.logutil import LogHandler
+
+LogHandler.install()
+
 from gofer import *
 from gofer.pam import PAM
 from gofer.agent.plugin import PluginLoader
 from gofer.agent.lock import Lock, LockFailed
 from gofer.agent.config import AgentConfig
-from gofer.agent.logutil import getLogger
 from gofer.agent.rmi import Scheduler
 
-
-log = getLogger(__name__)
+log = logging.getLogger(__name__)
 cfg = AgentConfig()
 
 
@@ -158,7 +160,7 @@ def start(daemon=True):
     lock = AgentLock()
     try:
         lock.acquire(False)
-    except LockFailed, e:
+    except LockFailed:
         raise Exception('Agent already running')
     if daemon:
         start_daemon(lock)
@@ -174,7 +176,7 @@ def usage():
     """
     Show usage.
     """
-    s = []
+    s = list()
     s.append('\n%sd <options>' % NAME)
     s.append('  -h, --help')
     s.append('      Show help')

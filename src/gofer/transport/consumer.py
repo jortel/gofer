@@ -60,7 +60,7 @@ class Consumer(Thread):
             document, ack = self.reader.next(10)
             if document is None:
                 return
-            log.debug('{%s} read:\n%s', self.name, document)
+            log.debug('{%s} read: %s', self.name, document)
             self.dispatch(document)
             ack()
         except auth.ValidationFailed, vf:
@@ -81,7 +81,7 @@ class Consumer(Thread):
         :param details: The explanation.
         :type details: str
         """
-        log.debug('%s, reason: %s\n%s', code, details, message)
+        log.debug('%s, reason: %s %s', code, details, message)
 
     def document_rejected(self, code, document, details):
         """
@@ -94,7 +94,7 @@ class Consumer(Thread):
         :param details: The explanation.
         :type details: str
         """
-        log.debug('%s, sn:%s reason:%s\n%s', code, details, document)
+        log.debug('%s, reason: %s %s', code, details, document)
 
     @staticmethod
     def dispatch(document):
@@ -104,7 +104,7 @@ class Consumer(Thread):
         :param document: The received document.
         :type document: Document
         """
-        log.debug('dispatched:\n%s', document)
+        log.debug('dispatched: %s', document)
 
 
 class Ack:

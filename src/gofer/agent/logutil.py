@@ -13,47 +13,79 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-import os
-import sys
-import logging
+from logging import getLogger, Formatter, LogRecord, INFO
+from logging.handlers import SysLogHandler
+
 from gofer import NAME
-from logging import root, Formatter
-from logging.handlers import RotatingFileHandler
 
-LOGDIR = '/var/log/%s' % NAME
-LOGFILE = 'agent.log'
 
-TIME = '%(asctime)s'
+PREFIX = '%sd:' % NAME
 LEVEL = ' [%(levelname)s]'
 THREAD = '[%(threadName)s]'
-FUNCTION = ' %(funcName)s()'
-FILE = ' @ %(filename)s'
+NAME = ' %(name)s'
 LINE = ':%(lineno)d'
 MSG = ' - %(message)s'
 
-if sys.version_info < (2,5):
-    FUNCTION = ''
+FORMAT = ''.join((PREFIX, LEVEL, THREAD, NAME, LINE, MSG))
+FORMATTER = Formatter(FORMAT)
+HANDLER = None
 
-FMT = \
-    ''.join((TIME,
-            LEVEL,
-            THREAD,
-            FUNCTION,
-            FILE,
-            LINE,
-            MSG,))
 
-handler = None
+class LogHandler(SysLogHandler):
+    """
+    Custom syslog handler.
+    """
 
-def getLogger(name):
-    global handler
-    if not os.path.exists(LOGDIR):
-        os.mkdir(LOGDIR)
-    if handler is None:
-        path = os.path.join(LOGDIR, LOGFILE)
-        handler = RotatingFileHandler(path, maxBytes=0x100000, backupCount=5)
-        handler.setFormatter(Formatter(FMT))
-        root.setLevel(logging.INFO)
-        root.addHandler(handler)
-    log = logging.getLogger(name)
-    return log
+    @staticmethod
+    def install():
+        """
+        Install the handler.
+        """
+        handler = LogHandler(address='/dev/log', facility=SysLogHandler.LOG_DAEMON)
+        handler.setFormatter(FORMATTER)
+        root = getLogger()
+        root.setLevel(INFO)
+        root.handlers = [handler]
+
+    @staticmethod
+    def clean(message):
+        """
+        Clean messages to be emitted.
+        :param message: A message to be emitted.
+        :type message: str
+        :return: The cleaned message.
+        :rtype: str
+        """
+        lines = message.split('\n')
+        return ' '.join([ln.strip() for ln in lines])
+
+    def emit(self, record):
+        """
+        Emit the specified log record.
+        Provides the following:
+        - Replace newlines with spaces per syslog RFCs.
+        - Emit stack traces in a following cleaned log record.
+        :param record: A log record.
+        :type record: LogRecord
+        """
+        records = [record]
+        message = record.getMessage()
+        record.msg = LogHandler.clean(message)
+        record.args = tuple()
+        if record.exc_info:
+            msg = self.formatter.formatException(record.exc_info)
+            new_record = LogRecord(
+                name=record.name,
+                level=record.levelno,
+                pathname=record.pathname,
+                lineno=record.lineno,
+                msg=LogHandler.clean(msg),
+                args=tuple(),
+                exc_info=None,
+                func=record.funcName)
+            records.append(new_record)
+            record.exc_info = None
+        for r in records:
+            SysLogHandler.emit(self, r)
+
+
