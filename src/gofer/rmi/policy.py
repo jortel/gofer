@@ -22,7 +22,6 @@ from logging import getLogger
 from gofer.messaging.model import Document, InvalidDocument, getuuid
 from gofer.messaging import Destination
 from gofer.rmi.dispatcher import Return, RemoteException
-from gofer.constants import ACCEPTED, REJECTED, STARTED, PROGRESS
 from gofer.metrics import Timer
 
 
@@ -225,8 +224,8 @@ class Synchronous(RequestMethod):
 
     def __get_accepted(self, sn, reader):
         """
-        Get the ACCEPTED reply matched by serial number.
-        In the event the ACCEPTED message got lost, the STARTED
+        Get the 'accepted' reply matched by serial number.
+        In the event the 'accepted' message got lost, the 'started'
         status is also processed.
         :param sn: The request serial number.
         :type sn: str
@@ -236,15 +235,14 @@ class Synchronous(RequestMethod):
         :rtype: Document
         """
         document = reader.search(sn, self.timeout)
-        if document:
-            if document.status == REJECTED:
-                raise InvalidDocument(document.code, sn, document.details)
-            if document.status in (ACCEPTED, STARTED):
-                log.debug('request (%s), %s', sn, document.status)
-            else:
-                self.__on_reply(document)
-        else:
+        if not document:
             raise RequestTimeout(sn, self.timeout)
+        if document.status == 'rejected':
+            raise InvalidDocument(document.code, sn, document.details)
+        if document.status in ('accepted', 'started'):
+            log.debug('request (%s), %s', sn, document.status)
+        else:
+            self.__on_reply(document)
 
     def __get_reply(self, sn, reader):
         """
@@ -267,17 +265,16 @@ class Synchronous(RequestMethod):
                 raise RequestTimeout(sn, self.wait)
             else:
                 timeout -= elapsed
-            if document:
-                if document.status == REJECTED:
-                    raise InvalidDocument(document.code, sn, document.details)
-                if document.status in (ACCEPTED, STARTED):
-                    continue
-                if document.status == PROGRESS:
-                    self.__on_progress(document)
-                else:
-                    return self.__on_reply(document)
-            else:
+            if not document:
                 raise RequestTimeout(sn, self.wait)
+            if document.status == 'rejected':
+                raise InvalidDocument(document.code, sn, document.details)
+            if document.status in ('accepted', 'started'):
+                continue
+            if document.status == 'progress':
+                self.__on_progress(document)
+            else:
+                return self.__on_reply(document)
         
     def __on_reply(self, document):
         """

@@ -15,8 +15,6 @@ import simplejson as json
 from uuid import uuid4
 from logging import getLogger
 
-from gofer.constants import MODEL_VERSION, AUTHENTICATION
-
 
 log = getLogger(__name__)
 
@@ -34,28 +32,25 @@ class InvalidDocument(Exception):
     Base for all message/document validation.
     """
 
-    CODE = {
-        MODEL_VERSION: 'MODEL: version not valid',
-        AUTHENTICATION: 'SECURITY: message authentication failed'
-    }
-
-    def __init__(self, code, document, details=None):
+    def __init__(self, code, description, document, details=None):
         """
-        :param code: The validation code.  Must be in: CODE.
+        :param code: The validation code.
         :type code: str
         :param document: The invalid document.
         :type document: str
         :param details: A detailed description of what failed.
         :type details: str
         """
-        Exception.__init__(self, ' : '.join((self.CODE[code], details or '')))
-        assert code in InvalidDocument.CODE
+        Exception.__init__(self, ' : '.join((description, details or '')))
         self.code = code
         self.document = document
         self.details = details
 
 
 class InvalidVersion(InvalidDocument):
+
+    CODE = 'model.version'
+    DESCRIPTION = 'MODEL: version not valid'
 
     def __init__(self, document, details):
         """
@@ -64,7 +59,12 @@ class InvalidVersion(InvalidDocument):
         :param details: A detailed description.
         :type details: str
         """
-        InvalidDocument.__init__(self, MODEL_VERSION, document, details)
+        InvalidDocument.__init__(
+            self,
+            code=self.CODE,
+            description=self.DESCRIPTION,
+            document=document,
+            details=details)
 
 
 # --- utils ------------------------------------------------------------------

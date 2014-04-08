@@ -24,7 +24,6 @@ from gofer.rmi.dispatcher import Dispatcher, Return
 from gofer.rmi.threadpool import Trashed
 from gofer.messaging.model import Document
 from gofer.transport.model import Destination
-from gofer.constants import STARTED, PROGRESS
 from gofer.metrics import Timer
 
 
@@ -126,7 +125,7 @@ class Task:
                     Destination.create(replyto),
                     sn=sn,
                     any=any,
-                    status=STARTED)
+                    status='started')
             finally:
                 producer.close()
         except Exception:
@@ -296,7 +295,7 @@ class Progress:
                     Destination.create(replyto),
                     sn=sn,
                     any=any,
-                    status=PROGRESS,
+                    status='progress',
                     total=self.total,
                     completed=self.completed,
                     details=self.details)

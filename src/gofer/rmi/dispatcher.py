@@ -23,7 +23,6 @@ import traceback as tb
 
 from gofer import NAME
 from gofer.messaging.model import Document, Options
-from gofer.constants import ACCEPTED, REJECTED, STARTED, RETVAL, EXVAL, PROGRESS
 from gofer.pam import PAM
 
 from logging import getLogger
@@ -201,7 +200,7 @@ class Reply(Document):
         :return: True when indicates success.
         :rtype: bool
         """
-        return self.result and RETVAL in self.result
+        return self.result and 'retval' in self.result
 
     def failed(self):
         """
@@ -209,7 +208,7 @@ class Reply(Document):
         :return: True when indicates failure.
         :rtype: bool
         """
-        return self.result and EXVAL in self.result
+        return self.result and 'exval' in self.result
 
     def accepted(self):
         """
@@ -217,7 +216,7 @@ class Reply(Document):
         :return: True when indicates started.
         :rtype: bool
         """
-        return self.status == ACCEPTED
+        return self.status == 'accepted'
 
     def rejected(self):
         """
@@ -225,7 +224,7 @@ class Reply(Document):
         :return: True when indicates started.
         :rtype: bool
         """
-        return self.status == REJECTED
+        return self.status == 'rejected'
     
     def started(self):
         """
@@ -233,7 +232,7 @@ class Reply(Document):
         :return: True when indicates started.
         :rtype: bool
         """
-        return self.status == STARTED
+        return self.status == 'started'
     
     def progress(self):
         """
@@ -241,7 +240,7 @@ class Reply(Document):
         :return: True when indicates progress.
         :rtype: bool
         """
-        return self.status == PROGRESS
+        return self.status == 'progress'
     
 
 class Return(Document):
@@ -280,7 +279,7 @@ class Return(Document):
         :return: True when indicates success.
         :rtype: bool
         """
-        return RETVAL in self
+        return 'retval' in self
 
     def failed(self):
         """
@@ -288,7 +287,7 @@ class Return(Document):
         :return: True when indicates failure.
         :rtype: bool
         """
-        return EXVAL in self
+        return 'exval' in self
 
     @classmethod
     def __exception(cls):
