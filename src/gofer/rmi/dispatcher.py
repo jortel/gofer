@@ -38,6 +38,16 @@ class DispatchError(Exception):
     pass
 
 
+class PluginNotFound(DispatchError):
+    """
+    Target plugin not found.
+    """
+
+    def __init__(self, uuid):
+        message = 'plugin for uuid: %s, not found' % uuid
+        DispatchError.__init__(self, message)
+
+
 class ClassNotFound(DispatchError):
     """
     Target class not found.

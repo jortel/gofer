@@ -20,8 +20,8 @@ from logging import getLogger
 from gofer.rmi.window import *
 from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import Pending
-from gofer.rmi.dispatcher import Dispatcher, Return
-from gofer.rmi.threadpool import Trashed
+from gofer.rmi.dispatcher import Return, PluginNotFound
+from gofer.rmi.threadpool import Direct
 from gofer.messaging.model import Document
 from gofer.transport.model import Destination
 from gofer.metrics import Timer
@@ -162,6 +162,11 @@ class Task:
             log.exception('send failed: %s', result)
 
     def producer(self):
+        """
+        Get a configured producer.
+        :return: A producer.
+        :rtype: Producer
+        """
         url = self.plugin.get_url()
         tp = self.plugin.get_transport()
         producer = tp.producer(url=url)
@@ -176,11 +181,13 @@ class TrashPlugin:
     """
 
     def __init__(self):
-        self.pool = Trashed()
+        self.pool = Direct()
     
     def dispatch(self, request):
-        d = Dispatcher()
-        return d.dispatch(request)
+        try:
+            raise PluginNotFound(request.routing[1])
+        except PluginNotFound:
+            return Return.exception()
 
 
 class TrashProducer(object):

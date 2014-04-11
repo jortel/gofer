@@ -204,7 +204,7 @@ class ThreadPool:
         return '\n'.join(s)
 
 
-class Trashed:
+class Direct:
     """
     Call ignored (trashed).
     """
@@ -219,4 +219,4 @@ class Trashed:
         :param options: The keyword args passed fn()
         :type options: dict
         """
-        pass
+        return fn(*args, **options)
