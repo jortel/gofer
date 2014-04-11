@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 1.0.4
+Version: 1.0.5
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -252,6 +252,12 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Mon Mar 31 2014 Jeff Ortel <jortel@redhat.com> 1.0.5-1
+- Log to syslog instead of /var/log/gofer/. (jortel@redhat.com)
+- Support userid/password in the broker url. (jortel@redhat.com)
+- Remove librabbitmq transport. (jortel@redhat.com)
+- Add support for skipping SSL validation. (jortel@redhat.com)
+- Use qpid builtin SSL transport. (jortel@redhat.com)
 * Wed Mar 12 2014 Jeff Ortel <jortel@redhat.com> 1.0.4-1
 - Improved import between plugins. (jortel@redhat.com)
 
