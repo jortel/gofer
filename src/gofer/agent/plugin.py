@@ -50,13 +50,13 @@ class Initializer(object):
     initializer = []
 
     @staticmethod
-    def add(fn):
+    def add(function):
         """
         Add an initializer.
-        :param fn: The function to add.
-        :type fn: function
+        :param function: The function to add.
+        :type function: function
         """
-        Initializer.initializer.append(fn)
+        Initializer.initializer.append(function)
 
     @staticmethod
     def clear():
@@ -70,15 +70,15 @@ class Initializer(object):
         """
         Run initializer functions.
         """
-        for fn in Initializer.initializer:
-            fn()
+        for function in Initializer.initializer:
+            function()
 
 
 def initializer(fn):
     """
     Plugin @initializer decorator.
     :param fn: A plugin initializer function.
-    :type fn: callable
+    :type fn: function
     :return: fn
     :rtype: function
     """
