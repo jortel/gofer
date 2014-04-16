@@ -22,6 +22,7 @@ from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import Pending
 from gofer.rmi.dispatcher import Return, PluginNotFound
 from gofer.rmi.threadpool import Direct
+from gofer.transport import Transport
 from gofer.messaging.model import Document
 from gofer.transport.model import Destination
 from gofer.metrics import Timer
@@ -182,6 +183,13 @@ class TrashPlugin:
 
     def __init__(self):
         self.pool = Direct()
+        self.authenticator = None
+
+    def get_url(self):
+        pass
+
+    def get_transport(self):
+        return Transport()
     
     def dispatch(self, request):
         try:

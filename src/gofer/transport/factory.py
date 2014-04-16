@@ -10,9 +10,7 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 import os
-import sys
 import logging
-import traceback
 
 import gofer
 
@@ -189,8 +187,8 @@ class Transport:
 
 def import_path(path):
     """
-    Convert the specified plugin path to an import path
-    that can be used with __import__.
+    Convert the specified plugin path to an import path that can
+    be used with __import__.  __package__ not supported in python 2.4.
     :param path: An absolute path.
     :type path: str
     :return: A path used with __import__.
