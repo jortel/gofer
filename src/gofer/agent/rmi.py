@@ -185,6 +185,7 @@ class TrashPlugin:
     
     def dispatch(self, request):
         try:
+            log.info('request sn=%s, trashed', request.sn)
             raise PluginNotFound(request.routing[1])
         except PluginNotFound:
             return Return.exception()
@@ -247,6 +248,7 @@ class Scheduler(Thread):
         for plugin in self.plugins:
             if plugin.get_uuid() == uuid:
                 return plugin
+        log.info('plugin not found for uuid=%s', uuid)
         return TrashPlugin()
     
 
