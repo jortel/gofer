@@ -49,8 +49,8 @@ class Actions:
                 method = getattr(inst, method.__name__)
                 action = Action(method, **options)
                 collated.append(action)
-        for module, functions in functions.items():
-            for function, options in functions:
+        for module, fn_list in functions.items():
+            for function, options in fn_list:
                 action = Action(function, **options)
                 collated.append(action)
         return collated

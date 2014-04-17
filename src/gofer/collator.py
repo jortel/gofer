@@ -84,8 +84,8 @@ class Collator:
             if fn in self.bound:
                 continue
             mod = inspect.getmodule(fn)
-            mod, functions = modules.setdefault(mod, (Module(mod.__name__), []))
-            functions.append(self.__decorated(fn))
+            mod, fn_list = modules.setdefault(mod, (Module(mod.__name__), []))
+            fn_list.append(self.__decorated(fn))
             mod += fn
         return dict(modules.values())
     

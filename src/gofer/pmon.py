@@ -92,17 +92,17 @@ class PathMonitor:
         self.__mutex = RLock()
         self.__thread = None
         
-    def add(self, path, function):
+    def add(self, path, target):
         """
         Add a path to be monitored.
         :param path: An absolute path to monitor.
         :type path: str
-        :param function: A listener.
-        :type function: callable
+        :param target: Called when a change at path is detected.
+        :type target: callable
         """
         self.__lock()
         try:
-            self.__paths[path] = [last_modified(path), digest(path), function]
+            self.__paths[path] = [last_modified(path), digest(path), target]
         finally:
             self.__unlock()
         
@@ -168,7 +168,7 @@ class PathMonitor:
         changed.  If changed, notify the registered listener.
         :param path: The path of the file to sniff.
         :type path: str
-        :param stat: The cached stat [last_modified, digest, function]
+        :param stat: The cached stat [last_modified, digest, target]
         :type stat: list
         """
         try:
@@ -185,16 +185,16 @@ class PathMonitor:
         except:
             log.exception(path)
     
-    def __notify(self, path, function):
+    def __notify(self, path, target):
         """
         Safely invoke registered callback.
         :param path: The path of the changed file.
         :type path: str
-        :param function: A registered callback.
-        :type function: callable
+        :param target: A registered callback.
+        :type target: callable
         """
         try:
-            function(path)
+            target(path)
         except:
             log.exception(path)
 
