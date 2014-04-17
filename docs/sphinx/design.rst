@@ -87,6 +87,10 @@ The message format is json:
 - Result (RMI):
    - **retval** - The returned data (optional).
    - **retex** - The returned exception (optoinal).
+- *Internal*:
+   - **ts** - Timestamp injected when added to the journal.
+   - **ttl** - Time-to-live (seconds) injected on receipt.
+   - **transport** - The transport (package) on which the request was received.
 
 
 Example RMI request message:
@@ -135,3 +139,4 @@ Example status reply:
     "sn": "985cb165-d291-47de-ab34-ecb20895384e",
     "any": "group 2"
  }
+

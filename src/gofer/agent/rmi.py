@@ -181,15 +181,19 @@ class TrashPlugin:
     Used when the appropriate plugin cannot be found.
     """
 
-    def __init__(self):
+    def __init__(self, transport):
         self.pool = Direct()
+        self.transport = transport
         self.authenticator = None
 
     def get_url(self):
         pass
 
     def get_transport(self):
-        return Transport()
+        try:
+            return Transport(self.transport)
+        except ImportError:
+            return Transport()
     
     def dispatch(self, request):
         try:
@@ -257,7 +261,7 @@ class Scheduler(Thread):
             if plugin.get_uuid() == uuid:
                 return plugin
         log.info('plugin not found for uuid=%s', uuid)
-        return TrashPlugin()
+        return TrashPlugin(request.transport)
     
 
 class Context:

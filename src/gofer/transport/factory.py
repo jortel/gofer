@@ -12,14 +12,14 @@
 import os
 import logging
 
-import gofer
-
 
 log = logging.getLogger(__name__)
 
 
 # --- constants --------------------------------------------------------------
 
+# __package__ not supported in python 2.4
+PACKAGE = '.'.join(__name__.split('.')[:-1])
 
 # symbols required to be provided by all transports
 REQUIRED = [
@@ -81,7 +81,7 @@ class Transport:
             if not os.path.isdir(path):
                 continue
             try:
-                package = import_path(path)
+                package = '.'.join((PACKAGE, name))
                 pkg = __import__(package, {}, {}, REQUIRED)
                 cls.plugins[name] = pkg
                 cls.plugins[package] = pkg
@@ -106,6 +106,15 @@ class Transport:
             self.plugin = self.plugins[package]
         except KeyError:
             raise TransportNotFound(package)
+
+    @property
+    def name(self):
+        """
+        The transport package name.
+        :return: The transport package name.
+        :rtype: str
+        """
+        return self.plugin.__name__
 
     def broker(self, url):
         """
@@ -180,28 +189,3 @@ class Transport:
         :rtype: gofer.transport.model.Reader.
         """
         return self.plugin.Reader(queue, uuid=uuid, url=url)
-
-
-# --- utils ------------------------------------------------------------------
-
-
-def import_path(path):
-    """
-    Convert the specified plugin path to an import path that can
-    be used with __import__.  __package__ not supported in python 2.4.
-    :param path: An absolute path.
-    :type path: str
-    :return: A path used with __import__.
-    :rtype: str
-    """
-    parts = []
-    path = path.split('/')
-    path.reverse()
-    for part in path:
-        if not part:
-            continue
-        parts.append(part)
-        if part == gofer.__name__:
-            break
-    parts.reverse()
-    return '.'.join(parts)

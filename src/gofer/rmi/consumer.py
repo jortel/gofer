@@ -32,10 +32,12 @@ class RequestConsumer(Consumer):
     def dispatch(self, request):
         """
         Dispatch received request.
+        Update the request with the inbound transport.
         :param request: The received request.
         :type request: Document
         """
         self.__send_status(request, 'accepted')
+        request.transport = self.transport.name
         pending = Pending()
         pending.put(request)
 
