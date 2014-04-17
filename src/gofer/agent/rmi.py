@@ -20,8 +20,9 @@ from logging import getLogger
 from gofer.rmi.window import *
 from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import Pending
-from gofer.rmi.dispatcher import Dispatcher, Return
-from gofer.rmi.threadpool import Trashed
+from gofer.rmi.dispatcher import Return, PluginNotFound
+from gofer.rmi.threadpool import Direct
+from gofer.transport import Transport
 from gofer.messaging.model import Document
 from gofer.transport.model import Destination
 from gofer.metrics import Timer
@@ -162,6 +163,11 @@ class Task:
             log.exception('send failed: %s', result)
 
     def producer(self):
+        """
+        Get a configured producer.
+        :return: A producer.
+        :rtype: Producer
+        """
         url = self.plugin.get_url()
         tp = self.plugin.get_transport()
         producer = tp.producer(url=url)
@@ -175,12 +181,26 @@ class TrashPlugin:
     Used when the appropriate plugin cannot be found.
     """
 
-    def __init__(self):
-        self.pool = Trashed()
+    def __init__(self, transport):
+        self.pool = Direct()
+        self.transport = transport
+        self.authenticator = None
+
+    def get_url(self):
+        pass
+
+    def get_transport(self):
+        try:
+            return Transport(self.transport)
+        except ImportError:
+            return Transport()
     
     def dispatch(self, request):
-        d = Dispatcher()
-        return d.dispatch(request)
+        try:
+            log.info('request sn=%s, trashed', request.sn)
+            raise PluginNotFound(request.routing[1])
+        except PluginNotFound:
+            return Return.exception()
 
 
 class TrashProducer(object):
@@ -240,7 +260,8 @@ class Scheduler(Thread):
         for plugin in self.plugins:
             if plugin.get_uuid() == uuid:
                 return plugin
-        return TrashPlugin()
+        log.info('plugin not found for uuid=%s', uuid)
+        return TrashPlugin(request.transport)
     
 
 class Context:
