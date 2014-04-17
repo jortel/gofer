@@ -20,7 +20,6 @@ from hashlib import sha256
 from logging import getLogger
 from base64 import b64encode, b64decode
 
-from gofer.constants import AUTHENTICATION
 from gofer.messaging.model import Document, InvalidDocument
 
 
@@ -32,12 +31,20 @@ class ValidationFailed(InvalidDocument):
     Message validation failed.
     """
 
+    CODE = 'security.authentication'
+    DESCRIPTION = 'SECURITY: message authentication failed'
+
     def __init__(self, details=None):
         """
         :param details: A detailed description.
         :type details: str
         """
-        InvalidDocument.__init__(self, AUTHENTICATION, '{}', details)
+        InvalidDocument.__init__(
+            self,
+            code=self.CODE,
+            description=self.DESCRIPTION,
+            document='{}',
+            details=details)
 
 
 class Authenticator(object):

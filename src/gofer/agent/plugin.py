@@ -40,6 +40,52 @@ from gofer.collator import Module
 log = getLogger(__name__)
 
 
+class Initializer(object):
+    """
+    Plugin initializer collection.
+    :cvar initializer: List of initializer functions.
+    :type initializer: list
+    """
+
+    initializer = []
+
+    @staticmethod
+    def add(function):
+        """
+        Add an initializer.
+        :param function: The function to add.
+        :type function: function
+        """
+        Initializer.initializer.append(function)
+
+    @staticmethod
+    def clear():
+        """
+        Clear the initializer list.
+        """
+        Initializer.initializer = []
+
+    @staticmethod
+    def run():
+        """
+        Run initializer functions.
+        """
+        for function in Initializer.initializer:
+            function()
+
+
+def initializer(fn):
+    """
+    Plugin @initializer decorator.
+    :param fn: A plugin initializer function.
+    :type fn: function
+    :return: fn
+    :rtype: function
+    """
+    Initializer.add(fn)
+    return fn
+
+
 class Plugin(object):
     """
     Represents a plugin.
@@ -54,8 +100,8 @@ class Plugin(object):
     """
     plugins = {}
     
-    @classmethod
-    def add(cls, plugin):
+    @staticmethod
+    def add(plugin):
         """
         Add the plugin.
         :param plugin: The plugin to add.
@@ -63,27 +109,27 @@ class Plugin(object):
         :return: The added plugin
         :rtype: Plugin
         """
-        cls.plugins[plugin.name] = plugin
+        Plugin.plugins[plugin.name] = plugin
         for syn in plugin.synonyms:
             if syn == plugin.name:
                 continue
-            cls.plugins[syn] = plugin
+            Plugin.plugins[syn] = plugin
         return plugin
     
-    @classmethod
-    def delete(cls, plugin):
+    @staticmethod
+    def delete(plugin):
         """
         Delete the plugin.
         :param plugin: The plugin to delete.
         :type plugin: Plugin
         """
-        for k, v in cls.plugins.items():
+        for k, v in Plugin.plugins.items():
             if v == plugin:
-                del cls.plugins[k]
+                del Plugin.plugins[k]
         return plugin
     
-    @classmethod
-    def find(cls, name):
+    @staticmethod
+    def find(name):
         """
         Find a plugin by name or synonym.
         :param name: A plugin name or synonym.
@@ -91,22 +137,22 @@ class Plugin(object):
         :return: The plugin when found.
         :rtype: Plugin 
         """
-        return cls.plugins.get(name)
+        return Plugin.plugins.get(name)
     
-    @classmethod
-    def all(cls):
+    @staticmethod
+    def all():
         """
         Get a unique list of loaded plugins.
         :return: A list of plugins
         :rtype: list
         """
         unique = []
-        for p in cls.plugins.values():
+        for p in Plugin.plugins.values():
             if p in unique:
                 continue
             unique.append(p)
         return unique
-    
+
     def __init__(self, name, descriptor, synonyms=None):
         """
         :param name: The plugin name.
@@ -480,6 +526,7 @@ class PluginLoader:
         """
         Remote.clear()
         Actions.clear()
+        Initializer.clear()
         syn = PluginLoader.mangled(plugin)
         p = Plugin(plugin, descriptor, [syn])
         Plugin.add(p)
@@ -495,6 +542,7 @@ class PluginLoader:
                 collated += PluginLoader.BUILTINS
                 p.dispatcher += collated
                 p.actions = Actions.collated()
+                Initializer.run()
             return p
         except Exception:
             Plugin.delete(p)

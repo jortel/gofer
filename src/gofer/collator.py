@@ -61,15 +61,8 @@ class Collator:
                 if not decorated:
                     continue
                 self.bound.add(fn)
-                methods = self.__find(cls)
+                methods = self.classes.setdefault(cls, [])
                 methods.append((method, decorated[1]))
-                
-    def __find(self, cls):
-        methods = self.classes.get(cls)
-        if methods is None:
-            methods = []
-            self.classes[cls] = methods
-        return methods
     
     def __classes(self, g):
         classes = []
@@ -91,14 +84,10 @@ class Collator:
             if fn in self.bound:
                 continue
             mod = inspect.getmodule(fn)
-            mod = Module(mod.__name__)
-            functions = modules.get(mod)
-            if not functions:
-                functions = []
-                modules[mod] = functions
-            functions.append(self.__decorated(fn))
+            mod, fn_list = modules.setdefault(mod, (Module(mod.__name__), []))
+            fn_list.append(self.__decorated(fn))
             mod += fn
-        return modules
+        return dict(modules.values())
     
     def __decorated(self, fn):
         if fn in self.functions:
@@ -122,3 +111,12 @@ class Module(object):
     def __iadd__(self, fn):
         setattr(self, fn.__name__, fn)
         return self
+
+    def __repr__(self):
+        return self.__name__
+
+    def __eq__(self, other):
+        return isinstance(other, Module) and self.__name__ == other.__name__
+
+    def __ne__(self, other):
+        return not self.__eq__(other)

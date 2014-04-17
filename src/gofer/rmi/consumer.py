@@ -18,7 +18,6 @@ from logging import getLogger
 from gofer.rmi.store import Pending
 from gofer.messaging import Consumer, Destination
 from gofer.messaging.model import Document
-from gofer.constants import ACCEPTED, REJECTED
 
 log = getLogger(__name__)
 
@@ -33,10 +32,12 @@ class RequestConsumer(Consumer):
     def dispatch(self, request):
         """
         Dispatch received request.
+        Update the request with the inbound transport.
         :param request: The received request.
         :type request: Document
         """
-        self.__send_status(request, ACCEPTED)
+        self.__send_status(request, 'accepted')
+        request.transport = self.transport.name
         pending = Pending()
         pending.put(request)
 
@@ -53,7 +54,7 @@ class RequestConsumer(Consumer):
         """
         request = Document()
         request.load(message)
-        self.__send_status(request, REJECTED, code=code, details=details)
+        self.__send_status(request, 'rejected', code=code, details=details)
 
     def request_rejected(self, code, request, details):
         """
@@ -66,7 +67,7 @@ class RequestConsumer(Consumer):
         :param details: The explanation.
         :type details: str
         """
-        self.__send_status(request, REJECTED, code=code, details=details)
+        self.__send_status(request, 'rejected', code=code, details=details)
 
     def __send_status(self, request, status, **details):
         """

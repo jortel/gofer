@@ -18,10 +18,12 @@ Action slass for gofer agent.
 """
 
 import inspect
+
 from gofer.collator import Collator
 from datetime import datetime as dt
 from datetime import timedelta
 from logging import getLogger
+
 
 log = getLogger(__name__)
 
@@ -39,17 +41,17 @@ class Actions:
     @classmethod
     def collated(cls):
         collated = []
-        c = Collator()
-        classes, functions = c.collate(cls.functions)
-        for c,m in classes.items():
-            inst = c()
-            for m,d in m:
-                m = getattr(inst, m.__name__)
-                action = Action(m, **d)
+        collator = Collator()
+        classes, functions = collator.collate(cls.functions)
+        for _class, methods in classes.items():
+            inst = _class()
+            for method, options in methods:
+                method = getattr(inst, method.__name__)
+                action = Action(method, **options)
                 collated.append(action)
-        for m,f in functions.items():
-            for f,d in f:
-                action = Action(f, **d)
+        for module, fn_list in functions.items():
+            for function, options in fn_list:
+                action = Action(function, **options)
                 collated.append(action)
         return collated
     

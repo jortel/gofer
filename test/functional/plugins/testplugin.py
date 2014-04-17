@@ -38,6 +38,11 @@ plugin += builtin['Rabbit']
 plugin.whiteboard['secret'] = 'garfield'
 
 
+@initializer
+def init_plugin():
+    print 'Initialized!'
+
+
 class TestAuthenticator(Authenticator):
 
     def sign(self, message):
