@@ -5,7 +5,8 @@ Plugin Extension
 As gofer plugins are written and shared throughout the open source community, it seems likely that
 rather than writing your plugin from scratch, it would be useful to be able to extend one that already
 exists. Plugins have an API for extending their *remote* API with *remote* objects provided by other
-plugins.
+plugins.  Plugin extension can also be specified in the plugin *descriptor* using the *extends*
+property
 
 
 Extending
@@ -15,6 +16,25 @@ What can be imported:
 
 - class object
 - function object
+
+
+**Using the descriptor property:**
+
+
+Example:
+
+plugin: **dog** can extend the **animals** plugin.  Using this method will add all of the *dog* API
+to the *animals* API.
+
+::
+
+ [main]
+ enabled=1
+ extends=animals
+
+
+**Using the API:**
+
 
 Example:
 
