@@ -52,7 +52,8 @@ AGENT_SCHEMA = (
 PLUGIN_SCHEMA = (
     ('main', REQUIRED,
         ('enabled', REQUIRED, BOOL),
-        ('requires', OPTIONAL, ANY)
+        ('requires', OPTIONAL, ANY),
+        ('extends', OPTIONAL, ANY)
     ),
     ('messaging', REQUIRED,
         (

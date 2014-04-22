@@ -101,6 +101,7 @@ Defines basic plugin properties.
 
 - **enabled** - Specify the plugin as enabled/disabled.
 - **requires** -  Specify (optional) required (,) comma separated list of plugins by name.
+- **extends** - Specify (optional) another plugin to extend by name.
   Ensure proper loading order.
 
 [messaging]
