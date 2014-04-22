@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 1.0.6
+Version: 1.0.7
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -252,6 +252,10 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Tue Apr 22 2014 Jeff Ortel <jortel@redhat.com> 1.0.7-1
+- Support extends= in plugin descriptors.  Defines another plugin to extend.
+  (jortel@redhat.com)
+
 * Thu Apr 17 2014 Jeff Ortel <jortel@redhat.com> 1.0.6-1
 - Inject inbound transport name on request receipt and used to reply when
   unable to route to a plugin. (jortel@redhat.com)
