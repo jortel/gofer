@@ -91,23 +91,21 @@ def get_bool(value):
 
 class ValidationException(Exception):
 
-    def __init__(self, name):
-        Exception.__init__(self)
-
-        self.name = name
-        self.path = ''
-
-    def msg(self, fmt, *args):
-        msg = fmt % args
-        if self.path:
-            msg = '%s in: %s' % (msg, self.path)
-        return msg
+    def __init__(self, description, path=None):
+        if path:
+            Exception.__init__(self, '%s in: %s' % (description, path))
+        else:
+            Exception.__init__(self, description)
+        self.description = description
+        self.path = path
 
 
 class SectionNotFound(ValidationException):
 
-    def __str__(self):
-        return self.msg('Required section [%s], not found', self.name)
+    def __init__(self, name, path=None):
+        description = 'Required section [%s], not found' % name
+        ValidationException.__init__(self, description, path)
+        self.name = name
 
 
 class PropertyException(ValidationException):
@@ -116,23 +114,20 @@ class PropertyException(ValidationException):
 
 class PropertyNotFound(PropertyException):
 
-    def __str__(self):
-        return self.msg('Required property "%s", not found', self.name)
+    def __init__(self, name, path=None):
+        description = 'Required property [%s], not found' % name
+        PropertyException.__init__(self, description, path)
+        self.name = name
 
 
 class PropertyNotValid(PropertyException):
 
-    def __init__(self, name, value, pattern):
-        PropertyException.__init__(self, name)
+    def __init__(self, name, value, pattern, path=None):
+        description = 'Property: %s value "%s" must be: %s' % (name, value, pattern)
+        PropertyException.__init__(self, description, path)
+        self.name = name
         self.value = value
         self.pattern = pattern
-
-    def __str__(self):
-        return self.msg(
-            'Property: %s value "%s" must be: %s',
-            self.name,
-            self.value,
-            self.pattern)
 
 
 # -- public -------------------------------------------------------------------
@@ -161,12 +156,10 @@ class Config(dict):
         """
         Creates a blank configuration and loads one or more files
         or existing data.
-
         Values to the inputs parameter can be one of three things:
          - the full path to a file to load (str)
          - file object to read from
          - dictionary whose values will be merged into this instance
-
         :param inputs: one or more files to load (see above)
         :param options: see above
         """
@@ -223,9 +216,7 @@ class Config(dict):
     def graph(self, strict=False):
         """
         Get an object representation of this instance. The data is the same,
-        however the returned object supports a dot notation for accessing
-        values.
-
+        however the returned object supports a dot notation for accessing values.
         :param strict: Indicates that KeyError should be raised when
             undefined sections or properties are accessed. When
             false, undefined sections are returned as empty dict and
@@ -303,7 +294,7 @@ class Validator(object):
         :return: Two lists: sections, properties
         :rtype: tuple
         """
-        extras = ([],[])
+        extras = ([], [])
         expected = {}
         for section in [s for s in self.schema]:
             properties = set()
@@ -330,11 +321,11 @@ class Patterns(object):
     :type patterns: dict
     """
 
-    patterns = {}
     __mutex = RLock()
+    patterns = {}
 
-    @classmethod
-    def get(cls, regex):
+    @staticmethod
+    def get(regex):
         """
         Get a compiled pattern.
         :param regex: A regular expression.
@@ -342,34 +333,34 @@ class Patterns(object):
         :return: compiled pattern
         """
         key = regex
-        regex, flags = cls.split(regex)
-        cls.__lock()
+        regex, flags = Patterns.split(regex)
+        Patterns.__lock()
         try:
-            p = cls.patterns.get(regex)
+            p = Patterns.patterns.get(regex)
             if p is None:
                 p = re.compile(regex, flags)
-                cls.patterns[key] = p
+                Patterns.patterns[key] = p
             return p
         finally:
-            cls.__unlock()
+            Patterns.__unlock()
 
-    @classmethod
-    def split(cls, x):
-        if isinstance(x, tuple):
-            regex = x[0]
-            flags = x[1]
+    @staticmethod
+    def split(thing):
+        if isinstance(thing, tuple):
+            regex = thing[0]
+            flags = thing[1]
         else:
-            regex = x
+            regex = thing
             flags = 0
         return regex, flags
 
-    @classmethod
-    def __lock(cls):
-        cls.__mutex.acquire()
+    @staticmethod
+    def __lock():
+        Patterns.__mutex.acquire()
 
-    @classmethod
-    def __unlock(cls):
-        cls.__mutex.release()
+    @staticmethod
+    def __unlock():
+        Patterns.__mutex.release()
 
 
 class Section(object):
@@ -398,8 +389,8 @@ class Section(object):
         """
         Validate a configuration section object.
         Also validates properties.
-        :param section: An INI section object.
-        :type section: iniparse.ini.INISection
+        :param section: An config section.
+        :type section: dict
         :raise SectionException: On failure.
         """
         if section is None:
@@ -412,8 +403,8 @@ class Section(object):
     def valid_property(self, section, property):
         """
         Validate a property specification.
-        :param section: An INI section object.
-        :type section: iniparse.ini.INISection
+        :param section: A config section.
+        :type section: dict
         :param property: A property specification.
             format: (name, required, pattern)
         :type property: tuple
