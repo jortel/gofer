@@ -81,8 +81,7 @@ class Reader(Endpoint):
             if self.__opened:
                 return
             session = self.session()
-            address = str(self.queue)
-            self.__receiver = session.receiver(address)
+            self.__receiver = session.receiver(self.queue.name)
             self.__opened = True
         finally:
             self._unlock()

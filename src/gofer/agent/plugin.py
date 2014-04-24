@@ -325,6 +325,22 @@ class Plugin(object):
         """
         return self.dispatcher.dispatch(request)
 
+    def extend(self):
+        """
+        Find and extend the plugin defined by the descriptor.
+        :return: The extended plugin.
+        :rtype: Plugin
+        """
+        name = self.descriptor.main.extends
+        if not name:
+            # nothing specified
+            return
+        extended = Plugin.find(name.strip())
+        if not extended:
+            raise Exception('Extension failed. plugin: %s, not-found')
+        extended += self
+        return extended
+
     # deprecated
     getuuid = get_uuid
     geturl = get_url
@@ -434,11 +450,14 @@ class PluginDescriptor(Graph):
         :return: A list of plugin names.
         :rtype: list
         """
-        required = []
+        required = set()
         declared = self.main.requires
         if declared:
             plugins = declared.split(',')
-            required = [s.strip() for s in plugins]
+            required.update([s.strip() for s in plugins])
+        extends = self.main.extends
+        if extends:
+            required.add(extends.strip())
         return tuple(required)
 
 
@@ -542,6 +561,7 @@ class PluginLoader:
                 collated += PluginLoader.BUILTINS
                 p.dispatcher += collated
                 p.actions = Actions.collated()
+                p.extend()
                 Initializer.run()
             return p
         except Exception:

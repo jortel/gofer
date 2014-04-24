@@ -360,6 +360,7 @@ class Consumer(BaseConsumer):
         self.url = url
         self.queue = queue
         self.transport = tp
+        queue.declare(url)
 
 
 class Destination(BaseDestination):
