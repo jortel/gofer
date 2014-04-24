@@ -9,8 +9,18 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+import inspect
+
 from unittest import TestCase
+
+from gofer.decorators import *
 
 
 class Test(TestCase):
-    pass
+
+    def test_all(self):
+        self.assertTrue(inspect.isfunction(action))
+        self.assertTrue(inspect.isfunction(remote))
+        self.assertTrue(inspect.isfunction(pam))
+        self.assertTrue(inspect.isfunction(user))
+        self.assertTrue(inspect.isfunction(initializer))
