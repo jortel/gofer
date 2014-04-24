@@ -25,25 +25,25 @@ log = getLogger(__name__)
 
 class Query:
     
-    def __init__(self, user, password):
-        self.user = user
+    def __init__(self, userid, password):
+        self.userid = userid
         self.password = password
     
     def __call__(self, auth, query_list):
-        resp = []
-        for query, type in query_list:
+        result = []
+        for query, type_id in query_list:
             # prompt for a user
-            if type == _PAM.PAM_PROMPT_ECHO_ON:
-                resp.append((self.user, 0))
+            if type_id == _PAM.PAM_PROMPT_ECHO_ON:
+                result.append((self.userid, 0))
                 continue
             # prompt for a password
-            if type == _PAM.PAM_PROMPT_ECHO_OFF:
-                resp.append((self.password, 0))
+            if type_id == _PAM.PAM_PROMPT_ECHO_OFF:
+                result.append((self.password, 0))
                 continue
-        return resp
+        return result
 
 
-class PAM:
+class PAM(object):
     """
     PAM object used for authentication.
     :cvar SERVICE: The default service
@@ -52,11 +52,12 @@ class PAM:
     
     SERVICE = 'passwd'
 
-    def authenticate(self, user, password, service=None):
+    @staticmethod
+    def authenticate(userid, password, service=None):
         """
         Authenticate the specified user.
-        :param user: A user name.
-        :type user: str
+        :param userid: A user name.
+        :type userid: str
         :param password: A password.
         :type password: str
         :param service: The optional PAM service.
@@ -64,9 +65,9 @@ class PAM:
         :raise Exception: when authentication fails.
         """
         if not service:
-            service = self.SERVICE
-        q = Query(user, password)
+            service = PAM.SERVICE
+        query = Query(userid, password)
         auth = _PAM.pam()
-        auth.start(service, user, q)
+        auth.start(service, userid, query)
         auth.authenticate()
         auth.acct_mgmt()

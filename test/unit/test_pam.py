@@ -9,8 +9,50 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+import PAM as _PAM
 from unittest import TestCase
 
+from mock import patch
 
-class Test(TestCase):
-    pass
+from gofer.pam import Query, PAM
+
+
+USERID = 'test-user'
+PASSWORD = 'test-password'
+
+
+class TestQuery(TestCase):
+
+    def test_init(self):
+        query = Query(USERID, PASSWORD)
+        self.assertEqual(query.user, USERID)
+        self.assertEqual(query.password, PASSWORD)
+
+    def test_call(self):
+        query_list = [
+            (None, _PAM.PAM_PROMPT_ECHO_ON),
+            (None, _PAM.PAM_PROMPT_ECHO_OFF)
+        ]
+        query = Query(USERID, PASSWORD)
+        result = query(None, query_list)
+        self.assertEqual(result[0], (USERID, 0))
+        self.assertEqual(result[1], (PASSWORD, 0))
+
+
+class TestPAM(TestCase):
+
+    def test_init(self):
+        self.assertEqual(PAM.SERVICE, 'passwd')
+
+    @patch('gofer.pam.Query')
+    @patch('gofer.pam._PAM.pam')
+    def test_authenticate(self, _pam, _query):
+        pam = PAM()
+        # default service
+        pam.authenticate(USERID, PASSWORD)
+        _pam().start.assert_called_with(PAM.SERVICE, USERID, _query())
+        _pam().authenticate.assert_called_with()
+        # specified service
+        pam.authenticate(USERID, PASSWORD, service='ssh')
+        _pam().start.assert_called_with('ssh', USERID, _query())
+        _pam().authenticate.assert_called_with()
