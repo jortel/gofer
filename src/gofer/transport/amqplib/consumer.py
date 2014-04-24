@@ -58,7 +58,6 @@ class Reader(Endpoint):
         :rtype: amqplib.Message
         """
         channel = self.channel()
-        self.queue.declare(self.url)
         return channel.basic_get(self.queue.name)
 
     @reliable
