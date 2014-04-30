@@ -33,12 +33,13 @@ class RequestConsumer(Consumer):
     def dispatch(self, request):
         """
         Dispatch received request.
-        Update the request with the inbound transport.
+        Update the request: inject the inbound_url and inbound_transport.
         :param request: The received request.
         :type request: Document
         """
         self.__send_status(request, 'accepted')
-        request.transport = self.transport
+        request.inbound_url = self.url
+        request.inbound_transport = self.transport
         pending = Pending()
         pending.put(request)
 
