@@ -95,14 +95,15 @@ class Transport:
         :param package: The python package providing the transport.
         :type package: str
         """
-        self.package = package
         loaded = sorted(self.plugins)
         if not loaded:
             raise NoTransportsLoaded()
         if not package:
+            self.package = loaded[0]
             self.plugin = self.plugins[loaded[0]]
             return
         try:
+            self.package = package
             self.plugin = self.plugins[package]
         except KeyError:
             raise TransportNotFound(package)
