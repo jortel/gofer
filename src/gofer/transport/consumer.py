@@ -96,8 +96,7 @@ class Consumer(Thread):
         """
         log.debug('%s, reason: %s %s', code, details, document)
 
-    @staticmethod
-    def dispatch(document):
+    def dispatch(self, document):
         """
         Called to process the received document.
         This method intended to be overridden by subclasses.

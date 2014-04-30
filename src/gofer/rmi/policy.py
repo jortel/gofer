@@ -204,6 +204,8 @@ class Synchronous(RequestMethod):
         replyto = self.queue.destination()
         producer = self.transport.producer(url=self.url)
         producer.authenticator = self.authenticator
+        queue = self.transport.queue(destination.routing_key)
+        queue.declare(self.url)
         try:
             sn = producer.send(
                 destination,
@@ -440,6 +442,8 @@ class Trigger:
         any = self.__any
         producer = policy.transport.producer(url=policy.url)
         producer.authenticator = policy.authenticator
+        queue = policy.transport.queue(destination.routing_key)
+        queue.declare(policy.url)
         try:
             producer.send(
                 destination,

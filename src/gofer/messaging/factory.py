@@ -349,7 +349,7 @@ class Consumer(BaseConsumer):
     def __init__(self, queue, url=None, transport=None):
         """
         :param queue: The AMQP node.
-        :type queue: gofer.transport.model.Queue
+        :type queue: gofer.messaging.Queue
         :param url: The broker URL.
         :type url: str
         :param transport: An AMQP transport.
