@@ -20,7 +20,7 @@ basicConfig()
 
 from base import Test
 
-URL = 'amqp://0.0.0.0:5674'
+URL = 'amqp://0.0.0.0:5673'
 
 if __name__ == '__main__':
     test = Test(URL, transport='amqplib')

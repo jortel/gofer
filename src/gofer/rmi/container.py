@@ -37,7 +37,7 @@ class Container:
     :ivar __url: The peer URL.
     :type __url: str
     :ivar __transport: The AMQP transport.
-    :type __transport: Transport
+    :type __transport: str
     :ivar __options: Container options.
     :type __options: Options
     """
@@ -55,9 +55,11 @@ class Container:
         """
         self.__id = uuid
         self.__url = url
-        self.__transport = Transport(transport)
+        self.__transport = transport
         self.__options = Options(window=Window())
         self.__options += options
+        # validation
+        Transport(transport)
 
     def __destination(self):
         """

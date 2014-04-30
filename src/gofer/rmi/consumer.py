@@ -18,6 +18,7 @@ from logging import getLogger
 from gofer.rmi.store import Pending
 from gofer.messaging import Consumer, Destination
 from gofer.messaging.model import Document
+from gofer.transport import Transport
 
 log = getLogger(__name__)
 
@@ -37,7 +38,7 @@ class RequestConsumer(Consumer):
         :type request: Document
         """
         self.__send_status(request, 'accepted')
-        request.transport = self.transport.name
+        request.transport = self.transport
         pending = Pending()
         pending.put(request)
 
@@ -85,7 +86,7 @@ class RequestConsumer(Consumer):
         try:
             endpoint = self.reader
             destination = Destination.create(replyto)
-            self.transport.plugin.send(
-                endpoint, destination, sn=sn, any=any, status=status, **details)
+            tp = Transport(self.transport)
+            tp.plugin.send(endpoint, destination, sn=sn, any=any, status=status, **details)
         except Exception:
             log.exception('send (%s), failed', status)

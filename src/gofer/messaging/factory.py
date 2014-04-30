@@ -9,29 +9,9 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from gofer.transport.factory import Transport as _Transport
+from gofer.transport.factory import Transport
 from gofer.transport.consumer import Consumer as BaseConsumer
 from gofer.transport.model import Destination as BaseDestination
-
-
-# --- utils ------------------------------------------------------------------
-
-
-def Transport(thing):
-    """
-    Ensure *thing* is a transport object.
-    :param thing: A transport object or package name.
-    :type thing: (str|Transport)
-    :return: A transport object.
-    :rtype: _Transport
-    """
-    if isinstance(thing, _Transport):
-        return thing
-    if isinstance(thing, str):
-        return _Transport(thing)
-    if thing is None:
-        return _Transport(thing)
-    raise ValueError('must be (str|Transport)')
 
 
 # --- metaclasses ------------------------------------------------------------
@@ -359,7 +339,7 @@ class Consumer(BaseConsumer):
         BaseConsumer.__init__(self, tp.reader(url, queue))
         self.url = url
         self.queue = queue
-        self.transport = tp
+        self.transport = transport
         queue.declare(url)
 
 

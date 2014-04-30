@@ -169,7 +169,7 @@ class Task:
         :rtype: Producer
         """
         url = self.plugin.get_url()
-        tp = self.plugin.get_transport()
+        tp = Transport(self.plugin.get_transport())
         producer = tp.producer(url=url)
         producer.authenticator = self.plugin.authenticator
         return producer
@@ -190,10 +190,7 @@ class TrashPlugin:
         pass
 
     def get_transport(self):
-        try:
-            return Transport(self.transport)
-        except ImportError:
-            return Transport()
+        return self.transport
     
     def dispatch(self, request):
         try:

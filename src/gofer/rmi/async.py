@@ -43,7 +43,7 @@ class ReplyConsumer(Consumer):
         :param url: The broker URL.
         :type url: str
         :param transport: An AMQP transport.
-        :type transport: (str|gofer.transport.Transport)
+        :type transport: str
         """
         Consumer.__init__(self, queue, url=url, transport=transport)
         self.listener = None

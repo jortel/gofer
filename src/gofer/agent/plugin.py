@@ -224,8 +224,8 @@ class Plugin(object):
         agent = AgentConfig()
         plugin = self.descriptor
         url = self.get_url()
-        transport = self.get_transport()
-        broker = transport.broker(url)
+        tp = Transport(self.get_transport())
+        broker = tp.broker(url)
         broker.virtual_host = \
             plugin.messaging.virtual_host or agent.messaging.virtual_host
         broker.userid = \
@@ -261,20 +261,11 @@ class Plugin(object):
         """
         Get the AMQP transport for the plugin.
         :return: The transport.
-        :rtype: Transport
+        :rtype: str
         """
         agent = AgentConfig()
         plugin = self.descriptor
-        package = plugin.messaging.transport or agent.messaging.transport
-        return Transport(package)
-
-    def set_transport(self, transport):
-        """
-        Set the plugin's transport package (name).
-        :param transport: The new transport package.
-        :type transport: str
-        """
-        self.descriptor.messaging.transport = transport
+        return plugin.messaging.transport or agent.messaging.transport
 
     def attach(self, uuid=None):
         """
@@ -286,10 +277,11 @@ class Plugin(object):
         if not uuid:
             uuid = self.get_uuid()
         url = self.get_url()
+        transport = self.get_transport()
         if uuid and url:
-            tp = self.get_transport()
+            tp = Transport(transport)
             queue = tp.queue(uuid)
-            consumer = RequestConsumer(queue, url=url, transport=tp)
+            consumer = RequestConsumer(queue, url=url, transport=transport)
             consumer.reader.authenticator = self.authenticator
             consumer.start()
             log.info('plugin uuid="%s", attached', uuid)

@@ -78,7 +78,7 @@ class Stub:
     :ivar __url: The agent URL.
     :type __url: str
     :param __transport: The AMQP transport.
-    :type __transport: gofer.transport.Transport
+    :type __transport: str
     :ivar __destination: The AMQP destination
     :type __destination: gofer.transport.model.Destination
     :ivar __options: Stub options.
@@ -98,7 +98,7 @@ class Stub:
         :param url: The agent URL.
         :type url: str
         :param transport: The AMQP transport.
-        :type transport: gofer.transport.Transport
+        :type transport: str
         :param destination: The AMQP destination
         :type destination: gofer.transport.model.Destination
         :param options: A dict of gofer options
@@ -115,9 +115,9 @@ class Stub:
         :param url: The agent URL.
         :type url: str
         :param transport: The AMQP transport.
-        :type transport: gofer.transport.Transport
+        :type transport: str
         :param destination: The AMQP destination
-        :type destination: gofer.transport.model.Destination
+        :type destination: str
         :param options: Stub options.
         :type options: Options
         """
