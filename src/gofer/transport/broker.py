@@ -71,7 +71,6 @@ class Broker:
             url = URL(url)
         self.url = url
         self.connection = Local()
-        self.virtual_host = None
         self.host = url.host
         self.port = url.port
         self.transport = url.transport
@@ -80,6 +79,7 @@ class Broker:
         self.host_validation = False
         self.userid = url.userid
         self.password = url.password
+        self.virtual_host = url.path
 
     def id(self):
         """
@@ -113,12 +113,14 @@ class Broker:
         s.append('clientcert=%s' % self.clientcert)
         s.append('userid=%s' % self.userid)
         s.append('password=%s' % self.password)
+        s.append('vhost=%s' % self.virtual_host)
         return '|'.join(s)
 
 
 class URL:
     """
     Represents a broker URL.
+    Format: <transport>://<user>:<password>@<host>:<port>/path.
     :ivar transport: A URL transport.
     :type transport: str
     :ivar host: The host.
@@ -134,53 +136,93 @@ class URL:
     def split(s):
         """
         Split the url string.
-        :param s: A url string format: <transport>://<host>:<port>.
+        :param s: A url: <transport>://<user>:<password>@<host>:<port></>.
         :type s: str
-        :return: The url parts: (transport, host, port, userid, password)
+        :return: The url parts: (transport, host, port, userid, password, path)
         :rtype: tuple
         """
-        userid = None
-        password = None
-        part = s.split('@', 1)
-        if len(part) > 1:
-            userid, password = part[0].split('/', 1)
-            s = part[1]
-        transport, host_port = URL.split_url(s)
-        host, port = URL.split_port(host_port, URL._port(transport))
-        return transport, host, port, userid, password
+        transport, netloc, path = \
+            URL.split_url(s)
+        userid_password, host_port = \
+            URL.split_location(netloc)
+        userid, password = \
+            URL.split_userid_password(userid_password)
+        host, port = \
+            URL.split_host_port(host_port, URL._port(transport))
+        return transport, \
+               host, \
+               port, \
+               userid, \
+               password, \
+               path
 
     @staticmethod
     def split_url(s):
         """
         Split the transport and url parts.
-        :param s: A url string format: <transport>://<host>:<port>.
+        :param s: A url: <transport>://<user>:<password>@<host>:<port></>.
         :type s: str
-        :return: The url parts: (transport, host-port)
+        :return: (transport, network-location, path)
         :rtype: tuple
         """
+        # transport
         part = s.split('://', 1)
         if len(part) > 1:
             transport, host_port = (part[0], part[1])
         else:
             transport, host_port = (URL.TCP[0], part[0])
-        return transport, host_port
+        part = host_port.split('/', 1)
+        # path
+        if len(part) > 1:
+            location, path = (part[0], part[1])
+        else:
+            location, path = (host_port, None)
+        return transport, location, path
 
     @staticmethod
-    def split_port(s, default):
+    def split_location(s):
+        """
+        Split network location into (userid_password, host_port)
+        :param s: A url component: <user>:<password>@<host>:<port>
+        :type s: str
+        :return: (userid_password, host_port)
+        :rtype: tuple
+        """
+        part = s.split('@', 1)
+        if len(part) > 1:
+            return part[0], part[1]
+        else:
+            return '', part[0]
+
+    @staticmethod
+    def split_userid_password(s):
+        """
+        Split the userid and password into (userid, password).
+        :param s: A url component: <userid>:<password>.
+        :type s: str
+        :return: (userid, password)
+        :rtype: tuple
+        """
+        part = s.split(':', 1)
+        if len(part) > 1:
+            return part[0], part[1]
+        else:
+            return None, None
+
+    @staticmethod
+    def split_host_port(s, default):
         """
         Split the host and port.
-        :param s: A url string format: <host>:<port>.
+        :param s: A url component: <host>:<port>.
         :type s: str
-        :return: The url parts: (host, port)
+        :return: (host, port)
         :rtype: tuple
         """
         part = s.split(':')
-        host = part[0]
-        if len(part) < 2:
-            port = default
+        if len(part) > 1:
+            return part[0], int(part[1])
         else:
-            port = part[1]
-        return host, int(port)
+            return part[0], default
 
     @staticmethod
     def _port(transport):
@@ -207,7 +249,8 @@ class URL:
             self.host, \
             self.port, \
             self.userid, \
-            self.password = self.split(s)
+            self.password,\
+            self.path = self.split(s)
 
     def simple(self):
         """
