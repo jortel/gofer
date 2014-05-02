@@ -2,7 +2,7 @@
 %{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 Name: gofer
-Version: 1.0.8
+Version: 1.0.9
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -252,6 +252,10 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Fri May 02 2014 Jeff Ortel <jortel@redhat.com> 1.0.9-1
+- Fix url syntax for userid:password; get vhost from url path component.
+  (jortel@redhat.com)
+
 * Thu May 01 2014 Jeff Ortel <jortel@redhat.com> 1.0.8-1
 - Inject inbound_url to support reply when plugin is not found.
   (jortel@redhat.com)
