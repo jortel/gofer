@@ -9,8 +9,10 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-
-import simplejson as json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 from uuid import uuid4
 from logging import getLogger
