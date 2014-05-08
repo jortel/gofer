@@ -99,6 +99,16 @@ are *ini* style configuration that require the following sections and properties
 
 Defines basic plugin properties.
 
+- **name** - The (optional) plugin name.  The basename of the descriptor is used when not specified.
+- **plugin** - The (optional) fully qualified module to be loaded from the PYTHON path.
+  When *plugin* is not specified, the plugin is loaded by searching the following directories for a
+  module with the same name as the plugin:
+
+    - /usr/share/gofer/plugins
+    - /usr/lib/gofer/plugins
+    - /usr/lib64/gofer/plugins
+    - /opt/gofer/plugins
+
 - **enabled** - Specify the plugin as enabled/disabled.
 - **requires** -  Specify (optional) required (,) comma separated list of plugins by name.
 - **extends** - Specify (optional) another plugin to extend by name.
@@ -107,7 +117,6 @@ Defines basic plugin properties.
 [messaging]
 -----------
 
-- **enabled** - Specify the plugin as enabled/disabled.
 - **uuid** - The default agent (UUID) identity.
   This value may be overridden by an *identity* plugin.
 - **'url** - The (optional) QPID connection URL.

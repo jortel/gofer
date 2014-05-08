@@ -96,10 +96,7 @@ class Admin:
                 continue
             # plugin
             s.append('')
-            if p.synonyms:
-                s.append(indent('<plugin> %s %s', 2, p.name, p.synonyms))
-            else:
-                s.append(indent('<plugin> %s', 2, p.name))
+            s.append(indent('<plugin> %s', 2, p.name))
             # classes
             s.append(indent('Classes:', 4))
             for n, v in p.dispatcher.catalog.items():
