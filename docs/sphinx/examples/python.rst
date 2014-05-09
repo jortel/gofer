@@ -28,7 +28,7 @@ Define Agent-side
 Sample agent-side code.  This module is placed in ``/var/lib/gofer/plugins/`` along with a plugin
 descriptor in ``/etc/gofer/plugins/``
 
-Plugin descriptor: ``/etc/gofer/plugins/myplugin.conf``
+Plugin descriptor: ``/etc/gofer/plugins/plugin.conf``
 
 ::
 
@@ -40,7 +40,7 @@ Plugin descriptor: ``/etc/gofer/plugins/myplugin.conf``
  uuid=jortel
 
 
-Code:   ``/var/lib/gofer/plugins/myplugin.py``
+Code:   ``/var/lib/gofer/plugins/plugin.py``
 
 ::
 
@@ -49,6 +49,7 @@ Code:   ``/var/lib/gofer/plugins/myplugin.py``
 
  # (optional) access to the plugin descriptor
  # which you can use to define custom sections/properties
+
  plugin = Plugin.find(__name__)
  cfg = plugin.cfg()
 
@@ -58,7 +59,7 @@ Code:   ``/var/lib/gofer/plugins/myplugin.py``
         woof = cfg.dog.bark_noise
         print '%s %s' % (woof, words)
         return 'Yes master.  I will bark because that is what dogs do.'
-    
+
     @remote
     def wag(self, n):
         for i in range(0, n):
@@ -66,10 +67,24 @@ Code:   ``/var/lib/gofer/plugins/myplugin.py``
         return 'Yes master.  I will wag my tail because that is what dogs do.'
 
 
+The plugin may be loaded from the PYTHON path by specifying the *plugin* property in
+descriptor as follows:
+
+::
+
+ [main]
+ enabled=1
+ plugin=application.agent.plugin.py
+
+ [messaging]
+ url=
+ uuid=zoo
+
+
 Synchronous Invocation
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Sample of server code invoking synchronously methods (remotely) on the agent.  This is the default 
+Sample of server code invoking synchronously methods (remotely) on the agent.  This is the default
 behaviour and the timeout is 90 seconds by default.
 
 ::
@@ -99,7 +114,7 @@ behaviour and the timeout is 90 seconds by default.
 Synchronous Invocation (specify timeout)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Sample of server code invoking synchronously methods (remotely) on the agent with a 
+Sample of server code invoking synchronously methods (remotely) on the agent with a
 timeout of 180 seconds.
 
 ::
@@ -140,8 +155,8 @@ and it must be completed within 180 seconds.
 Asynchronous (fire & forget) Invocation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Sample of server code invoking synchronously methods (remotely) on the agent.  This works the same for 
-asynchronous *fire-and-forget* where not reply is wanted.  Asynchronous invocation returns the serial 
+Sample of server code invoking synchronously methods (remotely) on the agent.  This works the same for
+asynchronous *fire-and-forget* where not reply is wanted.  Asynchronous invocation returns the serial
 number of the request.
 
 ::
@@ -175,7 +190,7 @@ Asynchronous (callback) Invocation
 
 Sample of server code invoking asynchronously methods (remotely) on the agent.   The is the *callback*
 form of asynchronous invocation.  This example uses a *Listener* class.   But, the *listener* can also
-be any *callable*.  Asynchronous invocation returns the serial number of the request to be used by 
+be any *callable*.  Asynchronous invocation returns the serial number of the request to be used by
 the caller to further correlate request & response.
 
 ::
@@ -243,7 +258,7 @@ the caller to further correlate request & response.
     'e688f50b-3108-43dd-9a57-813f434749a8'
 
 
-Same asynchronous example except specify a *callable* as the listener.  Also, it uses the *throw()* 
+Same asynchronous example except specify a *callable* as the listener.  Also, it uses the *throw()*
 method on reply.
 
 ::
@@ -279,9 +294,9 @@ method on reply.
 Asynchronous (group) Invocation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Invoking operations on multiple agents is asynchronous by nature.  This can be done by simply creating 
-an agent (proxy) with a collection (list|tuple) of ids instead of just one.  Basically, it's the same 
-as the asynchronous examples above except that when more then (1) id is specified, method invocations 
+Invoking operations on multiple agents is asynchronous by nature.  This can be done by simply creating
+an agent (proxy) with a collection (list|tuple) of ids instead of just one.  Basically, it's the same
+as the asynchronous examples above except that when more then (1) id is specified, method invocations
 return a list of tuples (id, serial number) instead of just the serial number.
 
 Eg:
@@ -301,15 +316,15 @@ Eg:
 Maintenance Windows
 ^^^^^^^^^^^^^^^^^^^
 
-Asynchronous invocation can define a *window* in which the agent must perform the operation.   
+Asynchronous invocation can define a *window* in which the agent must perform the operation.
 This is intended to support *maintenance windows* but can be used for:
 
 #. Asynchronous w/ timeout
 #. Asynchronous to be performed in the future
-#. 1 & 2. 
- 
-In cases where the agent cannot perform the operation within the specified *window*, a *WindowMissed* 
-exception is raised.  In this example, we tell agents (a,b,c) dogs to wag their tails 10 times on 
+#. 1 & 2.
+
+In cases where the agent cannot perform the operation within the specified *window*, a *WindowMissed*
+exception is raised.  In this example, we tell agents (a,b,c) dogs to wag their tails 10 times on
 July 26th between 10am & 11am.
 
 Eg:
@@ -434,7 +449,7 @@ Progress Reporting
 
 In gofer 0.72+ remote method progress can be reported by plugins.  In the case of synchronous RMI, the caller
 can specify a *callback* for progress reporting by specifying the *progress* option.  The *callback* must
-take a single (dict) parameter (report). 
+take a single (dict) parameter (report).
 
 The report has the following keys:
 

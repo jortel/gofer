@@ -52,15 +52,14 @@ class Remote:
         Remote.functions = []
     
     @staticmethod
-    def collated(alias=None):
+    def collated():
         collated = []
         c = Collator()
         classes, functions = c.collate(Remote.functions)
         for c in classes.keys():
             collated.append(c)
         for m in functions.keys():
-            if alias:
-                m.__name__ = alias
+            m.__name__ = m.__name__.split('.')[-1]
             collated.append(m)
         return collated
 

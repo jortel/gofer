@@ -71,7 +71,7 @@ Defines messaging properties:
 
 - **transport** - The transport used to connect to the specified broker.
 - **cacert** - The (optional) SSL CA certificate used to validate the server certificate.
-- **virtual_host** - The A
+- **virtual_host** - The (optional) broker virtual host.
 - **clientcert** - The (optional) SSL client certificate.
 - **host_validation** - The (optional) flag indicates SSL host validation should be performed.
 - **userid** - The (optional) userid used for authentication.
@@ -90,11 +90,6 @@ Example:
  cacert = /etc/pki/qpid/ca/ca.crt
  clientcert = /etc/pki/qpid/client/client.pem
 
-
-[loader]
---------
-
-Defines plugin loading properties.
 
 Plugin Descriptors
 ^^^^^^^^^^^^^^^^^^
@@ -120,7 +115,6 @@ Defines basic plugin properties.
 - **enabled** - Specify the plugin as enabled/disabled.
 - **requires** -  Specify (optional) required (,) comma separated list of plugins by name.
 - **extends** - Specify (optional) another plugin to extend by name.
-  Ensure proper loading order.
 
 [messaging]
 -----------

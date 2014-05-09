@@ -515,7 +515,7 @@ class PluginLoader:
             for fn in Remote.find(plugin.impl.__name__):
                 fn.gofer.plugin = plugin
             if plugin.enabled():
-                collated = Remote.collated(name)
+                collated = Remote.collated()
                 collated += PluginLoader.BUILTINS
                 plugin.dispatcher += collated
                 plugin.actions = Actions.collated()
