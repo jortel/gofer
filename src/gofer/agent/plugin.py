@@ -193,33 +193,14 @@ class Plugin(object):
         agent = AgentConfig()
         plugin = self.descriptor
         return plugin.messaging.url or agent.messaging.url
-    
+
     def get_broker(self):
         """
-        Get the amqp broker for this plugin.
-        Each plugin can connect to a different broker.
-        :return: The broker if configured.
+        Get the broker for this plugin.
+        :return: The configured broker.
         :rtype: gofer.transport.broker.Broker
         """
-        agent = AgentConfig()
-        plugin = self.descriptor
-        url = self.get_url()
-        tp = Transport(self.get_transport())
-        broker = tp.broker(url)
-        broker.virtual_host = \
-            plugin.messaging.virtual_host or agent.messaging.virtual_host
-        broker.userid = \
-            plugin.messaging.userid or agent.messaging.userid
-        broker.password = \
-            plugin.messaging.password or agent.messaging.password
-        broker.cacert = \
-            plugin.messaging.cacert or agent.messaging.cacert
-        broker.clientcert = \
-            plugin.messaging.clientcert or agent.messaging.clientcert
-        broker.host_validation = \
-            get_bool(plugin.messaging.host_validation or agent.messaging.host_validation)
-        log.debug('broker (qpid) configured: %s', broker)
-        return broker
+        return self.update_broker()
 
     def set_uuid(self, uuid):
         """
@@ -247,6 +228,32 @@ class Plugin(object):
         plugin = self.descriptor
         return plugin.messaging.transport or agent.messaging.transport
 
+    def update_broker(self):
+        """
+        Update the broker configuration using the plugin configuration.
+        :return: The updated broker.
+        :rtype: gofer.transport.broker.Broker
+        """
+        agent = AgentConfig()
+        plugin = self.descriptor
+        url = self.get_url()
+        tp = Transport(self.get_transport())
+        broker = tp.broker(url)
+        broker.virtual_host = \
+            plugin.messaging.virtual_host or agent.messaging.virtual_host
+        broker.userid = \
+            plugin.messaging.userid or agent.messaging.userid
+        broker.password = \
+            plugin.messaging.password or agent.messaging.password
+        broker.cacert = \
+            plugin.messaging.cacert or agent.messaging.cacert
+        broker.clientcert = \
+            plugin.messaging.clientcert or agent.messaging.clientcert
+        broker.host_validation = \
+            get_bool(plugin.messaging.host_validation or agent.messaging.host_validation)
+        log.debug('broker (qpid) configured: %s', broker)
+        return broker
+
     def attach(self, uuid=None):
         """
         Attach (connect) to AMQP broker using the specified uuid.
@@ -259,6 +266,7 @@ class Plugin(object):
         url = self.get_url()
         transport = self.get_transport()
         if uuid and url:
+            self.update_broker()
             tp = Transport(transport)
             queue = tp.queue(uuid)
             consumer = RequestConsumer(queue, url=url, transport=transport)
