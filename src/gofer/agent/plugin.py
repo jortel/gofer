@@ -91,8 +91,6 @@ class Plugin(object):
     Represents a plugin.
     :ivar name: The plugin name.
     :type name: str
-    :ivar synonyms: The plugin synonyms.
-    :type synonyms: list
     :ivar descriptor: The plugin descriptor.
     :type descriptor: PluginDescriptor
     :cvar plugins: The dict of loaded plugins.
@@ -101,7 +99,7 @@ class Plugin(object):
     plugins = {}
     
     @staticmethod
-    def add(plugin):
+    def add(plugin, *names):
         """
         Add the plugin.
         :param plugin: The plugin to add.
@@ -109,11 +107,10 @@ class Plugin(object):
         :return: The added plugin
         :rtype: Plugin
         """
-        Plugin.plugins[plugin.name] = plugin
-        for syn in plugin.synonyms:
-            if syn == plugin.name:
-                continue
-            Plugin.plugins[syn] = plugin
+        if not names:
+            names = (plugin.name,)
+        for name in names:
+            Plugin.plugins[name] = plugin
         return plugin
     
     @staticmethod
@@ -131,8 +128,8 @@ class Plugin(object):
     @staticmethod
     def find(name):
         """
-        Find a plugin by name or synonym.
-        :param name: A plugin name or synonym.
+        Find a plugin by name
+        :param name: A plugin name
         :type name: str
         :return: The plugin when found.
         :rtype: Plugin 
@@ -153,22 +150,15 @@ class Plugin(object):
             unique.append(p)
         return unique
 
-    def __init__(self, name, descriptor, synonyms=None):
+    def __init__(self, name, descriptor):
         """
         :param name: The plugin name.
         :type name: str
         :param descriptor: The plugin descriptor.
         :type descriptor: PluginDescriptor
-        :param synonyms: The plugin synonyms.
-        :type synonyms: list
         """
         self.name = name
         self.descriptor = descriptor
-        self.synonyms = []
-        for syn in synonyms or []:
-            if syn == name:
-                continue
-            self.synonyms.append(syn)
         self.pool = ThreadPool(int(descriptor.messaging.threads or 1))
         self.impl = None
         self.actions = []
@@ -177,16 +167,6 @@ class Plugin(object):
         self.authenticator = None
         self.consumer = None
         self.imported = {}
-        
-    def names(self):
-        """
-        Get *all* the names by which the plugin can be found.
-        :return: A list of name and synonyms.
-        :rtype: list
-        """
-        names = [self.name]
-        names += self.synonyms
-        return names
     
     def enabled(self):
         """
@@ -213,33 +193,14 @@ class Plugin(object):
         agent = AgentConfig()
         plugin = self.descriptor
         return plugin.messaging.url or agent.messaging.url
-    
+
     def get_broker(self):
         """
-        Get the amqp broker for this plugin.
-        Each plugin can connect to a different broker.
-        :return: The broker if configured.
+        Get the broker for this plugin.
+        :return: The configured broker.
         :rtype: gofer.transport.broker.Broker
         """
-        agent = AgentConfig()
-        plugin = self.descriptor
-        url = self.get_url()
-        tp = Transport(self.get_transport())
-        broker = tp.broker(url)
-        broker.virtual_host = \
-            plugin.messaging.virtual_host or agent.messaging.virtual_host
-        broker.userid = \
-            plugin.messaging.userid or agent.messaging.userid
-        broker.password = \
-            plugin.messaging.password or agent.messaging.password
-        broker.cacert = \
-            plugin.messaging.cacert or agent.messaging.cacert
-        broker.clientcert = \
-            plugin.messaging.clientcert or agent.messaging.clientcert
-        broker.host_validation = \
-            get_bool(plugin.messaging.host_validation or agent.messaging.host_validation)
-        log.debug('broker (qpid) configured: %s', broker)
-        return broker
+        return self.update_broker()
 
     def set_uuid(self, uuid):
         """
@@ -267,6 +228,32 @@ class Plugin(object):
         plugin = self.descriptor
         return plugin.messaging.transport or agent.messaging.transport
 
+    def update_broker(self):
+        """
+        Update the broker configuration using the plugin configuration.
+        :return: The updated broker.
+        :rtype: gofer.transport.broker.Broker
+        """
+        agent = AgentConfig()
+        plugin = self.descriptor
+        url = self.get_url()
+        tp = Transport(self.get_transport())
+        broker = tp.broker(url)
+        broker.virtual_host = \
+            plugin.messaging.virtual_host or agent.messaging.virtual_host
+        broker.userid = \
+            plugin.messaging.userid or agent.messaging.userid
+        broker.password = \
+            plugin.messaging.password or agent.messaging.password
+        broker.cacert = \
+            plugin.messaging.cacert or agent.messaging.cacert
+        broker.clientcert = \
+            plugin.messaging.clientcert or agent.messaging.clientcert
+        broker.host_validation = \
+            get_bool(plugin.messaging.host_validation or agent.messaging.host_validation)
+        log.debug('broker (qpid) configured: %s', broker)
+        return broker
+
     def attach(self, uuid=None):
         """
         Attach (connect) to AMQP broker using the specified uuid.
@@ -279,6 +266,7 @@ class Plugin(object):
         url = self.get_url()
         transport = self.get_transport()
         if uuid and url:
+            self.update_broker()
             tp = Transport(transport)
             queue = tp.queue(uuid)
             consumer = RequestConsumer(queue, url=url, transport=transport)
@@ -394,9 +382,8 @@ class PluginDescriptor(Graph):
         PluginDescriptor.__mkdir()
         for name, path in PluginDescriptor.__list():
             try:
-                conf = Config(path)
-                inst = PluginDescriptor(conf)
-                unsorted.append((name, inst))
+                descriptor = PluginDescriptor(Config(path))
+                unsorted.append((descriptor.main.name or name, descriptor))
             except Exception:
                 log.exception(path)
         return PluginDescriptor.__sort(unsorted)
@@ -484,26 +471,8 @@ class PluginLoader:
         for root in PluginLoader.PATH:
             path = os.path.join(root, mod)
             if os.path.exists(path):
-                log.info('using: %s', path)
                 return path
         raise Exception('%s, not found in:%s' % (mod, PluginLoader.PATH))
-
-    @staticmethod
-    def mangled(plugin):
-        """
-        Get the module name for the specified plugin.
-        :param plugin: The name of the plugin.
-        :type plugin: str
-        :return: The (mangled if necessary) plugin's module name.
-        :rtype: str
-        """
-        try:
-            imp.find_module(plugin)
-            log.warn('"%s" found in python-path', plugin)
-            log.info('"%s" mangled to avoid collisions', plugin)
-            return '%s_plugin' % plugin
-        except Exception:
-            return plugin
 
     @staticmethod
     def load():
@@ -513,23 +482,23 @@ class PluginLoader:
         :rtype: list
         """
         loaded = []
-        for plugin, descriptor in PluginDescriptor.load():
+        for name, descriptor in PluginDescriptor.load():
             if not get_bool(descriptor.main.enabled):
                 continue
-            p = PluginLoader._import(plugin, descriptor)
-            if not p:
+            plugin = PluginLoader._import(name, descriptor)
+            if not plugin:
                 continue  # load failed
-            if not p.enabled():
-                log.warn('plugin: %s, DISABLED', p.name)
-            loaded.append(p)
+            if not plugin.enabled():
+                log.warn('plugin: %s, DISABLED', name)
+            loaded.append(plugin)
         return loaded
 
     @staticmethod
-    def _import(plugin, descriptor):
+    def _import(name, descriptor):
         """
         Import a module by file name.
-        :param plugin: The plugin (module) name.
-        :type plugin: str
+        :param name: The plugin (module) name.
+        :type name: str
         :param descriptor: A plugin descriptor.
         :type descriptor: PluginDescriptor
         :return: The loaded module.
@@ -538,24 +507,29 @@ class PluginLoader:
         Remote.clear()
         Actions.clear()
         Initializer.clear()
-        syn = PluginLoader.mangled(plugin)
-        p = Plugin(plugin, descriptor, [syn])
-        Plugin.add(p)
+        plugin = Plugin(name, descriptor)
+        Plugin.add(plugin)
         try:
-            path = PluginLoader.find_plugin(plugin)
-            mod = imp.load_source(syn, path)
-            p.impl = mod
-            log.info('plugin "%s", imported as: "%s"', plugin, syn)
-            for fn in Remote.find(syn):
-                fn.gofer.plugin = p
-            if p.enabled():
+            path = descriptor.main.plugin
+            if path:
+                plugin.impl = __import__(path, {}, {}, [path.split('.')[-1]])
+                Plugin.add(plugin, path)
+            else:
+                path = PluginLoader.find_plugin(name)
+                plugin.impl = imp.load_source(name, path)
+
+            log.info('plugin [%s] loaded using: %s', name, path)
+
+            for fn in Remote.find(plugin.impl.__name__):
+                fn.gofer.plugin = plugin
+            if plugin.enabled():
                 collated = Remote.collated()
                 collated += PluginLoader.BUILTINS
-                p.dispatcher += collated
-                p.actions = Actions.collated()
-                p.extend()
+                plugin.dispatcher += collated
+                plugin.actions = Actions.collated()
+                plugin.extend()
                 Initializer.run()
-            return p
+            return plugin
         except Exception:
-            Plugin.delete(p)
-            log.exception('plugin "%s", import failed', plugin)
+            Plugin.delete(plugin)
+            log.exception('plugin "%s", import failed', name)

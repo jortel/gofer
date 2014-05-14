@@ -29,46 +29,47 @@ class Remote:
     """
     functions = []
     
-    @classmethod
-    def add(cls, fn):
-        cls.functions.append(fn)
+    @staticmethod
+    def add(fn):
+        Remote.functions.append(fn)
 
-    @classmethod
-    def purge(cls, mod):
+    @staticmethod
+    def purge(mod):
         purged = []
-        for fn in cls.find(mod):
+        for fn in Remote.find(mod):
             purged.append(fn)
         for fn in purged:
-            cls.functions.remove(fn)
+            Remote.functions.remove(fn)
             
-    @classmethod
-    def find(cls, mod):
-        for fn in cls.functions:
+    @staticmethod
+    def find(mod):
+        for fn in Remote.functions:
             if fn.__module__ == mod:
                 yield fn
                 
-    @classmethod
-    def clear(cls):
-        cls.functions = []
+    @staticmethod
+    def clear():
+        Remote.functions = []
     
-    @classmethod
-    def collated(cls):
+    @staticmethod
+    def collated():
         collated = []
         c = Collator()
-        classes, functions = c.collate(cls.functions)
+        classes, functions = c.collate(Remote.functions)
         for c in classes.keys():
             collated.append(c)
         for m in functions.keys():
+            m.__name__ = m.__name__.split('.')[-1]
             collated.append(m)
         return collated
 
 
 def __options(fn):
     """
-    Ensure funtion has the gofer options attribute
+    Ensure function has the gofer options attribute
     and return it.
     :param fn: A function
-    :return: The funtion options object.
+    :return: The function options object.
     :rtype: Options
     """
     if not hasattr(fn, NAME):
