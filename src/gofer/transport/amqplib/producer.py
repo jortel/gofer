@@ -27,7 +27,7 @@ log = getLogger(__name__)
 def message(body, ttl):
     if ttl:
         ms = ttl * 1000  # milliseconds
-        return Message(body, expiration=str(ms))
+        return Message(body, durable=True, expiration=str(ms))
     else:
         return Message(body)
 
