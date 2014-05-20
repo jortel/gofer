@@ -40,11 +40,11 @@ from gofer.agent import logutil
 logutil.LogHandler.install()
 
 # configuration
-from gofer.config import Config
-Config.PATH = '/opt/gofer/agent.conf'
-Config.CNFD = '/opt/gofer/conf.d'
-if not os.path.exists(Config.PATH):
-    with open(Config.PATH, 'w+') as fp:
+from gofer.agent.config import AgentConfig
+AgentConfig.PATH = '/opt/gofer/agent.conf'
+AgentConfig.CNFD = '/opt/gofer/conf.d'
+if not os.path.exists(AgentConfig.PATH):
+    with open(AgentConfig.PATH, 'w+') as fp:
         fp.write(CONFIGURATION)
 
 # lock
@@ -59,6 +59,7 @@ Pending.DELAYED = os.path.join(ROOT, 'messaging/delayed')
 # misc
 from gofer.agent.plugin import PluginDescriptor, PluginLoader
 from gofer.agent.main import Agent, setup_logging
+from gofer.config import Config
 
 getLogger('gofer').setLevel(DEBUG)
 log_path = os.path.join(ROOT, 'agent.log')

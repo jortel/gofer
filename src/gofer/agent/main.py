@@ -219,7 +219,8 @@ def setup_logging():
             continue
         try:
             logger = logging.getLogger(name)
-            logger.setLevel(level.upper())
+            level = getattr(logging, level.upper())
+            logger.setLevel(level)
         except Exception, e:
             log.error(str(e))
 
