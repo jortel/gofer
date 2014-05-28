@@ -504,16 +504,20 @@ if __name__ == '__main__':
 
     transport = options.transport or 'qpid'
 
-    queue = Queue(uuid.upper(), transport=transport)
-    queue.declare(url)
-    reply_consumer = ReplyConsumer(queue, url=url, transport=transport)
-    reply_consumer.start(on_reply)
+    if options.auth:
+        authenticator = TestAuthenticator()
+    else:
+        authenticator = None
 
     Agent.base_options['url'] = url
     Agent.base_options['transport'] = transport
+    Agent.base_options['authenticator'] = authenticator
 
-    if options.auth:
-        Agent.base_options['authenticator'] = TestAuthenticator()
+    queue = Queue(uuid.upper(), transport=transport)
+    queue.declare(url)
+    reply_consumer = ReplyConsumer(queue, url=url, transport=transport)
+    reply_consumer.authenticator = authenticator
+    reply_consumer.start(on_reply)
 
     # demo_progress(uuid, 1)
     # demo_window(uuid, 1)
