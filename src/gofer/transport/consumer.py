@@ -35,24 +35,6 @@ class Consumer(Thread):
         self._run = True
         self.setDaemon(True)
 
-    @property
-    def authenticator(self):
-        """
-        The *authenticator* property
-        :return: The messaging authenticator.
-        :rtype: gofer.messaging.auth.Authenticator
-        """
-        return self.reader.authenticator
-
-    @authenticator.setter
-    def authenticator(self, authenticator):
-        """
-        The *authenticator* property (setter)
-        :param authenticator: The messaging authenticator.
-        :type authenticator: gofer.messaging.auth.Authenticator
-        """
-        self.reader.authenticator = authenticator
-
     def stop(self):
         """
         Stop processing documents.

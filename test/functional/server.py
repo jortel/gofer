@@ -515,8 +515,7 @@ if __name__ == '__main__':
 
     queue = Queue(uuid.upper(), transport=transport)
     queue.declare(url)
-    reply_consumer = ReplyConsumer(queue, url=url, transport=transport)
-    reply_consumer.authenticator = authenticator
+    reply_consumer = ReplyConsumer(queue, url=url, transport=transport, authenticator=authenticator)
     reply_consumer.start(on_reply)
 
     # demo_progress(uuid, 1)
