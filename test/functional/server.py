@@ -60,7 +60,7 @@ class TestAuthenticator(Authenticator):
         # print 'signed: %s' % digest
         return digest
 
-    def validate(self, uuid, message, signature):
+    def validate(self, document, message, signature):
         digest = self.sign(message)
         valid = signature == digest
         # print 'matching signatures: [%s, %s]' % (signature, digest)
