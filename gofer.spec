@@ -252,6 +252,12 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Wed May 28 2014 Jeff Ortel <jortel@redhat.com> 1.1.0-1
+- Pass original document during auth validation instead of destination uuid.
+  (jortel@redhat.com)
+- Better support for associating an authenticator with a consumer.
+  (jortel@redhat.com)
+
 * Tue May 20 2014 Jeff Ortel <jortel@redhat.com> 1.0.13-1
 - Fix setting logging levels in agent.conf. (jortel@redhat.com)
 - In the amqplib transport, message durable=True. (jortel@redhat.com)
