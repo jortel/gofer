@@ -252,6 +252,10 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Thu May 29 2014 Jeff Ortel <jortel@redhat.com> 1.2.0-1
+- Add authenticator param to ReplyConsumer constructor. (jortel@redhat.com)
+- python 2.4 compat. (jortel@redhat.com)
+
 * Wed May 28 2014 Jeff Ortel <jortel@redhat.com> 1.1.0-1
 - Pass original document during auth validation instead of destination uuid.
   (jortel@redhat.com)
