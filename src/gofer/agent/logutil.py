@@ -81,11 +81,8 @@ class LogHandler(SysLogHandler):
                 lineno=record.lineno,
                 msg=LogHandler.clean(msg),
                 args=tuple(),
-                exc_info=None,
-                func=record.funcName)
+                exc_info=None)
             records.append(new_record)
             record.exc_info = None
         for r in records:
             SysLogHandler.emit(self, r)
-
-
