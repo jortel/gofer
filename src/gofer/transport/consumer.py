@@ -60,7 +60,7 @@ class Consumer(Thread):
             document, ack = self.reader.next(10)
             if document is None:
                 return
-            log.debug('{%s} read: %s', self.name, document)
+            log.debug('{%s} read: %s', self.getName(), document)
             self.dispatch(document)
             ack()
         except auth.ValidationFailed, vf:
@@ -68,7 +68,7 @@ class Consumer(Thread):
         except model.InvalidDocument, ir:
             self.document_rejected(ir.code, ir.document, ir.details)
         except Exception:
-            log.exception(self.name)
+            log.exception(self.getName())
 
     def message_rejected(self, code, message, details):
         """
