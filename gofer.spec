@@ -22,7 +22,7 @@ BuildRequires: python-setuptools
 BuildRequires: rpm-python
 Requires: python-%{name} = %{version}
 Requires: python-iniparse
-%if %{systemd}
+%if 0%{?systemd}
 BuildRequires: systemd
 Requires(post): systemd
 Requires(preun): systemd
