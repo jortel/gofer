@@ -3,7 +3,7 @@ Description=Gofer Agent
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/goferd
+ExecStart=/usr/bin/goferd --foreground
 Restart=on-abort
 
 [Install]
