@@ -84,7 +84,7 @@ cp etc/%{name}/plugins/*.conf %{buildroot}/%{_sysconfdir}/%{name}/plugins
 cp src/plugins/*.py %{buildroot}/%{_usr}/share/%{name}/plugins
 cp docs/man/man1/* %{buildroot}/%{_mandir}/man1
 
-%if %{systemd}
+%if 0%{?systemd}
 cp usr/lib/systemd/system/* %{buildroot}/%{_unitdir}
 %else
 cp etc/init.d/%{name}d %{buildroot}/%{_sysconfdir}/init.d
@@ -103,7 +103,7 @@ rm -rf %{buildroot}
 %dir %{_sysconfdir}/%{name}/conf.d/
 %{python_sitelib}/%{name}/agent/
 %{_bindir}/%{name}d
-%if %{systemd}
+%if 0%{?systemd}
 %attr(755,root,root) %{_unitdir}/%{name}d.service
 %else
 %attr(755,root,root) %{_sysconfdir}/init.d/%{name}d
@@ -115,14 +115,14 @@ rm -rf %{buildroot}
 %doc %{_mandir}/man1/gofer*
 
 %post
-%if %{systemd}
+%if 0%{?systemd}
 %systemd_post %{name}d.service
 %else
 chkconfig --add %{name}d
 %endif
 
 %preun
-%if %{systemd}
+%if 0%{?systemd}
 %systemd_preun %{name}d.service
 %else
 if [ $1 = 0 ] ; then
@@ -132,7 +132,7 @@ fi
 %endif
 
 %postun
-%if %{systemd}
+%if 0%{?systemd}
 %systemd_postun_with_restart %{name}d.service
 %endif
 
