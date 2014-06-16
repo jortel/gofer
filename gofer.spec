@@ -7,7 +7,7 @@
 %endif
 
 Name: gofer
-Version: 1.2.1
+Version: 1.3.0
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -286,6 +286,12 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Mon Jun 16 2014 Jeff Ortel <jortel@redhat.com> 1.3.0-1
+- Update man page to reference github. (jortel@redhat.com)
+- Replace --console option with --foreground and use in systemd unit.
+  (jortel@redhat.com)
+- systemd support. (jortel@redhat.com)
+
 * Mon Jun 09 2014 Jeff Ortel <jortel@redhat.com> 1.2.1-1
 - 1107244 - python 2.4 compat issues. (jortel@redhat.com)
 * Thu May 29 2014 Jeff Ortel <jortel@redhat.com> 1.2.0-1
