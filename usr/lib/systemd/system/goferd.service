@@ -1,0 +1,10 @@
+[Unit]
+Description=Gofer Agent
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/goferd --foreground
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

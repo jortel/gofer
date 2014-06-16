@@ -180,11 +180,8 @@ def usage():
     s.append('\n%sd <options>' % NAME)
     s.append('  -h, --help')
     s.append('      Show help')
-    s.append('  -c, --console')
+    s.append('  -f, --foreground')
     s.append('      Run in the foreground and not as a daemon.')
-    s.append('      default: 0')
-    s.append('  -p [seconds], --profile [seconds]')
-    s.append('      Run (foreground) and print code profiling statistics.')
     s.append('\n')
     print '\n'.join(s)
 
@@ -229,12 +226,12 @@ def main():
     daemon = True
     setup_logging()
     try:
-        opts, args = getopt(sys.argv[1:], 'hcp:', ['help', 'console', 'prof'])
+        opts, args = getopt(sys.argv[1:], 'hf:', ['help', 'foreground'])
         for opt,arg in opts:
             if opt in ('-h', '--help'):
                 usage()
                 sys.exit(0)
-            if opt in ('-c', '--console'):
+            if opt in ('-f', '--foreground'):
                 daemon = False
                 continue
         start(daemon)

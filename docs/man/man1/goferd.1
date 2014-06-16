@@ -1,6 +1,6 @@
 .\" Manpage for goferd.
 .\" Contact jortel@redhat.com to correct errors or typos.
-.TH man 1 "17 Aug 2012" "0.71" "goferd man page"
+.TH man 1 "10 June 2014" "1.2.1" "goferd man page"
 
 .SH NAME
 
@@ -8,9 +8,7 @@ goferd \- The Gofer Agent Daemon
 
 .SH SYNOPSIS
 
-goferd [ -h ] [ -c ] [ -p
-.I seconds 
-]
+goferd [ -h ] [ -f ]
 
 .SH DESCRIPTION
 
@@ -20,15 +18,14 @@ light weight, universal python agent.  The gofer core agent is a
 python daemon (service) that provides infrastructure for exposing
 a remote API and for running Recurring Actions. The APIs contributed
 by plug-ins are accessible by Remote Method Invocation (RMI). The
-transport for RMI is AMQP using the
-.B qpidd(1)
-message broker. Actions are also provided by
+transport for RMI is AMQP using an AMQP message broker.
+Scheduled actions may also provided by
 .I plug-ins
 and are executed
 at the specified interval.
 
 .PP
-See: https://fedorahosted.org/gofer/ for more information.
+See: https://github.com/jortel/gofer for more information.
 
 .SH OPTIONS
 
@@ -41,9 +38,6 @@ Displays the help message.
 .TP
 -c [ --console ]
 Run in the foreground and not as a daemon.
-.TP
--p [ --profile ] <seconds>
-Run in the foreground and display code profiling statistics.
 
 .SH SEE ALSO
 
