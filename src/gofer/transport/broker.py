@@ -34,8 +34,12 @@ class MetaBroker(Singleton):
     @classmethod
     def key(mcs, t, d):
         url = t[0]
-        if not isinstance(url, URL):
+        if url is None:
+            return url
+        if isinstance(url, str):
             url = URL(url)
+        if not isinstance(url, URL):
+            raise ValueError('url must be: str|URL')
         return url.simple()
 
 

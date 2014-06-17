@@ -28,7 +28,7 @@ from gofer.transport.broker import Broker
 log = getLogger(__name__)
 
 
-DEFAULT_URL = 'tcp://localhost:5672'
+DEFAULT_URL = 'amqp://localhost'
 
 
 class Qpid(Broker):
@@ -48,12 +48,12 @@ class Qpid(Broker):
         if key not in TRANSPORTS:
             TRANSPORTS[key] = TRANSPORTS['ssl']
 
-    def __init__(self, url=DEFAULT_URL):
+    def __init__(self, url=None):
         """
         :param url: The broker url <transport>://<host>:<port>.
         :type url: str
         """
-        Broker.__init__(self, url)
+        Broker.__init__(self, url or DEFAULT_URL)
 
     def connect(self):
         """
