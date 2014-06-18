@@ -31,17 +31,3 @@ rpm	:
 	mkdir -p $(TITODIR)
 	rm -rf $(TITODIR)/*
 	tito build --rpm
-
-clean :
-	rm -rf doc
-	rm -rf src/dist
-	rm -rf src/build
-	rm -rf src/$(PKG).egg-info
-	rm -rf /usr/src/redhat/BUILD/$(PKG)*
-	rm -rf /usr/src/redhat/RPMS/noarch/$(PKG)*
-	rm -rf /usr/src/redhat/SOURCES/$(PKG)*
-	rm -rf /usr/src/redhat/SRPMS/$(PKG)*
-	find . -name "*.pyc" -exec rm -f {} \;
-	find . -name "*~" -exec rm -f {} \;
-
-.PHONY : clean docs pdf
