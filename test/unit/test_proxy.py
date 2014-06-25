@@ -11,6 +11,29 @@
 
 from unittest import TestCase
 
+from mock import patch
+
+from gofer.proxy import Agent, agent
+
 
 class Test(TestCase):
-    pass
+
+    @patch('gofer.proxy.Container')
+    def test_agent_1(self, fake_container):
+        uuid = 'xyz'
+        options = {'url': 'amqp://host', 'transport': 'qpid', 'A': 1, 'B': 2}
+        container = Agent(uuid, **options)
+        url = options.pop('url')
+        transport = options.pop('transport')
+        fake_container.assert_called_with(uuid, url, transport, **options)
+        self.assertEqual(container, fake_container())
+
+    @patch('gofer.proxy.Container')
+    def test_agent(self, fake_container):
+        uuid = 'xyz'
+        options = {'url': 'amqp://host', 'transport': 'qpid', 'A': 1, 'B': 2}
+        container = agent(uuid, **options)
+        url = options.pop('url')
+        transport = options.pop('transport')
+        fake_container.assert_called_with(uuid, url, transport, **options)
+        self.assertEqual(container, fake_container())
