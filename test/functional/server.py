@@ -523,11 +523,11 @@ if __name__ == '__main__':
     # test_performance(uuid)
     # demotest_performance(uuid)
 
-    demo_getitem(uuid)
     demo_authentication(uuid, yp)
+    smoke_test(uuid)
     demo_constructors(uuid)
     test_triggers(uuid)
-    smoke_test(uuid)
+    demo_getitem(uuid)
 
     n_threads = int(options.threads)
     if n_threads:
