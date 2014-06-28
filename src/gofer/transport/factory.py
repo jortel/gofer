@@ -64,17 +64,26 @@ class TransportNotFound(TransportError):
 # --- factory ----------------------------------------------------------------
 
 
-class Transport:
+class Loader:
     """
-    The transport API.
-    :cvar plugins: Loaded transport plugins.
-    :cvar plugins: dict
+    Transport plugin loader.
+    :ivar plugins: Loaded plugins.
+    :type plugins: dict
+    :ivar loaded: Indicates plugins have been loaded.
+    :type loaded: bool
     """
 
-    plugins = {}
+    def __init__(self):
+        self.plugins = {}
 
-    @classmethod
-    def load_plugins(cls):
+    @staticmethod
+    def _load():
+        """
+        Load transport plugins.
+        :return: The loaded plugins.
+        :rtype: dict
+        """
+        plugins = {}
         _dir = os.path.dirname(__file__)
         for name in os.listdir(_dir):
             path = os.path.join(_dir, name)
@@ -83,18 +92,38 @@ class Transport:
             try:
                 package = '.'.join((PACKAGE, name))
                 pkg = __import__(package, {}, {}, REQUIRED)
-                cls.plugins[name] = pkg
-                cls.plugins[package] = pkg
+                plugins[name] = pkg
+                plugins[package] = pkg
                 for capability in pkg.PROVIDES:
-                    cls.plugins[capability] = pkg
+                    plugins[capability] = pkg
             except (ImportError, AttributeError):
                 log.exception(path)
+        return plugins
+
+    def load(self):
+        """
+        Load transport plugins.
+        :return: The loaded plugins.
+        :rtype: dict
+        """
+        if not len(self.plugins):
+            self.plugins = Loader._load()
+        return self.plugins
+
+
+class Transport:
+    """
+    The transport API.
+    """
+
+    loader = Loader()
 
     def __init__(self, package=None):
         """
         :param package: The python package providing the transport.
         :type package: str
         """
+        self.plugins = self.loader.load()
         loaded = sorted(self.plugins)
         if not loaded:
             raise NoTransportsLoaded()
