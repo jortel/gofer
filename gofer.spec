@@ -144,7 +144,7 @@ Summary: Gofer python lib modules
 Group: Development/Languages
 Obsoletes: %{name}-lib
 BuildRequires: python
-Requires: PyPAM
+Requires: pam
 %if 0%{?rhel} && 0%{?rhel} < 6
 Requires: python-simplejson
 Requires: python-hashlib
