@@ -13,6 +13,3 @@
 
 
 from gofer.transport.factory import Transport, TransportError, TransportNotFound, NoTransportsLoaded
-
-
-Transport.load_plugins()
