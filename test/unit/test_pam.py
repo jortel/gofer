@@ -25,7 +25,7 @@ class TestQuery(TestCase):
 
     def test_init(self):
         query = Query(USERID, PASSWORD)
-        self.assertEqual(query.user, USERID)
+        self.assertEqual(query.userid, USERID)
         self.assertEqual(query.password, PASSWORD)
 
     def test_call(self):
