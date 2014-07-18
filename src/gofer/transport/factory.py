@@ -1,16 +1,7 @@
-# Copyright (c) 2013 Red Hat, Inc.
-#
-# This software is licensed to you under the GNU General Public
-# License as published by the Free Software Foundation; either version
-# 2 of the License (GPLv2) or (at your option) any later version.
-# There is NO WARRANTY for this software, express or implied,
-# including the implied warranties of MERCHANTABILITY,
-# NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
-# have received a copy of GPLv2 along with this software; if not, see
-# http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
-
 import os
 import logging
+
+from gofer.transport.url import URL
 
 
 log = logging.getLogger(__name__)
@@ -69,8 +60,6 @@ class Loader:
     Transport plugin loader.
     :ivar plugins: Loaded plugins.
     :type plugins: dict
-    :ivar loaded: Indicates plugins have been loaded.
-    :type loaded: bool
     """
 
     def __init__(self):
@@ -96,7 +85,7 @@ class Loader:
                 plugins[package] = pkg
                 for capability in pkg.PROVIDES:
                     plugins[capability] = pkg
-            except (ImportError, AttributeError):
+            except (ImportError, AttributeError),e:
                 log.exception(path)
         return plugins
 
@@ -111,111 +100,36 @@ class Loader:
         return self.plugins
 
 
-class Transport:
-    """
-    The transport API.
-    """
+class Transport(object):
 
+    urls = {}
     loader = Loader()
 
-    def __init__(self, package=None):
-        """
-        :param package: The python package providing the transport.
-        :type package: str
-        """
-        self.plugins = self.loader.load()
-        loaded = sorted(self.plugins)
+    @staticmethod
+    def bind(url, name):
+        plugins = Transport.loader.load()
+        loaded = sorted(plugins)
         if not loaded:
             raise NoTransportsLoaded()
-        if not package:
-            self.package = loaded[0]
-            self.plugin = self.plugins[loaded[0]]
-            return
         try:
-            self.package = package
-            self.plugin = self.plugins[package]
+            url = URL(url)
+            Transport.urls[url.simple()] = plugins[name]
         except KeyError:
-            raise TransportNotFound(package)
+            raise TransportNotFound(name)
 
-    @property
-    def name(self):
-        """
-        The transport package name.
-        :return: The transport package name.
-        :rtype: str
-        """
-        return self.plugin.__name__
-
-    def broker(self, url):
-        """
-        Get an AMQP broker.
-        :param url: The url for the broker.
-        :type url: str
-        :return: The broker provided by the transport.
-        :rtype: gofer.transport.broker.Broker
-        """
-        return self.plugin.Broker(url)
-
-    def exchange(self, name, policy=None):
-        """
-        Get and AMQP exchange object.
-        :param name: The exchange name.
-        :type name: str
-        :param policy: The routing policy.
-        :type policy: str
-        :return: The exchange object provided by the transport.
-        :rtype: gofer.transport.model.Exchange
-        """
-        return self.plugin.Exchange(name, policy=policy)
-
-    def queue(self, name, exchange=None, routing_key=None):
-        """
-        Get an AMQP topic queue.
-        :param name: The topic name.
-        :param name: str
-        :param exchange: An AMQP exchange.
-        :param exchange: str
-        :param routing_key: An AMQP routing key.
-        :type routing_key: str
-        :return: The queue object provided by the transport.
-        :rtype: gofer.transport.model.Queue.
-        """
-        return self.plugin.Queue(name, exchange=exchange, routing_key=routing_key)
-
-    def producer(self, url, uuid=None):
-        """
-        Get an AMQP message producer.
-        :param url: The url for the broker.
-        :type url: str
-        :param uuid: The (optional) producer ID.
-        :type uuid: str
-        :return: The broker provided by the transport.
-        :rtype: gofer.transport.model.Producer.
-        """
-        return self.plugin.Producer(uuid, url=url)
-
-    def binary_producer(self, url, uuid=None):
-        """
-        Get an AMQP binary message producer.
-        :param url: The url for the broker.
-        :type url: str
-        :param uuid: The (optional) producer ID.
-        :type uuid: str
-        :return: The producer provided by the transport.
-        :rtype: gofer.transport.model.BinaryProducer.
-        """
-        return self.plugin.BinaryProducer(uuid, url=url)
-
-    def reader(self, url, queue, uuid=None):
-        """
-        Get an AMQP message reader.
-        :param url: The url for the broker.
-        :type url: str
-        :param queue: The AMQP node.
-        :type queue: gofer.transport.model.Queue
-        :param uuid: The (optional) producer ID.
-        :type uuid: str
-        :return: The reader provided by the transport.
-        :rtype: gofer.transport.model.Reader.
-        """
-        return self.plugin.Reader(queue, uuid=uuid, url=url)
+    @staticmethod
+    def find(url=None):
+        plugins = Transport.loader.load()
+        loaded = sorted(plugins)
+        if not loaded:
+            raise NoTransportsLoaded()
+        if not url:
+            url = loaded[0]
+        try:
+            url = URL(url)
+            if url.transport:
+                return plugins[url.transport]
+            else:
+                return plugins[url.simple()]
+        except KeyError:
+            return plugins[loaded[0]]

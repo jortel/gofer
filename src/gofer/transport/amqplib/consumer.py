@@ -41,18 +41,16 @@ class Reader(BaseReader):
     :type queue: gofer.transport.model.Queue
     """
 
-    def __init__(self, queue, uuid=None, url=None):
+    def __init__(self, queue, url=None):
         """
         :param queue: The queue to consumer.
         :type queue: gofer.transport.model.BaseQueue
-        :param uuid: The endpoint uuid.
-        :type uuid: str
         :param url: The broker url.
         :type url: str
         :see: gofer.transport.url.URL
         """
-        BaseReader.__init__(self, queue, uuid, url)
-        self._endpoint = Endpoint(uuid, url)
+        BaseReader.__init__(self, queue, url)
+        self._endpoint = Endpoint(url)
 
     def endpoint(self):
         """

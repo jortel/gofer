@@ -12,9 +12,9 @@
 
 import string
 
-from gofer.transport.model import BaseExchange
-from gofer.transport.model import BaseQueue
 from gofer.transport.qpid.endpoint import Endpoint
+
+from gofer.transport.model import BaseExchange, BaseQueue, Destination
 
 
 # --- utils ------------------------------------------------------------------
@@ -157,6 +157,14 @@ class Queue(BaseQueue):
             sender.close()
         finally:
             endpoint.close()
+
+    def destination(self, url):
+        """
+        Get a destination object for the node.
+        :return: A destination for the node.
+        :rtype: Destination
+        """
+        return Destination(routing_key=self.routing_key, exchange=self.exchange.name)
 
     def __str__(self):
         return self.address()

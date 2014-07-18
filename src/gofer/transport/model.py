@@ -13,10 +13,9 @@ from threading import local as Local
 
 from gofer import Singleton
 from gofer.transport.url import URL
-from gofer.transport.binder import Binder
+from gofer.transport.factory import Transport
 
 from gofer.messaging.model import getuuid
-
 
 # routing key
 ROUTE_ALL = '#'
@@ -91,7 +90,7 @@ class Node(object):
     def declare(self, url):
         """
         Declare the node.
-        :param url: The peer URL.
+        :param url: The broker URL.
         :type url: str
         :return: self
         """
@@ -100,7 +99,7 @@ class Node(object):
     def delete(self, url):
         """
         Delete the node.
-        :param url: The peer URL.
+        :param url: The broker URL.
         :type url: str
         :return: self
         """
@@ -155,11 +154,11 @@ class Exchange(BaseExchange):
     def declare(self, url=DEFAULT_URL):
         """
         Declare the node.
-        :param url: The peer URL.
+        :param url: The broker URL.
         :type url: str
         :return: self
         """
-        plugin = Binder.find(url)
+        plugin = Transport.find(url)
         impl = plugin.Exchange(self.name, policy=self.policy)
         impl.durable = self.durable
         impl.auto_delete = self.auto_delete
@@ -168,11 +167,11 @@ class Exchange(BaseExchange):
     def delete(self, url=DEFAULT_URL):
         """
         Delete the node.
-        :param url: The peer URL.
+        :param url: The broker URL.
         :type url: str
         :return: self
         """
-        plugin = Binder.find(url)
+        plugin = Transport.find(url)
         impl = plugin.Exchange(self.name)
         impl.delete(url)
 
@@ -211,13 +210,15 @@ class BaseQueue(Node):
         self.auto_delete = False
         self.exclusive = False
 
-    def destination(self):
+    def destination(self, url):
         """
         Get a destination object for the node.
+        :param url: The broker URL.
+        :type url: str
         :return: A destination for the node.
         :rtype: Destination
         """
-        return Destination(self.routing_key, exchange=self.exchange.name)
+        raise NotImplementedError()
 
     def __eq__(self, other):
         return isinstance(other, BaseQueue) and \
@@ -243,11 +244,11 @@ class Queue(BaseQueue):
     def declare(self, url=DEFAULT_URL):
         """
         Declare the node.
-        :param url: The peer URL.
+        :param url: The broker URL.
         :type url: str
         :return: self
         """
-        plugin = Binder.find(url)
+        plugin = Transport.find(url)
         impl = plugin.Queue(self.name, self.exchange, self.routing_key)
         impl.durable = self.durable
         impl.auto_delete = self.auto_delete
@@ -257,13 +258,25 @@ class Queue(BaseQueue):
     def delete(self, url=None):
         """
         Delete the node.
-        :param url: The peer URL.
+        :param url: The broker URL.
         :type url: str
         :return: self
         """
-        plugin = Binder.find(url)
+        plugin = Transport.find(url)
         impl = plugin.Queue(self.name)
         impl.delete(url)
+        
+    def destination(self, url):
+        """
+        Get a destination object for the node.
+        :param url: The broker URL.
+        :type url: str
+        :return: A destination for the node.
+        :rtype: Destination
+        """
+        plugin = Transport.find(url)
+        impl = plugin.Queue(self.name, self.exchange, self.routing_key)
+        return impl.destination(url)
 
 
 # --- endpoint ---------------------------------------------------------------
@@ -274,21 +287,17 @@ class BaseEndpoint(object):
     Base class for an AMQP endpoint.
     :ivar url: The broker URL.
     :type url: str
-    :ivar uuid: The unique endpoint id.
-    :type uuid: str
     :ivar authenticator: A message authenticator.
     :type authenticator: gofer.messaging.auth.Authenticator
     """
 
-    def __init__(self, uuid, url):
+    def __init__(self, url):
         """
         :param url: The broker url.
         :type url: str
-        :param uuid: The endpoint uuid.
-        :type uuid: str
         """
         self.url = url
-        self.uuid = uuid or getuuid()
+        self.uuid = getuuid()
         self.authenticator = None
 
     def id(self):
@@ -348,16 +357,14 @@ class BaseReader(BaseEndpoint):
     An AMQP message reader.
     """
 
-    def __init__(self, queue, uuid, url):
+    def __init__(self, queue, url):
         """
         :param queue: The queue to consumer.
         :type queue: gofer.transport.model.BaseQueue
-        :param uuid: The endpoint uuid.
-        :type uuid: str
         :param url: The broker url.
         :type url: str
         """
-        BaseEndpoint.__init__(self, uuid, url)
+        BaseEndpoint.__init__(self, url)
         self.queue = queue
 
     def get(self, timeout=None):
@@ -398,19 +405,17 @@ class Reader(BaseReader):
     An AMQP message reader.
     """
 
-    def __init__(self, queue, uuid=None, url=None):
+    def __init__(self, queue, url=None):
         """
         :param queue: The queue to consumer.
         :type queue: gofer.transport.model.BaseQueue
-        :param uuid: The endpoint uuid.
-        :type uuid: str
         :param url: The broker url.
         :type url: str
         :see: gofer.transport.url.URL
         """
-        BaseReader.__init__(self, queue, uuid, url)
-        plugin = Binder.find(url)
-        self._impl = plugin.Reader(queue, uuid, url)
+        BaseReader.__init__(self, queue, url)
+        plugin = Transport.find(url)
+        self._impl = plugin.Reader(queue, url)
 
     def channel(self):
         """
@@ -511,16 +516,14 @@ class Producer(BaseProducer):
     An AMQP (message producer.
     """
 
-    def __init__(self, uuid=None, url=None):
+    def __init__(self, url=None):
         """
-        :param uuid: The endpoint uuid.
-        :type uuid: str
         :param url: The broker url.
         :type url: str
         """
-        BaseProducer.__init__(self, uuid, url)
-        plugin = Binder.find(url)
-        self._impl = plugin.Producer(uuid, url)
+        BaseProducer.__init__(self, url)
+        plugin = Transport.find(url)
+        self._impl = plugin.Producer(url)
 
     def channel(self):
         """
@@ -608,16 +611,14 @@ class BinaryProducer(BaseBinaryProducer):
     An binary AMQP message producer.
     """
 
-    def __init__(self, uuid=None, url=DEFAULT_URL):
+    def __init__(self, url=DEFAULT_URL):
         """
-        :param uuid: The endpoint uuid.
-        :type uuid: str
         :param url: The broker url <transport>://<user>:<pass>@<host>:<port>/<virtual-host>.
         :type url: str
         """
-        BaseBinaryProducer.__init__(self, uuid, url)
-        plugin = Binder.find(url)
-        self._impl = plugin.BinaryProducer(uuid, url)
+        BaseBinaryProducer.__init__(self, url)
+        plugin = Transport.find(url)
+        self._impl = plugin.BinaryProducer(url)
 
     def channel(self):
         """
@@ -812,7 +813,7 @@ class Broker(BaseBroker):
         :type url: str|URL
         """
         BaseBroker.__init__(self, url)
-        plugin = Binder.find(url)
+        plugin = Transport.find(url)
         self._impl = plugin.Broker(url)
 
     def connect(self):

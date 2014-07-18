@@ -51,7 +51,7 @@ def reliable(fn):
 
 def endpoint(fn):
     def _fn(url):
-        _endpoint = Endpoint('(r)', url=url)
+        _endpoint = Endpoint(url=url)
         try:
             return fn(_endpoint)
         finally:
@@ -71,24 +71,14 @@ class Endpoint(BaseEndpoint):
     :type __channel: amqplib.client_0_8.Channel
     """
 
-    def __init__(self, uuid, url):
+    def __init__(self, url):
         """
-        :param uuid: The endpoint uuid.
-        :type uuid: str
         :param url: The broker url.
         :type url: str
         """
-        BaseEndpoint.__init__(self, uuid, url)
+        BaseEndpoint.__init__(self, url)
         self.__mutex = RLock()
         self.__channel = None
-
-    def id(self):
-        """
-        Get the endpoint id
-        :return: The id.
-        :rtype: str
-        """
-        return self.uuid
 
     @synchronized
     def channel(self):

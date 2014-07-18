@@ -11,9 +11,9 @@
 
 from logging import getLogger
 
-from gofer.transport.model import BaseExchange
-from gofer.transport.model import BaseQueue
 from gofer.transport.amqplib import endpoint
+
+from gofer.transport.model import BaseExchange, BaseQueue, Destination
 
 
 log = getLogger(__name__)
@@ -113,4 +113,12 @@ class Queue(BaseQueue):
             channel = _endpoint.channel()
             channel.queue_delete(self.name, nowait=True)
         _fn(url)
+
+    def destination(self, url):
+        """
+        Get a destination object for the node.
+        :return: A destination for the node.
+        :rtype: Destination
+        """
+        return Destination(routing_key=self.routing_key, exchange=self.exchange.name)
 

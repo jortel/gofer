@@ -72,15 +72,13 @@ class Producer(BaseProducer):
     An AMQP (message producer.
     """
 
-    def __init__(self, uuid=None, url=None):
+    def __init__(self, url=None):
         """
-        :param uuid: The endpoint uuid.
-        :type uuid: str
         :param url: The broker url.
         :type url: str
         """
-        BaseProducer.__init__(self, uuid, url)
-        self._endpoint = Endpoint(uuid, url)
+        BaseProducer.__init__(self, url)
+        self._endpoint = Endpoint(url)
 
     def endpoint(self):
         """
@@ -126,15 +124,13 @@ class BinaryProducer(BaseBinaryProducer):
     An binary AMQP message producer.
     """
 
-    def __init__(self, uuid=None, url=None):
+    def __init__(self, url=None):
         """
-        :param uuid: The endpoint uuid.
-        :type uuid: str
         :param url: The broker url.
         :type url: str
         """
-        BaseBinaryProducer.__init__(self, uuid, url)
-        self._endpoint = Endpoint(uuid, url)
+        BaseBinaryProducer.__init__(self, url)
+        self._endpoint = Endpoint(url)
 
     def endpoint(self):
         """

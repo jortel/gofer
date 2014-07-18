@@ -20,8 +20,8 @@ basicConfig()
 
 from base import Test
 
-URL = 'tcp://localhost:5672'
+URL = 'qpid+amqp://localhost'
 
 if __name__ == '__main__':
-    test = Test(URL, transport='qpid')
+    test = Test(URL)
     test()

@@ -127,30 +127,18 @@ class Endpoint(BaseEndpoint):
     :ivar __session: An AMQP session.
     :type __session: qpid.messaging.Session
     """
-
-    LOCALHOST = 'tcp://localhost:5672'
     
     ssnpool = SessionPool()
 
-    def __init__(self, uuid=None, url=None):
+    def __init__(self, url):
         """
-        :param uuid: The endpoint uuid.
-        :type uuid: str
         :param url: The broker url <transport>://<user>/<pass>@<host>:<port>.
         :type url: str
         """
-        BaseEndpoint.__init__(self, uuid, url or Endpoint.LOCALHOST)
+        BaseEndpoint.__init__(self, url)
         self.__mutex = RLock()
         self.__session = None
         atexit.register(self.close)
-
-    def id(self):
-        """
-        Get the endpoint id
-        :return: The id.
-        :rtype: str
-        """
-        return self.uuid
 
     def channel(self):
         """

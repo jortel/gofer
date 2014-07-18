@@ -10,12 +10,4 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 
-from gofer.messaging.factory import (
-    Broker,
-    Exchange,
-    Queue,
-    Reader,
-    Producer,
-    BinaryProducer,
-    Consumer,
-    Destination)
+from gofer.messaging.factory import Consumer

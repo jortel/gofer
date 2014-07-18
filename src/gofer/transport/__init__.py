@@ -12,4 +12,7 @@
 # Jeff Ortel <jortel@redhat.com>
 
 
-from gofer.transport.factory import Transport, TransportError, TransportNotFound, NoTransportsLoaded
+from gofer.transport.factory import \
+    Transport, TransportError, TransportNotFound, NoTransportsLoaded
+from gofer.transport.model import \
+    Destination, Exchange, Queue, Broker
