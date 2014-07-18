@@ -15,6 +15,7 @@ from amqplib.client_0_8 import Message
 
 from gofer.messaging import auth
 from gofer.messaging.model import getuuid, VERSION, Document
+from gofer.transport.model import BaseProducer, BaseBinaryProducer
 from gofer.transport.amqplib.endpoint import Endpoint, reliable
 
 
@@ -36,7 +37,7 @@ def send(endpoint, destination, ttl=None, **body):
     """
     Send a message.
     :param endpoint: An AMQP endpoint.
-    :type endpoint: Endpoint
+    :type endpoint: gofer.transport.model.BaseEndpoint
     :param destination: An AMQP destination.
     :type destination: gofer.transport.model.Destination
     :param ttl: Time to Live (seconds)
@@ -62,10 +63,28 @@ def send(endpoint, destination, ttl=None, **body):
 # --- producers --------------------------------------------------------------
 
 
-class Producer(Endpoint):
+class Producer(BaseProducer):
     """
     An AMQP (message producer.
     """
+
+    def __init__(self, uuid=None, url=None):
+        """
+        :param uuid: The endpoint uuid.
+        :type uuid: str
+        :param url: The broker url.
+        :type url: str
+        """
+        BaseProducer.__init__(self, uuid, url)
+        self._endpoint = Endpoint(uuid, url)
+
+    def endpoint(self):
+        """
+        Get a concrete object.
+        :return: A concrete object.
+        :rtype: BaseEndpoint
+        """
+        return self._endpoint
 
     def send(self, destination, ttl=None, **body):
         """
@@ -98,7 +117,25 @@ class Producer(Endpoint):
         return sns
 
 
-class BinaryProducer(Endpoint):
+class BinaryProducer(BaseBinaryProducer):
+
+    def __init__(self, uuid=None, url=None):
+        """
+        :param uuid: The endpoint uuid.
+        :type uuid: str
+        :param url: The broker url.
+        :type url: str
+        """
+        BaseBinaryProducer.__init__(self, uuid, url)
+        self._endpoint = Endpoint(uuid, url)
+
+    def endpoint(self):
+        """
+        Get a concrete object.
+        :return: A concrete object.
+        :rtype: BaseEndpoint
+        """
+        return self._endpoint
 
     @reliable
     def send(self, destination, content, ttl=None):

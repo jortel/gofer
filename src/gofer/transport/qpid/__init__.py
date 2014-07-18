@@ -10,7 +10,7 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 from gofer.transport.qpid.model import Exchange, Queue
-from gofer.transport.qpid.broker import Qpid as Broker
+from gofer.transport.qpid.broker import Broker
 from gofer.transport.qpid.consumer import Reader
 from gofer.transport.qpid.producer import Producer, send
 from gofer.transport.qpid.endpoint import Endpoint

@@ -11,8 +11,8 @@
 
 from logging import getLogger
 
-from gofer.transport.model import Exchange as BaseExchange
-from gofer.transport.model import Queue as BaseQueue
+from gofer.transport.model import BaseExchange
+from gofer.transport.model import BaseQueue
 from gofer.transport.amqplib import endpoint
 
 

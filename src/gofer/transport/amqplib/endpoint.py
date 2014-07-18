@@ -16,7 +16,7 @@ from logging import getLogger
 from amqplib.client_0_8 import AMQPChannelException
 
 from gofer import synchronized
-from gofer.transport.endpoint import Endpoint as Base
+from gofer.transport.model import BaseEndpoint
 from gofer.transport.amqplib.broker import Broker, CONNECTION_EXCEPTIONS
 
 
@@ -37,7 +37,7 @@ def reliable(fn):
         while True:
             try:
                 return fn(endpoint, *args, **kwargs)
-            except CONNECTION_EXCEPTIONS, e:
+            except CONNECTION_EXCEPTIONS:
                 broker = Broker(endpoint.url)
                 endpoint.close()
                 broker.close()
@@ -51,7 +51,7 @@ def reliable(fn):
 
 def endpoint(fn):
     def _fn(url):
-        _endpoint = Endpoint(url=url)
+        _endpoint = Endpoint('(r)', url=url)
         try:
             return fn(_endpoint)
         finally:
@@ -62,25 +62,23 @@ def endpoint(fn):
 # --- endpoint ---------------------------------------------------------------
 
 
-class Endpoint(Base):
+class Endpoint(BaseEndpoint):
     """
     Base class for an AMQP endpoint.
     :ivar __mutex: The endpoint mutex.
     :type __mutex: RLock
     :ivar __channel: An AMQP channel.
-    :type __channel: amqplib.Channel
+    :type __channel: amqplib.client_0_8.Channel
     """
 
-    LOCALHOST = 'amqp://localhost:5672'
-
-    def __init__(self, uuid=None, url=None):
+    def __init__(self, uuid, url):
         """
         :param uuid: The endpoint uuid.
         :type uuid: str
-        :param url: The broker url <transport>://<user>/<pass>@<host>:<port>.
+        :param url: The broker url.
         :type url: str
         """
-        Base.__init__(self, uuid, url or Endpoint.LOCALHOST)
+        BaseEndpoint.__init__(self, uuid, url)
         self.__mutex = RLock()
         self.__channel = None
 
@@ -97,7 +95,7 @@ class Endpoint(Base):
         """
         Get a channel for the open connection.
         :return: An open channel.
-        :rtype: amqplib.Channel
+        :rtype: amqplib.client_0_8.Channel
         """
         if self.__channel is None:
             broker = Broker(self.url)
@@ -116,7 +114,7 @@ class Endpoint(Base):
         """
         Ack the specified message.
         :param message: An AMQP message.
-        :type message: Message
+        :type message: amqplib.client_0_8.Message
         """
         channel = self.channel()
         channel.basic_ack(message.delivery_info[DELIVERY_TAG])
@@ -134,9 +132,3 @@ class Endpoint(Base):
         except (CONNECTION_EXCEPTIONS, AMQPChannelException):
             # ignored
             pass
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *unused):
-        self.close()

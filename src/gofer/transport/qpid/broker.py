@@ -22,16 +22,13 @@ from logging import getLogger
 from qpid.messaging import Connection
 from qpid.messaging.transports import TRANSPORTS
 
-from gofer.transport.broker import Broker
+from gofer.transport.model import BaseBroker
 
 
 log = getLogger(__name__)
 
 
-DEFAULT_URL = 'amqp://localhost'
-
-
-class Qpid(Broker):
+class Broker(BaseBroker):
     """
     Represents a Qpid broker.
     """
@@ -48,25 +45,24 @@ class Qpid(Broker):
         if key not in TRANSPORTS:
             TRANSPORTS[key] = TRANSPORTS['ssl']
 
-    def __init__(self, url=None):
+    def __init__(self, url):
         """
         :param url: The broker url.
           Format: <transport>+<scheme>://<user>:<password>@<host>:<port></>.
         :type url: str
         """
-        Broker.__init__(self, url or DEFAULT_URL)
+        BaseBroker.__init__(self, url)
 
     def connect(self):
         """
         Connect to the broker.
         :return: The AMQP connection object.
-        :rtype: Qpid
+        :rtype: Connection
         """
-        Qpid.add_transports()
+        Broker.add_transports()
         try:
             return self.connection.cached
         except AttributeError:
-            url = self.url.simple()
             log.info('connecting: %s', self)
             con = Connection(
                 host=self.host,

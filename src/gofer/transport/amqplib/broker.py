@@ -17,7 +17,7 @@ from socket import error as SocketError
 
 from amqplib.client_0_8 import Connection, AMQPConnectionException
 
-from gofer.transport.broker import Broker as _Broker
+from gofer.transport.model import BaseBroker
 
 
 log = getLogger(__name__)
@@ -25,23 +25,22 @@ log = getLogger(__name__)
 VIRTUAL_HOST = '/'
 USERID = 'guest'
 PASSWORD = 'guest'
-DEFAULT_URL = 'amqp://localhost'
 
 CONNECTION_EXCEPTIONS = (IOError, SocketError, AMQPConnectionException, AttributeError)
 
 
-class Broker(_Broker):
+class Broker(BaseBroker):
     """
     A generic AMQP broker.
     """
 
-    def __init__(self, url=None):
+    def __init__(self, url):
         """
         :param url: The broker url.
           Format: <transport>+<scheme>://<user>:<password>@<host>:<port></>.
         :type url: str
         """
-        _Broker.__init__(self, url or DEFAULT_URL)
+        BaseBroker.__init__(self, url)
 
     def connect(self):
         """

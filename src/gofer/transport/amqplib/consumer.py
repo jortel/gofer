@@ -16,6 +16,7 @@ from gofer.messaging import auth
 from gofer.messaging import model
 from gofer.messaging.model import Document, search
 from gofer.transport.consumer import Ack
+from gofer.transport.model import BaseReader
 from gofer.transport.amqplib.endpoint import Endpoint, reliable
 
 
@@ -33,25 +34,36 @@ DELAY_MULTIPLIER = 1.2
 # --- consumers --------------------------------------------------------------
 
 
-class Reader(Endpoint):
+class Reader(BaseReader):
     """
     An AMQP message reader.
     :ivar queue: The AMQP queue to read.
     :type queue: gofer.transport.model.Queue
     """
 
-    def __init__(self, queue, **options):
+    def __init__(self, queue, uuid=None, url=None):
         """
         :param queue: The queue to consumer.
-        :type queue: gofer.transport.model.Queue
-        :param options: Options passed to Endpoint.
-        :type options: dict
+        :type queue: gofer.transport.model.BaseQueue
+        :param uuid: The endpoint uuid.
+        :type uuid: str
+        :param url: The broker url.
+        :type url: str
+        :see: gofer.transport.url.URL
         """
-        Endpoint.__init__(self, **options)
-        self.queue = queue
+        BaseReader.__init__(self, queue, uuid, url)
+        self._endpoint = Endpoint(uuid, url)
+
+    def endpoint(self):
+        """
+        Get a concrete object.
+        :return: A concrete object.
+        :rtype: BaseEndpoint
+        """
+        return self._endpoint
 
     @reliable
-    def get(self):
+    def get(self, timeout=None):
         """
         Get the next message from the queue.
         :return: The next message or None.

@@ -22,8 +22,8 @@ import atexit
 from threading import RLock, local as Local
 from logging import getLogger
 
-from gofer.transport.endpoint import Endpoint as Base
-from gofer.transport.qpid.broker import Qpid
+from gofer.transport.model import BaseEndpoint
+from gofer.transport.qpid.broker import Broker
 
 
 log = getLogger(__name__)
@@ -48,7 +48,7 @@ class SessionPool:
         pool = self.__pool(url)
         ssn = self.__pop(pool)
         if ssn is None:
-            broker = Qpid(url)
+            broker = Broker(url)
             con = broker.connect()
             ssn = con.session()
         pool[1].append(ssn)
@@ -117,7 +117,7 @@ class SessionPool:
         return pool
 
 
-class Endpoint(Base):
+class Endpoint(BaseEndpoint):
     """
     Base class for an AMQP endpoint.
     :cvar ssnpool: An AMQP session pool.
@@ -139,7 +139,7 @@ class Endpoint(Base):
         :param url: The broker url <transport>://<user>/<pass>@<host>:<port>.
         :type url: str
         """
-        Base.__init__(self, uuid, url or Endpoint.LOCALHOST)
+        BaseEndpoint.__init__(self, uuid, url or Endpoint.LOCALHOST)
         self.__mutex = RLock()
         self.__session = None
         atexit.register(self.close)
@@ -152,7 +152,7 @@ class Endpoint(Base):
         """
         return self.uuid
 
-    def session(self):
+    def channel(self):
         """
         Get a session for the open connection.
         :return: An open session.

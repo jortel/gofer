@@ -19,6 +19,7 @@ Provides AMQP message consumer classes.
 """
 
 from time import sleep
+from threading import RLock
 from logging import getLogger
 
 from qpid.messaging import Empty
@@ -27,6 +28,7 @@ from gofer.messaging import auth
 from gofer.messaging import model
 from gofer.messaging.model import Document, search
 from gofer.transport.consumer import Ack
+from gofer.transport.model import BaseReader
 from gofer.transport.qpid.endpoint import Endpoint
 
 
@@ -50,57 +52,70 @@ def subject(message):
 # --- consumers --------------------------------------------------------------
 
 
-class Reader(Endpoint):
+class Reader(BaseReader):
     """
     An AMQP message reader.
     :ivar __opened: Indicates that open() has been called.
     :type __opened: bool
     :ivar __receiver: An AMQP receiver to read.
-    :type __receiver: Receiver
+    :type __receiver: qpid.messaging.Receiver
     """
     
-    def __init__(self, queue, **options):
+    def __init__(self, queue, uuid=None, url=None):
         """
         :param queue: The queue to consumer.
-        :type queue: gofer.transport.qpid.model.Queue
-        :param options: Options passed to Endpoint.
-        :type options: dict
+        :type queue: gofer.transport.model.BaseQueue
+        :param uuid: The endpoint uuid.
+        :type uuid: str
+        :param url: The broker url.
+        :type url: str
+        :see: gofer.transport.url.URL
         """
-        Endpoint.__init__(self, **options)
+        BaseReader.__init__(self, queue, uuid, url)
         self.queue = queue
         self.__opened = False
         self.__receiver = None
+        self.__mutex = RLock()
+        self._endpoint = Endpoint(uuid, url)
+
+    def endpoint(self):
+        """
+        Get a concrete object.
+        :return: A concrete object.
+        :rtype: BaseEndpoint
+        """
+        return self._endpoint
 
     def open(self):
         """
         Open the reader.
         """
-        Endpoint.open(self)
-        self._lock()
+        BaseReader.open(self)
+        self.__lock()
         try:
             if self.__opened:
                 return
-            session = self.session()
+            session = self.channel()
             self.__receiver = session.receiver(self.queue.name)
             self.__opened = True
         finally:
-            self._unlock()
+            self.__unlock()
     
     def close(self):
         """
         Close the reader.
         """
-        self._lock()
+        self.__lock()
         try:
             if not self.__opened:
                 return
             self.__receiver.close()
             self.__opened = False
         finally:
-            self._unlock()
-        Endpoint.close(self)
+            self.__unlock()
+        BaseReader.close(self)
 
-    def get(self, timeout):
+    def get(self, timeout=None):
         """
         Get the next message.
         :param timeout: The read timeout.
@@ -151,3 +166,9 @@ class Reader(Endpoint):
         :rtype: Document
         """
         return search(self, sn, timeout)
+
+    def __lock(self):
+        self.__mutex.acquire()
+
+    def __unlock(self):
+        self.__mutex.release()

@@ -1,7 +1,7 @@
 import os
 import logging
 
-from gofer.transport.broker import URL
+from gofer.transport.url import URL
 
 
 log = logging.getLogger(__name__)
@@ -113,7 +113,7 @@ class Binder(object):
             raise NoTransportsLoaded()
         try:
             url = URL(url)
-            Binder.urls[str(url)] = plugins[name]
+            Binder.urls[url.simple()] = plugins[name]
         except KeyError:
             raise TransportNotFound(name)
 
@@ -127,6 +127,9 @@ class Binder(object):
             url = loaded[0]
         try:
             url = URL(url)
-            return plugins[str(url)]
+            if url.transport:
+                return plugins[url.transport]
+            else:
+                return plugins[url.simple()]
         except KeyError:
             return plugins[loaded[0]]

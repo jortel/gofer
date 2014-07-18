@@ -12,8 +12,8 @@
 
 import string
 
-from gofer.transport.model import Exchange as BaseExchange
-from gofer.transport.model import Queue as BaseQueue
+from gofer.transport.model import BaseExchange
+from gofer.transport.model import BaseQueue
 from gofer.transport.qpid.endpoint import Endpoint
 
 
@@ -72,7 +72,7 @@ class Exchange(BaseExchange):
             return
         endpoint = Endpoint(url=url)
         try:
-            session = endpoint.session()
+            session = endpoint.channel()
             sender = session.sender(self.address())
             sender.close()
         finally:
@@ -152,7 +152,7 @@ class Queue(BaseQueue):
     def declare(self, url):
         endpoint = Endpoint(url=url)
         try:
-            session = endpoint.session()
+            session = endpoint.channel()
             sender = session.sender(self.address())
             sender.close()
         finally:
