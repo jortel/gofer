@@ -16,7 +16,7 @@
 from logging import getLogger
 
 from gofer.rmi.store import Pending
-from gofer.messaging import Consumer
+from gofer.messaging.factory import Consumer
 from gofer.messaging.model import Document
 from gofer.transport.factory import Transport
 from gofer.transport.model import Destination

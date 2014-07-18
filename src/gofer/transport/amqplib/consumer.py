@@ -14,9 +14,8 @@ from logging import getLogger
 
 from gofer.messaging import auth
 from gofer.messaging import model
-from gofer.messaging.model import Document, search
-from gofer.transport.consumer import Ack
-from gofer.transport.model import BaseReader
+from gofer.messaging.model import Document
+from gofer.transport.model import BaseReader, Ack, search
 from gofer.transport.amqplib.endpoint import Endpoint, reliable
 
 

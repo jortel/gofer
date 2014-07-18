@@ -18,12 +18,13 @@ Contains AMQP message producer classes.
 """
 
 from logging import getLogger
+from uuid import uuid4
 
 from qpid.messaging import Message
 
 from gofer.messaging import auth
-from gofer.messaging.model import getuuid, VERSION, Document
-from gofer.transport.model import BaseProducer, BaseBinaryProducer
+from gofer.messaging.model import VERSION, Document
+from gofer.transport.model import BaseProducer, BasePlainProducer
 from gofer.transport.qpid.endpoint import Endpoint
 
 
@@ -46,7 +47,7 @@ def send(endpoint, destination, ttl=None, **body):
     :return: The message serial number.
     :rtype: str
     """
-    sn = getuuid()
+    sn = str(uuid4())
     if destination.exchange:
         address = '/'.join((destination.exchange, destination.routing_key))
     else:
@@ -119,9 +120,9 @@ class Producer(BaseProducer):
         return sns
 
 
-class BinaryProducer(BaseBinaryProducer):
+class PlainProducer(BasePlainProducer):
     """
-    An binary AMQP message producer.
+    An Plain AMQP message producer.
     """
 
     def __init__(self, url=None):
@@ -129,7 +130,7 @@ class BinaryProducer(BaseBinaryProducer):
         :param url: The broker url.
         :type url: str
         """
-        BaseBinaryProducer.__init__(self, url)
+        BasePlainProducer.__init__(self, url)
         self._endpoint = Endpoint(url)
 
     def endpoint(self):
@@ -158,7 +159,7 @@ class BinaryProducer(BaseBinaryProducer):
         sender = self.channel().sender(address)
         sender.send(message)
         sender.close()
-        log.debug('sent (%s) <binary>', destination)
+        log.debug('sent (%s) <Plain>', destination)
 
     def broadcast(self, destinations, content, ttl=None):
         """

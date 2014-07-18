@@ -15,10 +15,12 @@
 
 
 import socket
+
 from threading import Thread
-from gofer.messaging.model import getuuid
+from uuid import uuid4
+
 from gofer.messaging.factory import Consumer
-from gofer.transport.model import Queue, Reader, Producer, BinaryProducer
+from gofer.transport.model import Queue, Reader, Producer, PlainProducer
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -82,7 +84,8 @@ class Gateway(Thread):
                 log.exception(address)
     
     def accepted(self, sock):
-        queue = Queue(getuuid(), self.url)
+        uuid = str(uuid4())
+        queue = Queue(uuid, self.url)
         p = Producer(self.url)
         try:
             peer = queue.destination(self.url)
@@ -157,7 +160,7 @@ class TunnelWriter(Thread):
         self.setDaemon(True)
     
     def run(self):
-        p = BinaryProducer(self.url)
+        p = PlainProducer(self.url)
         try:
             while True:
                 content = self.__read()

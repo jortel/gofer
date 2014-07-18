@@ -18,8 +18,9 @@ Contains request delivery policies.
 """
 
 from logging import getLogger
+from uuid import uuid4
 
-from gofer.messaging.model import Document, InvalidDocument, getuuid
+from gofer.messaging.model import Document, InvalidDocument
 from gofer.transport.model import Producer, Reader, Queue, Destination
 from gofer.rmi.dispatcher import Return, RemoteException
 from gofer.metrics import Timer
@@ -406,7 +407,7 @@ class Trigger:
         :keyword any: Any (extra) data.
         """
         self.__pending = True
-        self.__sn = getuuid()
+        self.__sn = str(uuid4())
         self.__policy = policy
         self.__destination = destination
         self.__request = request

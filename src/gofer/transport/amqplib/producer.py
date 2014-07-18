@@ -10,12 +10,13 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 from logging import getLogger
+from uuid import uuid4
 
 from amqplib.client_0_8 import Message
 
 from gofer.messaging import auth
-from gofer.messaging.model import getuuid, VERSION, Document
-from gofer.transport.model import BaseProducer, BaseBinaryProducer
+from gofer.messaging.model import VERSION, Document
+from gofer.transport.model import BaseProducer, BasePlainProducer
 from gofer.transport.amqplib.endpoint import Endpoint, reliable
 
 
@@ -46,7 +47,7 @@ def send(endpoint, destination, ttl=None, **body):
     :return: The message serial number.
     :rtype: str
     """
-    sn = getuuid()
+    sn = str(uuid4())
     routing_key = destination.routing_key
     routing = (endpoint.id(), routing_key)
     document = Document(sn=sn, version=VERSION, routing=routing)
@@ -115,14 +116,14 @@ class Producer(BaseProducer):
         return sns
 
 
-class BinaryProducer(BaseBinaryProducer):
+class PlainProducer(BasePlainProducer):
 
     def __init__(self, url=None):
         """
         :param url: The broker url.
         :type url: str
         """
-        BaseBinaryProducer.__init__(self, url)
+        BasePlainProducer.__init__(self, url)
         self._endpoint = Endpoint(url)
 
     def endpoint(self):
@@ -139,7 +140,7 @@ class BinaryProducer(BaseBinaryProducer):
         channel = self.channel()
         m = message(content, ttl)
         channel.basic_publish(m, exchange=destination.exchange, routing_key=routing_key)
-        log.debug('sent (%s) <binary>', destination)
+        log.debug('sent (%s) <Plain>', destination)
 
     @reliable
     def broadcast(self, destinations, content, ttl=None):

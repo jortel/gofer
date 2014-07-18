@@ -10,12 +10,13 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 from threading import local as Local
+from logging import getLogger
+
+from uuid import uuid4
 
 from gofer import Singleton
 from gofer.transport.url import URL
 from gofer.transport.factory import Transport
-
-from gofer.messaging.model import getuuid
 
 # routing key
 ROUTE_ALL = '#'
@@ -25,6 +26,39 @@ DIRECT = 'direct'
 TOPIC = 'topic'
 
 DEFAULT_URL = 'amqp://localhost'
+
+
+log = getLogger(__name__)
+
+
+# --- utils ------------------------------------------------------------------
+
+
+def search(reader, sn, timeout=90):
+    """
+    Search the reply queue for the document with the matching serial #.
+    :param sn: The expected serial number.
+    :type sn: str
+    :param timeout: The read timeout.
+    :type timeout: int
+    :return: The next document.
+    :rtype: Document
+    """
+    log.debug('searching for: sn=%s', sn)
+    while True:
+        document, ack = reader.next(timeout)
+        if document:
+            ack()
+        else:
+            return
+        if sn == document.sn:
+            log.debug('search found: %s', document)
+            return document
+        else:
+            log.debug('search discarding: %s', document)
+            
+            
+# --- object -----------------------------------------------------------------
 
 
 class Destination(object):
@@ -297,7 +331,7 @@ class BaseEndpoint(object):
         :type url: str
         """
         self.url = url
-        self.uuid = getuuid()
+        self.uuid = str(uuid4())
         self.authenticator = None
 
     def id(self):
@@ -578,9 +612,9 @@ class Producer(BaseProducer):
         return self._impl.broadcast(destinations, ttl, **body)
 
 
-class BaseBinaryProducer(BaseEndpoint):
+class BasePlainProducer(BaseEndpoint):
     """
-    An binary AMQP message producer.
+    An plain AMQP message producer.
     """
 
     def send(self, destination, content, ttl=None):
@@ -606,9 +640,9 @@ class BaseBinaryProducer(BaseEndpoint):
         raise NotImplementedError()
 
 
-class BinaryProducer(BaseBinaryProducer):
+class PlainProducer(BasePlainProducer):
     """
-    An binary AMQP message producer.
+    An plain AMQP message producer.
     """
 
     def __init__(self, url=DEFAULT_URL):
@@ -616,9 +650,9 @@ class BinaryProducer(BaseBinaryProducer):
         :param url: The broker url <transport>://<user>:<pass>@<host>:<port>/<virtual-host>.
         :type url: str
         """
-        BaseBinaryProducer.__init__(self, url)
+        BasePlainProducer.__init__(self, url)
         plugin = Transport.find(url)
-        self._impl = plugin.BinaryProducer(url)
+        self._impl = plugin.PlainProducer(url)
 
     def channel(self):
         """
@@ -832,3 +866,16 @@ class Broker(BaseBroker):
         Close the connection to the broker.
         """
         self._impl.close()
+        
+        
+# --- ACK --------------------------------------------------------------------
+
+
+class Ack:
+
+    def __init__(self, endpoint, message):
+        self.endpoint = endpoint
+        self.message = message
+
+    def __call__(self):
+        self.endpoint.ack(self.message)

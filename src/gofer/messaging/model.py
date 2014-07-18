@@ -14,7 +14,6 @@ try:
 except ImportError:
     import json
 
-from uuid import uuid4
 from logging import getLogger
 
 
@@ -72,10 +71,6 @@ class InvalidVersion(InvalidDocument):
 # --- utils ------------------------------------------------------------------
 
 
-def getuuid():
-    return str(uuid4())
-
-
 def validate(document):
     """
     Determine whether the specified document is valid.
@@ -87,30 +82,6 @@ def validate(document):
         reason = 'Invalid version %s/%s' % (document.version, VERSION)
         log.warn(reason)
         raise InvalidVersion(document.sn, reason)
-
-
-def search(reader, sn, timeout=90):
-    """
-    Search the reply queue for the document with the matching serial #.
-    :param sn: The expected serial number.
-    :type sn: str
-    :param timeout: The read timeout.
-    :type timeout: int
-    :return: The next document.
-    :rtype: Document
-    """
-    log.debug('searching for: sn=%s', sn)
-    while True:
-        document, ack = reader.next(timeout)
-        if document:
-            ack()
-        else:
-            return
-        if sn == document.sn:
-            log.debug('search found: %s', document)
-            return document
-        else:
-            log.debug('search discarding: %s', document)
 
 
 # --- model ------------------------------------------------------------------

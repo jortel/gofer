@@ -11,7 +11,101 @@
 
 from gofer.transport.model import Reader
 
-from gofer.transport.consumer import Consumer as BaseConsumer
+
+from threading import Thread
+from logging import getLogger
+
+from gofer.messaging import auth
+from gofer.messaging import model
+
+
+log = getLogger(__name__)
+
+
+class BaseConsumer(Thread):
+    """
+    An AMQP (abstract) consumer.
+    """
+
+    def __init__(self, reader):
+        """
+        :param reader: An AMQP queue reader.
+        :type reader: gofer.transport.model.Reader
+        """
+        Thread.__init__(self, name=reader.queue.name)
+        self.reader = reader
+        self._run = True
+        self.setDaemon(True)
+
+    def stop(self):
+        """
+        Stop processing documents.
+        """
+        self._run = False
+
+    def run(self):
+        """
+        Main consumer loop.
+        """
+        self.reader.open()
+        try:
+            while self._run:
+                self.__read()
+        finally:
+            self.reader.close()
+
+    def __read(self):
+        """
+        Read and process incoming documents.
+        """
+        try:
+            document, ack = self.reader.next(10)
+            if document is None:
+                return
+            log.debug('{%s} read: %s', self.getName(), document)
+            self.dispatch(document)
+            ack()
+        except auth.ValidationFailed, vf:
+            self.message_rejected(vf.code, vf.document, vf.details)
+        except model.InvalidDocument, ir:
+            self.document_rejected(ir.code, ir.document, ir.details)
+        except Exception:
+            log.exception(self.getName())
+
+    def message_rejected(self, code, message, details):
+        """
+        Called to process the received (invalid) AMQP message.
+        This method intended to be overridden by subclasses.
+        :param code: The validation code.
+        :type code: str
+        :param message: The received document.
+        :type message: str
+        :param details: The explanation.
+        :type details: str
+        """
+        log.debug('%s, reason: %s %s', code, details, message)
+
+    def document_rejected(self, code, document, details):
+        """
+        Called to process the received (invalid) document.
+        This method intended to be overridden by subclasses.
+        :param code: The validation code.
+        :type code: str
+        :param document: The received document.
+        :type document: Document
+        :param details: The explanation.
+        :type details: str
+        """
+        log.debug('%s, reason: %s %s', code, details, document)
+
+    def dispatch(self, document):
+        """
+        Called to process the received document.
+        This method intended to be overridden by subclasses.
+        :param document: The received document.
+        :type document: Document
+        """
+        log.debug('dispatched: %s', document)
 
 
 class Consumer(BaseConsumer):
