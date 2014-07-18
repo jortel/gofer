@@ -77,8 +77,6 @@ class Stub:
     The stub class for remote objects.
     :ivar __url: The agent URL.
     :type __url: str
-    :param __transport: The AMQP transport.
-    :type __transport: str
     :ivar __destination: The AMQP destination
     :type __destination: gofer.transport.model.Destination
     :ivar __options: Stub options.
@@ -90,15 +88,13 @@ class Stub:
     """
     
     @classmethod
-    def stub(cls, name, url, transport, destination, options):
+    def stub(cls, name, url, destination, options):
         """
         Factory method.
         :param name: The stub class (or module) name.
         :type name: str
         :param url: The agent URL.
         :type url: str
-        :param transport: The AMQP transport.
-        :type transport: str
         :param destination: The AMQP destination
         :type destination: gofer.transport.model.Destination
         :param options: A dict of gofer options
@@ -107,22 +103,19 @@ class Stub:
         :rtype: Stub
         """
         subclass = classobj(name, (Stub,), {})
-        inst = subclass(url, transport, destination, options)
+        inst = subclass(url, destination, options)
         return inst
 
-    def __init__(self, url, transport, destination, options):
+    def __init__(self, url, destination, options):
         """
         :param url: The agent URL.
         :type url: str
-        :param transport: The AMQP transport.
-        :type transport: str
         :param destination: The AMQP destination
         :type destination: str
         :param options: Stub options.
         :type options: Options
         """
         self.__url = url
-        self.__transport = transport
         self.__destination = destination
         self.__options = Options(options)
         self.__called = (0, None)
@@ -234,7 +227,7 @@ class Stub:
         Get the request policy based on options.
         The policy is cached for performance.
         :return: The request policy.
-        :rtype: Policy
+        :rtype: gofer.rmi.policy.RequestMethod
         """
         if self.__policy is None:
             self.__setpolicy()
@@ -245,11 +238,9 @@ class Stub:
         Set the request policy based on options.
         """
         if self.__async():
-            self.__policy = \
-                Asynchronous(self.__url, self.__transport, self.__options)
+            self.__policy = Asynchronous(self.__url, self.__options)
         else:
-            self.__policy = \
-                Synchronous(self.__url, self.__transport, self.__options)
+            self.__policy = Synchronous(self.__url, self.__options)
 
     def __async(self):
         """

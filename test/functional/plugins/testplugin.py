@@ -21,8 +21,8 @@ from logging import getLogger
 from gofer.decorators import *
 from gofer.agent.plugin import Plugin
 from gofer.agent.rmi import Context
-from gofer.messaging import Producer, Exchange, Destination
 from gofer.messaging.auth import Authenticator, ValidationFailed
+from gofer.transport.model import Producer, Destination
 
 log = getLogger(__name__)
 plugin = Plugin.find(__name__)
@@ -239,7 +239,7 @@ class Progress:
 
 
 @action(minutes=5)
-def testAction():
+def test_action():
     log.info('Testing')
 
 
@@ -256,12 +256,10 @@ class Heartbeat:
     def send(self):
         delay = int(HEARTBEAT)
         url = plugin.get_url()
-        transport = plugin.get_transport()
-        topic = Exchange.topic(transport=transport)
-        destination = Destination('heartbeat', exchange=topic.name)
+        destination = Destination('heartbeat', exchange='amq.topic')
         myid = plugin.getuuid()
         if myid:
-            with Producer(url=url, transport=transport) as p:
+            with Producer(url) as p:
                 body = dict(uuid=myid, next=delay)
                 p.send(destination, ttl=delay, heartbeat=body)
         return myid

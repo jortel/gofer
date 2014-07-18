@@ -562,7 +562,7 @@ class Producer(BaseProducer):
         :return: The message serial number.
         :rtype: str
         """
-        self._impl.send(destination, ttl, **body)
+        return self._impl.send(destination, ttl, **body)
 
     def broadcast(self, destinations, ttl=None, **body):
         """
@@ -575,7 +575,7 @@ class Producer(BaseProducer):
         :return: A list of (addr,sn).
         :rtype: list
         """
-        self._impl.broadcast(destinations, ttl, **body)
+        return self._impl.broadcast(destinations, ttl, **body)
 
 
 class BaseBinaryProducer(BaseEndpoint):
@@ -656,7 +656,7 @@ class BinaryProducer(BaseBinaryProducer):
         :param ttl: Time to Live (seconds)
         :type ttl: float
         """
-        self._impl.send(destination, content, ttl=ttl)
+        return self._impl.send(destination, content, ttl=ttl)
 
     def broadcast(self, destinations, content, ttl=None):
         """
@@ -666,7 +666,7 @@ class BinaryProducer(BaseBinaryProducer):
         :param content: The message content
         :type content: buf
         """
-        self._impl.send(destinations, content, ttl=ttl)
+        return self._impl.send(destinations, content, ttl=ttl)
 
 
 # --- broker -----------------------------------------------------------------

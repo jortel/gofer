@@ -38,7 +38,6 @@ AGENT_SCHEMA = (
             ('cacert', OPTIONAL, ANY),
             ('clientcert', OPTIONAL, ANY),
             ('host_validation', OPTIONAL, BOOL),
-            ('transport', OPTIONAL, ANY),
         )
     ),
     ('pam', REQUIRED,
@@ -65,7 +64,6 @@ PLUGIN_SCHEMA = (
             ('cacert', OPTIONAL, ANY),
             ('clientcert', OPTIONAL, ANY),
             ('validation', OPTIONAL, BOOL),
-            ('transport', OPTIONAL, ANY),
             ('threads', OPTIONAL, NUMBER),
         )
     ),

@@ -30,5 +30,4 @@ def agent(uuid, **options):
     :rtype: Container
     """
     url = options.pop('url', None)
-    transport = options.pop('transport', None)
-    return Container(uuid, url, transport, **options)
+    return Container(uuid, url, **options)

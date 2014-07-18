@@ -33,8 +33,8 @@ from gofer.agent.config import AgentConfig
 from gofer.config import Config, Graph, get_bool
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
-from gofer.transport import Transport
 from gofer.collator import Module
+from gofer.transport.model import Broker, Queue
 
 
 log = getLogger(__name__)
@@ -198,7 +198,7 @@ class Plugin(object):
         """
         Get the broker for this plugin.
         :return: The configured broker.
-        :rtype: gofer.transport.broker.Broker
+        :rtype: gofer.transport.model.Broker
         """
         return self.update_broker()
 
@@ -218,33 +218,16 @@ class Plugin(object):
         """
         self.descriptor.messaging.url = url
 
-    def get_transport(self):
-        """
-        Get the AMQP transport for the plugin.
-        :return: The transport.
-        :rtype: str
-        """
-        agent = AgentConfig()
-        plugin = self.descriptor
-        return plugin.messaging.transport or agent.messaging.transport
-
     def update_broker(self):
         """
         Update the broker configuration using the plugin configuration.
         :return: The updated broker.
-        :rtype: gofer.transport.broker.Broker
+        :rtype: gofer.transport.model.Broker
         """
         agent = AgentConfig()
         plugin = self.descriptor
         url = self.get_url()
-        tp = Transport(self.get_transport())
-        broker = tp.broker(url)
-        broker.virtual_host = \
-            plugin.messaging.virtual_host or agent.messaging.virtual_host
-        broker.userid = \
-            plugin.messaging.userid or agent.messaging.userid
-        broker.password = \
-            plugin.messaging.password or agent.messaging.password
+        broker = Broker(url)
         broker.cacert = \
             plugin.messaging.cacert or agent.messaging.cacert
         broker.clientcert = \
@@ -264,12 +247,10 @@ class Plugin(object):
         if not uuid:
             uuid = self.get_uuid()
         url = self.get_url()
-        transport = self.get_transport()
         if uuid and url:
             self.update_broker()
-            tp = Transport(transport)
-            queue = tp.queue(uuid)
-            consumer = RequestConsumer(queue, url=url, transport=transport)
+            queue = Queue(uuid)
+            consumer = RequestConsumer(queue, url)
             consumer.reader.authenticator = self.authenticator
             consumer.start()
             log.info('plugin uuid="%s", attached', uuid)

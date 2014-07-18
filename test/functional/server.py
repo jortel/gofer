@@ -29,7 +29,7 @@ from gofer.rmi.dispatcher import *
 from gofer.rmi.async import ReplyConsumer
 from gofer.metrics import Timer
 from gofer.proxy import Agent as RealAgent
-from gofer.messaging import Queue
+from gofer.transport.model import Queue
 from gofer.messaging.auth import Authenticator, ValidationFailed
 
 from plugins import *
@@ -39,6 +39,7 @@ basicConfig(filename='/opt/gofer/server.log')
 log = getLogger(__name__)
 
 getLogger('gofer.transport').setLevel(DEBUG)
+getLogger('gofer.messaging').setLevel(DEBUG)
 
 
 class Agent(object):
@@ -485,7 +486,6 @@ def get_options():
     parser.add_option('-u', '--url', help='broker URL')
     parser.add_option('-t', '--threads', default=0, help='number of threads')
     parser.add_option('-U', '--user', action='extend', help='list of userid:password')
-    parser.add_option('-T', '--transport', default='qpid', help='transport (qpid|amqplib)')
     parser.add_option('-a', '--auth', default='', help='enable message auth')
     opts, args = parser.parse_args()
     return opts
@@ -502,20 +502,17 @@ if __name__ == '__main__':
 
     url = options.url
 
-    transport = options.transport or 'qpid'
-
     if options.auth:
         authenticator = TestAuthenticator()
     else:
         authenticator = None
 
     Agent.base_options['url'] = url
-    Agent.base_options['transport'] = transport
     Agent.base_options['authenticator'] = authenticator
 
-    queue = Queue(uuid.upper(), transport=transport)
+    queue = Queue(uuid.upper())
     queue.declare(url)
-    reply_consumer = ReplyConsumer(queue, url=url, transport=transport, authenticator=authenticator)
+    reply_consumer = ReplyConsumer(queue, url=url, authenticator=authenticator)
     reply_consumer.start(on_reply)
 
     # demo_progress(uuid, 1)

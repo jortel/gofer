@@ -69,7 +69,7 @@ root = getLogger()
 root.addHandler(log_handler)
 
 
-def install_plugins(url, transport, uuid, threads, auth):
+def install_plugins(url, uuid, threads, auth):
     root = os.path.dirname(__file__)
     dir = os.path.join(root, 'plugins')
     for fn in os.listdir(dir):
@@ -79,7 +79,6 @@ def install_plugins(url, transport, uuid, threads, auth):
             pd = PluginDescriptor(conf)
             if pd.messaging.uuid == 'TEST':
                 pd.messaging.url = url
-                pd.messaging.transport = transport
                 pd.messaging.uuid = uuid
                 pd.messaging.threads = threads
                 pd.messaging.auth = auth
@@ -97,13 +96,13 @@ def install_plugins(url, transport, uuid, threads, auth):
             continue
 
 
-def install(url, transport, uuid, threads, auth):
+def install(url, uuid, threads, auth):
     PluginDescriptor.ROOT = os.path.join(ROOT, 'plugins')
     PluginLoader.PATH = [os.path.join(ROOT, 'lib/plugins')]
     for path in (PluginDescriptor.ROOT, PluginLoader.PATH[0]):
         if not os.path.exists(path):
             os.makedirs(path)
-    install_plugins(url, transport, uuid, threads, auth)
+    install_plugins(url, uuid, threads, auth)
 
 
 def get_options():
@@ -111,7 +110,6 @@ def get_options():
     parser.add_option('-i', '--uuid', default='xyz', help='agent UUID')
     parser.add_option('-u', '--url', help='broker URL')
     parser.add_option('-t', '--threads', default='3', help='number of threads')
-    parser.add_option('-T', '--transport', default='qpid', help='transport (qpid|amqplib)')
     parser.add_option('-a', '--auth', default='', help='enable message auth')
     opts, args = parser.parse_args()
     return opts
@@ -119,9 +117,9 @@ def get_options():
 
 class TestAgent:
 
-    def __init__(self, url, transport, uuid, threads, auth):
+    def __init__(self, url, uuid, threads, auth):
         setup_logging()
-        install(url, transport, uuid, threads, auth)
+        install(url, uuid, threads, auth)
         plugins = PluginLoader.load()
         agent = Agent(plugins)
         agent.start(False)
@@ -135,7 +133,6 @@ if __name__ == '__main__':
     uuid = options.uuid
     url = options.url or 'tcp://localhost:5672'
     threads = int(options.threads)
-    transport = options.transport
     auth = options.auth
-    print 'starting agent, threads=%d, transport=%s, url=%s' % (threads, transport, url)
-    agent = TestAgent(url, transport, uuid, threads, auth)
+    print 'starting agent, threads=%d, url=%s' % (threads, url)
+    agent = TestAgent(url, uuid, threads, auth)

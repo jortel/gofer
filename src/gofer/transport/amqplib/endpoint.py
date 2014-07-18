@@ -51,7 +51,7 @@ def reliable(fn):
 
 def endpoint(fn):
     def _fn(url):
-        _endpoint = Endpoint(url=url)
+        _endpoint = Endpoint(url)
         try:
             return fn(_endpoint)
         finally:

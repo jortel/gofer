@@ -20,9 +20,8 @@ Contains request delivery policies.
 from logging import getLogger
 
 from gofer.messaging.model import Document, InvalidDocument, getuuid
-from gofer.messaging import Destination
+from gofer.transport.model import Producer, Reader, Queue, Destination
 from gofer.rmi.dispatcher import Return, RemoteException
-from gofer.transport import Transport
 from gofer.metrics import Timer
 
 
@@ -127,19 +126,14 @@ class RequestMethod:
     Base class for request methods.
     :ivar url: The agent URL.
     :type url: str
-    :ivar transport: The AMQP transport.
-    :type transport: str
     """
     
-    def __init__(self, url, transport):
+    def __init__(self, url):
         """
         :param url: The agent URL.
         :type url: str
-        :param transport: The AMQP transport.
-        :type transport: str
         """
         self.url = url
-        self.transport = transport
 
     def send(self, destination, request, **any):
         """
@@ -156,7 +150,7 @@ class RequestMethod:
         """
         Broadcast the request.
         :param addresses: A list of destination AMQP queues.
-        :type addresses: [gofer.transport.node.Destination,..]
+        :type addresses: [gofer.transport.model.Destination,..]
         :param request: A request to send.
         :type request: object
         :keyword any: Any (extra) data.
@@ -172,21 +166,18 @@ class Synchronous(RequestMethod):
     :type queue: gofer.transport.model.Queue
     """
 
-    def __init__(self, url, transport, options):
+    def __init__(self, url, options):
         """
         :param url: The agent URL.
         :type url: str
-        :param transport: The AMQP transport.
-        :type transport: str
         :param options: Policy options.
-        :type options: dict
+        :type options: gofer.messaging.model.Options
         """
-        tp = Transport(transport)
-        RequestMethod.__init__(self, url, transport)
+        RequestMethod.__init__(self, url)
         self.timeout = Timeout.seconds(options.timeout or 10)
         self.wait = Timeout.seconds(options.wait or 90)
         self.progress = options.progress
-        self.queue = tp.queue(getuuid())
+        self.queue = Queue(url)
         self.authenticator = options.authenticator
         self.queue.auto_delete = True
         self.queue.declare(self.url)
@@ -203,11 +194,10 @@ class Synchronous(RequestMethod):
         :rtype: object
         :raise Exception: returned by the peer.
         """
-        tp = Transport(self.transport)
-        replyto = self.queue.destination()
-        producer = tp.producer(url=self.url)
+        replyto = self.queue.destination(self.url)
+        producer = Producer(self.url)
         producer.authenticator = self.authenticator
-        queue = tp.queue(destination.routing_key)
+        queue = Queue(destination.routing_key)
         queue.declare(self.url)
         try:
             sn = producer.send(
@@ -219,7 +209,7 @@ class Synchronous(RequestMethod):
         finally:
             producer.close()
         log.debug('sent (%s): %s', repr(destination), request)
-        reader = tp.reader(self.url, self.queue)
+        reader = Reader(self.queue, self.url)
         reader.authenticator = self.authenticator
         try:
             self.__get_accepted(sn, reader)
@@ -320,16 +310,14 @@ class Asynchronous(RequestMethod):
     The asynchronous request method.
     """
 
-    def __init__(self, url, transport, options):
+    def __init__(self, url, options):
         """
         :param url: The agent URL.
         :type url: str
-        :param transport: The AMQP transport.
-        :type transport: str
         :param options: Policy options.
-        :type options: dict
+        :type options: gofer.messaging.model.Options
         """
-        RequestMethod.__init__(self, url, transport)
+        RequestMethod.__init__(self, url)
         self.ctag = options.ctag
         self.timeout = Timeout.seconds(options.timeout)
         self.trigger = options.trigger
@@ -439,14 +427,13 @@ class Trigger:
         object and generated serial number.
         """
         policy = self.__policy
-        tp = Transport(policy.transport)
         destination = self.__destination
         replyto = policy.replyto()
         request = self.__request
         any = self.__any
-        producer = tp.producer(url=policy.url)
+        producer = Producer(policy.url)
         producer.authenticator = policy.authenticator
-        queue = tp.queue(destination.routing_key)
+        queue = Queue(destination.routing_key)
         queue.declare(policy.url)
         try:
             producer.send(

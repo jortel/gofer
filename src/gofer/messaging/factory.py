@@ -29,7 +29,7 @@ class Consumer(BaseConsumer):
         :param url: The broker URL.
         :type url: str
         """
-        BaseConsumer.__init__(self, Reader(queue, url=url))
+        BaseConsumer.__init__(self, Reader(queue, url))
         self.url = url
         self.queue = queue
         queue.declare(url)

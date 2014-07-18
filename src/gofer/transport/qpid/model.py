@@ -70,7 +70,7 @@ class Exchange(BaseExchange):
     def declare(self, url):
         if not self.policy:
             return
-        endpoint = Endpoint(url=url)
+        endpoint = Endpoint(url)
         try:
             session = endpoint.channel()
             sender = session.sender(self.address())
@@ -150,7 +150,7 @@ class Queue(BaseQueue):
             return ''
 
     def declare(self, url):
-        endpoint = Endpoint(url=url)
+        endpoint = Endpoint(url)
         try:
             session = endpoint.channel()
             sender = session.sender(self.address())

@@ -36,18 +36,16 @@ class ReplyConsumer(Consumer):
     :type blacklist: set
     """
 
-    def __init__(self, queue, url=None, transport=None, authenticator=None):
+    def __init__(self, queue, url=None, authenticator=None):
         """
         :param queue: The AMQP node.
         :type queue: gofer.transport.model.Queue
         :param url: The broker URL.
         :type url: str
-        :param transport: An AMQP transport.
-        :type transport: str
         :param authenticator: A message authenticator.
         :type authenticator: gofer.messaging.auth.Authenticator
         """
-        Consumer.__init__(self, queue, url=url, transport=transport)
+        Consumer.__init__(self, queue, url)
         self.reader.authenticator = authenticator
         self.listener = None
         self.blacklist = set()

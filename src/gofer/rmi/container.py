@@ -20,10 +20,9 @@ Agent base classes.
 from logging import getLogger
 
 from gofer.messaging.model import Options
-from gofer.messaging import Destination
+from gofer.transport.model import Destination
 from gofer.rmi.stub import Stub
 from gofer.rmi.window import Window
-from gofer.transport import Transport
 
 
 log = getLogger(__name__)
@@ -36,30 +35,23 @@ class Container:
     :type __id: str
     :ivar __url: The peer URL.
     :type __url: str
-    :ivar __transport: The AMQP transport.
-    :type __transport: str
     :ivar __options: Container options.
     :type __options: Options
     """
 
-    def __init__(self, uuid, url, transport, **options):
+    def __init__(self, uuid, url, **options):
         """
         :param uuid: The peer ID.
         :type uuid: str
         :param url: The agent URL.
         :type url: str
-        :param transport: The AMQP transport package.
-        :type transport: str
         :param options: keyword options.  See documentation.
         :type options: dict
         """
         self.__id = uuid
         self.__url = url
-        self.__transport = transport
         self.__options = Options(window=Window())
         self.__options += options
-        # validation
-        Transport(transport)
 
     def __destination(self):
         """
@@ -87,7 +79,6 @@ class Container:
         return Stub.stub(
             name,
             self.__url,
-            self.__transport,
             self.__destination(),
             self.__options)
         

@@ -17,7 +17,8 @@
 import socket
 from threading import Thread
 from gofer.messaging.model import getuuid
-from gofer.messaging import Queue, Reader, Consumer, Producer, BinaryProducer
+from gofer.messaging.factory import Consumer
+from gofer.transport.model import Queue, Reader, Producer, BinaryProducer
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -34,7 +35,7 @@ class Bridge(Consumer):
     HOST = socket.gethostname()
     
     def __init__(self, url, uuid, port, host=HOST):
-        Consumer.__init__(self, Queue(uuid), url=url)
+        Consumer.__init__(self, Queue(uuid), url)
         self.uuid = uuid
         self.port = port
         self.host = host
@@ -43,13 +44,13 @@ class Bridge(Consumer):
         peer = env.peer
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((self.host, self.port))
-        p = Producer(url=self.url)
+        p = Producer(self.url)
         try:
-            peer = self.queue.destination()
+            peer = self.queue.destination(self.url)
             p.send(env.peer, peer=peer.dict())
         finally:
             p.close()
-        r = Reader(self.queue, url=self.url)
+        r = Reader(self.queue, self.url)
         try:
             tr = TunnelReader(r, sock)
             tr.start()
@@ -81,14 +82,14 @@ class Gateway(Thread):
                 log.exception(address)
     
     def accepted(self, sock):
-        queue = Queue(getuuid(), url=self.url)
-        p = Producer(url=self.url)
+        queue = Queue(getuuid(), self.url)
+        p = Producer(self.url)
         try:
-            peer = queue.destination()
+            peer = queue.destination(self.url)
             p.send(self.peer, peer=peer.dict())
         finally:
             p.close()
-        r = Reader(queue, url=self.url)
+        r = Reader(queue, self.url)
         try:
             env = r.next()
             tr = TunnelReader(r, sock)
@@ -156,7 +157,7 @@ class TunnelWriter(Thread):
         self.setDaemon(True)
     
     def run(self):
-        p = BinaryProducer(url=self.url)
+        p = BinaryProducer(self.url)
         try:
             while True:
                 content = self.__read()

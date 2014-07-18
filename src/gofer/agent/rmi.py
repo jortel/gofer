@@ -22,9 +22,8 @@ from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import Pending
 from gofer.rmi.dispatcher import Return, PluginNotFound
 from gofer.rmi.threadpool import Direct
-from gofer.transport import Transport
 from gofer.messaging.model import Document
-from gofer.transport.model import Destination
+from gofer.transport.model import Producer, Destination
 from gofer.metrics import Timer
 
 
@@ -169,8 +168,7 @@ class Task:
         :rtype: Producer
         """
         url = self.plugin.get_url()
-        tp = Transport(self.plugin.get_transport())
-        producer = tp.producer(url=url)
+        producer = Producer(url)
         producer.authenticator = self.plugin.authenticator
         return producer
 
@@ -181,17 +179,13 @@ class TrashPlugin:
     Used when the appropriate plugin cannot be found.
     """
 
-    def __init__(self, url, transport):
+    def __init__(self, url):
         self.url = url
-        self.transport = transport
         self.authenticator = None
         self.pool = Direct()
 
     def get_url(self):
         return self.url
-
-    def get_transport(self):
-        return self.transport
     
     def dispatch(self, request):
         try:
@@ -259,19 +253,17 @@ class Scheduler(Thread):
             if plugin.get_uuid() == uuid:
                 return plugin
         log.info('plugin not found for uuid=%s', uuid)
-        return TrashPlugin(request.inbound_url, request.inbound_transport)
+        return TrashPlugin(request.inbound_url)
     
 
 class Context:
     """
     Remote method invocation context.
     Provides call context to method implementations.
-    :cvar current: The current call context.
-    :type current: Local
     """
     
-    @classmethod
-    def current(cls):
+    @staticmethod
+    def current():
         return Task.context
 
 

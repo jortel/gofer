@@ -56,20 +56,20 @@ Defines messaging properties:
 
 - **url** - The broker connection URL.
   No value indicates that gofer should **not** connect to the broker.
-  *format*: *<protocol>://<user>:<password>@<host>:<port>/<virtual-host>*, protocol is one of:
+  *format*: *<transport>+<protocol>://<user>:<password>@<host>:<port>/<virtual-host>*,
+  protocol is one of:
 
    - **tcp**:   non-SSL protocol
    - **amqp**:  non-SSL protocol
    - **ssl**:   SSL protocol
    - **amqps**: SSL protocol
 
-  The <user>:<password> and /<virtual-host> are optional. The <port> is optional and defaults
-  based on the protocol when not specified:
+  The <transport>, <user>:<password> and /<virtual-host> are optional. The <port> is
+  optional and defaults based on the protocol when not specified:
 
    - (amqp|tcp)  port:5672
    - (amqps|ssl) port:5671
 
-- **transport** - The transport used to connect to the specified broker.
 - **cacert** - The (optional) SSL CA certificate used to validate the server certificate.
 - **virtual_host** - The (optional) broker virtual host.
 - **clientcert** - The (optional) SSL client certificate.
@@ -86,7 +86,6 @@ Example:
 
  [messaging]
  url = tcp://localhost:5672
- transport: amqplib
  cacert = /etc/pki/qpid/ca/ca.crt
  clientcert = /etc/pki/qpid/client/client.pem
 
@@ -123,12 +122,11 @@ Defines basic plugin properties.
   This value may be overridden by an *identity* plugin.
 - **'url** - The (optional) QPID connection URL.
   No value indicates the plugin should **not** connect to broker.
-  format:  *<protocol>://<host>:<port>*, protocol is one of:
+  format:  *<transport>+<protocol>://<user>:<password>@<host>:<port>/<virtual-host>*, protocol is one of:
   - **tcp**: non-SSL protocol
   - **amqp**: non-SSL protocol
   - **ssl**: SSL protocol
   - **amqps**: SSL protocol
-- **transport** - The transport used to connect to the specified broker.
 - **cacert** - The (optional) SSL CA certificate used to validate the server certificate.
 - **clientcert** - The (optional) SSL client certificate.  A (PEM) file containing **both**
   the private key and certificate.
