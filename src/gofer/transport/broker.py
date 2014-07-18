@@ -75,9 +75,6 @@ class Broker:
             url = URL(url)
         self.url = url
         self.connection = Local()
-        self.host = url.host
-        self.port = url.port
-        self.transport = url.transport
         self.cacert = None
         self.clientcert = None
         self.host_validation = False
@@ -92,6 +89,42 @@ class Broker:
         :rtype: str
         """
         return self.url.simple()
+
+    @property
+    def transport(self):
+        """
+        Get the (gofer) transport component of the url.
+        :return: The transport component.
+        :rtype: str
+        """
+        return self.url.transport
+
+    @property
+    def scheme(self):
+        """
+        Get the scheme component of the url.
+        :return: The scheme component.
+        :rtype: str
+        """
+        return self.url.scheme
+
+    @property
+    def host(self):
+        """
+        Get the host component of the url.
+        :return: The host component.
+        :rtype: str
+        """
+        return self.url.host
+
+    @property
+    def port(self):
+        """
+        Get the port component of the url.
+        :return: The port component.
+        :rtype: str
+        """
+        return self.url.port
 
     def connect(self):
         """
@@ -110,7 +143,8 @@ class Broker:
     def __str__(self):
         s = list()
         s.append('{%s}:' % self.id())
-        s.append('transport=%s' % self.transport.upper())
+        s.append('transport=%s' % self.transport)
+        s.append('scheme=%s' % self.scheme.upper())
         s.append('host=%s' % self.host)
         s.append('port=%d' % self.port)
         s.append('cacert=%s' % self.cacert)
@@ -124,7 +158,7 @@ class Broker:
 class URL:
     """
     Represents a broker URL.
-    Format: <transport>://<user>:<password>@<host>:<port>/path.
+    Format: <transport>+<scheme>://<user>:<password>@<host>:<port></>.
     :ivar transport: A URL transport.
     :type transport: str
     :ivar host: The host.
@@ -140,20 +174,20 @@ class URL:
     def split(s):
         """
         Split the url string.
-        :param s: A url: <transport>://<user>:<password>@<host>:<port></>.
         :type s: str
-        :return: The url parts: (transport, host, port, userid, password, path)
+        :return: The url parts: (transport, scheme, host, port, userid, password, path)
         :rtype: tuple
         """
-        transport, netloc, path = \
+        transport, scheme, netloc, path = \
             URL.split_url(s)
         userid_password, host_port = \
             URL.split_location(netloc)
         userid, password = \
             URL.split_userid_password(userid_password)
         host, port = \
-            URL.split_host_port(host_port, URL._port(transport))
+            URL.split_host_port(host_port, URL._port(scheme))
         return transport, \
+               scheme, \
                host, \
                port, \
                userid, \
@@ -164,7 +198,7 @@ class URL:
     def split_url(s):
         """
         Split the transport and url parts.
-        :param s: A url: <transport>://<user>:<password>@<host>:<port></>.
+        :param s: A url.
         :type s: str
         :return: (transport, network-location, path)
         :rtype: tuple
@@ -181,7 +215,21 @@ class URL:
             location, path = (part[0], part[1])
         else:
             location, path = (host_port, None)
-        return transport, location, path
+        transport, scheme = URL.split_transport(transport)
+        return transport, scheme, location, path
+
+    @staticmethod
+    def split_transport(s):
+        """
+        Split the transport into gofer-transport and the scheme.
+        :param s: <transport>+<scheme>
+        :return:
+        """
+        part = s.split('+', 1)
+        if len(part) > 1:
+            return part[0], part[1]
+        else:
+            return None, part[0]
 
     @staticmethod
     def split_location(s):
@@ -245,11 +293,11 @@ class URL:
     def __init__(self, s):
         """
         :param s: A url string format:
-            <transport>://<host>:<port>
-            userid/password@<transport>://<host>:<port>.
+            <transport>://<host>:<port>userid:password@<transport>://<host>:<port>.
         :type s: str
         """
-        self.transport,\
+        self.transport, \
+            self.scheme,\
             self.host, \
             self.port, \
             self.userid, \
@@ -274,4 +322,4 @@ class URL:
         return self.simple() == other.simple()
 
     def __str__(self):
-        return '%s://%s:%d' % (self.transport, self.host, self.port)
+        return '%s://%s:%d' % (self.scheme, self.host, self.port)

@@ -132,14 +132,14 @@ class Endpoint(Base):
     
     ssnpool = SessionPool()
 
-    def __init__(self, uuid=None, url=LOCALHOST):
+    def __init__(self, uuid=None, url=None):
         """
         :param uuid: The endpoint uuid.
         :type uuid: str
         :param url: The broker url <transport>://<user>/<pass>@<host>:<port>.
         :type url: str
         """
-        Base.__init__(self, uuid, url)
+        Base.__init__(self, uuid, url or Endpoint.LOCALHOST)
         self.__mutex = RLock()
         self.__session = None
         atexit.register(self.close)

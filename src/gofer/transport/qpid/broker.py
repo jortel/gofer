@@ -50,7 +50,8 @@ class Qpid(Broker):
 
     def __init__(self, url=None):
         """
-        :param url: The broker url <transport>://<host>:<port>.
+        :param url: The broker url.
+          Format: <transport>+<scheme>://<user>:<password>@<host>:<port></>.
         :type url: str
         """
         Broker.__init__(self, url or DEFAULT_URL)
@@ -72,7 +73,7 @@ class Qpid(Broker):
                 port=self.port,
                 tcp_nodelay=True,
                 reconnect=True,
-                transport=self.transport,
+                transport=self.scheme,
                 username=self.userid,
                 password=self.password,
                 ssl_trustfile=self.cacert,

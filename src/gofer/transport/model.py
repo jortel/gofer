@@ -9,6 +9,8 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+from gofer.transport.binder import Binder
+
 
 # routing key
 ROUTE_ALL = '#'
@@ -73,6 +75,30 @@ class Exchange(Node):
         self.policy = policy
         self.durable = True
         self.auto_delete = False
+
+    def declare(self, url):
+        """
+        Declare the node.
+        :param url: The peer URL.
+        :type url: str
+        :return: self
+        """
+        plugin = Binder.find(url)
+        impl = plugin.Exchange(self.name, policy=self.policy)
+        impl.durable = self.durable
+        impl.auto_delete = self.auto_delete
+        impl.declare(url)
+
+    def delete(self, url):
+        """
+        Delete the node.
+        :param url: The peer URL.
+        :type url: str
+        :return: self
+        """
+        plugin = Binder.find(url)
+        impl = plugin.Exchange(self.name)
+        impl.delete(url)
 
     def __eq__(self, other):
         return isinstance(other, Exchange) and \
@@ -167,9 +193,183 @@ class Queue(Node):
         """
         return Destination(self.routing_key, exchange=self.exchange.name)
 
+    def declare(self, url):
+        """
+        Declare the node.
+        :param url: The peer URL.
+        :type url: str
+        :return: self
+        """
+        plugin = Binder.find(url)
+        impl = plugin.Queue(self.name, exchange=self.exchange, routing_key=self.routing_key)
+        impl.durable = self.durable
+        impl.auto_delete = self.auto_delete
+        impl.exclusive = self.exclusive
+        impl.declare(url)
+
+    def delete(self, url):
+        """
+        Delete the node.
+        :param url: The peer URL.
+        :type url: str
+        :return: self
+        """
+        plugin = Binder.find(url)
+        impl = plugin.Queue(self.name)
+        impl.delete(url)
+
     def __eq__(self, other):
         return isinstance(other, Queue) and \
             self.name == other.name
 
     def __ne__(self, other):
         return not (self == other)
+
+
+class Reader(object):
+    """
+    An AMQP message reader.
+    """
+
+    def __init__(self, queue, uuid=None, url=None):
+        """
+        :param queue: The queue to consumer.
+        :type queue: gofer.transport.qpid.model.Queue
+        :param uuid: The endpoint uuid.
+        :type uuid: str
+        :param url: The broker url <transport>://<user>:<pass>@<host>:<port>/<virtual-host>.
+        :type url: str
+        """
+        self.queue = queue
+        self.uuid = uuid
+        self.url = url
+        plugin = Binder.find(url)
+        self._impl = plugin.Reader(queue, uuid=uuid, url=url)
+
+    def open(self):
+        """
+        Open the reader.
+        """
+        self._impl.open()
+
+    def close(self):
+        """
+        Close the reader.
+        """
+        self._impl.close()
+
+    def get(self, timeout=None):
+        """
+        Get the next message.
+        :param timeout: The read timeout.
+        :type timeout: int
+        :return: The next message, or (None).
+        """
+        return self._impl.get(timeout)
+
+    def next(self, timeout=90):
+        """
+        Get the next document from the queue.
+        :param timeout: The read timeout.
+        :type timeout: int
+        :return: A tuple of: (document, ack())
+        :rtype: (Document, callable)
+        :raises: model.InvalidDocument
+        """
+        return self._impl.next(timeout)
+
+    def search(self, sn, timeout=90):
+        """
+        Search the reply queue for the document with the matching serial #.
+        :param sn: The expected serial number.
+        :type sn: str
+        :param timeout: The read timeout.
+        :type timeout: int
+        :return: The next document.
+        :rtype: Document
+        """
+        return self._impl.search(sn, timeout)
+
+
+class Producer(object):
+    """
+    An AMQP (message producer.
+    """
+
+    def __init__(self, uuid=None, url=None):
+        """
+        :param uuid: The endpoint uuid.
+        :type uuid: str
+        :param url: The broker url <transport>://<user>:<pass>@<host>:<port>/<virtual-host>.
+        :type url: str
+        """
+        self.uuid = uuid
+        self.url = url
+        plugin = Binder.find(url)
+        self._impl = plugin.Producer(uuid=uuid, url=uuid)
+
+    def send(self, destination, ttl=None, **body):
+        """
+        Send a message.
+        :param destination: An AMQP destination.
+        :type destination: gofer.transport.model.Destination
+        :param ttl: Time to Live (seconds)
+        :type ttl: float
+        :keyword body: document body.
+        :return: The message serial number.
+        :rtype: str
+        """
+        self._impl.send(destination, ttl=ttl, **body)
+
+    def broadcast(self, destinations, ttl=None, **body):
+        """
+        Broadcast a message to (N) queues.
+        :param destinations: A list of AMQP destinations.
+        :type destinations: [gofer.transport.node.Node,..]
+        :param ttl: Time to Live (seconds)
+        :type ttl: float
+        :keyword body: document body.
+        :return: A list of (addr,sn).
+        :rtype: list
+        """
+        self._impl.broadcast(destinations, ttl=ttl, **body)
+
+
+class BinaryProducer(object):
+    """
+    An binary AMQP message producer.
+    """
+
+    def __init__(self, uuid=None, url=None):
+        """
+        :param uuid: The endpoint uuid.
+        :type uuid: str
+        :param url: The broker url <transport>://<user>:<pass>@<host>:<port>/<virtual-host>.
+        :type url: str
+        """
+        self.uuid = uuid
+        self.url = url
+        plugin = Binder.find(url)
+        self._impl = plugin.BinaryProducer(uuid=uuid, url=url)
+
+    def send(self, destination, content, ttl=None):
+        """
+        Send a message.
+        :param destination: An AMQP destination.
+        :type destination: gofer.transport.model.Destination
+        :param content: The message content
+        :type content: buf
+        :param ttl: Time to Live (seconds)
+        :type ttl: float
+        """
+        self._impl.send(destination, content, ttl=ttl)
+
+    def broadcast(self, destinations, content, ttl=None):
+        """
+        Broadcast a message to (N) queues.
+        :param destinations: A list of AMQP destinations.
+        :type destinations: [gofer.transport.node.Node,..]
+        :param content: The message content
+        :type content: buf
+        """
+        self._impl.send(destinations, content, ttl=ttl)

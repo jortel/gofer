@@ -37,7 +37,8 @@ class Broker(_Broker):
 
     def __init__(self, url=None):
         """
-        :param url: The broker url <transport>://<host>:<port>.
+        :param url: The broker url.
+          Format: <transport>+<scheme>://<user>:<password>@<host>:<port></>.
         :type url: str
         """
         _Broker.__init__(self, url or DEFAULT_URL)

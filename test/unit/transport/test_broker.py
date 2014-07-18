@@ -17,16 +17,18 @@ from gofer.transport.broker import MetaBroker, Broker, URL
 class TestURL(TestCase):
 
     def test_url(self):
-        transport = 'amqp'
+        transport = 'qpid'
+        scheme = 'amqp'
         host = 'redhat'
         port = 1234
         path = '/'
 
         # test
-        url = URL('%s://%s:%d%s/' % (transport, host, port, path))
+        url = URL('%s+%s://%s:%d%s/' % (transport, scheme, host, port, path))
 
         # validation
         self.assertEqual(url.transport, transport)
+        self.assertEqual(url.scheme, scheme)
         self.assertEqual(url.host, host)
         self.assertEqual(url.port, port)
         self.assertEqual(url.userid, None)
@@ -34,16 +36,17 @@ class TestURL(TestCase):
         self.assertEqual(url.path, path)
 
     def test_url_long_path(self):
-        transport = 'amqp'
+        scheme = 'amqp'
         host = 'redhat'
         port = 1234
         path = 'a/b/c/'
 
         # test
-        url = URL('%s://%s:%d/%s' % (transport, host, port, path))
+        url = URL('%s://%s:%d/%s' % (scheme, host, port, path))
 
         # validation
-        self.assertEqual(url.transport, transport)
+        self.assertEqual(url.transport, None)
+        self.assertEqual(url.scheme, scheme)
         self.assertEqual(url.host, host)
         self.assertEqual(url.port, port)
         self.assertEqual(url.userid, None)
@@ -51,15 +54,15 @@ class TestURL(TestCase):
         self.assertEqual(url.path, path)
 
     def test_url_empty_path(self):
-        transport = 'amqp'
+        scheme = 'amqp'
         host = 'redhat'
         port = 1234
 
         # test
-        url = URL('%s://%s:%d/' % (transport, host, port))
+        url = URL('%s://%s:%d/' % (scheme, host, port))
 
         # validation
-        self.assertEqual(url.transport, transport)
+        self.assertEqual(url.scheme, scheme)
         self.assertEqual(url.host, host)
         self.assertEqual(url.port, port)
         self.assertEqual(url.userid, None)
@@ -67,15 +70,15 @@ class TestURL(TestCase):
         self.assertEqual(url.path, '')
 
     def test_url_no_path(self):
-        transport = 'amqp'
+        scheme = 'amqp'
         host = 'redhat'
         port = 1234
 
         # test
-        url = URL('%s://%s:%d' % (transport, host, port))
+        url = URL('%s://%s:%d' % (scheme, host, port))
 
         # validation
-        self.assertEqual(url.transport, transport)
+        self.assertEqual(url.scheme, scheme)
         self.assertEqual(url.host, host)
         self.assertEqual(url.port, port)
         self.assertEqual(url.userid, None)
@@ -83,28 +86,28 @@ class TestURL(TestCase):
         self.assertEqual(url.path, None)
 
     def test_url_host_only(self):
-        transport = 'amqp'
+        scheme = 'amqp'
         host = 'redhat'
 
         # test
-        url = URL('%s://%s' % (transport, host))
+        url = URL('%s://%s' % (scheme, host))
 
         # validation
-        self.assertEqual(url.transport, transport)
+        self.assertEqual(url.scheme, scheme)
         self.assertEqual(url.host, host)
         self.assertEqual(url.port, 5672)
         self.assertEqual(url.userid, None)
         self.assertEqual(url.password, None)
         self.assertEqual(url.path, None)
 
-    def test_url_no_transport(self):
+    def test_url_no_scheme(self):
         host = 'redhat'
 
         # test
         url = URL(host)
 
         # validation
-        self.assertEqual(url.transport, 'amqp')
+        self.assertEqual(url.scheme, 'amqp')
         self.assertEqual(url.host, host)
         self.assertEqual(url.port, 5672)
         self.assertEqual(url.userid, None)
@@ -112,17 +115,17 @@ class TestURL(TestCase):
         self.assertEqual(url.path, None)
 
     def test_userid_and_password(self):
-        transport = 'amqp'
+        scheme = 'amqp'
         host = 'redhat'
         port = 1234
         userid = 'elmer'
         password = 'fudd'
 
         # test
-        url = URL('%s://%s:%s@%s:%d' % (transport, userid, password, host, port))
+        url = URL('%s://%s:%s@%s:%d' % (scheme, userid, password, host, port))
 
         # validation
-        self.assertEqual(url.transport, transport)
+        self.assertEqual(url.scheme, scheme)
         self.assertEqual(url.host, host)
         self.assertEqual(url.port, port)
         self.assertEqual(url.userid, userid)
@@ -136,16 +139,16 @@ class TestBroker(TestCase):
         MetaBroker.reset()
 
     def test_url(self):
-        transport = 'amqp'
+        scheme = 'amqp'
         host = 'redhat'
         port = 1234
 
         # test
-        url = URL('%s://%s:%d' % (transport, host, port))
+        url = URL('%s://%s:%d' % (scheme, host, port))
         broker = Broker(url)
 
         # validation
-        self.assertEqual(broker.transport, transport)
+        self.assertEqual(broker.scheme, scheme)
         self.assertEqual(broker.host, host)
         self.assertEqual(broker.port, port)
         self.assertEqual(broker.userid, None)
@@ -153,22 +156,22 @@ class TestBroker(TestCase):
         self.assertEqual(broker.virtual_host, None)
 
     def test_url_host_only(self):
-        transport = 'amqp'
+        scheme = 'amqp'
         host = 'redhat'
 
         # test
-        url = URL('%s://%s' % (transport, host))
+        url = URL('%s://%s' % (scheme, host))
         broker = Broker(url)
 
         # validation
-        self.assertEqual(broker.transport, transport)
+        self.assertEqual(broker.scheme, scheme)
         self.assertEqual(broker.host, host)
         self.assertEqual(broker.port, 5672)
         self.assertEqual(broker.userid, None)
         self.assertEqual(broker.password, None)
         self.assertEqual(broker.virtual_host, None)
 
-    def test_url_no_transport(self):
+    def test_url_no_scheme(self):
         host = 'redhat'
 
         # test
@@ -176,7 +179,7 @@ class TestBroker(TestCase):
         broker = Broker(url)
 
         # validation
-        self.assertEqual(broker.transport, 'amqp')
+        self.assertEqual(broker.scheme, 'amqp')
         self.assertEqual(broker.host, host)
         self.assertEqual(broker.port, 5672)
         self.assertEqual(broker.userid, None)
@@ -184,18 +187,18 @@ class TestBroker(TestCase):
         self.assertEqual(broker.virtual_host, None)
 
     def test_userid_and_password(self):
-        transport = 'amqp'
+        scheme = 'amqp'
         host = 'redhat'
         port = 1234
         userid = 'elmer'
         password = 'fudd'
 
         # test
-        url = URL('%s://%s:%s@%s:%d' % (transport, userid, password, host, port))
+        url = URL('%s://%s:%s@%s:%d' % (scheme, userid, password, host, port))
         broker = Broker(url)
 
         # validation
-        self.assertEqual(broker.transport, transport)
+        self.assertEqual(broker.scheme, scheme)
         self.assertEqual(broker.host, host)
         self.assertEqual(broker.port, port)
         self.assertEqual(broker.userid, userid)
@@ -203,16 +206,16 @@ class TestBroker(TestCase):
         self.assertEqual(broker.virtual_host, None)
 
     def test_userid_and_no_password(self):
-        transport = 'amqp'
+        scheme = 'amqp'
         host = 'redhat'
         port = 1234
 
         # test
-        url = URL('%s://elmer@%s:%d/' % (transport, host, port))
+        url = URL('%s://elmer@%s:%d/' % (scheme, host, port))
         broker = Broker(url)
 
         # validation
-        self.assertEqual(broker.transport, transport)
+        self.assertEqual(broker.scheme, scheme)
         self.assertEqual(broker.host, host)
         self.assertEqual(broker.port, port)
         self.assertEqual(broker.userid, None)
@@ -220,17 +223,17 @@ class TestBroker(TestCase):
         self.assertEqual(broker.virtual_host, '')
 
     def test_userid_and_password_no_port(self):
-        transport = 'amqp'
+        scheme = 'amqp'
         host = 'redhat'
         userid = 'elmer'
         password = 'fudd'
 
         # test
-        url = URL('%s://%s:%s@%s' % (transport, userid, password, host))
+        url = URL('%s://%s:%s@%s' % (scheme, userid, password, host))
         broker = Broker(url)
 
         # validation
-        self.assertEqual(broker.transport, transport)
+        self.assertEqual(broker.scheme, scheme)
         self.assertEqual(broker.host, host)
         self.assertEqual(broker.port, 5672)
         self.assertEqual(broker.userid, userid)
