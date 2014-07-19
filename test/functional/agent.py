@@ -61,7 +61,8 @@ from gofer.agent.plugin import PluginDescriptor, PluginLoader
 from gofer.agent.main import Agent, setup_logging
 from gofer.config import Config
 
-getLogger('gofer').setLevel(DEBUG)
+# getLogger('gofer').setLevel(DEBUG)
+
 log_path = os.path.join(ROOT, 'agent.log')
 log_handler = RotatingFileHandler(log_path, maxBytes=0x100000, backupCount=5)
 log_handler.setFormatter(logutil.FORMATTER)

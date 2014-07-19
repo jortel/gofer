@@ -42,34 +42,33 @@ class Singleton(type):
     __mutex = RLock()
 
     @classmethod
-    def reset(cls):
-        cls.__inst = {}
+    def reset(mcs):
+        mcs.__inst = {}
             
     @classmethod
-    def key(cls, t, d):
+    def key(mcs, t, d):
         key = []
         for x in t:
-            if isinstance(x, (str,int,float)):
+            if isinstance(x, (str, int, float)):
                 key.append(x)
         for k in sorted(d.keys()):
             v = d[k]
-            if isinstance(v, (str,int,float)):
-                key.append((k,v))
+            if isinstance(v, (str, int, float)):
+                key.append((k, v))
         return repr(key)
     
     @classmethod   
-    def all(cls):
-        cls.__lock()
+    def all(mcs):
+        mcs.__lock()
         try:
-            return cls.__inst.values()
+            return mcs.__inst.values()
         finally:
-            cls.__unlock()
+            mcs.__unlock()
     
     def __call__(cls, *args, **kwargs):
         cls.__lock()
         try:
-            key = (cls.__name__,
-                   cls.key(args, kwargs))
+            key = (id(cls), cls.key(args, kwargs))
             inst = cls.__inst.get(key)
             if inst is None: 
                 inst = type.__call__(cls, *args, **kwargs)
@@ -79,12 +78,12 @@ class Singleton(type):
             cls.__unlock()
     
     @classmethod   
-    def __len__(cls):
-        cls.__lock()
+    def __len__(mcs):
+        mcs.__lock()
         try:
-            return len(cls.__inst)
+            return len(mcs.__inst)
         finally:
-            cls.__unlock()
+            mcs.__unlock()
 
     @classmethod
     def __lock(cls):

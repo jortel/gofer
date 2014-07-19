@@ -178,8 +178,9 @@ class Synchronous(RequestMethod):
         self.timeout = Timeout.seconds(options.timeout or 10)
         self.wait = Timeout.seconds(options.wait or 90)
         self.progress = options.progress
-        self.queue = Queue(url)
+        self.queue = Queue(str(uuid4()))
         self.authenticator = options.authenticator
+        self.queue.durable = False
         self.queue.auto_delete = True
         self.queue.declare(self.url)
 

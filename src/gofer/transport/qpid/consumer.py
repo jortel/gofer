@@ -27,7 +27,7 @@ from qpid.messaging import Empty
 from gofer.messaging import auth
 from gofer.messaging import model
 from gofer.messaging.model import Document
-from gofer.transport.model import BaseReader, Ack, search
+from gofer.transport.model import BaseReader, Ack
 from gofer.transport.qpid.endpoint import Endpoint
 
 
@@ -151,18 +151,6 @@ class Reader(BaseReader):
             log.debug('read next: %s', document)
             return document, Ack(self, message)
         return None, None
-
-    def search(self, sn, timeout=90):
-        """
-        Search the reply queue for the document with the matching serial #.
-        :param sn: The expected serial number.
-        :type sn: str
-        :param timeout: The read timeout.
-        :type timeout: int
-        :return: The next document.
-        :rtype: Document
-        """
-        return search(self, sn, timeout)
 
     def __lock(self):
         self.__mutex.acquire()

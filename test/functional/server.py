@@ -38,8 +38,8 @@ basicConfig(filename='/opt/gofer/server.log')
 
 log = getLogger(__name__)
 
-getLogger('gofer.transport').setLevel(DEBUG)
-getLogger('gofer.messaging').setLevel(DEBUG)
+# getLogger('gofer.transport').setLevel(DEBUG)
+# getLogger('gofer.messaging').setLevel(DEBUG)
 
 
 class Agent(object):

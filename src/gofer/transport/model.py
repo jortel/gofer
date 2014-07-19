@@ -31,36 +31,6 @@ DEFAULT_URL = 'amqp://localhost'
 log = getLogger(__name__)
 
 
-# --- utils ------------------------------------------------------------------
-
-
-def search(reader, sn, timeout=90):
-    """
-    Search the reply queue for the document with the matching serial #.
-    :param sn: The expected serial number.
-    :type sn: str
-    :param timeout: The read timeout.
-    :type timeout: int
-    :return: The next document.
-    :rtype: Document
-    """
-    log.debug('searching for: sn=%s', sn)
-    while True:
-        document, ack = reader.next(timeout)
-        if document:
-            ack()
-        else:
-            return
-        if sn == document.sn:
-            log.debug('search found: %s', document)
-            return document
-        else:
-            log.debug('search discarding: %s', document)
-            
-            
-# --- object -----------------------------------------------------------------
-
-
 class Destination(object):
     """
     An AMQP destination.
@@ -107,6 +77,9 @@ class Destination(object):
         return repr(self.__dict__)
 
 
+# --- node -------------------------------------------------------------------
+
+
 class Node(object):
     """
     An AMQP node.
@@ -138,9 +111,6 @@ class Node(object):
         :return: self
         """
         raise NotImplementedError()
-
-
-# --- exchange ---------------------------------------------------------------
 
 
 class BaseExchange(Node):
@@ -208,9 +178,6 @@ class Exchange(BaseExchange):
         plugin = Transport.find(url)
         impl = plugin.Exchange(self.name)
         impl.delete(url)
-
-
-# --- queue ------------------------------------------------------------------
 
 
 class BaseQueue(Node):
@@ -507,7 +474,18 @@ class Reader(BaseReader):
         :return: The next document.
         :rtype: Document
         """
-        return self._impl.search(sn, timeout)
+        log.debug('searching for: sn=%s', sn)
+        while True:
+            document, ack = self.next(timeout)
+            if document:
+                ack()
+            else:
+                return
+            if sn == document.sn:
+                log.debug('search found: %s', document)
+                return document
+            else:
+                log.debug('search discarding: %s', document)
 
 
 # --- producer ---------------------------------------------------------------
@@ -706,6 +684,27 @@ class PlainProducer(BasePlainProducer):
 # --- broker -----------------------------------------------------------------
 
 
+class BrokerSingleton(Singleton):
+    """
+    Broker MetaClass.
+    Singleton by simple url.
+    """
+
+    @classmethod
+    def key(mcs, t, d):
+        url = t[0]
+        if isinstance(url, str):
+            url = URL(url)
+        if not isinstance(url, URL):
+            raise ValueError('url must be: str|URL')
+        return url.simple()
+
+    def __call__(cls, *args, **kwargs):
+        if not args:
+            args = (DEFAULT_URL,)
+        return Singleton.__call__(cls, *args, **kwargs)
+
+
 class BaseBroker(object):
     """
     Represents an AMQP broker.
@@ -722,6 +721,8 @@ class BaseBroker(object):
     :ivar host_validation: Enable SSL host validation.
     :type host_validation: bool
     """
+
+    __metaclass__ = BrokerSingleton
 
     def __init__(self, url):
         """
@@ -812,33 +813,10 @@ class BaseBroker(object):
         return '|'.join(s)
 
 
-class BrokerSingleton(Singleton):
-    """
-    Broker MetaClass.
-    Singleton by simple url.
-    """
-
-    @classmethod
-    def key(mcs, t, d):
-        url = t[0]
-        if isinstance(url, str):
-            url = URL(url)
-        if not isinstance(url, URL):
-            raise ValueError('url must be: str|URL')
-        return url.simple()
-
-    def __call__(cls, *args, **kwargs):
-        if not args:
-            args = (DEFAULT_URL,)
-        return Singleton.__call__(cls, *args, **kwargs)
-
-
 class Broker(BaseBroker):
     """
     Represents an AMQP broker.
     """
-
-    __metaclass__ = BrokerSingleton
 
     def __init__(self, url=DEFAULT_URL):
         """
