@@ -26,7 +26,7 @@ class Test(object):
         print 'using producer/reader'
         with self.package.Producer(url=self.url) as p:
             for x in range(0, N):
-                d = queue.destination()
+                d = queue.destination(self.url)
                 print '#%d - sent: %s' % (x, d.dict())
                 p.send(d)
         received = 0
@@ -61,7 +61,7 @@ class Test(object):
     
         with self.package.Producer(url=self.url) as p:
             for x in range(0, N):
-                d = queue.destination()
+                d = queue.destination(self.url)
                 print '#%d - sent: %s' % (x, d.dict())
                 p.send(d)
     
@@ -78,7 +78,7 @@ class Test(object):
 
     def test_direct_exchange(self):
         print 'test explicit (direct) exchange'
-        exchange = self.package.Exchange.direct()
+        exchange = self.package.Exchange('amq.direct')
         queue = self.package.Queue('test_2', exchange=exchange)
         queue.durable = False
         queue.auto_delete = True
@@ -99,7 +99,7 @@ class Test(object):
     
     def test_topic_exchange(self):
         print 'test explicit (topic) exchange'
-        exchange = self.package.Exchange.topic()
+        exchange = self.package.Exchange('amq.topic')
         queue = self.package.Queue('test_3', exchange=exchange, routing_key='#')
         queue.durable = False
         queue.auto_delete = True
