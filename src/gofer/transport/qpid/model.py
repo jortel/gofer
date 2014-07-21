@@ -37,22 +37,6 @@ class Exchange(BaseExchange):
     def __init__(self, name, policy=None):
         BaseExchange.__init__(self, name, policy=policy)
 
-    @staticmethod
-    def default():
-        return Exchange('')
-
-    @staticmethod
-    def direct():
-        return Exchange('amq.direct')
-
-    @staticmethod
-    def topic():
-        return Exchange('amq.topic')
-
-    @staticmethod
-    def fanout():
-        return Exchange('amq.fanout')
-
     def address(self):
         fmt = squash("""
         %(name)s;{
@@ -85,11 +69,11 @@ class Queue(BaseQueue):
         BaseQueue.__init__(
             self,
             name,
-            exchange=exchange or Exchange.default(),
+            exchange=exchange or Exchange(''),
             routing_key=routing_key or name)
 
     def bindings(self):
-        if self.exchange != Exchange.default():
+        if self.exchange != Exchange(''):
             binding = XBinding(self.exchange, self.routing_key)
             return XBindings(binding)
         else:

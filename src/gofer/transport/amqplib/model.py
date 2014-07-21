@@ -37,22 +37,6 @@ def reliable(fn):
 
 class Exchange(BaseExchange):
 
-    @staticmethod
-    def default():
-        return Exchange('')
-
-    @staticmethod
-    def direct():
-        return Exchange('amq.direct')
-
-    @staticmethod
-    def topic():
-        return Exchange('amq.topic')
-
-    @staticmethod
-    def fanout():
-        return Exchange('amq.fanout')
-
     def declare(self, url):
         @reliable
         def _fn(_endpoint):
@@ -83,7 +67,7 @@ class Queue(BaseQueue):
         BaseQueue.__init__(
             self,
             name,
-            exchange=exchange or Exchange.default(),
+            exchange=exchange or Exchange(''),
             routing_key=routing_key or name)
 
     def declare(self, url):
@@ -100,7 +84,7 @@ class Queue(BaseQueue):
                 auto_delete=self.auto_delete,
                 exclusive=self.exclusive,
                 arguments=arguments)
-            if self.exchange != Exchange.default():
+            if self.exchange != Exchange(''):
                 channel.queue_bind(
                     self.name,
                     exchange=self.exchange.name,
