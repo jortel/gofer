@@ -53,7 +53,7 @@ class Broker(BaseBroker):
         except AttributeError:
             con = self.open()
             self.connection.cached = con
-            log.info('{%s} connected to AMQP', self.id())
+            log.info('{%s} connected to AMQP', self.id)
             return con
 
     def open(self, retries=10000, delay=4):

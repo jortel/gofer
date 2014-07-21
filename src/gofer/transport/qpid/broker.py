@@ -77,7 +77,7 @@ class Broker(BaseBroker):
                 ssl_skip_hostname_check=(not self.host_validation))
             con.attach()
             self.connection.cached = con
-            log.info('{%s} connected to AMQP', self.id())
+            log.info('{%s} connected to AMQP', self.id)
             return con
 
     def close(self):

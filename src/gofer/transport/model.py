@@ -738,7 +738,13 @@ class BaseBroker(object):
         self.clientcert = None
         self.host_validation = False
 
+    @property
     def id(self):
+        """
+        Get the broker identity.
+        :return: The broker ID which is defined by the URL.
+        :rtype: str
+        """
         return self.url.simple()
 
     @property
