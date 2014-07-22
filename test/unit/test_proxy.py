@@ -21,19 +21,17 @@ class Test(TestCase):
     @patch('gofer.proxy.Container')
     def test_agent_1(self, fake_container):
         uuid = 'xyz'
-        options = {'url': 'amqp://host', 'transport': 'qpid', 'A': 1, 'B': 2}
+        options = {'url': 'qpid+amqp://host', 'A': 1, 'B': 2}
         container = Agent(uuid, **options)
         url = options.pop('url')
-        transport = options.pop('transport')
-        fake_container.assert_called_with(uuid, url, transport, **options)
+        fake_container.assert_called_with(uuid, url, **options)
         self.assertEqual(container, fake_container())
 
     @patch('gofer.proxy.Container')
     def test_agent(self, fake_container):
         uuid = 'xyz'
-        options = {'url': 'amqp://host', 'transport': 'qpid', 'A': 1, 'B': 2}
+        options = {'url': 'amqp://host', 'A': 1, 'B': 2}
         container = agent(uuid, **options)
         url = options.pop('url')
-        transport = options.pop('transport')
-        fake_container.assert_called_with(uuid, url, transport, **options)
+        fake_container.assert_called_with(uuid, url, **options)
         self.assertEqual(container, fake_container())
