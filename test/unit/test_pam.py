@@ -9,50 +9,71 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-import PAM as _PAM
 from unittest import TestCase
 
 from mock import patch
 
-from gofer.pam import Query, PAM
+from gofer import pam
 
 
-USERID = 'test-user'
-PASSWORD = 'test-password'
+class Test(TestCase):
 
+    @patch('gofer.pam.pam_end')
+    @patch('gofer.pam.pam_authenticate')
+    @patch('gofer.pam.pam_start')
+    def test_authenticated(self, _start, _authenticate, _end):
+        _start.return_value = 0
+        _authenticate.return_value = 0
+        user = 'user'
+        password = 'password'
+        service = 'login'
+        valid = pam.authenticate(user, password, service)
+        self.assertTrue(_start.called)
+        self.assertTrue(_authenticate.called)
+        self.assertTrue(_end.called)
+        self.assertTrue(valid)
 
-class TestQuery(TestCase):
+    @patch('gofer.pam.pam_end')
+    @patch('gofer.pam.pam_authenticate')
+    @patch('gofer.pam.pam_start')
+    def test_start_failed(self, _start, _authenticate, _end):
+        _start.return_value = -1
+        _authenticate.return_value = 0
+        user = 'user'
+        password = 'password'
+        service = 'login'
+        valid = pam.authenticate(user, password, service)
+        self.assertTrue(_start.called)
+        self.assertFalse(_authenticate.called)
+        self.assertFalse(_end.called)
+        self.assertFalse(valid)
 
-    def test_init(self):
-        query = Query(USERID, PASSWORD)
-        self.assertEqual(query.userid, USERID)
-        self.assertEqual(query.password, PASSWORD)
+    @patch('gofer.pam.pam_end')
+    @patch('gofer.pam.pam_authenticate')
+    @patch('gofer.pam.pam_start')
+    def test_not_authenticated(self, _start, _authenticate, _end):
+        _start.return_value = 0
+        _authenticate.return_value = 1
+        user = 'user'
+        password = 'password'
+        service = 'login'
+        valid = pam.authenticate(user, password, service)
+        self.assertTrue(_start.called)
+        self.assertTrue(_authenticate.called)
+        self.assertTrue(_end.called)
+        self.assertFalse(valid)
 
-    def test_call(self):
-        query_list = [
-            (None, _PAM.PAM_PROMPT_ECHO_ON),
-            (None, _PAM.PAM_PROMPT_ECHO_OFF)
-        ]
-        query = Query(USERID, PASSWORD)
-        result = query(None, query_list)
-        self.assertEqual(result[0], (USERID, 0))
-        self.assertEqual(result[1], (PASSWORD, 0))
-
-
-class TestPAM(TestCase):
-
-    def test_init(self):
-        self.assertEqual(PAM.SERVICE, 'passwd')
-
-    @patch('gofer.pam.Query')
-    @patch('gofer.pam._PAM.pam')
-    def test_authenticate(self, _pam, _query):
-        pam = PAM()
-        # default service
-        pam.authenticate(USERID, PASSWORD)
-        _pam().start.assert_called_with(PAM.SERVICE, USERID, _query())
-        _pam().authenticate.assert_called_with()
-        # specified service
-        pam.authenticate(USERID, PASSWORD, service='ssh')
-        _pam().start.assert_called_with('ssh', USERID, _query())
-        _pam().authenticate.assert_called_with()
+    @patch('gofer.pam.pam_end')
+    @patch('gofer.pam.pam_authenticate')
+    @patch('gofer.pam.pam_start')
+    def test_exception_raised(self, _start, _authenticate, _end):
+        _start.return_value = 0
+        _authenticate.side_effect = ValueError
+        user = 'user'
+        password = 'password'
+        service = 'login'
+        valid = pam.authenticate(user, password, service)
+        self.assertTrue(_start.called)
+        self.assertTrue(_authenticate.called)
+        self.assertFalse(_end.called)
+        self.assertFalse(valid)

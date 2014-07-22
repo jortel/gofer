@@ -26,7 +26,7 @@ from gofer.agent.logutil import LogHandler
 LogHandler.install()
 
 from gofer import *
-from gofer.pam import PAM
+from gofer import pam
 from gofer.agent.plugin import PluginLoader
 from gofer.agent.lock import Lock, LockFailed
 from gofer.agent.config import AgentConfig
@@ -123,7 +123,7 @@ class Agent:
         :type plugins: list
         """
         self.plugins = plugins
-        PAM.SERVICE = cfg.pam.service or PAM.SERVICE
+        pam.SERVICE = cfg.pam.service or pam.SERVICE
 
     def start(self, block=True):
         """

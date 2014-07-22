@@ -8,7 +8,6 @@ branches:
 install:
   - "mkdir /tmp/bin"
   - "cp bin/goferd /tmp/bin/goferd"
-  - "sudo apt-get install python-pam"
   - "pip install iniparse"
   - "pip install src/"
 script: nosetests test/unit
