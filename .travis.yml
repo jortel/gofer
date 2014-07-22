@@ -3,5 +3,8 @@ python:
   - "2.6"
   - "2.7"
 install:
+  - "mkdir /tmp/bin"
+  - "cp bin/goferd /tmp/bin/goferd"
+  - "pip install iniparse"
   - "pip install src/"
-script: nosetests -e "test_pam" test/unit
+script: nosetests -e pam test/unit
