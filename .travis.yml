@@ -4,4 +4,4 @@ python:
   - "2.7"
 install:
   - "pip install src/"
-script: nosetests test/unit
+script: nosetests -e "test_pam" test/unit
