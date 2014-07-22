@@ -7,4 +7,4 @@ install:
   - "cp bin/goferd /tmp/bin/goferd"
   - "pip install iniparse"
   - "pip install src/"
-script: nosetests -e pam test/unit
+script: nosetests -e "test_pam" test/unit
