@@ -146,6 +146,7 @@ Obsoletes: %{name}-lib
 BuildRequires: python
 Requires: pam
 %if 0%{?rhel} && 0%{?rhel} < 6
+Requires: python-ctypes
 Requires: python-simplejson
 Requires: python-hashlib
 Requires: python-uuid
