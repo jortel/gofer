@@ -11,4 +11,4 @@ install:
   - "sudo apt-get install python-pam"
   - "pip install iniparse"
   - "pip install src/"
-script: nosetests -e test/unit
+script: nosetests test/unit
