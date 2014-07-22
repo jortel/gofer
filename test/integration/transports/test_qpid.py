@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(os.path.curdir, '../../src'))
 from logging import basicConfig
 
 from base import Test
-from gofer.transport import Transport
+from gofer.transport.factory import Loader
 
 
 basicConfig()
@@ -25,16 +25,17 @@ basicConfig()
 URL = 'tcp://localhost:5672'
 
 if __name__ == '__main__':
-    Transport.load_plugins()
     # AMQP-0-10
-    package = Transport.plugins['AMQP-0-10']
+    loader = Loader()
+    loader.load()
+    package = loader.plugins['AMQP-0-10']
     test = Test(URL, package)
     test()
     # qpid
-    package = Transport.plugins['qpid']
+    package = loader.plugins['qpid']
     test = Test(URL, package)
     test()
     # qpid-messaging
-    package = Transport.plugins['qpid-messaging']
+    package = loader.plugins['qpid-messaging']
     test = Test(URL, package)
     test()
