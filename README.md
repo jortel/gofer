@@ -1,6 +1,8 @@
 Gofer
 =====
 
+![travis](https://travis-ci.org/jortel/gofer.svg?branch=master)
+
 Gofer provides an extensible, light weight, universal python agent. It has no
 relation to the [Gofer](http://en.wikipedia.org/wiki/Gopher) protocol.
 The gofer core agent is a python daemon (service) that provides infrastructure

@@ -23,7 +23,7 @@ import traceback as tb
 
 from gofer import NAME
 from gofer.messaging.model import Document, Options
-from gofer.pam import PAM
+from gofer.pam import authenticate as pam_authenticate
 
 from logging import getLogger
 
@@ -127,8 +127,7 @@ class PasswordRequired(NotAuthorized):
 
 class NotAuthenticated(NotAuthorized):
     """
-    Not authenticated, user/password failed
-    PAM authentication.
+    PAM authentication failed.
     """
 
     def __init__(self, method, user):
@@ -577,10 +576,8 @@ class Security:
             raise PasswordRequired(self.method)
         if passed.user != required.user:
             raise UserNotAuthorized(self.method, required.user, passed.user)
-        pam = PAM()
-        try:
-            pam.authenticate(passed.user, passed.password, required.service)
-        except Exception:
+        valid = pam_authenticate(passed.user, passed.password, required.service)
+        if not valid:
             raise NotAuthenticated(self.method, passed.user)
 
 
