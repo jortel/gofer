@@ -62,3 +62,18 @@ class Test(TestCase):
         self.assertTrue(_authenticate.called)
         self.assertTrue(_end.called)
         self.assertFalse(valid)
+
+    @patch('gofer.pam.pam_end')
+    @patch('gofer.pam.pam_authenticate')
+    @patch('gofer.pam.pam_start')
+    def test_exception_raised(self, _start, _authenticate, _end):
+        _start.return_value = 0
+        _authenticate.side_effect = ValueError
+        user = 'user'
+        password = 'password'
+        service = 'login'
+        valid = pam.authenticate(user, password, service)
+        self.assertTrue(_start.called)
+        self.assertTrue(_authenticate.called)
+        self.assertFalse(_end.called)
+        self.assertFalse(valid)
