@@ -841,7 +841,7 @@ class Broker(BaseBroker):
         :rtype: *Connection*
         """
         self._impl.cacert = self.cacert
-        self._impl.clientcert = self.cacert
+        self._impl.clientcert = self.clientcert
         self._impl.host_validation = self.host_validation
         self._impl.connect()
 
