@@ -18,5 +18,5 @@ echo $dir
 virtualenv $dir
 source $dir/bin/activate
 easy_install ../src/
-nosetests --with-coverage --cover-package=gofer.transport.model unit/transport/test_model.py
+nosetests --with-coverage --cover-package=gofer unit
 rm -rf $dir
