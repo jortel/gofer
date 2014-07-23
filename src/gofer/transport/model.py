@@ -1,13 +1,17 @@
-# Copyright (c) 2013 Red Hat, Inc.
 #
-# This software is licensed to you under the GNU General Public
+# Copyright (c) 2011 Red Hat, Inc.
+#
+# This software is licensed to you under the GNU Lesser General Public
 # License as published by the Free Software Foundation; either version
-# 2 of the License (GPLv2) or (at your option) any later version.
+# 2 of the License (LGPLv2) or (at your option) any later version.
 # There is NO WARRANTY for this software, express or implied,
 # including the implied warranties of MERCHANTABILITY,
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
-# have received a copy of GPLv2 along with this software; if not, see
-# http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+# have received a copy of LGPLv2 along with this software; if not, see
+# http://www.gnu.org/licenses/old-licenses/lgpl-2.0.txt.
+#
+# Jeff Ortel <jortel@redhat.com>
+#
 
 from threading import local as Local
 from logging import getLogger
@@ -200,7 +204,7 @@ class BaseQueue(Node):
         :param name: The queue name.
         :type name: str
         :param exchange: An AMQP exchange
-        :type exchange: Exchange
+        :type exchange: BaseExchange
         :param routing_key: Message routing key.
         :type routing_key: str
         """
@@ -236,7 +240,7 @@ class Queue(BaseQueue):
         :param name: The queue name.
         :type name: str
         :param exchange: An AMQP exchange
-        :type exchange: Exchange
+        :type exchange: BaseExchange
         :param routing_key: Message routing key.
         :type routing_key: str
         """
@@ -668,7 +672,7 @@ class PlainProducer(BasePlainProducer):
         :param ttl: Time to Live (seconds)
         :type ttl: float
         """
-        return self._impl.send(destination, content, ttl=ttl)
+        return self._impl.send(destination, content, ttl)
 
     def broadcast(self, destinations, content, ttl=None):
         """
@@ -678,7 +682,7 @@ class PlainProducer(BasePlainProducer):
         :param content: The message content
         :type content: buf
         """
-        return self._impl.send(destinations, content, ttl=ttl)
+        return self._impl.broadcast(destinations, content, ttl)
 
 
 # --- broker -----------------------------------------------------------------
