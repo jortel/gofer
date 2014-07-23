@@ -110,4 +110,8 @@ class Broker(BaseBroker):
             required = ssl.CERT_REQUIRED
         else:
             required = ssl.CERT_NONE
-        return dict(cert_reqs=required, ca_certs=self.cacert, certfile=self.clientcert)
+        return dict(
+            cert_reqs=required,
+            ca_certs=self.cacert,
+            keyfile=self.clientkey,
+            certfile=self.clientcert)

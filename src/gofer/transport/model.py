@@ -715,8 +715,12 @@ class BaseBroker(object):
     :ivar cacert: Path to a PEM encoded file containing
         the CA certificate used to validate the server certificate.
     :type cacert: str
+    :ivar clientkey: Path to a PEM encoded file containing
+        the private key used for client authentication.
+    :type clientkey: str
     :ivar clientcert: Path to a PEM encoded file containing
-        the private key & certificate used for client authentication.
+        the certificate used for client authentication.  This file may also contain the
+        PEM encoded private key.
     :type clientcert: str
     :ivar host_validation: Enable SSL host validation.
     :type host_validation: bool
@@ -735,6 +739,7 @@ class BaseBroker(object):
         self.url = url
         self.connection = Local()
         self.cacert = None
+        self.clientkey = None
         self.clientcert = None
         self.host_validation = False
 
@@ -814,6 +819,7 @@ class BaseBroker(object):
         s = list()
         s.append('url=%s' % self.url)
         s.append('cacert=%s' % self.cacert)
+        s.append('clientkey=%s' % self.clientkey)
         s.append('clientcert=%s' % self.clientcert)
         s.append('host-validation=%s' % self.host_validation)
         return '|'.join(s)
@@ -841,6 +847,7 @@ class Broker(BaseBroker):
         :rtype: *Connection*
         """
         self._impl.cacert = self.cacert
+        self._impl.clientkey = self.clientkey
         self._impl.clientcert = self.clientcert
         self._impl.host_validation = self.host_validation
         self._impl.connect()

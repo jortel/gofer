@@ -73,6 +73,7 @@ class Broker(BaseBroker):
                 username=self.userid,
                 password=self.password,
                 ssl_trustfile=self.cacert,
+                ssl_keyfile=self.clientkey,
                 ssl_certfile=self.clientcert,
                 ssl_skip_hostname_check=(not self.host_validation))
             con.attach()
