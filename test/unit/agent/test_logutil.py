@@ -10,7 +10,45 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 from unittest import TestCase
+from logging import getLogger
+
+from mock import patch
+
+from gofer.agent.logutil import LogHandler
+
+log = getLogger(__file__)
 
 
 class Test(TestCase):
-    pass
+
+    def setUp(self):
+        LogHandler.install()
+
+    def tearDown(self):
+        LogHandler.uninstall()
+
+    @patch('gofer.agent.logutil.SysLogHandler.emit')
+    def test_handler(self, _emit):
+        msg = 'This is a test.'
+
+        # test
+        log.info(msg)
+
+        # validation
+        calls = _emit.call_args_list
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][0][1].msg, msg)
+
+    @patch('gofer.agent.logutil.SysLogHandler.emit')
+    def test_exception(self, _emit):
+        msg = 'This is a test.'
+        log.info(msg)
+
+        # test
+        try:
+            raise ValueError('Testing')
+        except ValueError:
+            log.exception(msg)
+
+        # validation
+        self.assertEqual(_emit.call_count, 6)

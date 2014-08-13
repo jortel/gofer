@@ -41,11 +41,25 @@ class LogHandler(SysLogHandler):
         """
         Install the handler.
         """
+        LogHandler.uninstall()
         handler = LogHandler(address='/dev/log', facility=SysLogHandler.LOG_DAEMON)
         handler.setFormatter(FORMATTER)
         root = getLogger()
         root.setLevel(INFO)
-        root.handlers = [handler]
+        root.handlers.append(handler)
+
+    @staticmethod
+    def uninstall():
+        """
+        Uninstall the log handler.
+        """
+        root = getLogger()
+        handlers = root.handlers[:]
+        for h in handlers:
+            if not isinstance(h, LogHandler):
+                pass
+            handlers.remove(h)
+        root.handlers = handlers
 
     @staticmethod
     def clean(message):
@@ -64,7 +78,7 @@ class LogHandler(SysLogHandler):
         Emit the specified log record.
         Provides the following:
         - Replace newlines with spaces per syslog RFCs.
-        - Emit stack traces in a following cleaned log record.
+        - Emit stack traces in following log records.
         :param record: A log record.
         :type record: LogRecord
         """
@@ -74,15 +88,18 @@ class LogHandler(SysLogHandler):
         record.args = tuple()
         if record.exc_info:
             msg = self.formatter.formatException(record.exc_info)
-            new_record = LogRecord(
-                name=record.name,
-                level=record.levelno,
-                pathname=record.pathname,
-                lineno=record.lineno,
-                msg=LogHandler.clean(msg),
-                args=tuple(),
-                exc_info=None)
-            records.append(new_record)
+            for line in msg.split('\n'):
+                _record = LogRecord(
+                    name=record.name,
+                    level=record.levelno,
+                    pathname=record.pathname,
+                    lineno=record.lineno,
+                    msg=line,
+                    args=tuple(),
+                    exc_info=None)
+                records.append(_record)
             record.exc_info = None
         for r in records:
             SysLogHandler.emit(self, r)
+
+
