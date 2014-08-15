@@ -166,8 +166,8 @@ class Exchange(BaseExchange):
         :type url: str
         :return: self
         """
-        plugin = Provider.find(url)
-        impl = plugin.Exchange(self.name, policy=self.policy)
+        provider = Provider.find(url)
+        impl = provider.Exchange(self.name, policy=self.policy)
         impl.durable = self.durable
         impl.auto_delete = self.auto_delete
         impl.declare(url)
@@ -179,8 +179,8 @@ class Exchange(BaseExchange):
         :type url: str
         :return: self
         """
-        plugin = Provider.find(url)
-        impl = plugin.Exchange(self.name)
+        provider = Provider.find(url)
+        impl = provider.Exchange(self.name)
         impl.delete(url)
 
 
@@ -253,8 +253,8 @@ class Queue(BaseQueue):
         :type url: str
         :return: self
         """
-        plugin = Provider.find(url)
-        impl = plugin.Queue(self.name, self.exchange, self.routing_key)
+        provider = Provider.find(url)
+        impl = provider.Queue(self.name, self.exchange, self.routing_key)
         impl.durable = self.durable
         impl.auto_delete = self.auto_delete
         impl.exclusive = self.exclusive
@@ -267,8 +267,8 @@ class Queue(BaseQueue):
         :type url: str
         :return: self
         """
-        plugin = Provider.find(url)
-        impl = plugin.Queue(self.name)
+        provider = Provider.find(url)
+        impl = provider.Queue(self.name)
         impl.delete(url)
         
     def destination(self, url):
@@ -279,8 +279,8 @@ class Queue(BaseQueue):
         :return: A destination for the node.
         :rtype: Destination
         """
-        plugin = Provider.find(url)
-        impl = plugin.Queue(self.name, self.exchange, self.routing_key)
+        provider = Provider.find(url)
+        impl = provider.Queue(self.name, self.exchange, self.routing_key)
         return impl.destination(url)
 
 
@@ -419,8 +419,8 @@ class Reader(BaseReader):
         :see: gofer.messaging.provider.url.URL
         """
         BaseReader.__init__(self, queue, url)
-        plugin = Provider.find(url)
-        self._impl = plugin.Reader(queue, url)
+        provider = Provider.find(url)
+        self._impl = provider.Reader(queue, url)
 
     def channel(self):
         """
@@ -466,6 +466,7 @@ class Reader(BaseReader):
         :rtype: (Document, callable)
         :raises: model.InvalidDocument
         """
+        self._impl.authenticator = self.authenticator
         return self._impl.next(timeout)
 
     def search(self, sn, timeout=90):
@@ -538,8 +539,8 @@ class Producer(BaseProducer):
         :type url: str
         """
         BaseProducer.__init__(self, url)
-        plugin = Provider.find(url)
-        self._impl = plugin.Producer(url)
+        provider = Provider.find(url)
+        self._impl = provider.Producer(url)
 
     def channel(self):
         """
@@ -578,6 +579,7 @@ class Producer(BaseProducer):
         :return: The message serial number.
         :rtype: str
         """
+        self._impl.authenticator = self.authenticator
         return self._impl.send(destination, ttl, **body)
 
     def broadcast(self, destinations, ttl=None, **body):
@@ -591,6 +593,7 @@ class Producer(BaseProducer):
         :return: A list of (addr,sn).
         :rtype: list
         """
+        self._impl.authenticator = self.authenticator
         return self._impl.broadcast(destinations, ttl, **body)
 
 
@@ -633,8 +636,8 @@ class PlainProducer(BasePlainProducer):
         :type url: str
         """
         BasePlainProducer.__init__(self, url)
-        plugin = Provider.find(url)
-        self._impl = plugin.PlainProducer(url)
+        provider = Provider.find(url)
+        self._impl = provider.PlainProducer(url)
 
     def channel(self):
         """
@@ -672,6 +675,7 @@ class PlainProducer(BasePlainProducer):
         :param ttl: Time to Live (seconds)
         :type ttl: float
         """
+        self._impl.authenticator = self.authenticator
         return self._impl.send(destination, content, ttl)
 
     def broadcast(self, destinations, content, ttl=None):
@@ -682,6 +686,7 @@ class PlainProducer(BasePlainProducer):
         :param content: The message content
         :type content: buf
         """
+        self._impl.authenticator = self.authenticator
         return self._impl.broadcast(destinations, content, ttl)
 
 
@@ -841,8 +846,8 @@ class Broker(BaseBroker):
         :type url: str|URL
         """
         BaseBroker.__init__(self, url)
-        plugin = Provider.find(url)
-        self._impl = plugin.Broker(url)
+        provider = Provider.find(url)
+        self._impl = provider.Broker(url)
 
     def connect(self):
         """
