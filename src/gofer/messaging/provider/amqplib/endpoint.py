@@ -16,8 +16,8 @@ from logging import getLogger
 from amqplib.client_0_8 import AMQPChannelException
 
 from gofer import synchronized
-from gofer.transport.model import BaseEndpoint
-from gofer.transport.amqplib.broker import Broker, CONNECTION_EXCEPTIONS
+from gofer.messaging.provider.model import BaseEndpoint
+from gofer.messaging.provider.amqplib.broker import Broker, CONNECTION_EXCEPTIONS
 
 
 log = getLogger(__name__)

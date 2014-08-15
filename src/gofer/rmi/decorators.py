@@ -19,7 +19,7 @@ Provides decorator classes & funcitons.
 """
 
 from gofer import NAME
-from gofer.messaging.model import Options
+from gofer.common import Options
 from gofer.collator import Collator
 
 

@@ -9,14 +9,12 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from gofer.transport.model import Reader
-
-
 from threading import Thread
 from logging import getLogger
 
 from gofer.messaging import auth
 from gofer.messaging import model
+from gofer.messaging.provider.model import Reader
 
 
 log = getLogger(__name__)

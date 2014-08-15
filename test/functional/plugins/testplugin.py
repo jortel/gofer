@@ -22,7 +22,7 @@ from gofer.decorators import *
 from gofer.agent.plugin import Plugin
 from gofer.agent.rmi import Context
 from gofer.messaging.auth import Authenticator, ValidationFailed
-from gofer.transport.model import Producer, Destination
+from gofer.messaging import Producer, Destination
 
 log = getLogger(__name__)
 plugin = Plugin.find(__name__)

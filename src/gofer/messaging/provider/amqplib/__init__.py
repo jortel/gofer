@@ -9,15 +9,15 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from gofer.transport.qpid.model import Exchange, Queue
-from gofer.transport.qpid.broker import Broker
-from gofer.transport.qpid.consumer import Reader
-from gofer.transport.qpid.producer import Producer, send
-from gofer.transport.qpid.endpoint import Endpoint
+
+from gofer.messaging.provider.amqplib.model import Exchange, Queue
+from gofer.messaging.provider.amqplib.broker import Broker
+from gofer.messaging.provider.amqplib.consumer import Reader
+from gofer.messaging.provider.amqplib.producer import Producer, send
+from gofer.messaging.provider.amqplib.endpoint import Endpoint
 
 
 PROVIDES = [
-    'AMQP-0-10',
-    'qpid-messaging',
-    'qpid'
+    'AMQP-0-8',
+    'rabbitmq'
 ]

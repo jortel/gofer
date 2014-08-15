@@ -22,7 +22,8 @@ import inspect
 import traceback as tb
 
 from gofer import NAME
-from gofer.messaging.model import Document, Options
+from gofer.common import Options
+from gofer.messaging import Document
 from gofer.pam import authenticate as pam_authenticate
 
 from logging import getLogger

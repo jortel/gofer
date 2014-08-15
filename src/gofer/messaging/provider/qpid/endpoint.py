@@ -22,8 +22,8 @@ import atexit
 from threading import RLock, local as Local
 from logging import getLogger
 
-from gofer.transport.model import BaseEndpoint
-from gofer.transport.qpid.broker import Broker
+from gofer.messaging.provider.model import BaseEndpoint
+from gofer.messaging.provider.qpid.broker import Broker
 
 
 log = getLogger(__name__)
@@ -132,7 +132,7 @@ class Endpoint(BaseEndpoint):
 
     def __init__(self, url):
         """
-        :param url: The broker url <transport>://<user>/<pass>@<host>:<port>.
+        :param url: The broker url <provider>://<user>/<pass>@<host>:<port>.
         :type url: str
         """
         BaseEndpoint.__init__(self, url)

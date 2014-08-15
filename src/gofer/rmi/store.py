@@ -26,7 +26,7 @@ from logging import getLogger
 from Queue import Queue
 
 from gofer import NAME, Singleton
-from gofer.messaging.model import Document
+from gofer.messaging import Document
 from gofer.rmi.window import Window
 from gofer.rmi.tracker import Tracker
 

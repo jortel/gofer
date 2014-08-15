@@ -27,8 +27,8 @@ from qpid.messaging import Empty
 from gofer.messaging import auth
 from gofer.messaging import model
 from gofer.messaging.model import Document
-from gofer.transport.model import BaseReader, Ack
-from gofer.transport.qpid.endpoint import Endpoint
+from gofer.messaging.provider.model import BaseReader, Ack
+from gofer.messaging.provider.qpid.endpoint import Endpoint
 
 
 log = getLogger(__name__)
@@ -63,10 +63,10 @@ class Reader(BaseReader):
     def __init__(self, queue, url=None):
         """
         :param queue: The queue to consumer.
-        :type queue: gofer.transport.model.BaseQueue
+        :type queue: gofer.messaging.provider.model.BaseQueue
         :param url: The broker url.
         :type url: str
-        :see: gofer.transport.url.URL
+        :see: gofer.messaging.provider.url.URL
         """
         BaseReader.__init__(self, queue, url)
         self.queue = queue

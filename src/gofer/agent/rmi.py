@@ -22,8 +22,7 @@ from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import Pending
 from gofer.rmi.dispatcher import Return, PluginNotFound
 from gofer.rmi.threadpool import Direct
-from gofer.messaging.model import Document
-from gofer.transport.model import Producer, Destination
+from gofer.messaging import Document, Producer, Destination
 from gofer.metrics import Timer
 
 

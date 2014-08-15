@@ -11,7 +11,7 @@
 
 from unittest import TestCase
 
-from gofer.transport.url import URL
+from gofer.provider.url import URL
 
 
 class TestURL(TestCase):

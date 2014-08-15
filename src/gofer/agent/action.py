@@ -14,7 +14,7 @@
 #
 
 """
-Action slass for gofer agent.
+Action class for gofer agent.
 """
 
 import inspect

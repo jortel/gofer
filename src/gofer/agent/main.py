@@ -25,7 +25,7 @@ from gofer.agent.logutil import LogHandler
 
 LogHandler.install()
 
-from gofer import *
+from gofer import NAME
 from gofer import pam
 from gofer.agent.plugin import PluginLoader
 from gofer.agent.lock import Lock, LockFailed

@@ -16,6 +16,8 @@ except ImportError:
 
 from logging import getLogger
 
+from gofer.common import Options
+
 
 log = getLogger(__name__)
 
@@ -85,54 +87,6 @@ def validate(document):
 
 
 # --- model ------------------------------------------------------------------
-
-
-class Options(object):
-    """
-    Provides a dict-like object that also provides
-    (.) dot notation accessors.
-    """
-
-    def __init__(self, *things, **keywords):
-        for thing in things:
-            if isinstance(thing, dict):
-                self.__dict__.update(thing)
-                continue
-            if isinstance(thing, Options):
-                self.__dict__.update(thing.__dict__)
-                continue
-            raise ValueError(thing)
-        self.__dict__.update(keywords)
-
-    def __getattr__(self, name):
-        return self.__dict__.get(name)
-
-    def __getitem__(self, name):
-        return self.__dict__[name]
-
-    def __setitem__(self, name, value):
-        self.__dict__[name] = value
-
-    def __iadd__(self, thing):
-        if isinstance(thing, dict):
-            self.__dict__.update(thing)
-            return self
-        if isinstance(thing, object):
-            self.__dict__.update(thing.__dict__)
-            return self
-        raise ValueError(thing)
-
-    def __len__(self):
-        return len(self.__dict__)
-
-    def __iter__(self):
-        return iter(self.__dict__)
-
-    def __repr__(self):
-        return repr(self.__dict__)
-
-    def __str__(self):
-        return str(self.__dict__)
 
 
 class Document(Options):

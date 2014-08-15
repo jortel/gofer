@@ -19,8 +19,8 @@ from logging import getLogger
 from uuid import uuid4
 
 from gofer import Singleton
-from gofer.transport.url import URL
-from gofer.transport.factory import Transport
+from gofer.messaging.provider.url import URL
+from gofer.messaging.provider.factory import Provider
 
 # routing key
 ROUTE_ALL = '#'
@@ -166,7 +166,7 @@ class Exchange(BaseExchange):
         :type url: str
         :return: self
         """
-        plugin = Transport.find(url)
+        plugin = Provider.find(url)
         impl = plugin.Exchange(self.name, policy=self.policy)
         impl.durable = self.durable
         impl.auto_delete = self.auto_delete
@@ -179,7 +179,7 @@ class Exchange(BaseExchange):
         :type url: str
         :return: self
         """
-        plugin = Transport.find(url)
+        plugin = Provider.find(url)
         impl = plugin.Exchange(self.name)
         impl.delete(url)
 
@@ -253,7 +253,7 @@ class Queue(BaseQueue):
         :type url: str
         :return: self
         """
-        plugin = Transport.find(url)
+        plugin = Provider.find(url)
         impl = plugin.Queue(self.name, self.exchange, self.routing_key)
         impl.durable = self.durable
         impl.auto_delete = self.auto_delete
@@ -267,7 +267,7 @@ class Queue(BaseQueue):
         :type url: str
         :return: self
         """
-        plugin = Transport.find(url)
+        plugin = Provider.find(url)
         impl = plugin.Queue(self.name)
         impl.delete(url)
         
@@ -279,7 +279,7 @@ class Queue(BaseQueue):
         :return: A destination for the node.
         :rtype: Destination
         """
-        plugin = Transport.find(url)
+        plugin = Provider.find(url)
         impl = plugin.Queue(self.name, self.exchange, self.routing_key)
         return impl.destination(url)
 
@@ -365,7 +365,7 @@ class BaseReader(BaseEndpoint):
     def __init__(self, queue, url):
         """
         :param queue: The queue to consumer.
-        :type queue: gofer.transport.model.BaseQueue
+        :type queue: gofer.messaging.provider.model.BaseQueue
         :param url: The broker url.
         :type url: str
         """
@@ -413,13 +413,13 @@ class Reader(BaseReader):
     def __init__(self, queue, url=None):
         """
         :param queue: The queue to consumer.
-        :type queue: gofer.transport.model.BaseQueue
+        :type queue: gofer.messaging.provider.model.BaseQueue
         :param url: The broker url.
         :type url: str
-        :see: gofer.transport.url.URL
+        :see: gofer.messaging.provider.url.URL
         """
         BaseReader.__init__(self, queue, url)
-        plugin = Transport.find(url)
+        plugin = Provider.find(url)
         self._impl = plugin.Reader(queue, url)
 
     def channel(self):
@@ -504,7 +504,7 @@ class BaseProducer(BaseEndpoint):
         """
         Send a message.
         :param destination: An AMQP destination.
-        :type destination: gofer.transport.model.Destination
+        :type destination: gofer.messaging.provider.model.Destination
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
@@ -517,7 +517,7 @@ class BaseProducer(BaseEndpoint):
         """
         Broadcast a message to (N) queues.
         :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.transport.node.Node,..]
+        :type destinations: [gofer.messaging.provider.node.Node,..]
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
@@ -538,7 +538,7 @@ class Producer(BaseProducer):
         :type url: str
         """
         BaseProducer.__init__(self, url)
-        plugin = Transport.find(url)
+        plugin = Provider.find(url)
         self._impl = plugin.Producer(url)
 
     def channel(self):
@@ -571,7 +571,7 @@ class Producer(BaseProducer):
         """
         Send a message.
         :param destination: An AMQP destination.
-        :type destination: gofer.transport.model.Destination
+        :type destination: gofer.messaging.provider.model.Destination
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
@@ -584,7 +584,7 @@ class Producer(BaseProducer):
         """
         Broadcast a message to (N) queues.
         :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.transport.node.Node,..]
+        :type destinations: [gofer.messaging.provider.node.Node,..]
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
@@ -603,7 +603,7 @@ class BasePlainProducer(BaseEndpoint):
         """
         Send a message.
         :param destination: An AMQP destination.
-        :type destination: gofer.transport.model.Destination
+        :type destination: gofer.messaging.provider.model.Destination
         :param content: The message content
         :type content: buf
         :param ttl: Time to Live (seconds)
@@ -615,7 +615,7 @@ class BasePlainProducer(BaseEndpoint):
         """
         Broadcast a message to (N) queues.
         :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.transport.node.Node,..]
+        :type destinations: [gofer.messaging.provider.node.Node,..]
         :param content: The message content
         :type content: buf
         """
@@ -629,11 +629,11 @@ class PlainProducer(BasePlainProducer):
 
     def __init__(self, url=DEFAULT_URL):
         """
-        :param url: The broker url <transport>://<user>:<pass>@<host>:<port>/<virtual-host>.
+        :param url: The broker url <provider>://<user>:<pass>@<host>:<port>/<virtual-host>.
         :type url: str
         """
         BasePlainProducer.__init__(self, url)
-        plugin = Transport.find(url)
+        plugin = Provider.find(url)
         self._impl = plugin.PlainProducer(url)
 
     def channel(self):
@@ -666,7 +666,7 @@ class PlainProducer(BasePlainProducer):
         """
         Send a message.
         :param destination: An AMQP destination.
-        :type destination: gofer.transport.model.Destination
+        :type destination: gofer.messaging.provider.model.Destination
         :param content: The message content
         :type content: buf
         :param ttl: Time to Live (seconds)
@@ -678,7 +678,7 @@ class PlainProducer(BasePlainProducer):
         """
         Broadcast a message to (N) queues.
         :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.transport.node.Node,..]
+        :type destinations: [gofer.messaging.provider.node.Node,..]
         :param content: The message content
         :type content: buf
         """
@@ -735,7 +735,7 @@ class BaseBroker(object):
     def __init__(self, url):
         """
         :param url: The broker url:
-            <transport>+<scheme>://<userid:password@<host>:<port>/<virtual-host>.
+            <provider>+<scheme>://<userid:password@<host>:<port>/<virtual-host>.
         :type url: str|URL
         """
         if not isinstance(url, URL):
@@ -757,13 +757,13 @@ class BaseBroker(object):
         return self.url.simple()
 
     @property
-    def transport(self):
+    def provider(self):
         """
-        Get the (gofer) transport component of the url.
-        :return: The transport component.
+        Get the (gofer) provider component of the url.
+        :return: The provider component.
         :rtype: str
         """
-        return self.url.transport
+        return self.url.provider
 
     @property
     def scheme(self):
@@ -837,11 +837,11 @@ class Broker(BaseBroker):
     def __init__(self, url=DEFAULT_URL):
         """
         :param url: The broker url:
-            <transport>+<scheme>://<userid:password@<host>:<port>/<virtual-host>.
+            <provider>+<scheme>://<userid:password@<host>:<port>/<virtual-host>.
         :type url: str|URL
         """
         BaseBroker.__init__(self, url)
-        plugin = Transport.find(url)
+        plugin = Provider.find(url)
         self._impl = plugin.Broker(url)
 
     def connect(self):

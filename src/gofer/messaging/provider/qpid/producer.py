@@ -24,8 +24,8 @@ from qpid.messaging import Message
 
 from gofer.messaging import auth
 from gofer.messaging.model import VERSION, Document
-from gofer.transport.model import BaseProducer, BasePlainProducer
-from gofer.transport.qpid.endpoint import Endpoint
+from gofer.messaging.provider.model import BaseProducer, BasePlainProducer
+from gofer.messaging.provider.qpid.endpoint import Endpoint
 
 
 log = getLogger(__name__)
@@ -38,9 +38,9 @@ def send(endpoint, destination, ttl=None, **body):
     """
     Send a message.
     :param endpoint: An AMQP endpoint.
-    :type endpoint: gofer.transport.model.BaseEndpoint
+    :type endpoint: gofer.messaging.provider.model.BaseEndpoint
     :param destination: An AMQP destination.
-    :type destination: gofer.transport.model.Destination
+    :type destination: gofer.messaging.provider.model.Destination
     :param ttl: Time to Live (seconds)
     :type ttl: float
     :keyword body: document body.
@@ -93,7 +93,7 @@ class Producer(BaseProducer):
         """
         Send a message.
         :param destination: An AMQP destination.
-        :type destination: gofer.transport.model.Destination
+        :type destination: gofer.messaging.provider.model.Destination
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
@@ -106,7 +106,7 @@ class Producer(BaseProducer):
         """
         Broadcast a message to (N) queues.
         :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.transport.node.Node,..]
+        :type destinations: [gofer.messaging.provider.node.Node,..]
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
@@ -145,7 +145,7 @@ class PlainProducer(BasePlainProducer):
         """
         Send a message.
         :param destination: An AMQP destination.
-        :type destination: gofer.transport.model.Destination
+        :type destination: gofer.messaging.provider.model.Destination
         :param content: The message content
         :type content: buf
         :param ttl: Time to Live (seconds)
@@ -165,7 +165,7 @@ class PlainProducer(BasePlainProducer):
         """
         Broadcast a message to (N) queues.
         :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.transport.node.Node,..]
+        :type destinations: [gofer.messaging.provider.node.Node,..]
         :param content: The message content
         :type content: buf
         """

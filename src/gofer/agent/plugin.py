@@ -20,10 +20,11 @@ Plugin classes.
 import os
 import imp
 import errno
+import inspect
 
 from logging import getLogger
 
-from gofer import *
+from gofer import NAME
 from gofer.rmi.dispatcher import Dispatcher
 from gofer.rmi.threadpool import ThreadPool
 from gofer.rmi.consumer import RequestConsumer
@@ -34,7 +35,7 @@ from gofer.config import Config, Graph, get_bool
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
 from gofer.collator import Module
-from gofer.transport.model import Broker, Queue
+from gofer.messaging import Broker, Queue
 
 
 log = getLogger(__name__)

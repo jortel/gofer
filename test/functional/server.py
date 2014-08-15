@@ -29,8 +29,7 @@ from gofer.rmi.dispatcher import *
 from gofer.rmi.async import ReplyConsumer
 from gofer.metrics import Timer
 from gofer.proxy import Agent as RealAgent
-from gofer.transport.model import Queue
-from gofer.messaging.auth import Authenticator, ValidationFailed
+from gofer.messaging import Queue, Authenticator, ValidationFailed
 
 from plugins import *
 
@@ -38,7 +37,7 @@ basicConfig(filename='/opt/gofer/server.log')
 
 log = getLogger(__name__)
 
-# getLogger('gofer.transport').setLevel(DEBUG)
+# getLogger('gofer.provider').setLevel(DEBUG)
 # getLogger('gofer.messaging').setLevel(DEBUG)
 
 

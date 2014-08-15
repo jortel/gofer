@@ -16,10 +16,7 @@
 from logging import getLogger
 
 from gofer.rmi.store import Pending
-from gofer.messaging.factory import Consumer
-from gofer.messaging.model import Document
-from gofer.transport.factory import Transport
-from gofer.transport.model import Destination
+from gofer.messaging import Provider, Consumer, Document, Destination
 
 log = getLogger(__name__)
 
@@ -87,7 +84,7 @@ class RequestConsumer(Consumer):
         try:
             endpoint = self.reader
             destination = Destination.create(replyto)
-            plugin = Transport.find(self.url)
-            plugin.send(endpoint, destination, sn=sn, any=any, status=status, **details)
+            provider = Provider.find(self.url)
+            provider.send(endpoint, destination, sn=sn, any=any, status=status, **details)
         except Exception:
             log.exception('send (%s), failed', status)

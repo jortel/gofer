@@ -21,9 +21,9 @@ Defined URL objects.
 class URL:
     """
     Represents a broker URL.
-    Format: <transport>+<scheme>://<user>:<password>@<host>:<port></>.
-    :ivar transport: A URL transport.
-    :type transport: str
+    Format: <provider>+<scheme>://<user>:<password>@<host>:<port></>.
+    :ivar provider: A URL provider.
+    :type provider: str
     :ivar host: The host.
     :type host: str
     :ivar port: The tcp port.
@@ -38,10 +38,10 @@ class URL:
         """
         Split the url string.
         :type s: str
-        :return: The url parts: (transport, scheme, host, port, userid, password, path)
+        :return: The url parts: (provider, scheme, host, port, userid, password, path)
         :rtype: tuple
         """
-        transport, scheme, netloc, path = \
+        provider, scheme, netloc, path = \
             URL.split_url(s)
         userid_password, host_port = \
             URL.split_location(netloc)
@@ -49,7 +49,7 @@ class URL:
             URL.split_userid_password(userid_password)
         host, port = \
             URL.split_host_port(host_port, URL._port(scheme))
-        return transport, \
+        return provider, \
                scheme, \
                host, \
                port, \
@@ -60,32 +60,32 @@ class URL:
     @staticmethod
     def split_url(s):
         """
-        Split the transport and url parts.
+        Split the provider and url parts.
         :param s: A url.
         :type s: str
-        :return: (transport, network-location, path)
+        :return: (provider, network-location, path)
         :rtype: tuple
         """
-        # transport
+        # provider
         part = s.split('://', 1)
         if len(part) > 1:
-            transport, host_port = (part[0], part[1])
+            provider, host_port = (part[0], part[1])
         else:
-            transport, host_port = (URL.TCP[0], part[0])
+            provider, host_port = (URL.TCP[0], part[0])
         part = host_port.split('/', 1)
         # path
         if len(part) > 1:
             location, path = (part[0], part[1])
         else:
             location, path = (host_port, None)
-        transport, scheme = URL.split_transport(transport)
-        return transport, scheme, location, path
+        provider, scheme = URL.split_provider(provider)
+        return provider, scheme, location, path
 
     @staticmethod
-    def split_transport(s):
+    def split_provider(s):
         """
-        Split the transport into gofer-transport and the scheme.
-        :param s: <transport>+<scheme>
+        Split the provider into gofer-provider and the scheme.
+        :param s: <provider>+<scheme>
         :return:
         """
         part = s.split('+', 1)
@@ -140,15 +140,15 @@ class URL:
             return part[0], default
 
     @staticmethod
-    def _port(transport):
+    def _port(provider):
         """
-        Get the port based on the transport.
-        :param transport: The URL transport or scheme.
-        :type transport: str
+        Get the port based on the provider.
+        :param provider: The URL provider or scheme.
+        :type provider: str
         :return: port
         :rtype: int
         """
-        if transport.lower() in URL.SSL:
+        if provider.lower() in URL.SSL:
             return 5671
         else:
             return 5672
@@ -156,11 +156,11 @@ class URL:
     def __init__(self, url):
         """
         :param url: A url string format:
-            <transport>://<host>:<port>userid:password@<transport>://<host>:<port>.
+            <provider>://<host>:<port>userid:password@<provider>://<host>:<port>.
         :type url: str
         """
         self.input = url
-        self.transport, \
+        self.provider, \
             self.scheme,\
             self.host, \
             self.port, \

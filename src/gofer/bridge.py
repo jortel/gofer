@@ -19,8 +19,8 @@ import socket
 from threading import Thread
 from uuid import uuid4
 
-from gofer.messaging.factory import Consumer
-from gofer.transport.model import Queue, Reader, Producer, PlainProducer
+from gofer.messaging.consumer import Consumer
+from gofer.provider.model import Queue, Reader, Producer, PlainProducer
 from logging import getLogger
 
 log = getLogger(__name__)

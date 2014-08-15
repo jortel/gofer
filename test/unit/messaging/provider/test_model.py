@@ -19,18 +19,18 @@ from mock import patch, Mock
 
 from gofer.messaging.model import Document
 
-from gofer.transport.url import URL
+from gofer.provider.url import URL
 
-from gofer.transport.model import Destination
-from gofer.transport.model import Node
-from gofer.transport.model import BaseExchange, Exchange
-from gofer.transport.model import BaseQueue, Queue
-from gofer.transport.model import BaseEndpoint
-from gofer.transport.model import BaseReader, Reader
-from gofer.transport.model import BaseProducer, Producer
-from gofer.transport.model import BasePlainProducer, PlainProducer
-from gofer.transport.model import BaseBroker, BrokerSingleton, Broker
-from gofer.transport.model import Ack
+from gofer.provider.model import Destination
+from gofer.provider.model import Node
+from gofer.provider.model import BaseExchange, Exchange
+from gofer.provider.model import BaseQueue, Queue
+from gofer.provider.model import BaseEndpoint
+from gofer.provider.model import BaseReader, Reader
+from gofer.provider.model import BaseProducer, Producer
+from gofer.provider.model import BasePlainProducer, PlainProducer
+from gofer.provider.model import BaseBroker, BrokerSingleton, Broker
+from gofer.provider.model import Ack
 
 
 TEST_URL = 'qpid+amqp://elmer:fudd@test.com/test'
@@ -135,7 +135,7 @@ class TestExchange(TestCase):
         self.assertEqual(exchange.name, name)
         self.assertEqual(exchange.policy, policy)
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_declare(self, _find):
         plugin = Mock()
         _find.return_value = plugin
@@ -149,7 +149,7 @@ class TestExchange(TestCase):
         self.assertEqual(impl.durable, exchange.durable)
         self.assertEqual(impl.auto_delete, exchange.auto_delete)
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_delete(self, _find):
         plugin = Mock()
         _find.return_value = plugin
@@ -207,7 +207,7 @@ class TestQueue(TestCase):
         self.assertEqual(queue.exchange, exchange)
         self.assertEqual(queue.routing_key, routing_key)
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_declare(self, _find):
         plugin = Mock()
         _find.return_value = plugin
@@ -226,7 +226,7 @@ class TestQueue(TestCase):
         self.assertEqual(impl.auto_delete, queue.auto_delete)
         self.assertEqual(impl.exclusive, queue.exclusive)
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_delete(self, _find):
         plugin = Mock()
         _find.return_value = plugin
@@ -237,7 +237,7 @@ class TestQueue(TestCase):
         impl = plugin.Queue()
         impl.delete.assert_called_with(TEST_URL)
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_destination(self, _find):
         _impl = Mock()
         plugin = Mock()
@@ -259,7 +259,7 @@ class TestQueue(TestCase):
 
 class TestBaseEndpoint(TestCase):
 
-    @patch('gofer.transport.model.uuid4')
+    @patch('gofer.provider.model.uuid4')
     def test_construction(self, _uuid4):
         _uuid4.return_value = '1234'
         endpoint = BaseEndpoint(TEST_URL)
@@ -267,7 +267,7 @@ class TestBaseEndpoint(TestCase):
         self.assertEqual(endpoint.uuid, str(_uuid4()))
         self.assertEqual(endpoint.authenticator, None)
 
-    @patch('gofer.transport.model.uuid4')
+    @patch('gofer.provider.model.uuid4')
     def test_id(self, _uuid4):
         _uuid4.return_value = '1234'
         endpoint = BaseEndpoint(TEST_URL)
@@ -277,27 +277,27 @@ class TestBaseEndpoint(TestCase):
         endpoint = BaseEndpoint(TEST_URL)
         self.assertRaises(NotImplementedError, endpoint.endpoint)
 
-    @patch('gofer.transport.model.BaseEndpoint.endpoint')
+    @patch('gofer.provider.model.BaseEndpoint.endpoint')
     def test_channel(self, _endpoint):
         endpoint = BaseEndpoint(TEST_URL)
         channel = endpoint.channel()
         _endpoint().channel.assert_called_with()
         self.assertEqual(channel, _endpoint().channel())
 
-    @patch('gofer.transport.model.BaseEndpoint.endpoint')
+    @patch('gofer.provider.model.BaseEndpoint.endpoint')
     def test_open(self, _endpoint):
         endpoint = BaseEndpoint(TEST_URL)
         endpoint.open()
         _endpoint().open.assert_called_with()
 
-    @patch('gofer.transport.model.BaseEndpoint.endpoint')
+    @patch('gofer.provider.model.BaseEndpoint.endpoint')
     def test_ack(self, _endpoint):
         message = 'hello'
         endpoint = BaseEndpoint(TEST_URL)
         endpoint.ack(message)
         _endpoint().ack.assert_called_with(message)
 
-    @patch('gofer.transport.model.BaseEndpoint.endpoint')
+    @patch('gofer.provider.model.BaseEndpoint.endpoint')
     def test_close(self, _endpoint):
         endpoint = BaseEndpoint(TEST_URL)
         endpoint.close()
@@ -307,7 +307,7 @@ class TestBaseEndpoint(TestCase):
         endpoint = BaseEndpoint(TEST_URL)
         self.assertEqual(endpoint, endpoint.__enter__())
 
-    @patch('gofer.transport.model.BaseEndpoint.endpoint')
+    @patch('gofer.provider.model.BaseEndpoint.endpoint')
     def test_enter(self, _close):
         endpoint = BaseEndpoint(TEST_URL)
         endpoint.__exit__()
@@ -347,7 +347,7 @@ class TestBaseReader(TestCase):
 
 class TestReader(TestCase):
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_construction(self, _find):
         _impl = Mock()
         plugin = Mock()
@@ -359,7 +359,7 @@ class TestReader(TestCase):
         _find.assert_called_with(url)
         plugin.Reader.assert_called_with(queue, url)
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_channel(self, _find):
         _impl = Mock()
         _impl.channel.return_value = Mock()
@@ -373,7 +373,7 @@ class TestReader(TestCase):
         _impl.channel.assert_called_with()
         self.assertEqual(channel, _impl.channel())
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_open(self, _find):
         _impl = Mock()
         plugin = Mock()
@@ -385,7 +385,7 @@ class TestReader(TestCase):
         reader.open()
         _impl.open.assert_called_with()
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_ack(self, _find):
         message = Mock()
         _impl = Mock()
@@ -398,7 +398,7 @@ class TestReader(TestCase):
         reader.ack(message)
         _impl.ack.assert_called_with(message)
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_close(self, _find):
         _impl = Mock()
         plugin = Mock()
@@ -411,7 +411,7 @@ class TestReader(TestCase):
         _impl.close.assert_called_with()
 
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_get(self, _find):
         message = Mock()
         _impl = Mock()
@@ -426,7 +426,7 @@ class TestReader(TestCase):
         _impl.get.assert_called_with(10)
         self.assertEqual(m, message)
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_next(self, _find):
         ack = Mock()
         document = Mock()
@@ -443,7 +443,7 @@ class TestReader(TestCase):
         self.assertEqual(retval[0], document)
         self.assertEqual(retval[1], ack)
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_search(self, _find):
         received = [
             (Document(sn='1'), Mock()),
@@ -469,7 +469,7 @@ class TestReader(TestCase):
         self.assertTrue(received[1][1].called)
         self.assertFalse(received[2][1].called)
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_search_timeout(self, _find):
         _impl = Mock()
         _impl.next.return_value = (None, None)
@@ -490,7 +490,7 @@ class TestReader(TestCase):
 
 class TestBaseProducer(TestCase):
 
-    @patch('gofer.transport.model.uuid4')
+    @patch('gofer.provider.model.uuid4')
     def test_construction(self, _uuid4):
         _uuid4.return_value = '1234'
         producer = BaseProducer(TEST_URL)
@@ -509,8 +509,8 @@ class TestBaseProducer(TestCase):
 
 class TestProducer(TestCase):
 
-    @patch('gofer.transport.model.uuid4')
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.uuid4')
+    @patch('gofer.provider.model.Transport.find')
     def test_construction(self, _find, _uuid4):
         _impl = Mock()
         plugin = Mock()
@@ -525,7 +525,7 @@ class TestProducer(TestCase):
         self.assertEqual(producer.authenticator, None)
         self.assertEqual(producer._impl, _impl)
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_channel(self, _find):
         _impl = Mock()
         _impl.channel.return_value = Mock()
@@ -538,7 +538,7 @@ class TestProducer(TestCase):
         _impl.channel.assert_called_with()
         self.assertEqual(channel, _impl.channel())
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_open(self, _find):
         _impl = Mock()
         plugin = Mock()
@@ -549,7 +549,7 @@ class TestProducer(TestCase):
         producer.open()
         _impl.open.assert_called_with()
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_ack(self, _find):
         message = Mock()
         _impl = Mock()
@@ -561,7 +561,7 @@ class TestProducer(TestCase):
         producer.ack(message)
         _impl.ack.assert_called_with(message)
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_close(self, _find):
         _impl = Mock()
         plugin = Mock()
@@ -572,7 +572,7 @@ class TestProducer(TestCase):
         producer.close()
         _impl.close.assert_called_with()
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_send(self, _find):
         _impl = Mock()
         _impl.send.return_value = '456'
@@ -587,7 +587,7 @@ class TestProducer(TestCase):
         _impl.send.assert_called_with(destination, ttl, **body)
         self.assertEqual(sn, _impl.send())
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_broadcast(self, _find):
         _impl = Mock()
         _impl.broadcast.return_value = ['456']
@@ -608,7 +608,7 @@ class TestProducer(TestCase):
 
 class TestBasePlainProducer(TestCase):
 
-    @patch('gofer.transport.model.uuid4')
+    @patch('gofer.provider.model.uuid4')
     def test_construction(self, _uuid4):
         _uuid4.return_value = '1234'
         producer = BasePlainProducer(TEST_URL)
@@ -627,8 +627,8 @@ class TestBasePlainProducer(TestCase):
 
 class TestPlainProducer(TestCase):
 
-    @patch('gofer.transport.model.uuid4')
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.uuid4')
+    @patch('gofer.provider.model.Transport.find')
     def test_construction(self, _find, _uuid4):
         _impl = Mock()
         plugin = Mock()
@@ -643,7 +643,7 @@ class TestPlainProducer(TestCase):
         self.assertEqual(producer.authenticator, None)
         self.assertEqual(producer._impl, _impl)
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_channel(self, _find):
         _impl = Mock()
         _impl.channel.return_value = Mock()
@@ -656,7 +656,7 @@ class TestPlainProducer(TestCase):
         _impl.channel.assert_called_with()
         self.assertEqual(channel, _impl.channel())
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_open(self, _find):
         _impl = Mock()
         plugin = Mock()
@@ -667,7 +667,7 @@ class TestPlainProducer(TestCase):
         producer.open()
         _impl.open.assert_called_with()
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_ack(self, _find):
         message = Mock()
         _impl = Mock()
@@ -679,7 +679,7 @@ class TestPlainProducer(TestCase):
         producer.ack(message)
         _impl.ack.assert_called_with(message)
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_close(self, _find):
         _impl = Mock()
         plugin = Mock()
@@ -690,7 +690,7 @@ class TestPlainProducer(TestCase):
         producer.close()
         _impl.close.assert_called_with()
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_send(self, _find):
         _impl = Mock()
         _impl.send.return_value = '456'
@@ -706,7 +706,7 @@ class TestPlainProducer(TestCase):
         self.assertEqual(sn, _impl.send())
 
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_broadcast(self, _find):
         _impl = Mock()
         _impl.broadcast.return_value = ['456']
@@ -755,7 +755,7 @@ class TestBaseBroker(TestCase):
 
 class TestBroker(TestCase):
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_construction(self, _find):
         plugin = Mock()
         _find.return_value = plugin
@@ -779,7 +779,7 @@ class TestBroker(TestCase):
         self.assertFalse(b.host_validation)
         self.assertEqual(b._impl, plugin.Broker())
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_connect(self, _find):
         plugin = Mock()
         _find.return_value = plugin
@@ -796,7 +796,7 @@ class TestBroker(TestCase):
         self.assertEqual(b._impl.clientcert, b.clientcert)
         self.assertEqual(b._impl.host_validation, b.host_validation)
 
-    @patch('gofer.transport.model.Transport.find')
+    @patch('gofer.provider.model.Transport.find')
     def test_close(self, _find):
         plugin = Mock()
         _find.return_value = plugin

@@ -20,8 +20,8 @@ Contains request delivery policies.
 from logging import getLogger
 from uuid import uuid4
 
-from gofer.messaging.model import Document, InvalidDocument
-from gofer.transport.model import Producer, Reader, Queue, Destination
+from gofer.messaging import Document, InvalidDocument
+from gofer.messaging import Producer, Reader, Queue, Destination
 from gofer.rmi.dispatcher import Return, RemoteException
 from gofer.metrics import Timer
 
@@ -151,7 +151,7 @@ class RequestMethod:
         """
         Broadcast the request.
         :param addresses: A list of destination AMQP queues.
-        :type addresses: [gofer.transport.model.Destination,..]
+        :type addresses: [gofer.provider.model.Destination,..]
         :param request: A request to send.
         :type request: object
         :keyword any: Any (extra) data.
@@ -227,7 +227,7 @@ class Synchronous(RequestMethod):
         :param sn: The request serial number.
         :type sn: str
         :param reader: A reader.
-        :type reader: gofer.messaging.factory.Reader
+        :type reader: gofer.messaging.consumer.Reader
         :return: The matched reply document.
         :rtype: Document
         """
@@ -247,7 +247,7 @@ class Synchronous(RequestMethod):
         :param sn: The request serial number.
         :type sn: str
         :param reader: A reader.
-        :type reader: gofer.messaging.factory.Reader
+        :type reader: gofer.messaging.consumer.Reader
         :return: The matched reply document.
         :rtype: Document
         """
@@ -350,7 +350,7 @@ class Asynchronous(RequestMethod):
         queue for the specified reply *correlation* tag.
         A trigger(1) specifies a *manual* trigger.
         :param destinations: A list of destinations.
-        :type destinations: [gofer.transport.model.Destination,..]
+        :type destinations: [gofer.provider.model.Destination,..]
         :param request: A request to send.
         :type request: object
         :keyword any: Any (extra) data.

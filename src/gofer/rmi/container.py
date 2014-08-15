@@ -19,8 +19,8 @@ Agent base classes.
 
 from logging import getLogger
 
-from gofer.messaging.model import Options
-from gofer.transport.model import Destination
+from gofer.common import Options
+from gofer.messaging import Destination
 from gofer.rmi.stub import Stub
 from gofer.rmi.window import Window
 

@@ -12,9 +12,9 @@
 
 import string
 
-from gofer.transport.qpid.endpoint import Endpoint
+from gofer.messaging.provider.qpid.endpoint import Endpoint
 
-from gofer.transport.model import BaseExchange, BaseQueue, Destination
+from gofer.messaging.provider.model import BaseExchange, BaseQueue, Destination
 
 
 # --- utils ------------------------------------------------------------------

@@ -16,7 +16,7 @@
 import os
 import logging
 
-from gofer.transport.url import URL
+from gofer.messaging.provider.url import URL
 
 
 log = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 # __package__ not supported in python 2.4
 PACKAGE = '.'.join(__name__.split('.')[:-1])
 
-# symbols required to be provided by all transports
+# symbols required to be supported by all providers
 REQUIRED = [
     'PROVIDES',
     'Exchange',
@@ -44,21 +44,21 @@ REQUIRED = [
 # --- exceptions -------------------------------------------------------------
 
 
-class TransportError(Exception):
+class ProviderError(Exception):
     pass
 
 
-class NoTransportsLoaded(TransportError):
+class NoProvidersLoaded(ProviderError):
 
-    DESCRIPTION = 'No transports loaded'
+    DESCRIPTION = 'No messaging providers loaded'
 
     def __str__(self):
         return self.DESCRIPTION
 
 
-class TransportNotFound(TransportError):
+class ProviderNotFound(ProviderError):
 
-    DESCRIPTION = 'Transport: %s, not-found'
+    DESCRIPTION = 'Messaging provider: %s, not-found'
 
     def __init__(self, name):
         self.name = name
@@ -72,22 +72,22 @@ class TransportNotFound(TransportError):
 
 class Loader:
     """
-    Transport plugin loader.
-    :ivar plugins: Loaded plugins.
-    :type plugins: dict
+    Provider provider loader.
+    :ivar providers: Loaded providers.
+    :type providers: dict
     """
 
     def __init__(self):
-        self.plugins = {}
+        self.providers = {}
 
     @staticmethod
     def _load():
         """
-        Load transport plugins.
-        :return: The loaded plugins.
+        Load provider providers.
+        :return: The loaded providers.
         :rtype: dict
         """
-        plugins = {}
+        providers = {}
         _dir = os.path.dirname(__file__)
         for name in os.listdir(_dir):
             path = os.path.join(_dir, name)
@@ -96,55 +96,55 @@ class Loader:
             try:
                 package = '.'.join((PACKAGE, name))
                 pkg = __import__(package, {}, {}, REQUIRED)
-                plugins[name] = pkg
-                plugins[package] = pkg
+                providers[name] = pkg
+                providers[package] = pkg
                 for capability in pkg.PROVIDES:
-                    plugins[capability] = pkg
+                    providers[capability] = pkg
             except (ImportError, AttributeError),e:
                 log.exception(path)
-        return plugins
+        return providers
 
     def load(self):
         """
-        Load transport plugins.
-        :return: The loaded plugins.
+        Load provider providers.
+        :return: The loaded providers.
         :rtype: dict
         """
-        if not len(self.plugins):
-            self.plugins = Loader._load()
-        return self.plugins
+        if not len(self.providers):
+            self.providers = Loader._load()
+        return self.providers
 
 
-class Transport(object):
+class Provider(object):
 
     urls = {}
     loader = Loader()
 
     @staticmethod
     def bind(url, name):
-        plugins = Transport.loader.load()
-        loaded = sorted(plugins)
+        providers = Provider.loader.load()
+        loaded = sorted(providers)
         if not loaded:
-            raise NoTransportsLoaded()
+            raise NoProvidersLoaded()
         try:
             url = URL(url)
-            Transport.urls[url.simple()] = plugins[name]
+            Provider.urls[url.simple()] = providers[name]
         except KeyError:
-            raise TransportNotFound(name)
+            raise ProviderNotFound(name)
 
     @staticmethod
     def find(url=None):
-        plugins = Transport.loader.load()
-        loaded = sorted(plugins)
+        providers = Provider.loader.load()
+        loaded = sorted(providers)
         if not loaded:
-            raise NoTransportsLoaded()
+            raise NoProvidersLoaded()
         if not url:
             url = loaded[0]
         try:
             url = URL(url)
-            if url.transport:
-                return plugins[url.transport]
+            if url.provider:
+                return providers[url.provider]
             else:
-                return plugins[url.simple()]
+                return providers[url.simple()]
         except KeyError:
-            return plugins[loaded[0]]
+            return providers[loaded[0]]
