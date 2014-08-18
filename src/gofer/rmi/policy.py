@@ -235,7 +235,11 @@ class Synchronous(RequestMethod):
         if not document:
             raise RequestTimeout(sn, self.timeout)
         if document.status == 'rejected':
-            raise InvalidDocument(document.code, sn, document.details)
+            raise InvalidDocument(
+                code=document.code,
+                document='N/A',
+                description='serial=%s' % sn,
+                details=document.details)
         if document.status in ('accepted', 'started'):
             log.debug('request (%s), %s', sn, document.status)
         else:

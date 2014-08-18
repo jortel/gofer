@@ -44,7 +44,7 @@ class InvalidDocument(Exception):
         :param details: A detailed description of what failed.
         :type details: str
         """
-        Exception.__init__(self, ' : '.join((description, details or '')))
+        Exception.__init__(self, ' : '.join((description or code, details or '')))
         self.code = code
         self.document = document
         self.details = details
