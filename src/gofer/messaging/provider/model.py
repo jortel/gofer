@@ -337,9 +337,18 @@ class BaseEndpoint(object):
     def ack(self, message):
         """
         Ack the specified message.
-        :param message: An AMQP message.
+        :param message: The message to acknowledge.
         """
         self.endpoint().ack(message)
+
+    def reject(self, message, requeue=True):
+        """
+        Reject the specified message.
+        :param message: The message to reject.
+        :param requeue: Requeue the message or discard it.
+        :type requeue: bool
+        """
+        self.endpoint().reject(message, requeue)
 
     def close(self):
         """
@@ -410,7 +419,7 @@ class Reader(BaseReader):
     An AMQP message reader.
     """
 
-    def __init__(self, queue, url=None):
+    def __init__(self, queue, url=DEFAULT_URL):
         """
         :param queue: The queue to consumer.
         :type queue: gofer.messaging.provider.model.BaseQueue
@@ -438,9 +447,18 @@ class Reader(BaseReader):
     def ack(self, message):
         """
         Ack the specified message.
-        :param message: An AMQP message.
+        :param message: The message to acknowledge.
         """
         self._impl.ack(message)
+
+    def reject(self, message, requeue=True):
+        """
+        Reject the specified message.
+        :param message: The message to reject.
+        :param requeue: Requeue the message or discard it.
+        :type requeue: bool
+        """
+        self._impl.reject(message, requeue)
 
     def close(self):
         """
@@ -533,7 +551,7 @@ class Producer(BaseProducer):
     An AMQP (message producer.
     """
 
-    def __init__(self, url=None):
+    def __init__(self, url=DEFAULT_URL):
         """
         :param url: The broker url.
         :type url: str
@@ -558,9 +576,18 @@ class Producer(BaseProducer):
     def ack(self, message):
         """
         Ack the specified message.
-        :param message: An AMQP message.
+        :param message: The message to acknowledge.
         """
         self._impl.ack(message)
+
+    def reject(self, message, requeue=True):
+        """
+        Reject the specified message.
+        :param message: The message to reject.
+        :param requeue: Requeue the message or discard it.
+        :type requeue: bool
+        """
+        self._impl.reject(message, requeue)
 
     def close(self):
         """
@@ -655,9 +682,18 @@ class PlainProducer(BasePlainProducer):
     def ack(self, message):
         """
         Ack the specified message.
-        :param message: An AMQP message.
+        :param message: The message to acknowledge.
         """
         self._impl.ack(message)
+
+    def reject(self, message, requeue=True):
+        """
+        Reject the specified message.
+        :param message: The message to reject.
+        :param requeue: Requeue the message or discard it.
+        :type requeue: bool
+        """
+        self._impl.reject(message, requeue)
 
     def close(self):
         """
@@ -877,5 +913,11 @@ class Ack:
         self.endpoint = endpoint
         self.message = message
 
-    def __call__(self):
+    def ack(self):
         self.endpoint.ack(self.message)
+
+    def reject(self, requeue=True):
+        self.endpoint.reject(self.message, requeue)
+
+    def __call__(self):
+        self.ack()

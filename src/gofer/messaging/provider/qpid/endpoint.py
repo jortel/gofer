@@ -22,6 +22,8 @@ import atexit
 from threading import RLock, local as Local
 from logging import getLogger
 
+from qpid.messaging import Disposition, RELEASED, REJECTED
+
 from gofer.messaging.provider.model import BaseEndpoint
 from gofer.messaging.provider.qpid.broker import Broker
 
@@ -157,9 +159,28 @@ class Endpoint(BaseEndpoint):
     def ack(self, message):
         """
         Acknowledge all messages received on the session.
+        :param message: The message to acknowledge.
+        :type message: qpid.messaging.Message
         """
         try:
-            self.__session.acknowledge(sync=False)
+            self.__session.acknowledge(message=message)
+        except Exception:
+            pass
+
+    def reject(self, message, requeue=True):
+        """
+        Reject the specified message.
+        :param message: The message to reject.
+        :type message: qpid.messaging.Message
+        :param requeue: Requeue the message or discard it.
+        :type requeue: bool
+        """
+        try:
+            if requeue:
+                disposition = Disposition(RELEASED)
+            else:
+                disposition = Disposition(REJECTED)
+            self.__session.acknowledge(message=message, disposition=disposition)
         except Exception:
             pass
 

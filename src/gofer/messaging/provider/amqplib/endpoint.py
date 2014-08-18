@@ -103,11 +103,23 @@ class Endpoint(BaseEndpoint):
     def ack(self, message):
         """
         Ack the specified message.
-        :param message: An AMQP message.
+        :param message: The message to acknowledge.
         :type message: amqplib.client_0_8.Message
         """
         channel = self.channel()
         channel.basic_ack(message.delivery_info[DELIVERY_TAG])
+
+    @reliable
+    def reject(self, message, requeue=True):
+        """
+        Reject the specified message.
+        :param message: The message to reject.
+        :type message: amqplib.client_0_8.Message
+        :param requeue: Requeue the message or discard it.
+        :type requeue: bool
+        """
+        channel = self.channel()
+        channel.basic_reject(message.delivery_info[DELIVERY_TAG], requeue)
 
     @synchronized
     def close(self):
