@@ -313,10 +313,60 @@ class BaseEndpoint(object):
         """
         return self.uuid
 
+    def channel(self):
+        """
+        Get a channel for the open connection.
+        :return: An open channel.
+        """
+        raise NotImplementedError()
+
+    def open(self):
+        """
+        Open and configure the endpoint.
+        """
+        raise NotImplementedError()
+
+    def ack(self, message):
+        """
+        Ack the specified message.
+        :param message: The message to acknowledge.
+        """
+        raise NotImplementedError()
+
+    def reject(self, message, requeue=True):
+        """
+        Reject the specified message.
+        :param message: The message to reject.
+        :param requeue: Requeue the message or discard it.
+        :type requeue: bool
+        """
+        raise NotImplementedError()
+
+    def close(self):
+        """
+        Close the endpoint.
+        """
+        raise NotImplementedError()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *unused):
+        self.close()
+
+
+# --- messenger --------------------------------------------------------------
+
+
+class Messenger(BaseEndpoint):
+    """
+    Provides AMQP messaging.
+    """
+
     def endpoint(self):
         """
-        Get a concrete object.
-        :return: A concrete object.
+        Get the messenger endpoint.
+        :return: An endpoint object.
         :rtype: BaseEndpoint
         """
         raise NotImplementedError()
@@ -356,17 +406,11 @@ class BaseEndpoint(object):
         """
         self.endpoint().close()
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *unused):
-        self.close()
-
 
 # --- reader -----------------------------------------------------------------
 
 
-class BaseReader(BaseEndpoint):
+class BaseReader(Messenger):
     """
     An AMQP message reader.
     """
@@ -378,7 +422,7 @@ class BaseReader(BaseEndpoint):
         :param url: The broker url.
         :type url: str
         """
-        BaseEndpoint.__init__(self, url)
+        Messenger.__init__(self, url)
         self.queue = queue
 
     def get(self, timeout=None):
@@ -514,7 +558,7 @@ class Reader(BaseReader):
 # --- producer ---------------------------------------------------------------
 
 
-class BaseProducer(BaseEndpoint):
+class BaseProducer(Messenger):
     """
     An AMQP (message producer.
     """
@@ -624,7 +668,7 @@ class Producer(BaseProducer):
         return self._impl.broadcast(destinations, ttl, **body)
 
 
-class BasePlainProducer(BaseEndpoint):
+class BasePlainProducer(Messenger):
     """
     An plain AMQP message producer.
     """
