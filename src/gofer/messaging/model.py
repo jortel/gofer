@@ -58,7 +58,7 @@ class InvalidVersion(InvalidDocument):
     def __init__(self, document, details):
         """
         :param document: The invalid document.
-        :type document: str
+        :type document: Document
         :param details: A detailed description.
         :type details: str
         """
@@ -66,7 +66,7 @@ class InvalidVersion(InvalidDocument):
             self,
             code=self.CODE,
             description=self.DESCRIPTION,
-            document=document,
+            document=document.dump(),
             details=details)
 
 
@@ -81,9 +81,9 @@ def validate(document):
     :raises InvalidDocument: when invalid.
     """
     if document.version != VERSION:
-        reason = 'Invalid version %s/%s' % (document.version, VERSION)
+        reason = 'Version mismatch: expected=%s received=%s' % (VERSION, document.version)
         log.warn(reason)
-        raise InvalidVersion(document.sn, reason)
+        raise InvalidVersion(document, reason)
 
 
 # --- model ------------------------------------------------------------------
@@ -128,5 +128,3 @@ class Document(Options):
             return thing
         d = fn(self)
         return json.dumps(d, sort_keys=True)
-
-

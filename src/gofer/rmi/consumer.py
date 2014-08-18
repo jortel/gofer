@@ -28,47 +28,22 @@ class RequestConsumer(Consumer):
     to local pending queue to be consumed by the scheduler.
     """
 
-    def dispatch(self, request):
-        """
-        Dispatch received request.
-        Update the request: inject the inbound_url and inbound_transport.
-        :param request: The received request.
-        :type request: Document
-        """
-        self.__send_status(request, 'accepted')
-        request.inbound_url = self.url
-        pending = Pending()
-        pending.put(request)
-
-    def message_rejected(self, code, message, details):
+    def _rejected(self, code, details, message):
         """
         Called to process the received (invalid) AMQP message.
         This method intended to be overridden by subclasses.
         :param code: The validation code.
         :type code: str
-        :param message: The received request.
+        :param message: The received message/document.
         :type message: str
         :param details: The explanation.
         :type details: str
         """
         request = Document()
         request.load(message)
-        self.__send_status(request, 'rejected', code=code, details=details)
+        self._send(request, 'rejected', code=code, details=details)
 
-    def request_rejected(self, code, request, details):
-        """
-        Called to process the received (invalid) request.
-        This method intended to be overridden by subclasses.
-        :param code: The validation code.
-        :type code: str
-        :param request: The received request.
-        :type request: Document
-        :param details: The explanation.
-        :type details: str
-        """
-        self.__send_status(request, 'rejected', code=code, details=details)
-
-    def __send_status(self, request, status, **details):
+    def _send(self, request, status, **details):
         """
         Send a status update.
         :param status: The status to send ('accepted'|'rejected')
@@ -88,3 +63,15 @@ class RequestConsumer(Consumer):
             provider.send(endpoint, destination, sn=sn, any=any, status=status, **details)
         except Exception:
             log.exception('send (%s), failed', status)
+
+    def dispatch(self, request):
+        """
+        Dispatch received request.
+        Update the request: inject the inbound_url and inbound_transport.
+        :param request: The received request.
+        :type request: Document
+        """
+        self._send(request, 'accepted')
+        request.inbound_url = self.url
+        pending = Pending()
+        pending.put(request)

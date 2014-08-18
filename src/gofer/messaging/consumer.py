@@ -64,37 +64,24 @@ class BaseConsumer(Thread):
             self.dispatch(document)
             ack()
         except auth.ValidationFailed, vf:
-            self.message_rejected(vf.code, vf.document, vf.details)
+            self._rejected(vf.code, vf.details, message=vf.document)
         except model.InvalidDocument, ir:
-            self.document_rejected(ir.code, ir.document, ir.details)
+            self._rejected(ir.code, ir.details, document=ir.document)
         except Exception:
             log.exception(self.getName())
 
-    def message_rejected(self, code, message, details):
+    def _rejected(self, code, details, message):
         """
         Called to process the received (invalid) AMQP message.
         This method intended to be overridden by subclasses.
         :param code: The validation code.
         :type code: str
-        :param message: The received document.
+        :param message: The received message/document.
         :type message: str
         :param details: The explanation.
         :type details: str
         """
         log.debug('%s, reason: %s %s', code, details, message)
-
-    def document_rejected(self, code, document, details):
-        """
-        Called to process the received (invalid) document.
-        This method intended to be overridden by subclasses.
-        :param code: The validation code.
-        :type code: str
-        :param document: The received document.
-        :type document: Document
-        :param details: The explanation.
-        :type details: str
-        """
-        log.debug('%s, reason: %s %s', code, details, document)
 
     def dispatch(self, document):
         """
@@ -117,7 +104,7 @@ class Consumer(BaseConsumer):
     def __init__(self, queue, url=None):
         """
         :param queue: The AMQP node.
-        :type queue: gofer.transport.model.Queue
+        :type queue: gofer.transport.model.BaseQueue
         :param url: The broker URL.
         :type url: str
         """
