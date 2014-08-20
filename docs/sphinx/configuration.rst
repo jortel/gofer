@@ -56,7 +56,7 @@ Defines messaging properties:
 
 - **url** - The broker connection URL.
   No value indicates that gofer should **not** connect to the broker.
-  *format*: *<transport>+<protocol>://<user>:<password>@<host>:<port>/<virtual-host>*,
+  *format*: *<provider>+<protocol>://<user>:<password>@<host>:<port>/<virtual-host>*,
   protocol is one of:
 
    - **tcp**:   non-SSL protocol
@@ -64,7 +64,7 @@ Defines messaging properties:
    - **ssl**:   SSL protocol
    - **amqps**: SSL protocol
 
-  The <transport>, <user>:<password> and /<virtual-host> are optional. The <port> is
+  The <provider>, <user>:<password> and /<virtual-host> are optional. The <port> is
   optional and defaults based on the protocol when not specified:
 
    - (amqp|tcp)  port:5672
@@ -122,7 +122,7 @@ Defines basic plugin properties.
   This value may be overridden by an *identity* plugin.
 - **'url** - The (optional) QPID connection URL.
   No value indicates the plugin should **not** connect to broker.
-  format:  *<transport>+<protocol>://<user>:<password>@<host>:<port>/<virtual-host>*, protocol is one of:
+  format:  *<provider>+<protocol>://<user>:<password>@<host>:<port>/<virtual-host>*, protocol is one of:
   - **tcp**: non-SSL protocol
   - **amqp**: non-SSL protocol
   - **ssl**: SSL protocol

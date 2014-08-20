@@ -78,7 +78,7 @@ class Stub:
     :ivar __url: The agent URL.
     :type __url: str
     :ivar __destination: The AMQP destination
-    :type __destination: gofer.transport.model.Destination
+    :type __destination: gofer.messaging.provider.model.Destination
     :ivar __options: Stub options.
     :type __options: Options
     :ivar __mutex: The object mutex.
@@ -96,7 +96,7 @@ class Stub:
         :param url: The agent URL.
         :type url: str
         :param destination: The AMQP destination
-        :type destination: gofer.transport.model.Destination
+        :type destination: gofer.messaging.provider.model.Destination
         :param options: A dict of gofer options
         :param options: Options
         :return: A stub instance.

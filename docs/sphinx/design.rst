@@ -90,7 +90,7 @@ The message format is json:
 - *Internal*:
    - **ts** - Timestamp injected when added to the journal.
    - **ttl** - Time-to-live (seconds) injected on receipt.
-   - **transport** - The transport (package) on which the request was received.
+   - **url** - The URL on which the request was received.
 
 
 Example RMI request message:

@@ -140,7 +140,7 @@ class RequestMethod:
         """
         Send the request..
         :param destination: An AMQP destination.
-        :type destination: gofer.transport.model.Destination
+        :type destination: gofer.messaging.provider.model.Destination
         :param request: A request to send.
         :type request: object
         :keyword any: Any (extra) data.
@@ -164,7 +164,7 @@ class Synchronous(RequestMethod):
     The synchronous request method.
     This method blocks until a reply is received.
     :ivar queue: An AMQP queue.
-    :type queue: gofer.transport.model.Queue
+    :type queue: gofer.messaging.provider.model.Queue
     """
 
     def __init__(self, url, options):
@@ -188,7 +188,7 @@ class Synchronous(RequestMethod):
         """
         Send the request then read the reply.
         :param destination: An AMQP destination.
-        :type destination: gofer.transport.model.Destination
+        :type destination: gofer.messaging.provider.model.Destination
         :param request: A request to send.
         :type request: object
         :keyword any: Any (extra) data.
@@ -335,7 +335,7 @@ class Asynchronous(RequestMethod):
         queue for the specified reply *correlation* tag.
         A trigger(1) specifies a *manual* trigger.
         :param destination: An AMQP destination.
-        :type destination: gofer.transport.model.Destination
+        :type destination: gofer.messaging.provider.model.Destination
         :param request: A request to send.
         :type request: object
         :keyword any: Any (extra) data.
@@ -394,7 +394,7 @@ class Trigger:
     :ivar __policy: The policy object.
     :type __policy: Asynchronous
     :ivar __destination: An AMQP destination.
-    :type __destination: gofer.transport.model.Destination
+    :type __destination: gofer.messaging.provider.model.Destination
     :ivar __request: A request to send.
     :type __request: object
     :ivar __any: Any (extra) data.
@@ -406,7 +406,7 @@ class Trigger:
         :param policy: The policy object.
         :type policy: Asynchronous
         :param destination: An AMQP destination.
-        :type destination: gofer.transport.model.Destination
+        :type destination: gofer.messaging.provider.model.Destination
         :param request: A request to send.
         :type request: object
         :keyword any: Any (extra) data.

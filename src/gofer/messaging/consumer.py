@@ -28,7 +28,7 @@ class BaseConsumer(Thread):
     def __init__(self, reader):
         """
         :param reader: An AMQP queue reader.
-        :type reader: gofer.transport.model.Reader
+        :type reader: gofer.messaging.provider.model.Reader
         """
         Thread.__init__(self, name=reader.queue.name)
         self.reader = reader
@@ -104,7 +104,7 @@ class Consumer(BaseConsumer):
     def __init__(self, queue, url=None):
         """
         :param queue: The AMQP node.
-        :type queue: gofer.transport.model.BaseQueue
+        :type queue: gofer.messaging.provider.model.BaseQueue
         :param url: The broker URL.
         :type url: str
         """

@@ -67,7 +67,7 @@ class RequestConsumer(Consumer):
     def dispatch(self, request):
         """
         Dispatch received request.
-        Update the request: inject the inbound_url and inbound_transport.
+        Update the request: inject the inbound_url.
         :param request: The received request.
         :type request: Document
         """
