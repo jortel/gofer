@@ -957,11 +957,11 @@ class Ack:
         self.endpoint = endpoint
         self.message = message
 
-    def ack(self):
+    def accept(self):
         self.endpoint.ack(self.message)
 
     def reject(self, requeue=True):
         self.endpoint.reject(self.message, requeue)
 
     def __call__(self):
-        self.ack()
+        self.accept()
