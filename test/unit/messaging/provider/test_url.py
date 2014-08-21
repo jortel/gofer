@@ -11,23 +11,23 @@
 
 from unittest import TestCase
 
-from gofer.provider.url import URL
+from gofer.messaging.provider.url import URL
 
 
 class TestURL(TestCase):
 
     def test_url(self):
-        transport = 'qpid'
+        provider = 'qpid'
         scheme = 'amqp'
         host = 'redhat'
         port = 1234
         path = '/'
 
         # test
-        url = URL('%s+%s://%s:%d%s/' % (transport, scheme, host, port, path))
+        url = URL('%s+%s://%s:%d%s/' % (provider, scheme, host, port, path))
 
         # validation
-        self.assertEqual(url.transport, transport)
+        self.assertEqual(url.provider, provider)
         self.assertEqual(url.scheme, scheme)
         self.assertEqual(url.host, host)
         self.assertEqual(url.port, port)
@@ -45,7 +45,7 @@ class TestURL(TestCase):
         url = URL('%s://%s:%d/%s' % (scheme, host, port, path))
 
         # validation
-        self.assertEqual(url.transport, None)
+        self.assertEqual(url.provider, None)
         self.assertEqual(url.scheme, scheme)
         self.assertEqual(url.host, host)
         self.assertEqual(url.port, port)
