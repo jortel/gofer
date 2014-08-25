@@ -52,8 +52,8 @@ class NoProvidersLoaded(ProviderError):
 
     DESCRIPTION = 'No messaging providers loaded'
 
-    def __str__(self):
-        return self.DESCRIPTION
+    def __init__(self):
+        ProviderError.__init__(self, NoProvidersLoaded.DESCRIPTION)
 
 
 class ProviderNotFound(ProviderError):
@@ -61,10 +61,8 @@ class ProviderNotFound(ProviderError):
     DESCRIPTION = 'Messaging provider: %s, not-found'
 
     def __init__(self, name):
+        ProviderError.__init__(self, ProviderNotFound.DESCRIPTION % name)
         self.name = name
-
-    def __str__(self):
-        return self.DESCRIPTION % self.name
 
 
 # --- factory ----------------------------------------------------------------
@@ -100,7 +98,7 @@ class Loader:
                 providers[package] = pkg
                 for capability in pkg.PROVIDES:
                     providers[capability] = pkg
-            except (ImportError, AttributeError),e:
+            except (ImportError, AttributeError):
                 log.exception(path)
         return providers
 
@@ -145,6 +143,6 @@ class Provider(object):
             if url.provider:
                 return providers[url.provider]
             else:
-                return providers[url.simple()]
+                return Provider.urls[url.simple()]
         except KeyError:
             return providers[loaded[0]]
