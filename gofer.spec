@@ -185,7 +185,7 @@ Provides the gofer qpid transport package.
 %doc LICENSE
 
 
-# --- python amqplib transport -----------------------------------------------
+# --- python-amqplib transport -----------------------------------------------
 
 %package -n python-%{name}-amqplib
 Summary: Gofer amqplib transport python package
@@ -199,6 +199,23 @@ Provides the gofer amqplib transport package.
 
 %files -n python-%{name}-amqplib
 %{python_sitelib}/%{name}/transport/amqplib
+%doc LICENSE
+
+
+# --- python-amqp transport -----------------------------------------------
+
+%package -n python-%{name}-amqp
+Summary: Gofer amqp transport python package
+Group: Development/Languages
+BuildRequires: python
+Requires: python-%{name} >= %{version}
+Requires: python-amqp >= 1.3
+
+%description -n python-%{name}-amqp
+Provides the gofer amqp transport package.
+
+%files -n python-%{name}-amqp
+%{python_sitelib}/%{name}/transport/amqp
 %doc LICENSE
 
 
