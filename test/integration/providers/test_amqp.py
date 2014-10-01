@@ -22,20 +22,16 @@ from gofer.messaging.provider.factory import Loader
 
 basicConfig()
 
-URL = 'tcp://localhost:5672'
+URL = 'amqp://localhost:5673'
 
 if __name__ == '__main__':
-    # AMQP-0-10
     loader = Loader()
     loader.load()
-    provider = loader.providers['amqp-0-10']
+    # AMQP-0-8
+    provider = loader.providers['amqp-0-9-1']
     test = Test(URL, provider)
     test()
-    # qpid
-    provider = loader.providers['qpid']
-    test = Test(URL, provider)
-    test()
-    # qpid-messaging
-    provider = loader.providers['qpid.messaging']
+    # amqplib
+    provider = loader.providers['amqp']
     test = Test(URL, provider)
     test()

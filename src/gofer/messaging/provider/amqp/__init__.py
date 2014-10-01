@@ -9,29 +9,15 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-import os
-import sys
 
-sys.path.insert(0, os.path.join(os.path.curdir, '../../src'))
-
-from logging import basicConfig
-
-from base import Test
-from gofer.messaging.provider.factory import Loader
+from gofer.messaging.provider.amqp.model import Exchange, Queue
+from gofer.messaging.provider.amqp.broker import Broker
+from gofer.messaging.provider.amqp.consumer import Reader
+from gofer.messaging.provider.amqp.producer import Producer, send
+from gofer.messaging.provider.amqp.endpoint import Endpoint
 
 
-basicConfig()
-
-URL = 'amqp://localhost:5673'
-
-if __name__ == '__main__':
-    loader = Loader()
-    loader.load()
-    # AMQP-0-8
-    provider = loader.providers['amqp-0-8']
-    test = Test(URL, provider)
-    test()
-    # amqplib
-    provider = loader.providers['amqplib']
-    test = Test(URL, provider)
-    test()
+PROVIDES = [
+    'AMQP-0-9-1',
+    'rabbitmq'
+]

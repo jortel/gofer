@@ -16,6 +16,9 @@
 import os
 import logging
 
+from gofer.config import get_bool
+
+from gofer.messaging.provider.descriptor import Descriptor
 from gofer.messaging.provider.url import URL
 
 
@@ -24,12 +27,8 @@ log = logging.getLogger(__name__)
 
 # --- constants --------------------------------------------------------------
 
-# __package__ not supported in python 2.4
-PACKAGE = '.'.join(__name__.split('.')[:-1])
-
 # symbols required to be supported by all providers
 REQUIRED = [
-    'PROVIDES',
     'Exchange',
     'Broker',
     'Endpoint',
@@ -81,25 +80,24 @@ class Loader:
     @staticmethod
     def _load():
         """
-        Load provider providers.
+        Load providers.
         :return: The loaded providers.
         :rtype: dict
         """
         providers = {}
-        _dir = os.path.dirname(__file__)
-        for name in os.listdir(_dir):
-            path = os.path.join(_dir, name)
-            if not os.path.isdir(path):
+        for descriptor in Descriptor.load():
+            if not get_bool(descriptor.main.enabled):
                 continue
+            package = descriptor.main.provider
             try:
-                package = '.'.join((PACKAGE, name))
                 pkg = __import__(package, {}, {}, REQUIRED)
+                name = pkg.__name__.split('.')[-1]
                 providers[name] = pkg
                 providers[package] = pkg
-                for capability in pkg.PROVIDES:
+                for capability in descriptor.provides:
                     providers[capability] = pkg
             except (ImportError, AttributeError):
-                log.exception(path)
+                log.exception(package)
         return providers
 
     def load(self):

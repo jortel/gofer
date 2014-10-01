@@ -71,6 +71,7 @@ popd
 mkdir -p %{buildroot}/usr/bin
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/plugins
+mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/providers
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/conf.d
 mkdir -p %{buildroot}/%{_sysconfdir}/init.d
 mkdir -p %{buildroot}/%{_unitdir}
@@ -81,6 +82,7 @@ mkdir -p %{buildroot}/%{_mandir}/man1
 cp bin/%{name}d %{buildroot}/usr/bin
 cp etc/%{name}/*.conf %{buildroot}/%{_sysconfdir}/%{name}
 cp etc/%{name}/plugins/*.conf %{buildroot}/%{_sysconfdir}/%{name}/plugins
+cp etc/%{name}/providers/*.conf %{buildroot}/%{_sysconfdir}/%{name}/providers
 cp src/plugins/*.py %{buildroot}/%{_usr}/share/%{name}/plugins
 cp docs/man/man1/* %{buildroot}/%{_mandir}/man1
 
