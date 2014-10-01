@@ -17,6 +17,10 @@ dir="$(mktemp -d -t)"
 echo $dir
 virtualenv $dir
 source $dir/bin/activate
-easy_install ../src/
+pip install nose
+pip install nose-cov
+pip install mock
+pip install iniparse
+pip install -e ../src/
 nosetests --with-coverage --cover-package=gofer unit
 rm -rf $dir
