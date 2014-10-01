@@ -161,16 +161,17 @@ Provides gofer python lib modules.
 %defattr(-,root,root,-)
 %{python_sitelib}/%{name}/*.py*
 %{python_sitelib}/%{name}/rmi/
-%{python_sitelib}/%{name}/messaging/
-%dir %{python_sitelib}/%{name}/transport/
-%{python_sitelib}/%{name}/transport/*.*
+%dir %{python_sitelib}/%{name}/messaging/
+%dir %{python_sitelib}/%{name}/messaging/provider
+%{python_sitelib}/%{name}/messaging/*.py*
+%{python_sitelib}/%{name}/messaging/provider/*.py*
 %doc LICENSE
 
 
-# --- python qpid transport --------------------------------------------------
+# --- python qpid messaging provider -----------------------------------------
 
 %package -n python-%{name}-qpid
-Summary: Gofer Qpid transport python package
+Summary: Gofer Qpid messaging provider python package
 Group: Development/Languages
 BuildRequires: python
 Requires: python-%{name} >= %{version}
@@ -180,27 +181,47 @@ Requires: python-ssl
 %endif
 
 %description -n python-%{name}-qpid
-Provides the gofer qpid transport package.
+Provides the gofer qpid messaging provider package.
 
 %files -n python-%{name}-qpid
-%{python_sitelib}/%{name}/transport/qpid
+%{_sysconfdir}/%{name}/providers/qpid.conf
+%{python_sitelib}/%{name}/messaging/provider/qpid
 %doc LICENSE
 
 
-# --- python amqplib transport -----------------------------------------------
+# --- python amqp messaging provider -----------------------------------------------
+
+%package -n python-%{name}-amqp
+Summary: Gofer amqp messaging provider python package
+Group: Development/Languages
+BuildRequires: python
+Requires: python-%{name} >= %{version}
+Requires: python-amqp >= 1.4.5
+
+%description -n python-%{name}-amqp
+Provides the gofer amqp messaging provider package.
+
+%files -n python-%{name}-amqp
+%{_sysconfdir}/%{name}/providers/amqp.conf
+%{python_sitelib}/%{name}/messaging/provider/amqp
+%doc LICENSE
+
+
+# --- python amqplib messaging provider -----------------------------------------------
 
 %package -n python-%{name}-amqplib
-Summary: Gofer amqplib transport python package
+Summary: Gofer amqplib messaging provider python package
 Group: Development/Languages
 BuildRequires: python
 Requires: python-%{name} >= %{version}
 Requires: python-amqplib >= 1.0.2
 
 %description -n python-%{name}-amqplib
-Provides the gofer amqplib transport package.
+Provides the gofer amqplib messaging provider package.
 
 %files -n python-%{name}-amqplib
-%{python_sitelib}/%{name}/transport/amqplib
+%{_sysconfdir}/%{name}/providers/amqplib.conf
+%{python_sitelib}/%{name}/messaging/provider/amqplib
 %doc LICENSE
 
 
