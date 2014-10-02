@@ -3,7 +3,9 @@ import os
 from logging import getLogger
 from copy import deepcopy as clone
 
-from gofer.config import Config, Graph, REQUIRED, OPTIONAL, BOOL, ANY, NUMBER
+from gofer.config import Config, Graph
+from gofer.config import REQUIRED, OPTIONAL, BOOL, ANY, NUMBER
+from gofer.config import ValidationException
 
 
 log = getLogger(__name__)
@@ -21,7 +23,7 @@ SCHEMA = (
     ('main', REQUIRED,
         (
             ('enabled', OPTIONAL, BOOL),
-            ('provider', REQUIRED, ANY),
+            ('package', REQUIRED, ANY),
             ('provides', OPTIONAL, ANY),
             ('priority', OPTIONAL, NUMBER),
         ),
@@ -48,7 +50,7 @@ class Descriptor(Graph):
             try:
                 descriptor = Descriptor(_path)
                 loaded.append(descriptor)
-            except Exception:
+            except (OSError, ValidationException):
                 log.exception(path)
         return sorted(loaded, key=lambda d: int(d.main.priority))
 

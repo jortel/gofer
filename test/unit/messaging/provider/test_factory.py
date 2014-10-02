@@ -9,38 +9,35 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-import os
-
 from unittest import TestCase
 
 from mock import patch, call, Mock
 
+from gofer.config import get_bool
 from gofer.messaging.provider.factory import Loader, REQUIRED
 from gofer.messaging.provider.factory import Provider
 from gofer.messaging.provider.factory import ProviderError, ProviderNotFound, NoProvidersLoaded
 from gofer.messaging.provider.url import URL
 
 
-class TestProvider(object):
+class TestDescriptor(object):
 
-    @staticmethod
-    def provider(provides):
-        provider = TestProvider()
-        setattr(provider, 'PROVIDES', provides)
-        return provider
+    def __init__(self, path, enabled, package, provides):
+        self.main = Mock(path=path, enabled=enabled, package=package)
+        self.provides = provides
 
 
 class TestExceptions(TestCase):
 
-    def testProviderError(self):
+    def test_provider_error(self):
         self.assertTrue(isinstance(ProviderError(), Exception))
 
-    def testNoProvidersLoaded(self):
+    def test_no_providers_loaded(self):
         exception = NoProvidersLoaded()
         self.assertTrue(isinstance(exception, ProviderError))
         self.assertEqual(exception.message, NoProvidersLoaded.DESCRIPTION)
 
-    def testProviderNotFound(self):
+    def test_provider_not_found(self):
         name = 'qpid'
         exception = ProviderNotFound(name)
         self.assertTrue(isinstance(exception, ProviderError))
@@ -57,33 +54,21 @@ class TestLoader(TestCase):
         self.assertEqual(ldr.providers, {})
 
     @patch('__builtin__.__import__')
-    @patch('gofer.messaging.provider.factory.__file__', FILE)
-    @patch('gofer.messaging.provider.factory.PACKAGE', PACKAGE)
-    @patch('os.listdir')
-    @patch('os.path.isdir')
-    @patch('os.path.dirname')
-    def test__load(self, _dirname, _isdir, _listdir, _import):
-        _dir = 'test'
+    @patch('gofer.messaging.provider.descriptor.Descriptor.load')
+    def test__load(self, _load, _import):
         providers = [
-            ['A', True, TestProvider.provider(['AA', 'TEST-A'])],
-            ['B', True, TestProvider.provider(['BB', 'TEST-B'])],
-            ['D', True, TestProvider.provider(['DD', 'TEST-D'])],
-            ['E', False, TestProvider.provider([])],
-            ['F', True, AttributeError()],
-            ['G', True, ImportError()],
+            [TestDescriptor('path-A', '1', 'p1', ['AA', 'TEST-A']), Mock(__name__='p1')],
+            [TestDescriptor('path-B', '1', 'p2', ['BB', 'TEST-B']), Mock(__name__='p2')],
+            [TestDescriptor('path-C', '1', 'p3', ['CC', 'TEST-C']), Mock(__name__='p3')],
+            [TestDescriptor('path-D', '0', 'p4', ['DD', 'TEST-E']), Mock(__name__='p4')],
+            [TestDescriptor('path-E', '1', 'p5', ['EE', 'TEST-E']), AttributeError()],
+            [TestDescriptor('path-E', '1', 'p6', ['FF', 'TEST-F']), ImportError()],
         ]
 
-        _dirname.return_value = _dir
-        _listdir.return_value = [p[0] for p in providers]
-        _isdir.side_effect = [p[1] for p in providers]
-        _import.side_effect = [p[2] for p in providers if p[1]]
+        _load.return_value = [p[0] for p in providers]
+        _import.side_effect = [p[1] for p in providers if get_bool(p[0].main.enabled)]
 
         loaded = Loader._load()
-        _dirname.assert_called_once_with(TestLoader.FILE)
-        _listdir.assert_called_once_with(_dir)
-        self.assertEqual(
-            _isdir.call_args_list,
-            [call(os.path.join(_dir, p[0])) for p in providers])
         self.assertEqual(_import.call_args_list, self._import_calls(providers))
         self.assertEqual(loaded, self._load(providers))
 
@@ -108,33 +93,28 @@ class TestLoader(TestCase):
     def _import_calls(self, providers):
         calls = []
         for p in providers:
-            if not p[1]:
+            if not get_bool(p[0].main.enabled):
                 continue
-            pkg = '.'.join((TestLoader.PACKAGE, p[0]))
+            pkg = p[0].main.package
             calls.append(call(pkg, {}, {}, REQUIRED))
         return calls
 
-    def _valid(self, p):
-        return not self._invalid(p)
-
-    def _invalid(self, p):
-        if not p[1]:
-            # not a directory
+    def _skip(self, p):
+        if not get_bool(p[0].main.enabled):
             return True
-        if isinstance(p[2], Exception):
+        if isinstance(p[1], Exception):
             return True
         return False
 
     def _load(self, providers):
         loaded = {}
         for p in providers:
-            if self._invalid(p):
+            if self._skip(p):
                 continue
-            loaded[p[0]] = p[2]
-            pkg = '.'.join([TestLoader.PACKAGE, p[0]])
-            loaded[pkg] = p[2]
-            for capability in p[2].PROVIDES:
-                loaded[capability] = p[2]
+            loaded[p[0].main.package] = p[1]
+            loaded[p[1].__name__] = p[1]
+            for capability in p[0].provides:
+                loaded[capability] = p[1]
         return loaded
 
 

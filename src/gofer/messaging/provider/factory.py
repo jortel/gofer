@@ -88,7 +88,7 @@ class Loader:
         for descriptor in Descriptor.load():
             if not get_bool(descriptor.main.enabled):
                 continue
-            package = descriptor.main.provider
+            package = descriptor.main.package
             try:
                 pkg = __import__(package, {}, {}, REQUIRED)
                 name = pkg.__name__.split('.')[-1]

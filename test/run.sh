@@ -22,5 +22,9 @@ pip install nose-cov
 pip install mock
 pip install iniparse
 pip install -e ../src/
-nosetests --with-coverage --cover-package=gofer unit
+nosetests --with-coverage --cover-package=gofer \
+  unit \
+  unit/messaging \
+  unit/messaging/provider \
+  unit/rmi
 rm -rf $dir
