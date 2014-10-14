@@ -292,6 +292,8 @@ class BaseEndpoint(object):
     Base class for an AMQP endpoint.
     :ivar url: The broker URL.
     :type url: str
+    :ivar uuid: The endpoint UUID.
+    :type uuid: str
     :ivar authenticator: A message authenticator.
     :type authenticator: gofer.messaging.auth.Authenticator
     """
