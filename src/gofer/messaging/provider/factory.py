@@ -13,7 +13,6 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-import os
 import logging
 
 from gofer.config import get_bool
