@@ -64,8 +64,10 @@ Defines messaging properties:
    - **ssl**:   SSL protocol
    - **amqps**: SSL protocol
 
-  The <provider>, <user>:<password> and /<virtual-host> are optional. The <port> is
-  optional and defaults based on the protocol when not specified:
+  The <provider>, <user>:<password> and /<virtual-host> are optional.
+  See: :doc:`provider` for list of supported providers.
+
+  The <port> is optional and defaults based on the protocol when not specified:
 
    - (amqp|tcp)  port:5672
    - (amqps|ssl) port:5671
@@ -85,9 +87,28 @@ Example:
 ::
 
  [messaging]
- url = tcp://localhost:5672
+ url = amqp://localhost:5672
  cacert = /etc/pki/qpid/ca/ca.crt
  clientcert = /etc/pki/qpid/client/client.pem
+
+
+Provider Descriptors
+^^^^^^^^^^^^^^^^^^^^
+
+
+Each plugin has a configuration located in ``/etc/gofer/providers``.  Provider descriptors
+are *ini* style configuration that require the following sections and properties:
+
+[main]
+------
+
+Defines basic provider properties.
+
+- **enabled** - Specify the provider as enabled/disabled.
+- **package** - Specify the python package name.
+- **provides** - Specify a list of capabilities.  Comma (,) delimited list.
+- **priority** - Specify the priority used to resolve ambiguity when selecting
+  a provider based on capability.
 
 
 Plugin Descriptors
@@ -120,13 +141,25 @@ Defines basic plugin properties.
 
 - **uuid** - The default agent (UUID) identity.
   This value may be overridden by an *identity* plugin.
+
 - **'url** - The (optional) QPID connection URL.
   No value indicates the plugin should **not** connect to broker.
-  format:  *<provider>+<protocol>://<user>:<password>@<host>:<port>/<virtual-host>*, protocol is one of:
-  - **tcp**: non-SSL protocol
-  - **amqp**: non-SSL protocol
-  - **ssl**: SSL protocol
-  - **amqps**: SSL protocol
+  *format*: ``<provider>+<protocol>://<user>:<password>@<host>:<port>/<virtual-host>``,
+  protocol is one of:
+
+   - **tcp**:   non-SSL protocol
+   - **amqp**:  non-SSL protocol
+   - **ssl**:   SSL protocol
+   - **amqps**: SSL protocol
+
+  The <provider>, <user>:<password> and /<virtual-host> are optional.
+  See: :doc:`provider` for list of supported providers.
+
+  The <port> is optional and defaults based on the protocol when not specified:
+
+   - (amqp|tcp)  port:5672
+   - (amqps|ssl) port:5671
+
 - **cacert** - The (optional) SSL CA certificate used to validate the server certificate.
 - **clientcert** - The (optional) SSL client certificate.  A (PEM) file containing **both**
   the private key and certificate.

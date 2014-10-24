@@ -24,7 +24,7 @@ Then,
      enabled=1
 
      [messaging]
-     url=tcp://localhost:5672
+     url=amqp://localhost:5672
      uuid=123
 
 3. Start the gefer service (goferd)
