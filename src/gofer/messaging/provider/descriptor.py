@@ -34,14 +34,17 @@ SCHEMA = (
 class Descriptor(Graph):
     """
     Provider descriptor.
-    :ivar path: The absolute path to a descriptor.
-    :type path: str
     """
 
-    PATH = '/etc/gofer/providers'
-
     @staticmethod
-    def load(path=PATH):
+    def load(path):
+        """
+        Load all provider descriptors.
+        :param path: The absolute path to a directory containing descriptors.
+        :type path: str
+        :return: A list of descriptors sorted by priority.
+        :rtype: list
+        """
         loaded = []
         for name in os.listdir(path):
             _path = os.path.join(path, name)

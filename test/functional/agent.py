@@ -28,6 +28,7 @@ service = passwd
 """
 
 import os
+import shutil
 
 from time import sleep
 from optparse import OptionParser
@@ -57,6 +58,7 @@ Pending.PENDING = os.path.join(ROOT, 'messaging/pending')
 Pending.DELAYED = os.path.join(ROOT, 'messaging/delayed')
 
 # misc
+from gofer.messaging.provider.factory import Loader
 from gofer.agent.plugin import PluginDescriptor, PluginLoader
 from gofer.agent.main import Agent, setup_logging
 from gofer.config import Config
@@ -72,9 +74,9 @@ root.addHandler(log_handler)
 
 def install_plugins(url, uuid, threads, auth):
     root = os.path.dirname(__file__)
-    dir = os.path.join(root, 'plugins')
-    for fn in os.listdir(dir):
-        path = os.path.join(dir, fn)
+    _dir = os.path.join(root, 'plugins')
+    for fn in os.listdir(_dir):
+        path = os.path.join(_dir, fn)
         if fn.endswith('.conf'):
             conf = Config(path)
             pd = PluginDescriptor(conf)
@@ -97,13 +99,24 @@ def install_plugins(url, uuid, threads, auth):
             continue
 
 
+def install_providers():
+    root = os.path.dirname(__file__)
+    _dir = os.path.join(root, 'providers')
+    for fn in os.listdir(_dir):
+        path = os.path.join(_dir, fn)
+        dst = os.path.join(Loader.PATH, fn)
+        shutil.copyfile(path, dst)
+
+
 def install(url, uuid, threads, auth):
+    Loader.PATH = os.path.join(ROOT, 'providers')
     PluginDescriptor.ROOT = os.path.join(ROOT, 'plugins')
     PluginLoader.PATH = [os.path.join(ROOT, 'lib/plugins')]
     for path in (PluginDescriptor.ROOT, PluginLoader.PATH[0]):
         if not os.path.exists(path):
             os.makedirs(path)
     install_plugins(url, uuid, threads, auth)
+    install_providers()
 
 
 def get_options():

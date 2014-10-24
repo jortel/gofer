@@ -69,22 +69,29 @@ class ProviderNotFound(ProviderError):
 class Loader:
     """
     Provider provider loader.
+    :cvar PATH: The default (absolute) path to a directory
+        containing descriptors to be loaded.
+    :type PATH: str
     :ivar providers: Loaded providers.
     :type providers: dict
     """
+
+    PATH = '/etc/gofer/providers'
 
     def __init__(self):
         self.providers = {}
 
     @staticmethod
-    def _load():
+    def _load(path):
         """
         Load providers.
+        :param path: The absolute path to a directory containing descriptors.
+        :type path: str
         :return: The loaded providers.
         :rtype: dict
         """
         providers = {}
-        for descriptor in Descriptor.load():
+        for descriptor in Descriptor.load(path):
             if not get_bool(descriptor.main.enabled):
                 continue
             package = descriptor.main.package
@@ -99,14 +106,16 @@ class Loader:
                 log.exception(package)
         return providers
 
-    def load(self):
+    def load(self, path=PATH):
         """
         Load provider providers.
+        :param path: The absolute path to a directory containing descriptors.
+        :type path: str
         :return: The loaded providers.
         :rtype: dict
         """
         if not len(self.providers):
-            self.providers = Loader._load()
+            self.providers = Loader._load(path)
         return self.providers
 
 
