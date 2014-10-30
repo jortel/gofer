@@ -23,7 +23,7 @@ from gofer.rmi.store import Pending
 from gofer.rmi.dispatcher import Return, PluginNotFound
 from gofer.rmi.threadpool import Direct
 from gofer.messaging import Document, Producer, Destination
-from gofer.metrics import Timer
+from gofer.metrics import Timer, timestamp
 
 
 log = getLogger(__name__)
@@ -124,7 +124,8 @@ class Task:
                     Destination.create(replyto),
                     sn=sn,
                     any=any,
-                    status='started')
+                    status='started',
+                    timestamp=timestamp())
             finally:
                 producer.close()
         except Exception:
@@ -154,7 +155,8 @@ class Task:
                     Destination.create(replyto),
                     sn=sn,
                     any=any,
-                    result=result)
+                    result=result,
+                    timestamp=timestamp())
             finally:
                 producer.close()
         except Exception:

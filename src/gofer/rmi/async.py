@@ -111,6 +111,8 @@ class AsyncReply:
     :type sn: str
     :ivar origin: Which endpoint sent the reply.
     :type origin: str
+    :ivar timestamp: An ISO-8601 timestamp (UTC).
+    :type timestamp: str
     :ivar any: User defined (round-tripped) data.
     :type any: object
     """
@@ -122,6 +124,7 @@ class AsyncReply:
         """
         self.sn = document.sn
         self.origin = document.routing[0]
+        self.timestamp = document.timestamp
         self.any = document.any
 
     def notify(self, listener):
@@ -137,6 +140,7 @@ class AsyncReply:
         s.append(self.__class__.__name__)
         s.append('  sn : %s' % self.sn)
         s.append('  origin : %s' % self.origin)
+        s.append('  timestamp : %s' % self.timestamp)
         s.append('  user data : %s' % self.any)
         return '\n'.join(s)
 
