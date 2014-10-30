@@ -188,6 +188,7 @@ class Synchronous(RequestMethod):
         self.progress = options.progress
         self.queue = tp.queue(getuuid())
         self.authenticator = options.authenticator
+        self.queue.durable = False
         self.queue.auto_delete = True
         self.queue.declare(self.url)
 

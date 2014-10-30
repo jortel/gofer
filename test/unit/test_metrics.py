@@ -10,10 +10,20 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 from unittest import TestCase
+from datetime import datetime
 
 from mock import patch
 
-from gofer.metrics import Timer
+from gofer.metrics import Timer, timestamp
+
+
+class TestUtils(TestCase):
+
+    @patch('gofer.metrics.datetime')
+    def test_timestamp(self, dt):
+        dt.utcnow.return_value = datetime(2014, 12, 25, 9, 30, 0)
+        ts = timestamp()
+        self.assertEqual(ts, '2014-12-25T09:30:00Z')
 
 
 class TestTimer(TestCase):

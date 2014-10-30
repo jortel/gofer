@@ -78,6 +78,7 @@ The message format is json:
    - **replyto** - The reply amqp address (optional)
    - **(request|result|status|progress)** The payload.
        (request is type: Request, result is type: Result, status is type: string)
+   - **timestamp** - An ISO-8601 reply timestamp (UTC).
 - Request (RMI):
    - **class** - The target class name.
    - **cntr** - The (optional) remote class constructor arguments. format: ([],{}).
