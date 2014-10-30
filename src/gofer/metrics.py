@@ -19,7 +19,14 @@ designed for collecting and reporting performance metrics.
 """
 
 import time
+
 from math import modf
+from datetime import datetime
+
+
+def timestamp():
+    dt = datetime.utcnow()
+    return dt.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
 class Timer:
