@@ -114,7 +114,6 @@ class AsyncReply:
     :ivar timestamp: An ISO-8601 timestamp (UTC).
     :type timestamp: str
     :ivar any: User defined (round-tripped) data.
-    :type any: object
     """
 
     def __init__(self, document):
