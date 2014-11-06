@@ -93,10 +93,10 @@ Example:
 
 
 Adapter Descriptors
-^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^
 
 
-Each plugin has a configuration located in ``/etc/gofer/adapters``.  Adapter descriptors
+Each plugin has a configuration located in ``/etc/gofer/messaging/adapters``.  Adapter descriptors
 are *ini* style configuration that require the following sections and properties:
 
 [main]
