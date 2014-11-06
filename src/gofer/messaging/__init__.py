@@ -14,19 +14,19 @@ from gofer.messaging.model import \
     InvalidDocument, \
     InvalidVersion
 
-from gofer.messaging.adapter.url import URL
-
 from gofer.messaging.auth import \
     Authenticator, \
     ValidationFailed
 
-from gofer.messaging.adapter.factory import \
+from gofer.messaging.consumer import \
+    Consumer
+
+from gofer.messaging.adapter import \
+    URL, \
     Adapter, \
     AdapterError, \
     AdapterNotFound, \
-    NoAdaptersLoaded
-
-from gofer.messaging.adapter.model import \
+    NoAdaptersLoaded, \
     Destination, \
     Exchange, \
     Queue, \
@@ -34,7 +34,3 @@ from gofer.messaging.adapter.model import \
     Reader, \
     Producer, \
     PlainProducer
-
-from gofer.messaging.consumer import Consumer
-
-

@@ -11,3 +11,21 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 
+from gofer.messaging.adapter.url import \
+    URL
+
+from gofer.messaging.adapter.factory import \
+    Loader, \
+    Adapter, \
+    AdapterError, \
+    AdapterNotFound, \
+    NoAdaptersLoaded
+
+from gofer.messaging.adapter.model import \
+    Destination, \
+    Exchange, \
+    Queue, \
+    Broker, \
+    Reader, \
+    Producer, \
+    PlainProducer
