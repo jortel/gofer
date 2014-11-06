@@ -14,10 +14,10 @@ from unittest import TestCase
 from mock import patch, call, Mock
 
 from gofer.config import get_bool
-from gofer.messaging.provider.factory import Loader, REQUIRED
-from gofer.messaging.provider.factory import Provider
-from gofer.messaging.provider.factory import ProviderError, ProviderNotFound, NoProvidersLoaded
-from gofer.messaging.provider.url import URL
+from gofer.messaging.adapter.factory import Loader, REQUIRED
+from gofer.messaging.adapter.factory import Adapter
+from gofer.messaging.adapter.factory import AdapterError, AdapterNotFound, NoAdaptersLoaded
+from gofer.messaging.adapter.url import URL
 
 
 class TestDescriptor(object):
@@ -29,19 +29,19 @@ class TestDescriptor(object):
 
 class TestExceptions(TestCase):
 
-    def test_provider_error(self):
-        self.assertTrue(isinstance(ProviderError(), Exception))
+    def test_adapter_error(self):
+        self.assertTrue(isinstance(AdapterError(), Exception))
 
-    def test_no_providers_loaded(self):
-        exception = NoProvidersLoaded()
-        self.assertTrue(isinstance(exception, ProviderError))
-        self.assertEqual(exception.message, NoProvidersLoaded.DESCRIPTION)
+    def test_no_adapters_loaded(self):
+        exception = NoAdaptersLoaded()
+        self.assertTrue(isinstance(exception, AdapterError))
+        self.assertEqual(exception.message, NoAdaptersLoaded.DESCRIPTION)
 
-    def test_provider_not_found(self):
+    def test_adapter_not_found(self):
         name = 'qpid'
-        exception = ProviderNotFound(name)
-        self.assertTrue(isinstance(exception, ProviderError))
-        self.assertEqual(exception.message, ProviderNotFound.DESCRIPTION % name)
+        exception = AdapterNotFound(name)
+        self.assertTrue(isinstance(exception, AdapterError))
+        self.assertEqual(exception.message, AdapterNotFound.DESCRIPTION % name)
 
 
 class TestLoader(TestCase):
@@ -51,12 +51,12 @@ class TestLoader(TestCase):
 
     def test_construction(self):
         ldr = Loader()
-        self.assertEqual(ldr.providers, {})
+        self.assertEqual(ldr.adapters, {})
 
     @patch('__builtin__.__import__')
-    @patch('gofer.messaging.provider.descriptor.Descriptor.load')
+    @patch('gofer.messaging.adapter.descriptor.Descriptor.load')
     def test__load(self, _load, _import):
-        providers = [
+        adapters = [
             [TestDescriptor('path-A', '1', 'p1', ['AA', 'TEST-A']), Mock(__name__='p1')],
             [TestDescriptor('path-B', '1', 'p2', ['BB', 'TEST-B']), Mock(__name__='p2')],
             [TestDescriptor('path-C', '1', 'p3', ['CC', 'TEST-C']), Mock(__name__='p3')],
@@ -65,34 +65,34 @@ class TestLoader(TestCase):
             [TestDescriptor('path-E', '1', 'p6', ['FF', 'TEST-F']), ImportError()],
         ]
 
-        _load.return_value = [p[0] for p in providers]
-        _import.side_effect = [p[1] for p in providers if get_bool(p[0].main.enabled)]
+        _load.return_value = [p[0] for p in adapters]
+        _import.side_effect = [p[1] for p in adapters if get_bool(p[0].main.enabled)]
 
         loaded = Loader._load()
-        self.assertEqual(_import.call_args_list, self._import_calls(providers))
-        self.assertEqual(loaded, self._load(providers))
+        self.assertEqual(_import.call_args_list, self._import_calls(adapters))
+        self.assertEqual(loaded, self._load(adapters))
 
-    @patch('gofer.messaging.provider.factory.Loader._load')
+    @patch('gofer.messaging.adapter.factory.Loader._load')
     def test_load(self, _load):
-        providers = Mock()
-        _load.return_value = providers
+        adapters = Mock()
+        _load.return_value = adapters
         ldr = Loader()
         loaded = ldr.load()
         _load.assert_called_with()
-        self.assertEqual(loaded, providers)
+        self.assertEqual(loaded, adapters)
 
-    @patch('gofer.messaging.provider.factory.Loader._load')
+    @patch('gofer.messaging.adapter.factory.Loader._load')
     def test_already_loaded(self, _load):
-        providers = {'A': 1}
+        adapters = {'A': 1}
         ldr = Loader()
-        ldr.providers = providers
+        ldr.adapters = adapters
         loaded = ldr.load()
         self.assertFalse(_load.called)
-        self.assertEqual(loaded, providers)
+        self.assertEqual(loaded, adapters)
 
-    def _import_calls(self, providers):
+    def _import_calls(self, adapters):
         calls = []
-        for p in providers:
+        for p in adapters:
             if not get_bool(p[0].main.enabled):
                 continue
             pkg = p[0].main.package
@@ -106,9 +106,9 @@ class TestLoader(TestCase):
             return True
         return False
 
-    def _load(self, providers):
+    def _load(self, adapters):
         loaded = {}
-        for p in providers:
+        for p in adapters:
             if self._skip(p):
                 continue
             loaded[p[0].main.package] = p[1]
@@ -118,67 +118,67 @@ class TestLoader(TestCase):
         return loaded
 
 
-class ProviderTest(TestCase):
+class AdapterTest(TestCase):
 
-    @patch('gofer.messaging.provider.factory.Loader.load')
+    @patch('gofer.messaging.adapter.factory.Loader.load')
     def test_bind(self, _load):
         name = 'qpid'
-        provider = Mock()
+        adapter = Mock()
         url = URL('redhat.com')
-        _load.return_value = {name: provider}
+        _load.return_value = {name: adapter}
 
-        Provider.bind(str(url), name)
+        Adapter.bind(str(url), name)
 
         _load.assert_called_with()
-        self.assertEqual(Provider.urls, {url.simple(): provider})
+        self.assertEqual(Adapter.urls, {url.simple(): adapter})
 
-    @patch('gofer.messaging.provider.factory.Loader.load')
+    @patch('gofer.messaging.adapter.factory.Loader.load')
     def test_bind_not_found(self, _load):
         _load.return_value = {'A': Mock()}
-        self.assertRaises(ProviderNotFound, Provider.bind, '', '')
+        self.assertRaises(AdapterNotFound, Adapter.bind, '', '')
 
-    @patch('gofer.messaging.provider.factory.Loader.load')
+    @patch('gofer.messaging.adapter.factory.Loader.load')
     def test_bind_nothing_loaded(self, _load):
         _load.return_value = {}
-        self.assertRaises(NoProvidersLoaded, Provider.bind, '', '')
+        self.assertRaises(NoAdaptersLoaded, Adapter.bind, '', '')
 
-    @patch('gofer.messaging.provider.factory.Loader.load')
+    @patch('gofer.messaging.adapter.factory.Loader.load')
     def test_find(self, _load):
         name = 'A'
         url = '%s+http://redhat.com' % name
-        provider = Mock()
-        _load.return_value = {name: provider}
+        adapter = Mock()
+        _load.return_value = {name: adapter}
 
-        p = Provider.find(url)
+        p = Adapter.find(url)
 
         _load.assert_called_with()
-        self.assertEqual(p, provider)
+        self.assertEqual(p, adapter)
 
-    @patch('gofer.messaging.provider.factory.Loader.load')
+    @patch('gofer.messaging.adapter.factory.Loader.load')
     def test_find_with_binding(self, _load):
         name = 'A'
         url = 'http://redhat.com'
-        provider = Mock()
-        _load.return_value = {name: provider}
+        adapter = Mock()
+        _load.return_value = {name: adapter}
 
-        Provider.bind(url, name)
-        p = Provider.find(url)
+        Adapter.bind(url, name)
+        p = Adapter.find(url)
 
         _load.assert_called_with()
-        self.assertEqual(p, provider)
+        self.assertEqual(p, adapter)
 
-    @patch('gofer.messaging.provider.factory.Loader.load')
+    @patch('gofer.messaging.adapter.factory.Loader.load')
     def test_find_not_matched(self, _load):
-        providers = {
+        adapters = {
             'C': Mock(),
             'B': Mock(),
             'A': Mock()
         }
-        _load.return_value = providers
-        p = Provider.find('')
-        self.assertEqual(p, providers['A'])
+        _load.return_value = adapters
+        p = Adapter.find('')
+        self.assertEqual(p, adapters['A'])
 
-    @patch('gofer.messaging.provider.factory.Loader.load')
+    @patch('gofer.messaging.adapter.factory.Loader.load')
     def test_find_nothing_loaded(self, _load):
         _load.return_value = {}
-        self.assertRaises(NoProvidersLoaded, Provider.find, '')
+        self.assertRaises(NoAdaptersLoaded, Adapter.find, '')

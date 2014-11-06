@@ -14,7 +14,7 @@ from logging import getLogger
 
 from gofer.messaging import auth
 from gofer.messaging import model
-from gofer.messaging.provider.model import Reader
+from gofer.messaging.adapter.model import Reader
 
 
 log = getLogger(__name__)
@@ -28,7 +28,7 @@ class BaseConsumer(Thread):
     def __init__(self, reader):
         """
         :param reader: An AMQP queue reader.
-        :type reader: gofer.messaging.provider.model.Reader
+        :type reader: gofer.messaging.adapter.model.Reader
         """
         Thread.__init__(self, name=reader.queue.name)
         self.reader = reader
@@ -104,7 +104,7 @@ class Consumer(BaseConsumer):
     def __init__(self, queue, url=None):
         """
         :param queue: The AMQP node.
-        :type queue: gofer.messaging.provider.model.BaseQueue
+        :type queue: gofer.messaging.adapter.model.BaseQueue
         :param url: The broker URL.
         :type url: str
         """

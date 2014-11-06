@@ -14,7 +14,7 @@ Contents:
    main
    quickstart
    design
-   provider
+   adapter
    configuration
    options
    decorators

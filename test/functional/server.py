@@ -37,7 +37,7 @@ basicConfig(filename='/opt/gofer/server.log')
 
 log = getLogger(__name__)
 
-# getLogger('gofer.provider').setLevel(DEBUG)
+# getLogger('gofer.adapter').setLevel(DEBUG)
 # getLogger('gofer.messaging').setLevel(DEBUG)
 
 

@@ -1,9 +1,9 @@
 
 
-Messaging Providers
-===================
+Messaging Adapters
+==================
 
-Each provider is a standardized integration with an external messaging library.
+Each adapter is a standardized integration with an external messaging library.
 They are a specialized plugin that provides communication with message brokers
 supported by the library.
 
@@ -13,10 +13,10 @@ Supported
 python-qpid
 ^^^^^^^^^^^
 
-This provider uses the ``qpid.messaging`` library.
+This adapter uses the ``qpid.messaging`` library.
 
 - *AMQP* - 0-10
-- *package* - gofer.messaging.provider.qpid
+- *package* - gofer.messaging.adapter.qpid
 - *provides*:
    - amqp-0-10
    - qpid.messaging
@@ -32,10 +32,10 @@ Coming soon.
 python-amqplib
 ^^^^^^^^^^^^^^
 
-This provider uses the ``amqplib.client_0_8`` library.
+This adapter uses the ``amqplib.client_0_8`` library.
 
 - *AMQP* - 0-8
-- *package* - gofer.messaging.provider.amqplib
+- *package* - gofer.messaging.adapter.amqplib
 - *provides*:
    - amqp-0-8
    - rabbitmq
@@ -44,10 +44,10 @@ This provider uses the ``amqplib.client_0_8`` library.
 python-amqp
 ^^^^^^^^^^^
 
-This provider uses the ``amqp`` library.
+This adapter uses the ``amqp`` library.
 
 - *AMQP* - 0-9-1
-- *package* - gofer.messaging.provider.amqp
+- *package* - gofer.messaging.adapter.amqp
 - *provides*:
    - amqp-0-9-1
    - rabbitmq
