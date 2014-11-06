@@ -57,7 +57,7 @@ class Container:
         """
         Get the stub destination(s).
         :return: Either a queue destination or a list of destinations.
-        :rtype: gofer.messaging.provider.model.Destination
+        :rtype: gofer.messaging.adapter.model.Destination
         """
         if isinstance(self.__id, (list, tuple)):
             destinations = []

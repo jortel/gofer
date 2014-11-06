@@ -16,7 +16,7 @@
 from logging import getLogger
 
 from gofer.rmi.store import Pending
-from gofer.messaging import Provider, Consumer, Document, Destination
+from gofer.messaging import Adapter, Consumer, Document, Destination
 from gofer.metrics import timestamp
 
 log = getLogger(__name__)
@@ -60,8 +60,8 @@ class RequestConsumer(Consumer):
         try:
             endpoint = self.reader
             destination = Destination.create(replyto)
-            provider = Provider.find(self.url)
-            provider.send(
+            adapter = Adapter.find(self.url)
+            adapter.send(
                 endpoint,
                 destination,
                 sn=sn,

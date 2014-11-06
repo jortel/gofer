@@ -20,7 +20,7 @@ from threading import Thread
 from uuid import uuid4
 
 from gofer.messaging.consumer import Consumer
-from gofer.provider.model import Queue, Reader, Producer, PlainProducer
+from gofer.adapter.model import Queue, Reader, Producer, PlainProducer
 from logging import getLogger
 
 log = getLogger(__name__)

@@ -9,28 +9,15 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from gofer.messaging.model import \
-    Document, \
-    InvalidDocument, \
-    InvalidVersion
 
-from gofer.messaging.auth import \
-    Authenticator, \
-    ValidationFailed
+from gofer.messaging.adapter.amqp.model import Exchange, Queue
+from gofer.messaging.adapter.amqp.broker import Broker
+from gofer.messaging.adapter.amqp.consumer import Reader
+from gofer.messaging.adapter.amqp.producer import Producer, send
+from gofer.messaging.adapter.amqp.endpoint import Endpoint
 
-from gofer.messaging.consumer import \
-    Consumer
 
-from gofer.messaging.adapter import \
-    URL, \
-    Adapter, \
-    AdapterError, \
-    AdapterNotFound, \
-    NoAdaptersLoaded, \
-    Destination, \
-    Exchange, \
-    Queue, \
-    Broker, \
-    Reader, \
-    Producer, \
-    PlainProducer
+PROVIDES = [
+    'AMQP-0-9-1',
+    'rabbitmq'
+]

@@ -58,7 +58,7 @@ Pending.PENDING = os.path.join(ROOT, 'messaging/pending')
 Pending.DELAYED = os.path.join(ROOT, 'messaging/delayed')
 
 # misc
-from gofer.messaging.provider.factory import Loader
+from gofer.messaging.adapter.factory import Loader
 from gofer.agent.plugin import PluginDescriptor, PluginLoader
 from gofer.agent.main import Agent, setup_logging
 from gofer.config import Config
@@ -99,9 +99,9 @@ def install_plugins(url, uuid, threads, auth):
             continue
 
 
-def install_providers():
+def install_adapters():
     root = os.path.dirname(__file__)
-    _dir = os.path.join(root, 'providers')
+    _dir = os.path.join(root, 'adapters')
     for fn in os.listdir(_dir):
         path = os.path.join(_dir, fn)
         dst = os.path.join(Loader.PATH, fn)
@@ -109,14 +109,14 @@ def install_providers():
 
 
 def install(url, uuid, threads, auth):
-    Loader.PATH = os.path.join(ROOT, 'providers')
+    Loader.PATH = os.path.join(ROOT, 'adapters')
     PluginDescriptor.ROOT = os.path.join(ROOT, 'plugins')
     PluginLoader.PATH = [os.path.join(ROOT, 'lib/plugins')]
     for path in (PluginDescriptor.ROOT, PluginLoader.PATH[0]):
         if not os.path.exists(path):
             os.makedirs(path)
     install_plugins(url, uuid, threads, auth)
-    install_providers()
+    install_adapters()
 
 
 def get_options():

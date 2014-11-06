@@ -9,28 +9,29 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from gofer.messaging.model import \
-    Document, \
-    InvalidDocument, \
-    InvalidVersion
+import os
+import sys
 
-from gofer.messaging.auth import \
-    Authenticator, \
-    ValidationFailed
+sys.path.insert(0, os.path.join(os.path.curdir, '../../src'))
 
-from gofer.messaging.consumer import \
-    Consumer
+from logging import basicConfig
 
-from gofer.messaging.adapter import \
-    URL, \
-    Adapter, \
-    AdapterError, \
-    AdapterNotFound, \
-    NoAdaptersLoaded, \
-    Destination, \
-    Exchange, \
-    Queue, \
-    Broker, \
-    Reader, \
-    Producer, \
-    PlainProducer
+from base import Test
+from gofer.messaging.adapter.factory import Loader
+
+
+basicConfig()
+
+URL = 'amqp://localhost:5673'
+
+if __name__ == '__main__':
+    loader = Loader()
+    loader.load()
+    # AMQP-0-8
+    adapter = loader.adapters['amqp-0-9-1']
+    test = Test(URL, adapter)
+    test()
+    # amqplib
+    adapter = loader.adapters['amqp']
+    test = Test(URL, adapter)
+    test()

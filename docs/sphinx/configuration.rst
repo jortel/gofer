@@ -56,7 +56,7 @@ Defines messaging properties:
 
 - **url** - The broker connection URL.
   No value indicates that gofer should **not** connect to the broker.
-  *format*: *<provider>+<protocol>://<user>:<password>@<host>:<port>/<virtual-host>*,
+  *format*: *<adapter>+<protocol>://<user>:<password>@<host>:<port>/<virtual-host>*,
   protocol is one of:
 
    - **tcp**:   non-SSL protocol
@@ -64,8 +64,8 @@ Defines messaging properties:
    - **ssl**:   SSL protocol
    - **amqps**: SSL protocol
 
-  The <provider>, <user>:<password> and /<virtual-host> are optional.
-  See: :doc:`provider` for list of supported providers.
+  The <adapter>, <user>:<password> and /<virtual-host> are optional.
+  See: :doc:`adapter` for list of supported adapters.
 
   The <port> is optional and defaults based on the protocol when not specified:
 
@@ -92,23 +92,23 @@ Example:
  clientcert = /etc/pki/qpid/client/client.pem
 
 
-Provider Descriptors
+Adapter Descriptors
 ^^^^^^^^^^^^^^^^^^^^
 
 
-Each plugin has a configuration located in ``/etc/gofer/providers``.  Provider descriptors
+Each plugin has a configuration located in ``/etc/gofer/adapters``.  Adapter descriptors
 are *ini* style configuration that require the following sections and properties:
 
 [main]
 ------
 
-Defines basic provider properties.
+Defines basic adapter properties.
 
-- **enabled** - Specify the provider as enabled/disabled.
+- **enabled** - Specify the adapter as enabled/disabled.
 - **package** - Specify the python package name.
 - **provides** - Specify a list of capabilities.  Comma (,) delimited list.
 - **priority** - Specify the priority used to resolve ambiguity when selecting
-  a provider based on capability.
+  a adapter based on capability.
 
 
 Plugin Descriptors
@@ -144,7 +144,7 @@ Defines basic plugin properties.
 
 - **'url** - The (optional) QPID connection URL.
   No value indicates the plugin should **not** connect to broker.
-  *format*: ``<provider>+<protocol>://<user>:<password>@<host>:<port>/<virtual-host>``,
+  *format*: ``<adapter>+<protocol>://<user>:<password>@<host>:<port>/<virtual-host>``,
   protocol is one of:
 
    - **tcp**:   non-SSL protocol
@@ -152,8 +152,8 @@ Defines basic plugin properties.
    - **ssl**:   SSL protocol
    - **amqps**: SSL protocol
 
-  The <provider>, <user>:<password> and /<virtual-host> are optional.
-  See: :doc:`provider` for list of supported providers.
+  The <adapter>, <user>:<password> and /<virtual-host> are optional.
+  See: :doc:`adapter` for list of supported adapters.
 
   The <port> is optional and defaults based on the protocol when not specified:
 

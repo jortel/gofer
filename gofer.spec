@@ -56,7 +56,7 @@ popd
 mkdir -p %{buildroot}/usr/bin
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/plugins
-mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/providers
+mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/messaging/adapters
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/conf.d
 mkdir -p %{buildroot}/%{_sysconfdir}/init.d
 mkdir -p %{buildroot}/%{_unitdir}
@@ -67,7 +67,7 @@ mkdir -p %{buildroot}/%{_mandir}/man1
 cp bin/%{name}d %{buildroot}/usr/bin
 cp etc/%{name}/*.conf %{buildroot}/%{_sysconfdir}/%{name}
 cp etc/%{name}/plugins/*.conf %{buildroot}/%{_sysconfdir}/%{name}/plugins
-cp etc/%{name}/providers/*.conf %{buildroot}/%{_sysconfdir}/%{name}/providers
+cp etc/%{name}/messaging/adapters/*.conf %{buildroot}/%{_sysconfdir}/%{name}/messaging/adapters
 cp src/plugins/*.py %{buildroot}/%{_usr}/share/%{name}/plugins
 cp docs/man/man1/* %{buildroot}/%{_mandir}/man1
 
@@ -147,16 +147,16 @@ Provides gofer python lib modules.
 %{python_sitelib}/%{name}/*.py*
 %{python_sitelib}/%{name}/rmi/
 %dir %{python_sitelib}/%{name}/messaging/
-%dir %{python_sitelib}/%{name}/messaging/provider
+%dir %{python_sitelib}/%{name}/messaging/adapter
 %{python_sitelib}/%{name}/messaging/*.py*
-%{python_sitelib}/%{name}/messaging/provider/*.py*
+%{python_sitelib}/%{name}/messaging/adapter/*.py*
 %doc LICENSE
 
 
-# --- python qpid messaging provider -----------------------------------------
+# --- python qpid messaging adapter ------------------------------------------
 
 %package -n python-%{name}-qpid
-Summary: Gofer Qpid messaging provider python package
+Summary: Gofer Qpid messaging adapter python package
 Group: Development/Languages
 BuildRequires: python
 Requires: python-%{name} >= %{version}
@@ -166,47 +166,47 @@ Requires: python-ssl
 %endif
 
 %description -n python-%{name}-qpid
-Provides the gofer qpid messaging provider package.
+Provides the gofer qpid messaging adapter package.
 
 %files -n python-%{name}-qpid
-%{_sysconfdir}/%{name}/providers/qpid.conf
-%{python_sitelib}/%{name}/messaging/provider/qpid
+%{_sysconfdir}/%{name}/messaging/adapters/qpid.conf
+%{python_sitelib}/%{name}/messaging/adapter/qpid
 %doc LICENSE
 
 
-# --- python amqp messaging provider -----------------------------------------------
+# --- python amqp messaging adapter ------------------------------------------
 
 %package -n python-%{name}-amqp
-Summary: Gofer amqp messaging provider python package
+Summary: Gofer amqp messaging adapter python package
 Group: Development/Languages
 BuildRequires: python
 Requires: python-%{name} >= %{version}
 Requires: python-amqp >= 1.4.5
 
 %description -n python-%{name}-amqp
-Provides the gofer amqp messaging provider package.
+Provides the gofer amqp messaging adapter package.
 
 %files -n python-%{name}-amqp
-%{_sysconfdir}/%{name}/providers/amqp.conf
-%{python_sitelib}/%{name}/messaging/provider/amqp
+%{_sysconfdir}/%{name}/messaging/adapters/amqp.conf
+%{python_sitelib}/%{name}/messaging/adapter/amqp
 %doc LICENSE
 
 
-# --- python amqplib messaging provider -----------------------------------------------
+# --- python amqplib messaging adapter ---------------------------------------
 
 %package -n python-%{name}-amqplib
-Summary: Gofer amqplib messaging provider python package
+Summary: Gofer amqplib messaging adapter python package
 Group: Development/Languages
 BuildRequires: python
 Requires: python-%{name} >= %{version}
 Requires: python-amqplib >= 1.0.2
 
 %description -n python-%{name}-amqplib
-Provides the gofer amqplib messaging provider package.
+Provides the gofer amqplib messaging adapter package.
 
 %files -n python-%{name}-amqplib
-%{_sysconfdir}/%{name}/providers/amqplib.conf
-%{python_sitelib}/%{name}/messaging/provider/amqplib
+%{_sysconfdir}/%{name}/messaging/adapters/amqplib.conf
+%{python_sitelib}/%{name}/messaging/adapter/amqplib
 %doc LICENSE
 
 

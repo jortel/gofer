@@ -8,25 +8,20 @@
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+#
+# Jeff Ortel <jortel@redhat.com>
 
-from gofer.messaging.model import \
-    Document, \
-    InvalidDocument, \
-    InvalidVersion
+from gofer.messaging.adapter.url import \
+    URL
 
-from gofer.messaging.auth import \
-    Authenticator, \
-    ValidationFailed
-
-from gofer.messaging.consumer import \
-    Consumer
-
-from gofer.messaging.adapter import \
-    URL, \
+from gofer.messaging.adapter.factory import \
+    Loader, \
     Adapter, \
     AdapterError, \
     AdapterNotFound, \
-    NoAdaptersLoaded, \
+    NoAdaptersLoaded
+
+from gofer.messaging.adapter.model import \
     Destination, \
     Exchange, \
     Queue, \

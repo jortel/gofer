@@ -199,7 +199,7 @@ class Plugin(object):
         """
         Get the broker for this plugin.
         :return: The configured broker.
-        :rtype: gofer.messaging.provider.model.Broker
+        :rtype: gofer.messaging.adapter.model.Broker
         """
         return self.update_broker()
 
@@ -223,7 +223,7 @@ class Plugin(object):
         """
         Update the broker configuration using the plugin configuration.
         :return: The updated broker.
-        :rtype: gofer.messaging.provider.model.Broker
+        :rtype: gofer.messaging.adapter.model.Broker
         """
         agent = AgentConfig()
         plugin = self.descriptor

@@ -39,7 +39,7 @@ class ReplyConsumer(Consumer):
     def __init__(self, queue, url=None, authenticator=None):
         """
         :param queue: The AMQP node.
-        :type queue: gofer.messaging.provider.model.Queue
+        :type queue: gofer.messaging.adapter.model.Queue
         :param url: The broker URL.
         :type url: str
         :param authenticator: A message authenticator.
