@@ -22,5 +22,4 @@ pip install nose-cov
 pip install mock
 pip install iniparse
 pip install -e ../src/
-nosetests --with-coverage --cover-package=gofer unit
-rm -rf $dir
+nosetests --with-coverage --cover-package=gofer `find unit -type d` 
