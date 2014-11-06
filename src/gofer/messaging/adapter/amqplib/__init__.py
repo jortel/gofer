@@ -10,11 +10,11 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 
-from gofer.messaging.provider.amqplib.model import Exchange, Queue
-from gofer.messaging.provider.amqplib.broker import Broker
-from gofer.messaging.provider.amqplib.consumer import Reader
-from gofer.messaging.provider.amqplib.producer import Producer, send
-from gofer.messaging.provider.amqplib.endpoint import Endpoint
+from gofer.messaging.adapter.amqplib.model import Exchange, Queue
+from gofer.messaging.adapter.amqplib.broker import Broker
+from gofer.messaging.adapter.amqplib.consumer import Reader
+from gofer.messaging.adapter.amqplib.producer import Producer, send
+from gofer.messaging.adapter.amqplib.endpoint import Endpoint
 
 
 PROVIDES = [

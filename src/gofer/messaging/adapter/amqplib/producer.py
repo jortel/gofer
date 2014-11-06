@@ -16,8 +16,8 @@ from amqplib.client_0_8 import Message
 
 from gofer.messaging import auth
 from gofer.messaging.model import VERSION, Document
-from gofer.messaging.provider.model import BaseProducer, BasePlainProducer
-from gofer.messaging.provider.amqplib.endpoint import Endpoint, reliable
+from gofer.messaging.adapter.model import BaseProducer, BasePlainProducer
+from gofer.messaging.adapter.amqplib.endpoint import Endpoint, reliable
 
 
 log = getLogger(__name__)
@@ -38,9 +38,9 @@ def send(endpoint, destination, ttl=None, **body):
     """
     Send a message.
     :param endpoint: An AMQP endpoint.
-    :type endpoint: gofer.messaging.provider.model.BaseEndpoint
+    :type endpoint: gofer.messaging.adapter.model.BaseEndpoint
     :param destination: An AMQP destination.
-    :type destination: gofer.messaging.provider.model.Destination
+    :type destination: gofer.messaging.adapter.model.Destination
     :param ttl: Time to Live (seconds)
     :type ttl: float
     :keyword body: document body.
@@ -89,7 +89,7 @@ class Producer(BaseProducer):
         """
         Send a message.
         :param destination: An AMQP destination.
-        :type destination: gofer.messaging.provider.model.Destination
+        :type destination: gofer.messaging.adapter.model.Destination
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
@@ -102,7 +102,7 @@ class Producer(BaseProducer):
         """
         Broadcast a message to (N) queues.
         :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.messaging.provider.node.Destination,..]
+        :type destinations: [gofer.messaging.adapter.node.Destination,..]
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.

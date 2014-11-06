@@ -19,8 +19,8 @@ from logging import getLogger
 from uuid import uuid4
 
 from gofer import Singleton
-from gofer.messaging.provider.url import URL
-from gofer.messaging.provider.factory import Provider
+from gofer.messaging.adapter.url import URL
+from gofer.messaging.adapter.factory import Adapter
 
 # routing key
 ROUTE_ALL = '#'
@@ -166,8 +166,8 @@ class Exchange(BaseExchange):
         :type url: str
         :return: self
         """
-        provider = Provider.find(url)
-        impl = provider.Exchange(self.name, policy=self.policy)
+        adapter = Adapter.find(url)
+        impl = adapter.Exchange(self.name, policy=self.policy)
         impl.durable = self.durable
         impl.auto_delete = self.auto_delete
         impl.declare(url)
@@ -179,8 +179,8 @@ class Exchange(BaseExchange):
         :type url: str
         :return: self
         """
-        provider = Provider.find(url)
-        impl = provider.Exchange(self.name)
+        adapter = Adapter.find(url)
+        impl = adapter.Exchange(self.name)
         impl.delete(url)
 
 
@@ -253,8 +253,8 @@ class Queue(BaseQueue):
         :type url: str
         :return: self
         """
-        provider = Provider.find(url)
-        impl = provider.Queue(self.name, self.exchange, self.routing_key)
+        adapter = Adapter.find(url)
+        impl = adapter.Queue(self.name, self.exchange, self.routing_key)
         impl.durable = self.durable
         impl.auto_delete = self.auto_delete
         impl.exclusive = self.exclusive
@@ -267,8 +267,8 @@ class Queue(BaseQueue):
         :type url: str
         :return: self
         """
-        provider = Provider.find(url)
-        impl = provider.Queue(self.name)
+        adapter = Adapter.find(url)
+        impl = adapter.Queue(self.name)
         impl.delete(url)
         
     def destination(self, url):
@@ -279,8 +279,8 @@ class Queue(BaseQueue):
         :return: A destination for the node.
         :rtype: Destination
         """
-        provider = Provider.find(url)
-        impl = provider.Queue(self.name, self.exchange, self.routing_key)
+        adapter = Adapter.find(url)
+        impl = adapter.Queue(self.name, self.exchange, self.routing_key)
         return impl.destination(url)
 
 
@@ -420,7 +420,7 @@ class BaseReader(Messenger):
     def __init__(self, queue, url):
         """
         :param queue: The queue to consumer.
-        :type queue: gofer.messaging.provider.model.BaseQueue
+        :type queue: gofer.messaging.adapter.model.BaseQueue
         :param url: The broker url.
         :type url: str
         """
@@ -468,14 +468,14 @@ class Reader(BaseReader):
     def __init__(self, queue, url=DEFAULT_URL):
         """
         :param queue: The queue to consumer.
-        :type queue: gofer.messaging.provider.model.BaseQueue
+        :type queue: gofer.messaging.adapter.model.BaseQueue
         :param url: The broker url.
         :type url: str
-        :see: gofer.messaging.provider.url.URL
+        :see: gofer.messaging.adapter.url.URL
         """
         BaseReader.__init__(self, queue, url)
-        provider = Provider.find(url)
-        self._impl = provider.Reader(queue, url)
+        adapter = Adapter.find(url)
+        self._impl = adapter.Reader(queue, url)
 
     def channel(self):
         """
@@ -569,7 +569,7 @@ class BaseProducer(Messenger):
         """
         Send a message.
         :param destination: An AMQP destination.
-        :type destination: gofer.messaging.provider.model.Destination
+        :type destination: gofer.messaging.adapter.model.Destination
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
@@ -582,7 +582,7 @@ class BaseProducer(Messenger):
         """
         Broadcast a message to (N) queues.
         :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.messaging.provider.node.Node,..]
+        :type destinations: [gofer.messaging.adapter.node.Node,..]
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
@@ -603,8 +603,8 @@ class Producer(BaseProducer):
         :type url: str
         """
         BaseProducer.__init__(self, url)
-        provider = Provider.find(url)
-        self._impl = provider.Producer(url)
+        adapter = Adapter.find(url)
+        self._impl = adapter.Producer(url)
 
     def channel(self):
         """
@@ -645,7 +645,7 @@ class Producer(BaseProducer):
         """
         Send a message.
         :param destination: An AMQP destination.
-        :type destination: gofer.messaging.provider.model.Destination
+        :type destination: gofer.messaging.adapter.model.Destination
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
@@ -659,7 +659,7 @@ class Producer(BaseProducer):
         """
         Broadcast a message to (N) queues.
         :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.messaging.provider.node.Node,..]
+        :type destinations: [gofer.messaging.adapter.node.Node,..]
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
@@ -679,7 +679,7 @@ class BasePlainProducer(Messenger):
         """
         Send a message.
         :param destination: An AMQP destination.
-        :type destination: gofer.messaging.provider.model.Destination
+        :type destination: gofer.messaging.adapter.model.Destination
         :param content: The message content
         :type content: buf
         :param ttl: Time to Live (seconds)
@@ -691,7 +691,7 @@ class BasePlainProducer(Messenger):
         """
         Broadcast a message to (N) queues.
         :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.messaging.provider.node.Node,..]
+        :type destinations: [gofer.messaging.adapter.node.Node,..]
         :param content: The message content
         :type content: buf
         """
@@ -705,12 +705,12 @@ class PlainProducer(BasePlainProducer):
 
     def __init__(self, url=DEFAULT_URL):
         """
-        :param url: The broker url <provider>://<user>:<pass>@<host>:<port>/<virtual-host>.
+        :param url: The broker url <adapter>://<user>:<pass>@<host>:<port>/<virtual-host>.
         :type url: str
         """
         BasePlainProducer.__init__(self, url)
-        provider = Provider.find(url)
-        self._impl = provider.PlainProducer(url)
+        adapter = Adapter.find(url)
+        self._impl = adapter.PlainProducer(url)
 
     def channel(self):
         """
@@ -751,7 +751,7 @@ class PlainProducer(BasePlainProducer):
         """
         Send a message.
         :param destination: An AMQP destination.
-        :type destination: gofer.messaging.provider.model.Destination
+        :type destination: gofer.messaging.adapter.model.Destination
         :param content: The message content
         :type content: buf
         :param ttl: Time to Live (seconds)
@@ -764,7 +764,7 @@ class PlainProducer(BasePlainProducer):
         """
         Broadcast a message to (N) queues.
         :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.messaging.provider.node.Node,..]
+        :type destinations: [gofer.messaging.adapter.node.Node,..]
         :param content: The message content
         :type content: buf
         """
@@ -822,7 +822,7 @@ class BaseBroker(object):
     def __init__(self, url):
         """
         :param url: The broker url:
-            <provider>+<scheme>://<userid:password@<host>:<port>/<virtual-host>.
+            <adapter>+<scheme>://<userid:password@<host>:<port>/<virtual-host>.
         :type url: str|URL
         """
         if not isinstance(url, URL):
@@ -844,13 +844,13 @@ class BaseBroker(object):
         return self.url.simple()
 
     @property
-    def provider(self):
+    def adapter(self):
         """
-        Get the (gofer) provider component of the url.
-        :return: The provider component.
+        Get the (gofer) adapter component of the url.
+        :return: The adapter component.
         :rtype: str
         """
-        return self.url.provider
+        return self.url.adapter
 
     @property
     def scheme(self):
@@ -924,12 +924,12 @@ class Broker(BaseBroker):
     def __init__(self, url=DEFAULT_URL):
         """
         :param url: The broker url:
-            <provider>+<scheme>://<userid:password@<host>:<port>/<virtual-host>.
+            <adapter>+<scheme>://<userid:password@<host>:<port>/<virtual-host>.
         :type url: str|URL
         """
         BaseBroker.__init__(self, url)
-        provider = Provider.find(url)
-        self._impl = provider.Broker(url)
+        adapter = Adapter.find(url)
+        self._impl = adapter.Broker(url)
 
     def connect(self):
         """

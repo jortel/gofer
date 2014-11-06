@@ -9,11 +9,11 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from gofer.messaging.provider.qpid.model import Exchange, Queue
-from gofer.messaging.provider.qpid.broker import Broker
-from gofer.messaging.provider.qpid.consumer import Reader
-from gofer.messaging.provider.qpid.producer import Producer, send
-from gofer.messaging.provider.qpid.endpoint import Endpoint
+from gofer.messaging.adapter.qpid.model import Exchange, Queue
+from gofer.messaging.adapter.qpid.broker import Broker
+from gofer.messaging.adapter.qpid.consumer import Reader
+from gofer.messaging.adapter.qpid.producer import Producer, send
+from gofer.messaging.adapter.qpid.endpoint import Endpoint
 
 
 PROVIDES = [

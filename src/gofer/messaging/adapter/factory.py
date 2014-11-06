@@ -17,8 +17,8 @@ import logging
 
 from gofer.config import get_bool
 
-from gofer.messaging.provider.descriptor import Descriptor
-from gofer.messaging.provider.url import URL
+from gofer.messaging.adapter.descriptor import Descriptor
+from gofer.messaging.adapter.url import URL
 
 
 log = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 
 # --- constants --------------------------------------------------------------
 
-# symbols required to be supported by all providers
+# symbols required to be supported by all adapters
 REQUIRED = [
     'Exchange',
     'Broker',
@@ -42,24 +42,24 @@ REQUIRED = [
 # --- exceptions -------------------------------------------------------------
 
 
-class ProviderError(Exception):
+class AdapterError(Exception):
     pass
 
 
-class NoProvidersLoaded(ProviderError):
+class NoAdaptersLoaded(AdapterError):
 
-    DESCRIPTION = 'No messaging providers loaded'
+    DESCRIPTION = 'No messaging adapters loaded'
 
     def __init__(self):
-        ProviderError.__init__(self, NoProvidersLoaded.DESCRIPTION)
+        AdapterError.__init__(self, NoAdaptersLoaded.DESCRIPTION)
 
 
-class ProviderNotFound(ProviderError):
+class AdapterNotFound(AdapterError):
 
-    DESCRIPTION = 'Messaging provider: %s, not-found'
+    DESCRIPTION = 'Messaging adapter: %s, not-found'
 
     def __init__(self, name):
-        ProviderError.__init__(self, ProviderNotFound.DESCRIPTION % name)
+        AdapterError.__init__(self, AdapterNotFound.DESCRIPTION % name)
         self.name = name
 
 
@@ -68,29 +68,29 @@ class ProviderNotFound(ProviderError):
 
 class Loader:
     """
-    Provider provider loader.
+    Adapter adapter loader.
     :cvar PATH: The default (absolute) path to a directory
         containing descriptors to be loaded.
     :type PATH: str
-    :ivar providers: Loaded providers.
-    :type providers: dict
+    :ivar adapters: Loaded adapters.
+    :type adapters: dict
     """
 
-    PATH = '/etc/gofer/providers'
+    PATH = '/etc/gofer/messaging/adapters'
 
     def __init__(self):
-        self.providers = {}
+        self.adapters = {}
 
     @staticmethod
     def _load(path):
         """
-        Load providers.
+        Load adapters.
         :param path: The absolute path to a directory containing descriptors.
         :type path: str
-        :return: The loaded providers.
+        :return: The loaded adapters.
         :rtype: dict
         """
-        providers = {}
+        adapters = {}
         for descriptor in Descriptor.load(path):
             if not get_bool(descriptor.main.enabled):
                 continue
@@ -98,57 +98,57 @@ class Loader:
             try:
                 pkg = __import__(package, {}, {}, REQUIRED)
                 name = pkg.__name__.split('.')[-1]
-                providers[name] = pkg
-                providers[package] = pkg
+                adapters[name] = pkg
+                adapters[package] = pkg
                 for capability in descriptor.provides:
-                    providers[capability] = pkg
+                    adapters[capability] = pkg
             except (ImportError, AttributeError):
                 log.exception(package)
-        return providers
+        return adapters
 
     def load(self, path=PATH):
         """
-        Load provider providers.
+        Load adapter adapters.
         :param path: The absolute path to a directory containing descriptors.
         :type path: str
-        :return: The loaded providers.
+        :return: The loaded adapters.
         :rtype: dict
         """
-        if not len(self.providers):
-            self.providers = Loader._load(path)
-        return self.providers
+        if not len(self.adapters):
+            self.adapters = Loader._load(path)
+        return self.adapters
 
 
-class Provider(object):
+class Adapter(object):
 
     urls = {}
     loader = Loader()
 
     @staticmethod
     def bind(url, name):
-        providers = Provider.loader.load()
-        loaded = sorted(providers)
+        adapters = Adapter.loader.load()
+        loaded = sorted(adapters)
         if not loaded:
-            raise NoProvidersLoaded()
+            raise NoAdaptersLoaded()
         try:
             url = URL(url)
-            Provider.urls[url.simple()] = providers[name]
+            Adapter.urls[url.simple()] = adapters[name]
         except KeyError:
-            raise ProviderNotFound(name)
+            raise AdapterNotFound(name)
 
     @staticmethod
     def find(url=None):
-        providers = Provider.loader.load()
-        loaded = sorted(providers)
+        adapters = Adapter.loader.load()
+        loaded = sorted(adapters)
         if not loaded:
-            raise NoProvidersLoaded()
+            raise NoAdaptersLoaded()
         if not url:
             url = loaded[0]
         try:
             url = URL(url)
-            if url.provider:
-                return providers[url.provider]
+            if url.adapter:
+                return adapters[url.adapter]
             else:
-                return Provider.urls[url.simple()]
+                return Adapter.urls[url.simple()]
         except KeyError:
-            return providers[loaded[0]]
+            return adapters[loaded[0]]

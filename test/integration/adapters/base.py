@@ -18,19 +18,19 @@ N = 10
 
 class Test(object):
     
-    def __init__(self, url, provider):
+    def __init__(self, url, adapter):
         self.url = url
-        self.provider = provider
+        self.adapter = adapter
 
     def producer_reader(self, queue):
         print 'using producer/reader'
-        with self.provider.Producer(url=self.url) as p:
+        with self.adapter.Producer(url=self.url) as p:
             for x in range(0, N):
                 d = queue.destination(self.url)
                 print '#%d - sent: %s' % (x, d.dict())
                 p.send(d)
         received = 0
-        with self.provider.Reader(queue, url=self.url) as r:
+        with self.adapter.Reader(queue, url=self.url) as r:
             while received < N:
                 m, ack = r.next()
                 if m is None:
@@ -45,9 +45,9 @@ class Test(object):
     
         class TestCon(Consumer):
     
-            def __init__(self, url, provider):
+            def __init__(self, url, adapter):
                 Consumer.__init__(self, queue, url=url)
-                self.reader = provider.Reader(queue, url=url)
+                self.reader = adapter.Reader(queue, url=url)
                 self.received = 0
     
             def dispatch(self, document):
@@ -56,10 +56,10 @@ class Test(object):
                 if self.received == N:
                     self.stop()
     
-        c = TestCon(self.url, self.provider)
+        c = TestCon(self.url, self.adapter)
         c.start()
     
-        with self.provider.Producer(url=self.url) as p:
+        with self.adapter.Producer(url=self.url) as p:
             for x in range(0, N):
                 d = queue.destination(self.url)
                 print '#%d - sent: %s' % (x, d.dict())
@@ -70,7 +70,7 @@ class Test(object):
     
     def test_no_exchange(self):
         print 'test builtin (direct) exchange'
-        queue = self.provider.Queue('test_1')
+        queue = self.adapter.Queue('test_1')
         queue.durable = False
         queue.auto_delete = True
         queue.declare(self.url)
@@ -78,8 +78,8 @@ class Test(object):
 
     def test_direct_exchange(self):
         print 'test explicit (direct) exchange'
-        exchange = self.provider.Exchange('amq.direct')
-        queue = self.provider.Queue('test_2', exchange=exchange)
+        exchange = self.adapter.Exchange('amq.direct')
+        queue = self.adapter.Queue('test_2', exchange=exchange)
         queue.durable = False
         queue.auto_delete = True
         queue.declare(self.url)
@@ -87,11 +87,11 @@ class Test(object):
 
     def test_custom_direct_exchange(self):
         print 'test custom (direct) exchange'
-        exchange = self.provider.Exchange('test_1.direct', 'direct')
+        exchange = self.adapter.Exchange('test_1.direct', 'direct')
         exchange.durable = False
         exchange.auto_delete = True
         exchange.declare(self.url)
-        queue = self.provider.Queue('test_5', exchange=exchange)
+        queue = self.adapter.Queue('test_5', exchange=exchange)
         queue.durable = False
         queue.auto_delete = True
         queue.declare(self.url)
@@ -99,8 +99,8 @@ class Test(object):
     
     def test_topic_exchange(self):
         print 'test explicit (topic) exchange'
-        exchange = self.provider.Exchange('amq.topic')
-        queue = self.provider.Queue('test_3', exchange=exchange, routing_key='#')
+        exchange = self.adapter.Exchange('amq.topic')
+        queue = self.adapter.Queue('test_3', exchange=exchange, routing_key='#')
         queue.durable = False
         queue.auto_delete = True
         queue.declare(self.url)
@@ -108,11 +108,11 @@ class Test(object):
 
     def test_custom_topic_exchange(self):
         print 'test custom (topic) exchange'
-        exchange = self.provider.Exchange('test_2.topic', 'topic')
+        exchange = self.adapter.Exchange('test_2.topic', 'topic')
         exchange.durable = False
         exchange.auto_delete = True
         exchange.declare(self.url)
-        queue = self.provider.Queue('test_6', exchange=exchange, routing_key='#')
+        queue = self.adapter.Queue('test_6', exchange=exchange, routing_key='#')
         queue.durable = False
         queue.auto_delete = True
         queue.declare(self.url)
@@ -120,7 +120,7 @@ class Test(object):
 
     def test_consumer(self):
         print 'test consumer builtin (direct) exchange'
-        queue = self.provider.Queue('test_4')
+        queue = self.adapter.Queue('test_4')
         queue.durable = False
         queue.auto_delete = True
         queue.declare(self.url)

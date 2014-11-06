@@ -11,9 +11,9 @@
 
 from logging import getLogger
 
-from gofer.messaging.provider.amqplib import endpoint
+from gofer.messaging.adapter.amqplib import endpoint
 
-from gofer.messaging.provider.model import BaseExchange, BaseQueue, Destination
+from gofer.messaging.adapter.model import BaseExchange, BaseQueue, Destination
 
 
 log = getLogger(__name__)

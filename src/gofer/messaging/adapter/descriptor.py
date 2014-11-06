@@ -33,13 +33,13 @@ SCHEMA = (
 
 class Descriptor(Graph):
     """
-    Provider descriptor.
+    Adapter descriptor.
     """
 
     @staticmethod
     def load(path):
         """
-        Load all provider descriptors.
+        Load all adapter descriptors.
         :param path: The absolute path to a directory containing descriptors.
         :type path: str
         :return: A list of descriptors sorted by priority.

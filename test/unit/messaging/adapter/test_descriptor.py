@@ -14,14 +14,14 @@ from unittest import TestCase
 from mock import Mock, patch, call
 
 from gofer.config import Config, ValidationException
-from gofer.messaging.provider.descriptor import DEFAULT, SCHEMA, Descriptor
+from gofer.messaging.adapter.descriptor import DEFAULT, SCHEMA, Descriptor
 
 
 class TestLoad(TestCase):
 
     @patch('os.listdir')
     @patch('os.path.isfile')
-    @patch('gofer.messaging.provider.descriptor.Descriptor')
+    @patch('gofer.messaging.adapter.descriptor.Descriptor')
     def test_load(self, _descriptor, _isfile, _listdir):
         path = 'path-1'
         files = [
@@ -54,7 +54,7 @@ class TestLoad(TestCase):
                 call('path-1/file-4')
             ])
 
-    @patch('gofer.messaging.provider.descriptor.Config')
+    @patch('gofer.messaging.adapter.descriptor.Config')
     def test_init(self, _config):
         path = 'path-1'
         package = 'a.b.c'
@@ -78,7 +78,7 @@ class TestLoad(TestCase):
         self.assertEqual(descriptor.main.provides, provides)
         self.assertEqual(descriptor.provides, provides.split(','))
 
-    @patch('gofer.messaging.provider.descriptor.Config')
+    @patch('gofer.messaging.adapter.descriptor.Config')
     def test_init_invalid(self, _config):
         path = 'path-1'
         _config.side_effect = [

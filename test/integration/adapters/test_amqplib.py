@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(os.path.curdir, '../../src'))
 from logging import basicConfig
 
 from base import Test
-from gofer.messaging.provider.factory import Loader
+from gofer.messaging.adapter.factory import Loader
 
 
 basicConfig()
@@ -28,10 +28,10 @@ if __name__ == '__main__':
     loader = Loader()
     loader.load()
     # AMQP-0-8
-    provider = loader.providers['amqp-0-8']
-    test = Test(URL, provider)
+    adapter = loader.adapters['amqp-0-8']
+    test = Test(URL, adapter)
     test()
     # amqplib
-    provider = loader.providers['amqplib']
-    test = Test(URL, provider)
+    adapter = loader.adapters['amqplib']
+    test = Test(URL, adapter)
     test()

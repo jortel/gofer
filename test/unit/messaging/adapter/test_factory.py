@@ -68,7 +68,7 @@ class TestLoader(TestCase):
         _load.return_value = [p[0] for p in adapters]
         _import.side_effect = [p[1] for p in adapters if get_bool(p[0].main.enabled)]
 
-        loaded = Loader._load()
+        loaded = Loader._load(Loader.PATH)
         self.assertEqual(_import.call_args_list, self._import_calls(adapters))
         self.assertEqual(loaded, self._load(adapters))
 
@@ -78,7 +78,7 @@ class TestLoader(TestCase):
         _load.return_value = adapters
         ldr = Loader()
         loaded = ldr.load()
-        _load.assert_called_with()
+        _load.assert_called_with(Loader.PATH)
         self.assertEqual(loaded, adapters)
 
     @patch('gofer.messaging.adapter.factory.Loader._load')

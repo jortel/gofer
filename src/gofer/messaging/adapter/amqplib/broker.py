@@ -17,7 +17,7 @@ from socket import error as SocketError
 
 from amqplib.client_0_8 import Connection, AMQPConnectionException
 
-from gofer.messaging.provider.model import BaseBroker
+from gofer.messaging.adapter.model import BaseBroker
 
 
 log = getLogger(__name__)
@@ -37,7 +37,7 @@ class Broker(BaseBroker):
     def __init__(self, url):
         """
         :param url: The broker url.
-          Format: <provider>+<scheme>://<user>:<password>@<host>:<port></>.
+          Format: <adapter>+<scheme>://<user>:<password>@<host>:<port></>.
         :type url: str
         """
         BaseBroker.__init__(self, url)
