@@ -117,7 +117,7 @@ class TestReader(TestCase):
     @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
     @patch('gofer.messaging.adapter.qpid.consumer.RLock', Mock())
     @patch('gofer.messaging.adapter.qpid.consumer.BaseReader.close')
-    def test_close_already(self, close):
+    def test_close_not_open(self, close):
         receiver = Mock()
 
         # test
