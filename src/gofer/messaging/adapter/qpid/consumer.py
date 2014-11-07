@@ -107,6 +107,7 @@ class Reader(BaseReader):
             if not self.__opened:
                 return
             self.__receiver.close()
+            self.__receiver = None
             self.__opened = False
         finally:
             self.__unlock()
