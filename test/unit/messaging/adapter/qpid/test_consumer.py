@@ -19,7 +19,7 @@ from gofer.messaging import InvalidDocument
 
 with ipatch('qpid.messaging'):
     from gofer.messaging.adapter.qpid.consumer import subject
-    from gofer.messaging.adapter.qpid.consumer import Reader
+    from gofer.messaging.adapter.qpid.consumer import Reader, BaseReader
 
 
 class TestSubject(TestCase):
@@ -47,6 +47,7 @@ class TestReader(TestCase):
 
         # validation
         endpoint.assert_called_once_with(url)
+        self.assertTrue(isinstance(reader, BaseReader))
         self.assertEqual(reader.url, url)
         self.assertEqual(reader.queue, queue)
         self.assertFalse(reader._Reader__opened)

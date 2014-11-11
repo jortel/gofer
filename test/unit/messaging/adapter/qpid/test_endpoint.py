@@ -16,7 +16,7 @@ from mock import Mock, patch
 from gofer.devel import ipatch
 
 with ipatch('qpid.messaging'):
-    from gofer.messaging.adapter.qpid.endpoint import Endpoint
+    from gofer.messaging.adapter.qpid.endpoint import Endpoint, BaseEndpoint
 
 
 class TestEndpoint(TestCase):
@@ -31,6 +31,7 @@ class TestEndpoint(TestCase):
 
         # validation
         atexit.register.assert_called_once_with(endpoint.close)
+        self.assertTrue(isinstance(endpoint, BaseEndpoint))
         self.assertEqual(endpoint._Endpoint__mutex, rlock.return_value)
         self.assertEqual(endpoint._Endpoint__session, None)
         self.assertEqual(endpoint.url, url)

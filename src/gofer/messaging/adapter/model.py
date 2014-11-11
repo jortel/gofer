@@ -164,7 +164,6 @@ class Exchange(BaseExchange):
         Declare the node.
         :param url: The broker URL.
         :type url: str
-        :return: self
         """
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name, policy=self.policy)
@@ -177,7 +176,6 @@ class Exchange(BaseExchange):
         Delete the node.
         :param url: The broker URL.
         :type url: str
-        :return: self
         """
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name)

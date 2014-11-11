@@ -21,7 +21,7 @@ from gofer import Singleton
 
 with ipatch('qpid.messaging'):
     from gofer.messaging import URL
-    from gofer.messaging.adapter.qpid.broker import Broker
+    from gofer.messaging.adapter.qpid.broker import Broker, BaseBroker
 
 
 class Local(object):
@@ -39,6 +39,7 @@ class TestBroker(TestCase):
     def test_init(self):
         url = 'test-url://'
         b = Broker(url)
+        self.assertTrue(isinstance(b, BaseBroker))
         self.assertEqual(b.url, URL(url))
 
     def test_add_transports(self):

@@ -21,6 +21,13 @@ from gofer.messaging.adapter.model import BaseExchange, BaseQueue, Destination
 
 
 def squash(s):
+    """
+    Squash the string by stripping white space.
+    :param s: A string to squash.
+    :type s: str
+    :return: The squashed string.
+    :rtype: str
+    """
     sq = []
     for c in s:
         if c in string.whitespace:
@@ -33,11 +40,25 @@ def squash(s):
 
 
 class Exchange(BaseExchange):
+    """
+    A qpid AMQP exchange.
+    """
 
     def __init__(self, name, policy=None):
+        """
+        :param name: The exchange name.
+        :type name: str
+        :param policy: The routing policy (direct|topic|..).
+        :type policy: str
+        """
         BaseExchange.__init__(self, name, policy=policy)
 
     def address(self):
+        """
+        Get the *special* qpid messaging address string.
+        :return: The qpid address string.
+        :rtype: str
+        """
         fmt = squash("""
         %(name)s;{
           create:always,
@@ -52,6 +73,12 @@ class Exchange(BaseExchange):
         return fmt % args
 
     def declare(self, url):
+        """
+        Declare the node.
+        :param url: The broker URL.
+        :type url: str
+        :return: self
+        """
         if not self.policy:
             return
         endpoint = Endpoint(url)
@@ -64,8 +91,19 @@ class Exchange(BaseExchange):
 
 
 class Queue(BaseQueue):
+    """
+    A qpid AMQP queue.
+    """
 
     def __init__(self, name, exchange=None, routing_key=None):
+        """
+        :param name: The queue name.
+        :type name: str
+        :param exchange: An AMQP exchange
+        :type exchange: BaseExchange
+        :param routing_key: Message routing key.
+        :type routing_key: str
+        """
         BaseQueue.__init__(
             self,
             name,
@@ -73,13 +111,39 @@ class Queue(BaseQueue):
             routing_key=routing_key or name)
 
     def bindings(self):
+        """
+        Get the *x-bindings* part of the address.
+        :return: The bindings part.
+        :rtype: str
+        """
         if self.exchange != Exchange(''):
             binding = XBinding(self.exchange, self.routing_key)
             return XBindings(binding)
         else:
             return XBindings()
 
+    def x_declare(self):
+        """
+        Get the *x-declare* part of the address.
+        :return: The bindings part.
+        :rtype: str
+        """
+        if self.auto_delete:
+            return squash("""
+                x-declare:{
+                  auto-delete:True,
+                  arguments:{'qpid.auto_delete_timeout':10}
+                },
+            """)
+        else:
+            return ''
+
     def address(self):
+        """
+        Get the *special* qpid messaging address string.
+        :return: The qpid address string.
+        :rtype: str
+        """
         if self.durable:
             fmt = squash("""
             %(name)s;{
@@ -122,18 +186,12 @@ class Queue(BaseQueue):
             exclusive=self.exclusive)
         return fmt % args
 
-    def x_declare(self):
-        if self.auto_delete:
-            return squash("""
-                x-declare:{
-                  auto-delete:True,
-                  arguments:{'qpid.auto_delete_timeout':10}
-                },
-            """)
-        else:
-            return ''
-
     def declare(self, url):
+        """
+        Declare the node.
+        :param url: The broker URL.
+        :type url: str
+        """
         endpoint = Endpoint(url)
         try:
             session = endpoint.channel()
