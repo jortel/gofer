@@ -58,11 +58,35 @@ def send(endpoint, destination, ttl=None, **body):
     unsigned = document.dump()
     signed = auth.sign(endpoint.authenticator, unsigned)
     message = Message(content=signed, durable=True, ttl=ttl)
-    sender = endpoint.channel().sender(address)
+    channel = endpoint.channel()
+    sender = channel.sender(address)
     sender.send(message)
     sender.close()
     log.debug('sent (%s) %s', destination, document)
     return sn
+
+
+def plain_send(endpoint, destination, content, ttl=None):
+    """
+    Send a message with *raw* content.
+    :param destination: An AMQP destination.
+    :type destination: gofer.messaging.adapter.model.Destination
+    :param content: The message content
+    :param ttl: Time to Live (seconds)
+    :type ttl: float
+    :return: The message ID.
+    :rtype: str
+    """
+    if destination.exchange:
+        address = '/'.join((destination.exchange, destination.routing_key))
+    else:
+        address = destination.routing_key
+    message = Message(content=content, durable=True, ttl=ttl)
+    sender = endpoint.channel().sender(address)
+    sender.send(message)
+    sender.close()
+    log.debug('sent (%s) <Plain>', destination)
+    return message.id
 
 
 # --- producers --------------------------------------------------------------
@@ -110,14 +134,14 @@ class Producer(BaseProducer):
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
-        :return: A list of (addr,sn).
+        :return: A list of (destination, sn).
         :rtype: list
         """
-        sns = []
-        for dst in destinations:
-            sn = send(self, dst, ttl, **body)
-            sns.append((repr(dst), sn))
-        return sns
+        sn_list = []
+        for destination in destinations:
+            sn = send(self, destination, ttl, **body)
+            sn_list.append((repr(destination), sn))
+        return sn_list
 
 
 class PlainProducer(BasePlainProducer):
@@ -150,16 +174,10 @@ class PlainProducer(BasePlainProducer):
         :type content: buf
         :param ttl: Time to Live (seconds)
         :type ttl: float
+        :return: The message ID.
+        :rtype: str
         """
-        if destination.exchange:
-            address = '/'.join((destination.exchange, destination.routing_key))
-        else:
-            address = destination.routing_key
-        message = Message(content=content, durable=True, ttl=ttl)
-        sender = self.channel().sender(address)
-        sender.send(message)
-        sender.close()
-        log.debug('sent (%s) <Plain>', destination)
+        return plain_send(self, destination, content, ttl=ttl)
 
     def broadcast(self, destinations, content, ttl=None):
         """
@@ -168,6 +186,11 @@ class PlainProducer(BasePlainProducer):
         :type destinations: [gofer.messaging.adapter.node.Node,..]
         :param content: The message content
         :type content: buf
+        :return: A list of (destination, id).
+        :rtype: list
         """
-        for dst in destinations:
-            self.send(dst, content, ttl)
+        id_list = []
+        for destination in destinations:
+            sn = plain_send(self, destination, content, ttl=ttl)
+            id_list.append((repr(destination), sn))
+        return id_list
