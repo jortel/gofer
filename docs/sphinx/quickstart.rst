@@ -55,29 +55,6 @@ Python
         Functions:
           builtin.echo()
 
-Ruby
-----
-
-  ::
-
-    irb
-    irb(main):001:0> require 'gofer'
-    irb(main):001:0> agent = Gofer::Agent.new('123')
-    irb(main):001:0> admin = agent.Admin.new()
-    irb(main):001:0> puts admin.help()
-        Plugins:
-          builtin
-        Actions:
-          builtin.TestAction.hello() 0:10:00
-        Methods:
-         Admin.hello()
-         Admin.help()
-         Shell.run()
-       Functions:
-         builtin.echo()
-
-
-
 Writing A Plugin
 ^^^^^^^^^^^^^^^^
 

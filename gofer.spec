@@ -1,5 +1,4 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
-%{!?ruby_sitelib: %global ruby_sitelib %(ruby -rrbconfig  -e 'puts Config::CONFIG["sitelibdir"]')}
 
 # Determine supported
 %if 0%{?rhel} >= 7 || 0%{?fedora} >= 18
@@ -52,20 +51,6 @@ popd
 rm -rf %{buildroot}
 pushd src
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
-pushd ruby
-mkdir -p %{buildroot}/%{ruby_sitelib}/%{name}/rmi
-mkdir -p %{buildroot}/%{ruby_sitelib}/%{name}/messaging
-cp %{name}.rb %{buildroot}/%{ruby_sitelib}
-pushd %{name}
-cp *.rb %{buildroot}/%{ruby_sitelib}/%{name}
-pushd rmi
-cp *.rb %{buildroot}/%{ruby_sitelib}/%{name}/rmi
-popd
-pushd messaging
-cp *.rb %{buildroot}/%{ruby_sitelib}/%{name}/messaging
-popd
-popd
-popd
 popd
 
 mkdir -p %{buildroot}/usr/bin
@@ -202,7 +187,7 @@ Provides the gofer amqplib transport package.
 %doc LICENSE
 
 
-# --- python-amqp transport -----------------------------------------------
+# --- python-amqp transport --------------------------------------------------
 
 %package -n python-%{name}-amqp
 Summary: Gofer amqp transport python package
@@ -217,29 +202,6 @@ Provides the gofer amqp transport package.
 %files -n python-%{name}-amqp
 %{python_sitelib}/%{name}/transport/amqp
 %doc LICENSE
-
-
-# --- ruby lib ---------------------------------------------------------------
-
-%package -n ruby-%{name}
-Summary: Gofer ruby lib modules
-Group: Development/Languages
-BuildRequires: ruby
-Requires: rubygems
-Requires: rubygem(json)
-Requires: rubygem(qpid) >= 0.16.0
-
-%description -n ruby-%{name}
-Provides gofer ruby lib modules.
-
-%files -n ruby-%{name}
-%defattr(-,root,root,-)
-%{ruby_sitelib}/%{name}.rb
-%{ruby_sitelib}/%{name}/*.rb
-%{ruby_sitelib}/%{name}/rmi/
-%{ruby_sitelib}/%{name}/messaging/
-%doc LICENSE
-
 
 # --- plugin: system ---------------------------------------------------------
 
