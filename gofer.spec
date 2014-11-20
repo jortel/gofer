@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 1.4.0
+Version: 1.4.1
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -266,6 +266,10 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Thu Nov 20 2014 Jeff Ortel <jortel@redhat.com> 1.4.1-1
+- Remove ruby lib. (jortel@redhat.com)
+- Remove broken ruby dependency. (jortel@redhat.com)
+
 * Mon Nov 03 2014 Jeff Ortel <jortel@redhat.com> 1.4.0-1
 - Add reply timestamp. (jortel@redhat.com)
 - Fix synchronous policy using durable queue.
