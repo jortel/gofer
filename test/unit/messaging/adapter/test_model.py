@@ -836,6 +836,18 @@ class TestBaseBroker(TestCase):
         self.assertEqual(b.clientcert, None)
         self.assertFalse(b.host_validation)
 
+    def test_open(self):
+        url = TEST_URL
+        BrokerSingleton.reset()
+        b = BaseBroker(url)
+        self.assertRaises(NotImplementedError, b.connect)
+
+    def test_close(self):
+        url = TEST_URL
+        BrokerSingleton.reset()
+        b = BaseBroker(url)
+        self.assertRaises(NotImplementedError, b.close)
+
     def test_str(self):
         BrokerSingleton.reset()
         b = BaseBroker(TEST_URL)
