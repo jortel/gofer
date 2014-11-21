@@ -293,9 +293,12 @@ class TestBaseEndpoint(TestCase):
         endpoint = BaseEndpoint(TEST_URL)
         self.assertRaises(NotImplementedError, endpoint.close)
 
-    def test_enter(self):
+    @patch('gofer.messaging.adapter.model.BaseEndpoint.open')
+    def test_enter(self, _open):
         endpoint = BaseEndpoint(TEST_URL)
-        self.assertEqual(endpoint, endpoint.__enter__())
+        retval = endpoint.__enter__()
+        _open.assert_called_once_with()
+        self.assertEqual(endpoint, retval)
 
     @patch('gofer.messaging.adapter.model.BaseEndpoint.close')
     def test_exit(self, _close):

@@ -72,10 +72,7 @@ class Endpoint(BaseEndpoint):
         :param message: The message to acknowledge.
         :type message: qpid.messaging.Message
         """
-        try:
-            self.__session.acknowledge(message=message)
-        except Exception:
-            pass
+        self.__session.acknowledge(message=message)
 
     def reject(self, message, requeue=True):
         """
@@ -85,14 +82,11 @@ class Endpoint(BaseEndpoint):
         :param requeue: Requeue the message or discard it.
         :type requeue: bool
         """
-        try:
-            if requeue:
-                disposition = Disposition(RELEASED)
-            else:
-                disposition = Disposition(REJECTED)
-            self.__session.acknowledge(message=message, disposition=disposition)
-        except Exception:
-            pass
+        if requeue:
+            disposition = Disposition(RELEASED)
+        else:
+            disposition = Disposition(REJECTED)
+        self.__session.acknowledge(message=message, disposition=disposition)
 
     def open(self):
         """

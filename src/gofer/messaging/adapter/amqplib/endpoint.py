@@ -131,6 +131,12 @@ class Endpoint(BaseEndpoint):
             self.__channel = None
             if channel is not None:
                 channel.close()
-        except (CONNECTION_EXCEPTIONS, AMQPChannelException):
+        except (CONNECTION_EXCEPTIONS, AMQPChannelException), e:
+            log.exception(str(e))
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
             # ignored
             pass

@@ -94,10 +94,7 @@ class TestEndpoint(TestCase):
         # test
         endpoint = Endpoint(url)
         endpoint._Endpoint__session = session
-        endpoint.ack(message)
-
-        # validation
-        session.acknowledge.assert_called_once_with(message=message)
+        self.assertRaises(ValueError, endpoint.ack, message)
 
     @patch('gofer.messaging.adapter.qpid.endpoint.RELEASED')
     @patch('gofer.messaging.adapter.qpid.endpoint.Disposition')
@@ -129,11 +126,7 @@ class TestEndpoint(TestCase):
         # test
         endpoint = Endpoint(url)
         endpoint._Endpoint__session = session
-        endpoint.reject(message)
-
-        # validation
-        endpoint._Endpoint__session.acknowledge.assert_called_once_with(
-            message=message, disposition=disposition.return_value)
+        self.assertRaises(ValueError, endpoint.reject, message)
 
 
     @patch('gofer.messaging.adapter.qpid.endpoint.REJECTED')
