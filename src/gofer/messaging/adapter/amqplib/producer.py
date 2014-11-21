@@ -26,12 +26,20 @@ log = getLogger(__name__)
 # --- utils ------------------------------------------------------------------
 
 
-def message(body, ttl):
+def build_message(body, ttl):
+    """
+    Construct a message object.
+    :param body: The message body.
+    :param ttl: Time to Live (seconds)
+    :type ttl: float
+    :return: The message.
+    :rtype: Message
+    """
     if ttl:
         ms = ttl * 1000  # milliseconds
         return Message(body, durable=True, expiration=str(ms))
     else:
-        return Message(body)
+        return Message(body, durable=True)
 
 @reliable
 def send(endpoint, destination, ttl=None, **body):
@@ -55,10 +63,29 @@ def send(endpoint, destination, ttl=None, **body):
     unsigned = document.dump()
     signed = auth.sign(endpoint.authenticator, unsigned)
     channel = endpoint.channel()
-    m = message(signed, ttl)
+    m = build_message(signed, ttl)
     channel.basic_publish(m, exchange=destination.exchange, routing_key=routing_key)
     log.debug('sent (%s) %s', destination, document)
     return sn
+
+
+def plain_send(self, destination, content, ttl=None):
+    """
+    Send a message with *raw* content.
+    :param destination: An AMQP destination.
+    :type destination: gofer.messaging.adapter.model.Destination
+    :param content: The message content
+    :param ttl: Time to Live (seconds)
+    :type ttl: float
+    :return: The message ID.
+    :rtype: str
+    """
+    routing_key = destination.routing_key
+    channel = self.channel()
+    m = build_message(content, ttl)
+    channel.basic_publish(m, exchange=destination.exchange, routing_key=routing_key)
+    log.debug('sent (%s) <Plain>', destination)
+    return m.id
 
 
 # --- producers --------------------------------------------------------------
@@ -136,13 +163,12 @@ class PlainProducer(BasePlainProducer):
 
     @reliable
     def send(self, destination, content, ttl=None):
-        routing_key = destination.routing_key
-        channel = self.channel()
-        m = message(content, ttl)
-        channel.basic_publish(m, exchange=destination.exchange, routing_key=routing_key)
-        log.debug('sent (%s) <Plain>', destination)
+        return plain_send(self, destination, content, ttl=ttl)
 
     @reliable
     def broadcast(self, destinations, content, ttl=None):
-        for dst in destinations:
-            self.send(dst, content, ttl)
+        id_list = []
+        for destination in destinations:
+            sn = plain_send(self, destination, content, ttl=ttl)
+            id_list.append((repr(destination), sn))
+        return id_list
