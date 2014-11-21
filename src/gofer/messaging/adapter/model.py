@@ -779,14 +779,13 @@ class BrokerSingleton(Singleton):
     Singleton by simple url.
     """
 
-    @classmethod
-    def key(mcs, t, d):
+    @staticmethod
+    def key(t, d):
         url = t[0]
-        if isinstance(url, str):
-            url = URL(url)
-        if not isinstance(url, URL):
+        if isinstance(url, (str, URL)):
+            return str(url)
+        else:
             raise ValueError('url must be: str|URL')
-        return url.simple()
 
     def __call__(cls, *args, **kwargs):
         if not args:
@@ -831,6 +830,19 @@ class BaseBroker(object):
         self.clientkey = None
         self.clientcert = None
         self.host_validation = False
+
+    def connect(self):
+        """
+        Connect to the broker.
+        :return: The AMQP connection object.
+        """
+        raise NotImplementedError()
+
+    def close(self):
+        """
+        Close the connection to the broker.
+        """
+        raise NotImplementedError()
 
     @property
     def id(self):
@@ -932,8 +944,6 @@ class Broker(BaseBroker):
     def connect(self):
         """
         Connect to the broker.
-        :return: The AMQP connection object.
-        :rtype: *Connection*
         """
         self._impl.cacert = self.cacert
         self._impl.clientkey = self.clientkey

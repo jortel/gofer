@@ -17,7 +17,6 @@ from unittest import TestCase
 from mock import patch, Mock
 
 from gofer.devel import ipatch
-from gofer import Singleton
 
 with ipatch('qpid.messaging'):
     from gofer.messaging import URL
@@ -29,12 +28,6 @@ class Local(object):
 
 
 class TestBroker(TestCase):
-
-    def setUp(self):
-        Singleton._Singleton__inst = {}
-
-    def tearDown(self):
-        Singleton._Singleton__inst = {}
 
     def test_init(self):
         url = 'test-url://'
@@ -56,13 +49,13 @@ class TestBroker(TestCase):
     @patch('gofer.messaging.adapter.qpid.broker.Broker.add_transports')
     def test_connect(self, add_transports, connection):
         url = 'qpid+amqp://elmer:fudd@redhat.com:1234'
+
+        # test
         b = Broker(url)
         b.cacert = 'test-ca'
         b.clientkey = 'test-key'
         b.clientcert = 'test-crt'
         b.connection = Local()
-
-        # test
         con = b.connect()
 
         # validation

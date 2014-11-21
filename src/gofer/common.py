@@ -27,29 +27,29 @@ class Singleton(type):
     __inst = {}
     __mutex = RLock()
 
-    @classmethod
-    def reset(mcs):
-        mcs.__inst = {}
+    @staticmethod
+    def reset():
+        Singleton.__inst = {}
 
-    @classmethod
-    def key(mcs, t, d):
+    @staticmethod
+    def key(t, d):
         key = []
         for x in t:
-            if isinstance(x, (str, int, float)):
+            if isinstance(x, (basestring, int, float, bool)):
                 key.append(x)
         for k in sorted(d.keys()):
             v = d[k]
-            if isinstance(v, (str, int, float)):
+            if isinstance(v, (basestring, int, float, bool)):
                 key.append((k, v))
         return repr(key)
 
-    @classmethod
-    def all(mcs):
-        mcs.__lock()
+    @staticmethod
+    def all():
+        Singleton.__lock()
         try:
-            return mcs.__inst.values()
+            return Singleton.__inst.values()
         finally:
-            mcs.__unlock()
+            Singleton.__unlock()
 
     def __call__(cls, *args, **kwargs):
         cls.__lock()
@@ -63,21 +63,21 @@ class Singleton(type):
         finally:
             cls.__unlock()
 
-    @classmethod
-    def __len__(mcs):
-        mcs.__lock()
+    @staticmethod
+    def __len__():
+        Singleton.__lock()
         try:
-            return len(mcs.__inst)
+            return len(Singleton.__inst)
         finally:
-            mcs.__unlock()
+            Singleton.__unlock()
 
-    @classmethod
-    def __lock(cls):
-        cls.__mutex.acquire()
+    @staticmethod
+    def __lock():
+        Singleton.__mutex.acquire()
 
-    @classmethod
-    def __unlock(cls):
-        cls.__mutex.release()
+    @staticmethod
+    def __unlock():
+        Singleton.__mutex.release()
 
 
 def synchronized(fn):

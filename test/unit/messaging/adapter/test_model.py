@@ -799,11 +799,12 @@ class TestBrokerSingleton(TestCase):
 
     def test_string_key(self):
         # string
-        key = BrokerSingleton.key(['http://host'], None)
-        self.assertEqual(key, 'host:5672')
+        url = 'http://host'
+        key = BrokerSingleton.key([url], None)
+        self.assertEqual(key, url)
         # url
-        key = BrokerSingleton.key([URL('http://host')], None)
-        self.assertEqual(key, 'host:5672')
+        key = BrokerSingleton.key([URL(url)], None)
+        self.assertEqual(key, url)
         # invalid
         self.assertRaises(ValueError, BrokerSingleton.key, [10], None)
 
