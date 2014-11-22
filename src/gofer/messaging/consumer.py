@@ -48,11 +48,11 @@ class BaseConsumer(Thread):
         self.reader.open()
         try:
             while self._run:
-                self.__read()
+                self._read()
         finally:
             self.reader.close()
 
-    def __read(self):
+    def _read(self):
         """
         Read and process incoming documents.
         """
