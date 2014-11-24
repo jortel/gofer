@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 1.3.0
+Version: 2.0.0
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -150,6 +150,7 @@ Provides gofer python lib modules.
 %dir %{python_sitelib}/%{name}/messaging/adapter
 %{python_sitelib}/%{name}/messaging/*.py*
 %{python_sitelib}/%{name}/messaging/adapter/*.py*
+%{python_sitelib}/%{name}/devel/
 %doc LICENSE
 
 
@@ -273,6 +274,31 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Mon Nov 24 2014 Jeff Ortel <jortel@redhat.com> 2.0.0-1
+- The transport concept has been revised and renamed to messaging adapters.
+- The transport parameter and configuation deprecated.
+- The URL updated to specify the messaging adapter.
+- Messaging adapters have descriptors and are loaded much like plugins.
+- Better unit test coverage.
+- Performance improvements and bug fixes.
+
+* Thu Nov 20 2014 Jeff Ortel <jortel@redhat.com> 1.4.1-1
+- Remove ruby lib. (jortel@redhat.com)
+- Remove broken ruby dependency. (jortel@redhat.com)
+
+* Mon Nov 03 2014 Jeff Ortel <jortel@redhat.com> 1.4.0-1
+- Add reply timestamp. (jortel@redhat.com)
+- Fix synchronous policy using durable queue.
+  (jortel@redhat.com)
+- Add python-amqp transport. (jortel@redhat.com)
+
+* Fri Aug 15 2014 Jeff Ortel <jortel@redhat.com> 1.3.1-1
+- 1129828 - split stack traces into separate log records. (jortel@redhat.com)
+- Added python-ctypes dependency. (jortel@redhat.com)
+- PyPAM replaced with ctypes implementation. (jortel@redhat.com)
+- Refactor: add transport Loader; transports loaded and cached when Transport
+  is instantiated instead of package import. (jortel@redhat.com)
+- Support passing url=None in broker meta-class. (jortel@redhat.com)
 * Mon Jun 16 2014 Jeff Ortel <jortel@redhat.com> 1.3.0-1
 - Update man page to reference github. (jortel@redhat.com)
 - Replace --console option with --foreground and use in systemd unit.
