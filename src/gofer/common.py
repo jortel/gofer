@@ -64,14 +64,6 @@ class Singleton(type):
             cls.__unlock()
 
     @staticmethod
-    def __len__():
-        Singleton.__lock()
-        try:
-            return len(Singleton.__inst)
-        finally:
-            Singleton.__unlock()
-
-    @staticmethod
     def __lock():
         Singleton.__mutex.acquire()
 
@@ -163,7 +155,7 @@ class Options(object):
         if isinstance(thing, dict):
             self.__dict__.update(thing)
             return self
-        if isinstance(thing, object):
+        if hasattr(thing, '__dict__'):
             self.__dict__.update(thing.__dict__)
             return self
         raise ValueError(thing)
@@ -179,4 +171,3 @@ class Options(object):
 
     def __str__(self):
         return str(self.__dict__)
-
