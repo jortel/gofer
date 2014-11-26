@@ -14,7 +14,7 @@ class InvalidOperator(Exception):
     pass
 
 
-class Criteria:
+class Criteria(object):
     """
     The criteria used to match on an RMI locator.
     """
@@ -137,7 +137,7 @@ class Builder:
         Build a Criteria object based on the specified
         dict representation.
         :param criteria: The criteria to build.
-        :type criteria: str
+        :type criteria: dict
         :rtype: Criteria
         :raise Exception, on invalid criteria.
         """
@@ -148,12 +148,12 @@ class Builder:
             if m:
                 return m(self._resolve(v))
             else:
-                raise InvalidOperator, '%s not supported' % k
+                raise InvalidOperator('%s not supported' % k)
 
     def _resolve(self, thing):
-        if self._criteria(object):
+        if self._criteria(thing):
             return self.build(thing)
-        if isinstance(thing, (list,tuple)) and len(thing) == 2:
+        if isinstance(thing, (list, tuple)) and len(thing) == 2:
             left, right = thing
             if self._criteria(left) and self._criteria(right):
                 left = self.build(left)
@@ -161,9 +161,9 @@ class Builder:
                 return left, right
         return thing
 
-    def _criteria(self, object):
-        if isinstance(object, dict):
+    def _criteria(self, thing):
+        if isinstance(thing, dict):
             for k in self.METHODS:
-                if k in object:
+                if k in thing:
                     return True
         return False

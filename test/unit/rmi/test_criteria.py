@@ -10,10 +10,34 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 from unittest import TestCase
+
+from mock import Mock
+
 from gofer.rmi.criteria import *
 
 
 class TestCriteria(TestCase):
+
+    def test_init(self):
+        c = 1234
+        criteria = Criteria(c)
+        self.assertEqual(criteria.criteria, 1234)
+
+    def test_match(self):
+        criteria = Criteria('')
+        self.assertRaises(NotImplementedError, criteria.match, '')
+
+    def test_call(self):
+        c = '1234'
+        locator = {}
+        criteria = Criteria(c)
+        criteria.match = Mock()
+        matched = criteria(locator)
+        criteria.match.assert_called_once_with(locator)
+        self.assertEqual(matched, criteria.match.return_value)
+
+
+class TestMatch(TestCase):
 
     def test_match(self):
         match = Match({'id': 44, 'age': 88})
@@ -31,6 +55,25 @@ class TestCriteria(TestCase):
         self.assertFalse(match({'id': 44, 'age': 88}))
         self.assertFalse(match({'id': 44, 'age': 88}))
         self.assertFalse(match({'age': 88}))
+        match = Match('')
+        self.assertFalse(match(''))
+
+    def test_valid(self):
+        # criteria not a dict
+        match = Match('')
+        self.assertFalse(match._valid(''))
+        # locator not dict
+        match = Match({})
+        self.assertFalse(match._valid(1))
+        # empty criteria
+        match = Match({})
+        self.assertFalse(match._valid({}))
+        # no locator
+        match = Match({'A': 1})
+        self.assertFalse(match._valid({}))
+        # valid
+        match = Match({'A': 1})
+        self.assertTrue(match._valid({'A': 1}))
 
     def test_eq(self):
         eq = Equal(1)
@@ -53,7 +96,7 @@ class TestCriteria(TestCase):
         self.assertFalse(lt.match(2))
 
     def test_in(self):
-        _in = In([1,2])
+        _in = In([1, 2])
         self.assertTrue(_in.match(1))
         self.assertFalse(_in.match(3))
 
@@ -71,6 +114,22 @@ class TestCriteria(TestCase):
 
 
 class TestBuilder(TestCase):
+
+    def test_build(self):
+        b = Builder()
+        # no criteria
+        self.assertEqual(b.build({}), None)
+        # simple criteria
+        match = b.build({'eq': 1})
+        self.assertTrue(isinstance(match, Criteria))
+        self.assertEqual(match.criteria, 1)
+        # nested criteria
+        match = b.build({'eq': {'eq': 1}})
+        self.assertTrue(isinstance(match, Criteria))
+        self.assertTrue(isinstance(match.criteria, Criteria))
+        self.assertEqual(match.criteria.criteria, 1)
+        # invalid operator
+        self.assertRaises(InvalidOperator, b.build, {None: -1})
 
     def test_match(self):
         b = Builder()
@@ -92,37 +151,37 @@ class TestBuilder(TestCase):
 
     def test_eq(self):
         b = Builder()
-        eq = b.build({'eq':1})
+        eq = b.build({'eq': 1})
         self.assertTrue(eq.match(1))
         self.assertFalse(eq.match(2))
 
     def test_neq(self):
         b = Builder()
-        neq = b.build({'neq':1})
+        neq = b.build({'neq': 1})
         self.assertTrue(neq.match(2))
         self.assertFalse(neq.match(1))
 
     def test_gt(self):
         b = Builder()
-        gt = b.build({'gt':1})
+        gt = b.build({'gt': 1})
         self.assertTrue(gt.match(2))
         self.assertFalse(gt.match(1))
 
     def test_lt(self):
         b = Builder()
-        lt = b.build({'lt':2})
+        lt = b.build({'lt': 2})
         self.assertTrue(lt.match(1))
         self.assertFalse(lt.match(2))
 
     def test_in(self):
         b = Builder()
-        _in = b.build({'in':[1,2]})
+        _in = b.build({'in': [1, 2]})
         self.assertTrue(_in.match(1))
         self.assertFalse(_in.match(3))
 
     def test_and(self):
         b = Builder()
-        q = {'and':({'gt':1}, {'lt':3})}
+        q = {'and': ({'gt': 1}, {'lt': 3})}
         _and = b.build(q)
         self.assertTrue(_and.match(2))
         self.assertFalse(_and.match(1))
@@ -130,7 +189,7 @@ class TestBuilder(TestCase):
 
     def test_or(self):
         b = Builder()
-        q = {'or':({'eq':1}, {'eq':3})}
+        q = {'or': ({'eq': 1}, {'eq': 3})}
         _or = b.build(q)
         self.assertTrue(_or.match(1))
         self.assertTrue(_or.match(3))
@@ -139,9 +198,9 @@ class TestBuilder(TestCase):
     def test_nested(self):
         b = Builder()
         q = {
-            'or':[
-                {'eq':10},
-                {'or':[{'eq':1},{'eq':2}]}
+            'or': [
+                {'eq': 10},
+                {'or': [{'eq': 1}, {'eq': 2}]}
             ]
         }
         _or = b.build(q)
@@ -152,5 +211,5 @@ class TestBuilder(TestCase):
 
     def test_unsupported(self):
         b = Builder()
-        q = {'xx':1}
+        q = {'xx': 1}
         self.assertRaises(InvalidOperator, b.build, q)
