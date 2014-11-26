@@ -218,3 +218,7 @@ class TestModule(TestCase):
     def test_eq(self):
         self.assertEqual(Module('test'), Module('test'))
         self.assertNotEqual(Module('test'), Module('test2'))
+
+    def test_repr(self):
+        mod = Module('test')
+        self.assertEqual(repr(mod), 'test')
