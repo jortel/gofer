@@ -12,6 +12,7 @@
 from unittest import TestCase
 
 from mock import patch, Mock
+
 from StringIO import StringIO
 from copy import deepcopy as clone
 

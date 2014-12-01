@@ -13,16 +13,9 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-import os
-
-from logging import getLogger
-
-
 from gofer import NAME, Singleton
 from gofer.config import Config, Graph
 from gofer.config import REQUIRED, OPTIONAL, ANY, BOOL, NUMBER
-
-log = getLogger(__name__)
 
 
 AGENT_SCHEMA = (
@@ -32,7 +25,6 @@ AGENT_SCHEMA = (
     ('messaging', REQUIRED,
         (
             ('url', OPTIONAL, ANY),
-            ('virtual_host', OPTIONAL, ANY),
             ('userid', OPTIONAL, ANY),
             ('password', OPTIONAL, ANY),
             ('cacert', OPTIONAL, ANY),
@@ -50,59 +42,60 @@ AGENT_SCHEMA = (
 
 PLUGIN_SCHEMA = (
     ('main', REQUIRED,
-        ('enabled', REQUIRED, BOOL),
-        ('requires', OPTIONAL, ANY),
-        ('extends', OPTIONAL, ANY)
+        (
+            ('enabled', REQUIRED, BOOL),
+            ('requires', OPTIONAL, ANY),
+            ('extends', OPTIONAL, ANY)
+        )
     ),
     ('messaging', REQUIRED,
         (
             ('uuid', OPTIONAL, ANY),
             ('url', OPTIONAL, ANY),
-            ('virtual_host', OPTIONAL, ANY),
             ('userid', OPTIONAL, ANY),
             ('password', OPTIONAL, ANY),
             ('cacert', OPTIONAL, ANY),
             ('clientcert', OPTIONAL, ANY),
-            ('validation', OPTIONAL, BOOL),
+            ('host_validation', OPTIONAL, BOOL),
             ('threads', OPTIONAL, NUMBER),
+        )
+    ),
+    ('queue', REQUIRED,
+        (
+            ('declare', OPTIONAL, BOOL),
         )
     ),
 )
 
 
+PLUGIN_DEFAULTS = {
+    'main': {
+        'enabled': '0',
+    },
+    'messaging': {
+        'threads': '1',
+    },
+    'queue': {
+        'declare': '1'
+    }
+}
+
+
 class AgentConfig(Graph):
     """
     The gofer agent configuration.
-    :cvar ROOT: The root configuration directory.
-    :type ROOT: str
     :cvar PATH: The absolute path to the config directory.
     :type PATH: str
-    :cvar USER: The path to an alternate configuration file
-        within the user's home.
-    :type USER: str
-    :cvar ALT: The environment variable with a path to an alternate
-        configuration file.
-    :type ALT: str
     """
+
     __metaclass__ = Singleton
 
-    ROOT = '/etc/%s' % NAME
-    FILE = 'agent.conf'
-    PATH = os.path.join(ROOT, FILE)
-    USER = os.path.join('~/.%s' % NAME, FILE)
-    CNFD = os.path.join(ROOT, 'conf.d')
-    ALT = '%s_OVERRIDE' % NAME.upper()
+    PATH = '/etc/%s/agent.conf' % NAME
 
     def __init__(self):
         """
-        Open the configuration.
-        Merge (in) alternate configuration file when specified
-        by environment variable.
+        Read the configuration.
         """
-        paths = [self.PATH]
-        paths.extend([os.path.join(self.CNFD, n) for n in sorted(os.listdir(self.CNFD))])
-        if os.path.exists(self.USER):
-            paths.append(self.USER)
-        conf = Config(*paths)
+        conf = Config(self.PATH)
         conf.validate(AGENT_SCHEMA)
         Graph.__init__(self, conf)

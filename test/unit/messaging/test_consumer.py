@@ -51,6 +51,29 @@ class TestBaseConsumer(TestCase):
         consumer._read.assert_called_once_with()
         reader.close.assert_called_once_with()
 
+    def test_open(self):
+        reader = Mock()
+        consumer = BaseConsumer(reader)
+
+        # test
+        consumer._open()
+
+        # validation
+        reader.open.assert_called_once_with()
+
+    @patch('gofer.messaging.consumer.sleep')
+    def test_open_exception(self, sleep):
+        reader = Mock()
+        reader.open.side_effect = [ValueError, None]
+        consumer = BaseConsumer(reader)
+
+        # test
+        consumer._open()
+
+        # validation
+        sleep.assert_called_once_with(10)
+        self.assertEqual(reader.open.call_count, 2)
+
     def test_read(self):
         reader = Mock()
         document = Mock()
@@ -110,11 +133,17 @@ class TestBaseConsumer(TestCase):
         # validate
         consumer._rejected.assert_called_once_with(ir.code, ir.details, document=ir.document)
 
-    def test_read_exception(self):
+    @patch('gofer.messaging.consumer.sleep')
+    def test_read_exception(self, sleep):
         reader = Mock()
         reader.next.side_effect = IndexError
         consumer = BaseConsumer(reader)
+
+        # test
         consumer._read()
+
+        # validation
+        sleep.assert_called_once_with(10)
 
     def test_rejected(self):
         reader = Mock()
@@ -138,6 +167,5 @@ class TestConsumer(TestCase):
         consumer = Consumer(queue, url)
 
         # validation
-        queue.declare.assert_called_once_with(url)
         self.assertEqual(consumer.queue, queue)
         self.assertEqual(consumer.url, url)

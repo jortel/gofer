@@ -79,8 +79,6 @@ Defines messaging properties:
 - **userid** - The (optional) userid used for authentication.
 - **password** - The (optional) password used for authentication.
   A (PEM) file containing **both** the private key and certificate.
-- **threads** - The (optional) number of threads for the RMI dispatcher.
-  Default to (1) when not specified.
 
 Example:
 
@@ -163,9 +161,15 @@ Defines basic plugin properties.
 - **cacert** - The (optional) SSL CA certificate used to validate the server certificate.
 - **clientcert** - The (optional) SSL client certificate.  A (PEM) file containing **both**
   the private key and certificate.
-- **validation** - Enable SSL host validation.
+- **host_validation** - Enable SSL host validation.
 - **threads** - The (optional) number of threads for the RMI dispatcher.
   Default to (1) when not specified.
+
+[queue]
+-------
+
+- **declare** - (optional) Declare the request queue (default: true)
+
 
 This example enables messaging and defines the uuid:
 

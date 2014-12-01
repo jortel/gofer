@@ -30,7 +30,7 @@ from gofer.rmi.threadpool import ThreadPool
 from gofer.rmi.consumer import RequestConsumer
 from gofer.rmi.decorators import Remote
 from gofer.agent.deplist import DepList
-from gofer.agent.config import AgentConfig
+from gofer.agent.config import AgentConfig, PLUGIN_SCHEMA, PLUGIN_DEFAULTS
 from gofer.config import Config, Graph, get_bool
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
@@ -238,6 +238,22 @@ class Plugin(object):
         log.debug('broker (qpid) configured: %s', broker)
         return broker
 
+    def get_queue(self, name):
+        """
+        Get the plugin request queue.
+        The queue is declared as defined by the plugin descriptor.
+        :param name: The queue name.
+        :type name: str
+        :return: The queue.
+        :rtype: gofer.messaging.Queue
+        """
+        queue = Queue(name)
+        plugin = self.descriptor
+        if get_bool(plugin.queue.declare):
+            url = self.get_url()
+            queue.declare(url)
+        return queue
+
     def attach(self, uuid=None):
         """
         Attach (connect) to AMQP broker using the specified uuid.
@@ -250,7 +266,7 @@ class Plugin(object):
         url = self.get_url()
         if uuid and url:
             self.update_broker()
-            queue = Queue(uuid)
+            queue = self.get_queue(uuid)
             consumer = RequestConsumer(queue, url)
             consumer.reader.authenticator = self.authenticator
             consumer.start()
@@ -302,13 +318,6 @@ class Plugin(object):
             raise Exception('Extension failed. plugin: %s, not-found')
         extended += self
         return extended
-
-    # deprecated
-    getuuid = get_uuid
-    geturl = get_url
-    getbroker = get_broker
-    setuuid = set_uuid
-    seturl = set_url
 
     def __getitem__(self, key):
         try:
@@ -364,7 +373,9 @@ class PluginDescriptor(Graph):
         PluginDescriptor.__mkdir()
         for name, path in PluginDescriptor.__list():
             try:
-                descriptor = PluginDescriptor(Config(path))
+                conf = Config(PLUGIN_DEFAULTS, path)
+                conf.validate(PLUGIN_SCHEMA)
+                descriptor = PluginDescriptor(conf)
                 unsorted.append((descriptor.main.name or name, descriptor))
             except Exception:
                 log.exception(path)

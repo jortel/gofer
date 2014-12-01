@@ -43,7 +43,6 @@ logutil.LogHandler.install()
 # configuration
 from gofer.agent.config import AgentConfig
 AgentConfig.PATH = '/opt/gofer/agent.conf'
-AgentConfig.CNFD = '/opt/gofer/conf.d'
 if not os.path.exists(AgentConfig.PATH):
     with open(AgentConfig.PATH, 'w+') as fp:
         fp.write(CONFIGURATION)

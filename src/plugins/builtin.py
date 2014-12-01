@@ -61,9 +61,9 @@ def echo(something):
 # specified in the config.
 #
 
-if not plugin.getuuid():
+if not plugin.get_uuid():
     hostname = socket.gethostname()
     uuid = str(uuid4())
     if not hostname.startswith('localhost'):
         uuid = 'admin@%s' % hostname
-    plugin.setuuid(uuid)
+    plugin.set_uuid(uuid)

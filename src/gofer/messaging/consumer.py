@@ -9,6 +9,7 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+from time import sleep
 from threading import Thread
 from logging import getLogger
 
@@ -45,12 +46,24 @@ class BaseConsumer(Thread):
         """
         Main consumer loop.
         """
-        self.reader.open()
+        self._open()
         try:
             while self._run:
                 self._read()
         finally:
             self.reader.close()
+
+    def _open(self):
+        """
+        Open the reader.
+        """
+        while self._run:
+            try:
+                self.reader.open()
+                break
+            except Exception:
+                log.exception(self.getName())
+                sleep(10)
 
     def _read(self):
         """
@@ -69,6 +82,7 @@ class BaseConsumer(Thread):
             self._rejected(ir.code, ir.details, document=ir.document)
         except Exception:
             log.exception(self.getName())
+            sleep(10)
 
     def _rejected(self, code, details, message):
         """
@@ -111,4 +125,3 @@ class Consumer(BaseConsumer):
         BaseConsumer.__init__(self, Reader(queue, url))
         self.url = url
         self.queue = queue
-        queue.declare(url)

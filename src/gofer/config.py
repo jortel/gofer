@@ -207,11 +207,9 @@ class Config(dict):
         :param other: values to copy into this instance
         :type other: dict
         """
-        for k, v in other.items():
-            if k in self and isinstance(v, dict):
-                self[k].update(v)
-            else:
-                self[k] = v
+        for s, v in other.items():
+            section = self.setdefault(s, {})
+            section.update(v)
 
     def graph(self, strict=False):
         """

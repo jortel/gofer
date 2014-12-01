@@ -202,7 +202,7 @@ class Cancel:
     @remote
     def test(self):
         ctx = Context.current()
-        for n in range(0,100):
+        for n in range(0, 100):
             log.info(ctx.sn)
             sleep(1)
             if ctx.cancelled():
@@ -257,7 +257,7 @@ class Heartbeat:
         delay = int(HEARTBEAT)
         url = plugin.get_url()
         destination = Destination('heartbeat', exchange='amq.topic')
-        myid = plugin.getuuid()
+        myid = plugin.get_uuid()
         if myid:
             with Producer(url) as p:
                 body = dict(uuid=myid, next=delay)
