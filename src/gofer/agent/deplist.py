@@ -15,7 +15,7 @@
 # written by: Jeff Ortel ( jortel@redhat.com )
 
 """
-The *depsolve* module defines a class for performing dependancy solving.
+This module defines a class for performing dependency solving.
 """
 
 
@@ -26,7 +26,7 @@ class DepList:
     :ivar unsorted: The raw (unsorted) items.
     :type unsorted: list
     :ivar index: The index of (unsorted) items.
-    :type index: list
+    :type index: dict
     :ivar stack: The sorting stack.
     :type stack: list
     :ivar pushed: The *pushed* set tracks items that have been
@@ -73,10 +73,10 @@ class DepList:
                 try:
                     top = self.top()
                     ref = top[1].next()
-                    refd = self.index.get(ref)
-                    if refd is None:
+                    ref_d = self.index.get(ref)
+                    if ref_d is None:
                         continue
-                    self.push(refd)
+                    self.push(ref_d)
                 except StopIteration:
                     popped.append(self.pop())
                     continue
@@ -119,16 +119,3 @@ class DepList:
             return frame[0]
         except Exception:
             pass
-
-
-if __name__ == '__main__':
-    a = ('a', ('x',))
-    b = ('b', ('a',))
-    c = ('c', ('a','b'))
-    d = ('d', ('c',))
-    e = ('e', ('d','a'))
-    f = ('f', ('e','c','d','a'))
-    x = ('x', ())
-    L = DepList()
-    L.add(c, e, d, b, f, a, x)
-    print [x[0] for x in L.sort()]
