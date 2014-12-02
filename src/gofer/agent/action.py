@@ -34,15 +34,22 @@ class Actions:
     """
     functions = {}
     
-    @classmethod
-    def add(cls, fn, interval):
-        cls.functions[fn] = interval
+    @staticmethod
+    def add(fn, interval):
+        Actions.functions[fn] = interval
+
+    @staticmethod
+    def clear():
+        """
+        Clear the list of actions.
+        """
+        Actions.functions = {}
     
-    @classmethod
-    def collated(cls):
+    @staticmethod
+    def collated():
         collated = []
         collator = Collator()
-        classes, functions = collator.collate(cls.functions)
+        classes, functions = collator.collate(Actions.functions)
         for _class, methods in classes.items():
             inst = _class()
             for method, options in methods:
@@ -55,13 +62,6 @@ class Actions:
                 collated.append(action)
         return collated
     
-    @classmethod
-    def clear(cls):
-        """
-        Clear the list of actions.
-        """
-        cls.functions = {}
-
 
 def action(**interval):
     """
@@ -97,7 +97,7 @@ class Action:
         :type interval: timedelta
         """
         self.target = target
-        for k,v in interval.items():
+        for k, v in interval.items():
             interval[k] = int(v)
         self.interval = timedelta(**interval)
         self.last = dt(1900, 1, 1)
@@ -115,13 +115,13 @@ class Action:
             cls = t.__module__
         method = t.__name__
         return '%s.%s()' % (cls, method)
-    
-    def __str__(self):
-        return self.name()
 
     def __call__(self):
+        """
+        Invoke the action.
+        """
         try:
-            next = self.last+self.interval
+            next = self.last + self.interval
             now = dt.utcnow()
             if next < now:
                 self.last = now
@@ -129,3 +129,6 @@ class Action:
                 self.target()
         except Exception, e:
             log.exception(e)
+
+    def __str__(self):
+        return self.name()
