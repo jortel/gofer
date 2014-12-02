@@ -9,8 +9,20 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+from uuid import uuid4
 from unittest import TestCase
+
+from mock import patch
+
+from gofer.agent.config import AgentConfig, AGENT_SCHEMA, Graph
 
 
 class Test(TestCase):
-    pass
+
+    @patch('gofer.agent.config.Config')
+    def test_init(self, cfg):
+        path = str(uuid4())
+        agent = AgentConfig(path)
+        cfg.assert_called_once_with(path)
+        cfg.return_value.validate.assert_called_once_with(AGENT_SCHEMA)
+        self.assertTrue(isinstance(agent, Graph))

@@ -92,10 +92,10 @@ class AgentConfig(Graph):
 
     PATH = '/etc/%s/agent.conf' % NAME
 
-    def __init__(self):
+    def __init__(self, path=PATH):
         """
         Read the configuration.
         """
-        conf = Config(self.PATH)
+        conf = Config(path)
         conf.validate(AGENT_SCHEMA)
         Graph.__init__(self, conf)
