@@ -28,12 +28,24 @@ from gofer.messaging.adapter.model import BaseEndpoint, Messenger
 from gofer.messaging.adapter.model import BaseReader, Reader
 from gofer.messaging.adapter.model import BaseProducer, Producer
 from gofer.messaging.adapter.model import BasePlainProducer, PlainProducer
-from gofer.messaging.adapter.model import BaseBroker, BrokerSingleton, Broker
+from gofer.messaging.adapter.model import Broker, SSL, Cloud
+from gofer.messaging.adapter.model import BaseConnection, Connection, LocalConnection
 from gofer.messaging.adapter.model import Ack
-from gofer.messaging.adapter.model import DEFAULT_URL
 
 
 TEST_URL = 'qpid+amqp://elmer:fudd@test.com/test'
+
+
+class Local(object):
+    pass
+
+
+class FakeConnection(object):
+
+    __metaclass__ = LocalConnection
+
+    def __init__(self, url):
+        self.url = url
 
 
 class TestDestination(TestCase):
@@ -273,6 +285,10 @@ class TestBaseEndpoint(TestCase):
         endpoint = BaseEndpoint(TEST_URL)
         self.assertEqual(endpoint.id(), endpoint.uuid)
 
+    def test_is_open(self):
+        endpoint = BaseEndpoint(TEST_URL)
+        self.assertRaises(NotImplementedError, endpoint.is_open)
+
     def test_channel(self):
         endpoint = BaseEndpoint(TEST_URL)
         self.assertRaises(NotImplementedError, endpoint.channel)
@@ -324,6 +340,13 @@ class TestMessenger(TestCase):
         self.assertEqual(channel, _endpoint().channel())
 
     @patch('gofer.messaging.adapter.model.Messenger.endpoint')
+    def test_is_open(self, _endpoint):
+        messenger = Messenger(TEST_URL)
+        is_open = messenger.is_open()
+        _endpoint().is_open.assert_called_with()
+        self.assertEqual(is_open, _endpoint().is_open.return_value)
+
+    @patch('gofer.messaging.adapter.model.Messenger.endpoint')
     def test_open(self, _endpoint):
         messenger = Messenger(TEST_URL)
         messenger.open()
@@ -346,8 +369,13 @@ class TestMessenger(TestCase):
     @patch('gofer.messaging.adapter.model.Messenger.endpoint')
     def test_close(self, _endpoint):
         messenger = Messenger(TEST_URL)
+        # soft
         messenger.close()
-        _endpoint().close.assert_called_with()
+        _endpoint().close.assert_called_with(False)
+        # hard
+        _endpoint().close.reset_mock()
+        messenger.close(True)
+        _endpoint().close.assert_called_with(True)
 
 
 # --- messenger --------------------------------------------------------------
@@ -456,8 +484,13 @@ class TestReader(TestCase):
         url = TEST_URL
         queue = BaseQueue('', Exchange(''), '')
         reader = Reader(queue, url)
+        # soft
         reader.close()
-        _impl.close.assert_called_with()
+        _impl.close.assert_called_with(False)
+        # hard
+        _impl.close.reset_mock()
+        reader.close(True)
+        _impl.close.assert_called_with(True)
 
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
@@ -630,8 +663,13 @@ class TestProducer(TestCase):
         _find.return_value = plugin
         url = TEST_URL
         producer = Producer(url)
+        # soft
         producer.close()
-        _impl.close.assert_called_with()
+        _impl.close.assert_called_with(False)
+        # hard
+        _impl.close.reset_mock()
+        producer.close(True)
+        _impl.close.assert_called_with(True)
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_send(self, _find):
@@ -760,8 +798,13 @@ class TestPlainProducer(TestCase):
         _find.return_value = plugin
         url = TEST_URL
         producer = PlainProducer(url)
+        # soft
         producer.close()
-        _impl.close.assert_called_with()
+        _impl.close.assert_called_with(False)
+        # hard
+        _impl.close.reset_mock()
+        producer.close(True)
+        _impl.close.assert_called_with(True)
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_send(self, _find):
@@ -795,83 +838,182 @@ class TestPlainProducer(TestCase):
         self.assertEqual(sn_list, _impl.broadcast())
 
 
+# --- connection -------------------------------------------------------------
+
+
+class TestBaseConnection(TestCase):
+
+    def test_construction(self):
+        connection = BaseConnection(TEST_URL)
+        self.assertEqual(connection.url, TEST_URL)
+
+    def test_abstract(self):
+        connection = BaseConnection(TEST_URL)
+        self.assertRaises(NotImplementedError, connection.is_open)
+        self.assertRaises(NotImplementedError, connection.open)
+        self.assertRaises(NotImplementedError, connection.channel)
+        self.assertRaises(NotImplementedError, connection.close)
+
+    def test_str(self):
+        connection = BaseConnection(TEST_URL)
+        self.assertEqual(str(connection), TEST_URL)
+
+    @patch('gofer.messaging.adapter.model.BaseConnection.open')
+    def test_enter(self, _open):
+        connection = BaseConnection(TEST_URL)
+        retval = connection.__enter__()
+        _open.assert_called_once_with()
+        self.assertEqual(connection, retval)
+
+    @patch('gofer.messaging.adapter.model.BaseConnection.close')
+    def test_exit(self, _close):
+        connection = BaseConnection(TEST_URL)
+        connection.__exit__()
+        _close.assert_called_with()
+
+
+class TestConnection(TestCase):
+
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_construction(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Connection.return_value = _impl
+        _find.return_value = plugin
+        url = TEST_URL
+        connection = Connection(url)
+        _find.assert_called_with(url)
+        self.assertEqual(connection.url, url)
+        self.assertEqual(connection._impl, _impl)
+
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_is_open(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Connection.return_value = _impl
+        _find.return_value = plugin
+        url = TEST_URL
+        connection = Connection(url)
+        is_open = connection.is_open()
+        _impl.is_open.assert_called_once_with()
+        self.assertEqual(is_open, _impl.is_open.return_value)
+
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_open(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Connection.return_value = _impl
+        _find.return_value = plugin
+        url = TEST_URL
+        connection = Connection(url)
+        connection.open()
+        _impl.open.assert_called_once_with()
+
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_channel(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Connection.return_value = _impl
+        _find.return_value = plugin
+        url = TEST_URL
+        connection = Connection(url)
+        channel = connection.channel()
+        _impl.channel.assert_called_once_with()
+        self.assertEqual(channel, _impl.channel.return_value)
+
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_close(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Connection.return_value = _impl
+        _find.return_value = plugin
+        url = TEST_URL
+        connection = Connection(url)
+        # soft
+        connection.close()
+        _impl.close.assert_called_once_with(False)
+        # hard
+        _impl.close.reset_mock()
+        connection.close(True)
+        _impl.close.assert_called_once_with(True)
+
+
+class TestLocalConnection(TestCase):
+
+    @patch('gofer.messaging.adapter.model.LocalConnection.local')
+    def test_connections(self, local):
+        connections = LocalConnection.connections()
+        self.assertEqual(connections, local.d)
+
+    @patch('gofer.messaging.adapter.model.LocalConnection.local', Local())
+    def test_connections_not_attribute(self):
+        connections = LocalConnection.connections()
+        self.assertEqual(connections, {})
+
+    @patch('gofer.messaging.adapter.model.LocalConnection.local')
+    def test_call(self, local):
+        url = TEST_URL
+        local.d = {url: 'A'}
+        fake = FakeConnection(url)
+        self.assertEqual(fake, 'A')
+
+    @patch('gofer.messaging.adapter.model.LocalConnection.local')
+    def test_call_not_cached(self, local):
+        url = TEST_URL
+        local.d = {}
+        fake = FakeConnection(url)
+        self.assertTrue(isinstance(fake, FakeConnection))
+        self.assertEqual(fake.url, url)
+
+# --- cloud ------------------------------------------------------------------
+
+
+class TestCloud(TestCase):
+
+    @patch('gofer.messaging.adapter.model.Cloud.nodes', {})
+    def test_add(self):
+        url = TEST_URL
+        broker = Mock(url=url)
+        Cloud.add(broker)
+        self.assertEqual(Cloud.nodes[url], broker)
+
+    @patch('gofer.messaging.adapter.model.Cloud.nodes', {})
+    def test_find(self):
+        url = TEST_URL
+        broker = Cloud.find(url)
+        self.assertEqual(broker.url, URL(url))
+        Cloud.add(broker)
+        self.assertEqual(Cloud.find(url), broker)
+
+
 # --- broker -----------------------------------------------------------------
 
 
-class TestBrokerSingleton(TestCase):
+class TestSSL(TestCase):
 
-    def test_string_key(self):
-        # string
-        url = 'http://host'
-        key = BrokerSingleton.key([url], None)
-        self.assertEqual(key, url)
-        # url
-        key = BrokerSingleton.key([URL(url)], None)
-        self.assertEqual(key, url)
-        # invalid
-        self.assertRaises(ValueError, BrokerSingleton.key, [10], None)
-
-    def test_call(self):
-        class TestBroker(BaseBroker):
-            def __init__(self, url=TEST_URL):
-                BaseBroker.__init__(self, url)
-        broker = TestBroker()
-        self.assertEqual(broker.url, URL(DEFAULT_URL))
-
-
-class TestBaseBroker(TestCase):
-
-    def test_construction(self):
-        url = TEST_URL
-        BrokerSingleton.reset()
-        b = BaseBroker(url)
-        self.assertEqual(b.url, URL(url))
-        self.assertEqual(b.id, URL(url).simple())
-        self.assertEqual(b.adapter, URL(url).adapter)
-        self.assertEqual(b.scheme, URL(url).scheme)
-        self.assertEqual(b.host, URL(url).host)
-        self.assertEqual(b.port, URL(url).port)
-        self.assertEqual(b.userid, URL(url).userid)
-        self.assertEqual(b.password, URL(url).password)
-        self.assertEqual(b.virtual_host, URL(url).path)
-        self.assertEqual(b.cacert, None)
-        self.assertEqual(b.clientkey, None)
-        self.assertEqual(b.clientcert, None)
-        self.assertFalse(b.host_validation)
-
-    def test_open(self):
-        url = TEST_URL
-        BrokerSingleton.reset()
-        b = BaseBroker(url)
-        self.assertRaises(NotImplementedError, b.connect)
-
-    def test_close(self):
-        url = TEST_URL
-        BrokerSingleton.reset()
-        b = BaseBroker(url)
-        self.assertRaises(NotImplementedError, b.close)
+    def test_init(self):
+        ssl = SSL()
+        self.assertEqual(ssl.ca_certificate, None)
+        self.assertEqual(ssl.client_key, None)
+        self.assertEqual(ssl.client_certificate, None)
+        self.assertFalse(ssl.host_validation)
 
     def test_str(self):
-        BrokerSingleton.reset()
-        b = BaseBroker(TEST_URL)
-        s = 'url=qpid+amqp://elmer:fudd@test.com/test|cacert=None|clientkey=None|' \
-            'clientcert=None|host-validation=False'
-        self.assertEqual(str(b), s)
+        ssl = SSL()
+        ssl.ca_certificate = 'test-ca'
+        ssl.client_key = 'test-key'
+        ssl.client_certificate = 'test-cert'
+        self.assertEqual(
+            str(ssl),
+            'ca: test-ca|key: test-key|certificate: test-cert|host-validation: False')
 
 
 class TestBroker(TestCase):
 
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_construction(self, _find):
-        plugin = Mock()
-        _find.return_value = plugin
+    def test_init(self):
         url = TEST_URL
-        BrokerSingleton.reset()
         b = Broker(url)
-        _find.assert_called_with(url)
-        plugin.Broker.assert_called_with(url)
         self.assertEqual(b.url, URL(url))
-        self.assertEqual(b.id, URL(url).simple())
         self.assertEqual(b.adapter, URL(url).adapter)
         self.assertEqual(b.scheme, URL(url).scheme)
         self.assertEqual(b.host, URL(url).host)
@@ -879,37 +1021,21 @@ class TestBroker(TestCase):
         self.assertEqual(b.userid, URL(url).userid)
         self.assertEqual(b.password, URL(url).password)
         self.assertEqual(b.virtual_host, URL(url).path)
-        self.assertEqual(b.cacert, None)
-        self.assertEqual(b.clientkey, None)
-        self.assertEqual(b.clientcert, None)
-        self.assertFalse(b.host_validation)
-        self.assertEqual(b._impl, plugin.Broker())
+        self.assertEqual(b.ssl.ca_certificate, None)
+        self.assertEqual(b.ssl.client_key, None)
+        self.assertEqual(b.ssl.client_certificate, None)
+        self.assertFalse(b.ssl.host_validation)
 
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_connect(self, _find):
-        plugin = Mock()
-        _find.return_value = plugin
-        BrokerSingleton.reset()
-        b = Broker(TEST_URL)
-        b.cacert = 1
-        b.clientkey = 2
-        b.clientcert = 3
-        b.host_validation = 4
-        b.connect()
-        b._impl.connect.assert_called_with()
-        self.assertEqual(b._impl.cacert, b.cacert)
-        self.assertEqual(b._impl.clientkey, b.clientkey)
-        self.assertEqual(b._impl.clientcert, b.clientcert)
-        self.assertEqual(b._impl.host_validation, b.host_validation)
-
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_close(self, _find):
-        plugin = Mock()
-        _find.return_value = plugin
-        BrokerSingleton.reset()
-        b = Broker(TEST_URL)
-        b.close()
-        b._impl.close.assert_called_with()
+    def test_str(self):
+        url = TEST_URL
+        b = Broker(url)
+        b.ssl.ca_certificate = 'test-ca'
+        b.ssl.client_key = 'test-key'
+        b.ssl.client_certificate = 'test-cert'
+        self.assertEqual(
+            str(b),
+            'URL: qpid+amqp://elmer:fudd@test.com/test|SSL: ca: test-ca|'
+            'key: test-key|certificate: test-cert|host-validation: False')
 
 
 # --- ack --------------------------------------------------------------------

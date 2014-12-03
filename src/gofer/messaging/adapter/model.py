@@ -312,6 +312,14 @@ class BaseEndpoint(object):
         """
         return self.uuid
 
+    def is_open(self):
+        """
+        Get whether the endpoint has been opened.
+        :return: True if open.
+        :rtype bool
+        """
+        raise NotImplementedError()
+
     def channel(self):
         """
         Get a channel for the open connection.
@@ -372,6 +380,14 @@ class Messenger(BaseEndpoint):
         :rtype: BaseEndpoint
         """
         raise NotImplementedError()
+
+    def is_open(self):
+        """
+        Get whether the messenger has been opened.
+        :return: True if open.
+        :rtype bool
+        """
+        return self.endpoint().is_open()
 
     def channel(self):
         """
@@ -780,7 +796,7 @@ class PlainProducer(BasePlainProducer):
         return self._impl.broadcast(destinations, content, ttl)
 
 
-# --- cloud|connection -------------------------------------------------------
+# --- connection -------------------------------------------------------------
 
 
 class BaseConnection(object):
@@ -797,6 +813,14 @@ class BaseConnection(object):
         :see: URL
         """
         self.url = url
+
+    def is_open(self):
+        """
+        Get whether the connection has been opened.
+        :return: True if open.
+        :rtype bool
+        """
+        raise NotImplementedError()
 
     def open(self):
         """
@@ -835,10 +859,18 @@ class Connection(BaseConnection):
     An AMQP channel object.
     """
 
-    def __init__(self, url):
+    def __init__(self, url=DEFAULT_URL):
         BaseConnection.__init__(self, url)
         adapter = Adapter.find(url)
         self._impl = adapter.Connection(url)
+
+    def is_open(self):
+        """
+        Get whether the connection has been opened.
+        :return: True if open.
+        :rtype bool
+        """
+        return self._impl.is_open()
 
     def open(self):
         """
@@ -860,6 +892,71 @@ class Connection(BaseConnection):
         :type hard: bool
         """
         self._impl.close(hard)
+
+
+class LocalConnection(type):
+    """
+    Locally cached connection metaclass.
+    """
+
+    local = Local()
+
+    @staticmethod
+    def connections():
+        try:
+            return LocalConnection.local.d
+        except AttributeError:
+            d = {}
+            LocalConnection.local.d = d
+            return d
+
+    def __call__(cls, url):
+        url = str(url)
+        connections = LocalConnection.connections()
+        try:
+            return connections[url]
+        except KeyError:
+            connection = super(LocalConnection, cls).__call__(url)
+            connections[url] = connection
+            return connection
+
+
+# --- cloud|broker -----------------------------------------------------------
+
+
+class Cloud(object):
+    """
+    A collection of AMQP brokers.
+    :cvar nodes: Brokers by URL.
+    :type nodes: dict
+    """
+
+    nodes = {}
+
+    @staticmethod
+    def add(broker):
+        """
+        Add a broker.
+        :param broker: A broker.
+        :type broker: Broker
+        """
+        Cloud.nodes[broker.url] = broker
+
+    @staticmethod
+    def find(url):
+        """
+        Find a broker by URL.
+        :param url: A broker URL.
+        :type url: str|URL
+        :return: The found broker.
+        :rtype: Broker
+        """
+        if not isinstance(url, URL):
+            url = URL(url)
+        try:
+            return Cloud.nodes[url]
+        except KeyError:
+            return Broker(url.input)
 
 
 class SSL(object):
@@ -899,7 +996,7 @@ class Broker(object):
     :type ssl: SSL
     """
 
-    def __init__(self, url):
+    def __init__(self, url=DEFAULT_URL):
         """
         :param url: The broker url:
             <adapter>+<scheme>://<userid:password@<host>:<port>/<virtual-host>.
@@ -976,68 +1073,6 @@ class Broker(object):
         s.append('URL: %s' % self.url)
         s.append('SSL: %s' % self.ssl)
         return '|'.join(s)
-
-
-class LocalConnection(type):
-    """
-    Locally cached connection metaclass.
-    """
-
-    local = Local()
-
-    @staticmethod
-    def connections():
-        try:
-            return LocalConnection.local.d
-        except AttributeError:
-            d = {}
-            LocalConnection.local.d = d
-            return d
-
-    def __call__(cls, url):
-        url = str(url)
-        connections = LocalConnection.connections()
-        try:
-            return connections[url]
-        except KeyError:
-            connection = super(LocalConnection, cls).__call__(url)
-            connections[url] = connection
-            return connection
-
-
-class Cloud(object):
-    """
-    A collection of AMQP brokers.
-    :cvar nodes: Brokers by URL.
-    :type nodes: dict
-    """
-
-    nodes = {}
-
-    @staticmethod
-    def add(broker):
-        """
-        Add a broker.
-        :param broker: A broker.
-        :type broker: Broker
-        """
-        Cloud.nodes[broker.url] = broker
-
-    @staticmethod
-    def find(url):
-        """
-        Find a broker by URL.
-        :param url: A broker URL.
-        :type url: str|URL
-        :return: The found broker.
-        :rtype: Broker
-        """
-        if not isinstance(url, URL):
-            url = URL(url)
-        try:
-            return Cloud.nodes[url]
-        except KeyError:
-            return Broker(url.input)
 
 
 # --- ACK --------------------------------------------------------------------

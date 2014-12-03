@@ -85,10 +85,21 @@ class Endpoint(BaseEndpoint):
         """
         return self._channel
 
+    def is_open(self):
+        """
+        Get whether the endpoint has been opened.
+        :return: True if open.
+        :rtype bool
+        """
+        return self._channel and self._connection
+
     def open(self):
         """
         Open and configure the endpoint.
         """
+        if self.is_open():
+            # already open
+            return
         connection = Connection(self.url)
         connection.open()
         self._connection = connection
@@ -121,7 +132,12 @@ class Endpoint(BaseEndpoint):
         :type hard: bool
         """
         try:
+            if not self.is_open():
+                # not open
+                return
             self._channel.close()
             self._connection.close(hard)
+            self._channel = None
+            self._connection = None
         except (CONNECTION_EXCEPTIONS, AMQPChannelException), e:
             log.exception(str(e))

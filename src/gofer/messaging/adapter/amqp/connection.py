@@ -55,7 +55,7 @@ class Connection(BaseConnection):
         return dict(
             cert_reqs=required,
             ca_certs=broker.ssl.ca_certificate,
-            keyfile=broker.ssl.client_keykey,
+            keyfile=broker.ssl.client_key,
             certfile=broker.ssl.client_certificate)
 
     def __init__(self, url):
@@ -66,6 +66,14 @@ class Connection(BaseConnection):
         BaseConnection.__init__(self, url)
         self._impl = None
 
+    def is_open(self):
+        """
+        Get whether the connection has been opened.
+        :return: True if open.
+        :rtype bool
+        """
+        return self._impl is not None
+
     def open(self, retries=10000, delay=4):
         """
         Open a connection to the broker.
@@ -74,7 +82,7 @@ class Connection(BaseConnection):
         :param delay: The delay between retries in seconds.
         :type delay: int
         """
-        if self._impl:
+        if self.is_open():
             # already open
             return
         while True:
@@ -111,11 +119,12 @@ class Connection(BaseConnection):
         :type hard: bool
         """
         try:
-            if not self._impl:
+            if not self.is_open():
                 # already closed
                 return
             if hard:
                 self._impl.close()
+                self._impl = None
         except CONNECTION_EXCEPTIONS:
             # ignored
             pass

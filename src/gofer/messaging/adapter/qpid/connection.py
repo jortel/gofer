@@ -55,11 +55,19 @@ class Connection(BaseConnection):
         BaseConnection.__init__(self, url)
         self._impl = None
 
+    def is_open(self):
+        """
+        Get whether the connection has been opened.
+        :return: True if open.
+        :rtype bool
+        """
+        return self._impl is not None
+
     def open(self):
         """
         Open the connection.
         """
-        if self._impl:
+        if self.is_open():
             # already open
             return
         broker = Cloud.find(self.url)
@@ -94,8 +102,9 @@ class Connection(BaseConnection):
         :param hard: Force the connection closed.
         :type hard: bool
         """
-        if not self._impl:
+        if not self.is_open():
             # already closed
             return
         if hard:
             self._impl.close()
+            self._impl = None

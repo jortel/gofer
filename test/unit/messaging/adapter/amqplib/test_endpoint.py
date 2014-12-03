@@ -37,8 +37,7 @@ class TestDecorators(TestCase):
         fn.assert_called_once_with(*args, **kwargs)
 
     @patch('gofer.messaging.adapter.amqplib.endpoint.sleep')
-    @patch('gofer.messaging.adapter.amqplib.endpoint.Broker')
-    def test_reliable_with_errors(self, broker, sleep):
+    def test_reliable_with_errors(self, sleep):
         url = 'test-url'
         fn = Mock(side_effect=[CONNECTION_EXCEPTIONS[0], 'okay'])
         endpoint = Mock(url=url)
@@ -50,11 +49,9 @@ class TestDecorators(TestCase):
         wrapped(*args, **kwargs)
 
         # validation
-        broker.assert_called_any_with(endpoint.url)
-        endpoint.close.assert_called_once_with()
-        broker.return_value.close.assert_called_once_with()
+        endpoint.close.assert_called_once_with(hard=True)
         sleep.assert_called_once_with(3)
-        endpoint.channel.assert_called_once_with()
+        endpoint.open.assert_called_once_with()
         self.assertEqual(
             fn.call_args_list,
             [
@@ -79,8 +76,7 @@ class TestDecorators(TestCase):
 
 class TestEndpoint(TestCase):
 
-    @patch('gofer.messaging.adapter.amqplib.endpoint.RLock')
-    def test_init(self, rlock):
+    def test_init(self):
         url = 'test-url'
 
         # test
@@ -88,46 +84,20 @@ class TestEndpoint(TestCase):
 
         # validation
         self.assertTrue(isinstance(endpoint, BaseEndpoint))
-        self.assertEqual(endpoint._Endpoint__mutex, rlock.return_value)
-        self.assertEqual(endpoint._Endpoint__channel, None)
+        self.assertEqual(endpoint._channel, None)
+        self.assertEqual(endpoint._connection, None)
         self.assertEqual(endpoint.url, url)
 
-    @patch('gofer.messaging.adapter.amqplib.endpoint.Broker')
-    @patch('gofer.messaging.adapter.amqplib.endpoint.RLock', Mock())
-    def test_channel(self, broker):
+    def test_channel(self):
         url = 'test-url'
-        connection = Mock()
-        broker.return_value.connect.return_value = connection
 
         # test
         endpoint = Endpoint(url)
         channel = endpoint.channel()
 
         # validation
-        broker.assert_called_once_with(url)
-        connection.channel.assert_called_once_with()
-        endpoint._Endpoint__mutex.lock.acquire.asssert_called_once_with()
-        endpoint._Endpoint__mutex.lock.release.asssert_called_once_with()
-        self.assertEqual(channel, connection.channel.return_value)
-        self.assertEqual(channel, endpoint._Endpoint__channel)
+        self.assertEqual(channel, endpoint._channel)
 
-    @patch('gofer.messaging.adapter.amqplib.endpoint.Broker')
-    @patch('gofer.messaging.adapter.amqplib.endpoint.RLock', Mock())
-    def test_channel_cached(self, broker):
-        url = 'test-url'
-
-        # test
-        endpoint = Endpoint(url)
-        endpoint._Endpoint__channel = Mock()
-        channel = endpoint.channel()
-
-        # validation
-        endpoint._Endpoint__mutex.lock.acquire.asssert_called_once_with()
-        endpoint._Endpoint__mutex.lock.release.asssert_called_once_with()
-        self.assertEqual(channel, endpoint._Endpoint__channel)
-        self.assertFalse(broker.called)
-
-    @patch('gofer.messaging.adapter.amqplib.endpoint.RLock', Mock())
     def test_ack(self):
         url = 'test-url'
         tag = '1234'
@@ -135,13 +105,12 @@ class TestEndpoint(TestCase):
 
         # test
         endpoint = Endpoint(url)
-        endpoint._Endpoint__channel = Mock()
+        endpoint._channel = Mock()
         endpoint.ack(message)
 
         # validation
-        endpoint._Endpoint__channel.basic_ack.assert_called_once_with(tag)
+        endpoint._channel.basic_ack.assert_called_once_with(tag)
 
-    @patch('gofer.messaging.adapter.amqplib.endpoint.RLock', Mock())
     def test_ack_exception(self):
         url = 'test-url'
         tag = '1234'
@@ -151,10 +120,9 @@ class TestEndpoint(TestCase):
 
         # test
         endpoint = Endpoint(url)
-        endpoint._Endpoint__channel = channel
+        endpoint._channel = channel
         self.assertRaises(ValueError, endpoint.ack, message)
 
-    @patch('gofer.messaging.adapter.amqplib.endpoint.RLock', Mock())
     def test_reject_requeue(self):
         url = 'test-url'
         tag = '1234'
@@ -162,13 +130,12 @@ class TestEndpoint(TestCase):
 
         # test
         endpoint = Endpoint(url)
-        endpoint._Endpoint__channel = Mock()
+        endpoint._channel = Mock()
         endpoint.reject(message, True)
 
         # validation
-        endpoint._Endpoint__channel.basic_reject.assert_called_once_with(tag, True)
+        endpoint._channel.basic_reject.assert_called_once_with(tag, True)
 
-    @patch('gofer.messaging.adapter.amqplib.endpoint.RLock', Mock())
     def test_reject_exception(self):
         url = 'test-url'
         tag = '1234'
@@ -176,11 +143,10 @@ class TestEndpoint(TestCase):
 
         # test
         endpoint = Endpoint(url)
-        endpoint._Endpoint__channel = Mock()
-        endpoint._Endpoint__channel.basic_reject.side_effect = ValueError
+        endpoint._channel = Mock()
+        endpoint._channel.basic_reject.side_effect = ValueError
         self.assertRaises(ValueError, endpoint.reject, message, True)
 
-    @patch('gofer.messaging.adapter.amqplib.endpoint.RLock', Mock())
     def test_reject_discarded(self):
         url = 'test-url'
         tag = '1234'
@@ -188,86 +154,77 @@ class TestEndpoint(TestCase):
 
         # test
         endpoint = Endpoint(url)
-        endpoint._Endpoint__channel = Mock()
+        endpoint._channel = Mock()
         endpoint.reject(message, False)
 
         # validation
-        endpoint._Endpoint__channel.basic_reject.assert_called_once_with(tag, False)
+        endpoint._channel.basic_reject.assert_called_once_with(tag, False)
 
-    @patch('gofer.messaging.adapter.amqplib.endpoint.RLock', Mock())
-    def test_open(self):
+    @patch('gofer.messaging.adapter.amqplib.endpoint.Connection')
+    def test_open(self, connection):
         endpoint = Endpoint('')
-        endpoint.open()
-
-    @patch('gofer.messaging.adapter.amqplib.endpoint.RLock', Mock())
-    def test_close(self):
-        channel = Mock()
 
         # test
-        endpoint = Endpoint('')
-        endpoint._Endpoint__channel = channel
-        endpoint.close()
+        endpoint.open()
 
         # validation
-        endpoint._Endpoint__mutex.lock.acquire.asssert_called_once_with()
-        endpoint._Endpoint__mutex.lock.release.asssert_called_once_with()
-        channel.close.assert_called_once_with()
-        self.assertEqual(endpoint._Endpoint__channel, None)
+        connection.assert_called_once_with(endpoint.url)
+        connection.return_value.open.assert_called_once_with()
+        self.assertEqual(endpoint._connection, connection.return_value)
+        self.assertEqual(endpoint._channel, connection.return_value.channel.return_value)
 
-    @patch('gofer.messaging.adapter.amqplib.endpoint.RLock', Mock())
+    @patch('gofer.messaging.adapter.amqplib.endpoint.Connection')
+    def test_open_already(self, connection):
+        endpoint = Endpoint('')
+
+        # test
+        endpoint.is_open = Mock(return_value=True)
+        endpoint.open()
+
+        # validation
+        self.assertFalse(connection.called)
+
+    def test_close(self):
+        endpoint = Endpoint('')
+        # soft
+        channel = Mock()
+        connection = Mock()
+        endpoint._channel = channel
+        endpoint._connection = connection
+        endpoint.close()
+        channel.close.assert_called_once_with()
+        connection.close.assert_called_once_with(False)
+        self.assertEqual(endpoint._channel, None)
+        self.assertEqual(endpoint._connection, None)
+        # hard
+        channel = Mock()
+        connection = Mock()
+        endpoint._channel = channel
+        endpoint._connection = connection
+        endpoint.close(True)
+        channel.close.assert_called_once_with()
+        connection.close.assert_called_once_with(True)
+        self.assertEqual(endpoint._channel, None)
+        self.assertEqual(endpoint._connection, None)
+        # not open
+        channel = Mock()
+        connection = Mock()
+        endpoint._channel = channel
+        endpoint._connection = connection
+        endpoint.is_open = Mock(return_value=False)
+        endpoint.close()
+        self.assertFalse(channel.close.called)
+        self.assertFalse(connection.close.called)
+
     def test_close_exception(self):
         channel = Mock()
         channel.close.side_effect = CONNECTION_EXCEPTIONS[0]
 
          # test
         endpoint = Endpoint('')
-        endpoint._Endpoint__channel = channel
+        endpoint._channel = channel
+        endpoint._connection = Mock()
         endpoint.close()
 
         # validation
-        endpoint._Endpoint__mutex.lock.acquire.asssert_called_once_with()
-        endpoint._Endpoint__mutex.lock.release.asssert_called_once_with()
         channel.close.assert_called_once_with()
-        self.assertEqual(endpoint._Endpoint__channel, None)
-
-    @patch('gofer.messaging.adapter.amqplib.endpoint.RLock', Mock())
-    def test_close_no_channel(self):
-        channel = Mock()
-
-        # test
-        endpoint = Endpoint('')
-        endpoint.close()
-
-        # validation
-        endpoint._Endpoint__mutex.lock.acquire.asssert_called_once_with()
-        endpoint._Endpoint__mutex.lock.release.asssert_called_once_with()
-        self.assertFalse(channel.close.called)
-
-    @patch('gofer.messaging.adapter.amqplib.endpoint.RLock', Mock())
-    def test_del(self):
-        endpoint = Endpoint('')
-        endpoint.close = Mock()
-        endpoint.__del__()
-        endpoint.close.assert_called_once_with()
-
-    @patch('gofer.messaging.adapter.amqplib.endpoint.RLock', Mock())
-    def test_del_exception(self):
-        endpoint = Endpoint('')
-        endpoint.close = Mock(side_effect=ValueError)
-        endpoint.__del__()
-        endpoint.close.assert_called_once_with()
-
-    @patch('gofer.messaging.adapter.amqplib.endpoint.RLock', Mock())
-    def test_enter(self):
-        endpoint = Endpoint('')
-        endpoint.open = Mock()
-        obj = endpoint.__enter__()
-        endpoint.open.assert_called_once_with()
-        self.assertEqual(obj, endpoint)
-
-    @patch('gofer.messaging.adapter.amqplib.endpoint.RLock', Mock())
-    def test_exit(self):
-        endpoint = Endpoint('')
-        endpoint.close = Mock()
-        endpoint.__exit__()
-        endpoint.close.assert_called_once_with()

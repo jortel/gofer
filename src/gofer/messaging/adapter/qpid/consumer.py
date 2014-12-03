@@ -82,6 +82,9 @@ class Reader(BaseReader):
         """
         Open the reader.
         """
+        if self.is_open():
+            # already open
+            return
         BaseReader.open(self)
         channel = self.channel()
         self._receiver = channel.receiver(self.queue.name)
@@ -92,6 +95,9 @@ class Reader(BaseReader):
         :param hard: Force the connection closed.
         :type hard: bool
         """
+        if not self.is_open():
+            # not open
+            return
         self._receiver.close()
         BaseReader.close(self, hard)
 
