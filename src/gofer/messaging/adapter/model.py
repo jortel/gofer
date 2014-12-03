@@ -14,6 +14,7 @@
 #
 
 from logging import getLogger
+from threading import local as Local
 
 from uuid import uuid4
 
@@ -340,9 +341,11 @@ class BaseEndpoint(object):
         """
         raise NotImplementedError()
 
-    def close(self):
+    def close(self, hard=False):
         """
         Close the endpoint.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
         raise NotImplementedError()
 
@@ -399,11 +402,13 @@ class Messenger(BaseEndpoint):
         """
         self.endpoint().reject(message, requeue)
 
-    def close(self):
+    def close(self, hard=False):
         """
-        Close the endpoint.
+        Close the messenger.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
-        self.endpoint().close()
+        self.endpoint().close(hard)
 
 
 # --- reader -----------------------------------------------------------------
@@ -503,11 +508,13 @@ class Reader(BaseReader):
         """
         self._impl.reject(message, requeue)
 
-    def close(self):
+    def close(self, hard=False):
         """
         Close the reader.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
-        self._impl.close()
+        self._impl.close(hard)
 
     def get(self, timeout=None):
         """
@@ -632,11 +639,13 @@ class Producer(BaseProducer):
         """
         self._impl.reject(message, requeue)
 
-    def close(self):
+    def close(self, hard=False):
         """
         Close the producer.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
-        self._impl.close()
+        self._impl.close(hard)
 
     def send(self, destination, ttl=None, **body):
         """
@@ -738,11 +747,13 @@ class PlainProducer(BasePlainProducer):
         """
         self._impl.reject(message, requeue)
 
-    def close(self):
+    def close(self, hard=False):
         """
         Close the producer.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
-        self._impl.close()
+        self._impl.close(hard)
 
     def send(self, destination, content, ttl=None):
         """
@@ -790,7 +801,6 @@ class BaseConnection(object):
     def open(self):
         """
         Open a connection.
-        :return self.
         """
         raise NotImplementedError()
 
@@ -801,9 +811,11 @@ class BaseConnection(object):
         """
         raise NotImplementedError()
 
-    def close(self):
+    def close(self, hard=False):
         """
         Close the connection.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
         raise NotImplementedError()
 
@@ -831,11 +843,8 @@ class Connection(BaseConnection):
     def open(self):
         """
         Open the connection.
-        :return self.
-        :rtype Connection
         """
         self._impl.open()
-        return self
 
     def channel(self):
         """
@@ -844,11 +853,13 @@ class Connection(BaseConnection):
         """
         return self._impl.channel()
 
-    def close(self):
+    def close(self, hard=False):
         """
         Close the connection.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
-        self._impl.close()
+        self._impl.close(hard)
 
 
 class SSL(object):
@@ -965,6 +976,33 @@ class Broker(object):
         s.append('URL: %s' % self.url)
         s.append('SSL: %s' % self.ssl)
         return '|'.join(s)
+
+
+class LocalConnection(type):
+    """
+    Locally cached connection metaclass.
+    """
+
+    local = Local()
+
+    @staticmethod
+    def connections():
+        try:
+            return LocalConnection.local.d
+        except AttributeError:
+            d = {}
+            LocalConnection.local.d = d
+            return d
+
+    def __call__(cls, url):
+        url = str(url)
+        connections = LocalConnection.connections()
+        try:
+            return connections[url]
+        except KeyError:
+            connection = super(LocalConnection, cls).__call__(url)
+            connections[url] = connection
+            return connection
 
 
 class Cloud(object):

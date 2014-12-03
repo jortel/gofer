@@ -86,12 +86,14 @@ class Reader(BaseReader):
         channel = self.channel()
         self._receiver = channel.receiver(self.queue.name)
     
-    def close(self):
+    def close(self, hard=False):
         """
         Close the reader.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
         self._receiver.close()
-        BaseReader.close(self)
+        BaseReader.close(self, hard)
 
     def get(self, timeout=None):
         """

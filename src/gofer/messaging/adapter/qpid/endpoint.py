@@ -80,15 +80,18 @@ class Endpoint(BaseEndpoint):
         Open the endpoint.
         """
         connection = Connection(self.url)
-        self._connection = connection.open()
+        connection.open()
+        self._connection = connection
         self._channel = connection.channel()
 
-    def close(self):
+    def close(self, hard=False):
         """
         Close the endpoint.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
         self._channel.close()
-        self._connection.close()
+        self._connection.close(hard)
 
     def __str__(self):
         return 'Endpoint id:%s broker @ %s' % (self.id(), self.url)

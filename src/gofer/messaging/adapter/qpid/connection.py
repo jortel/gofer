@@ -22,7 +22,7 @@ from logging import getLogger
 from qpid.messaging import Connection as RealConnection
 from qpid.messaging.transports import TRANSPORTS
 
-from gofer.messaging.adapter.model import Cloud, BaseConnection
+from gofer.messaging.adapter.model import Cloud, BaseConnection, LocalConnection
 
 
 log = getLogger(__name__)
@@ -32,6 +32,8 @@ class Connection(BaseConnection):
     """
     Represents a Qpid connection.
     """
+
+    __metaclass__ = LocalConnection
 
     @staticmethod
     def add_transports():
@@ -55,10 +57,11 @@ class Connection(BaseConnection):
 
     def open(self):
         """
-        Connect to the broker.
-        :return: The AMQP connection object.
-        :rtype: Connection
+        Open the connection.
         """
+        if self._impl:
+            # already open
+            return
         broker = Cloud.find(self.url)
         ssl = broker.ssl
         Connection.add_transports()
@@ -77,10 +80,22 @@ class Connection(BaseConnection):
             ssl_skip_hostname_check=(not ssl.host_validation))
         self._impl.attach()
         log.info('connected: %s', self.url)
-        return self
 
     def channel(self):
+        """
+        Open a channel.
+        :return The *real* channel.
+        """
         return self._impl.session()
 
-    def close(self):
-        self._impl.close()
+    def close(self, hard=False):
+        """
+        Close the connection.
+        :param hard: Force the connection closed.
+        :type hard: bool
+        """
+        if not self._impl:
+            # already closed
+            return
+        if hard:
+            self._impl.close()

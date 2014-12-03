@@ -18,7 +18,7 @@ from socket import error as SocketError
 from amqp import Connection as RealConnection
 from amqp import ConnectionError
 
-from gofer.messaging.adapter.model import Cloud, BaseConnection
+from gofer.messaging.adapter.model import Cloud, BaseConnection, LocalConnection
 
 
 log = getLogger(__name__)
@@ -34,6 +34,8 @@ class Connection(BaseConnection):
     """
     A generic AMQP broker connection.
     """
+
+    __metaclass__ = LocalConnection
 
     @staticmethod
     def _ssl(broker):
@@ -71,8 +73,10 @@ class Connection(BaseConnection):
         :type retries: int
         :param delay: The delay between retries in seconds.
         :type delay: int
-        :return:
         """
+        if self._impl:
+            # already open
+            return
         while True:
             try:
                 log.info('connecting: %s', self)
@@ -84,7 +88,7 @@ class Connection(BaseConnection):
                     userid=broker.userid or USERID,
                     password=broker.password or PASSWORD)
                 log.info('connected: %s', self.url)
-                return self
+                break
             except CONNECTION_EXCEPTIONS:
                 log.exception(str(self.url))
                 if retries > 0:
@@ -94,14 +98,24 @@ class Connection(BaseConnection):
                     raise
 
     def channel(self):
+        """
+        Open a channel.
+        :return The *real* channel.
+        """
         return self._impl.channel()
 
-    def close(self):
+    def close(self, hard=False):
         """
-        Close the connection to the broker.
+        Close the connection.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
         try:
-            self._impl.close()
+            if not self._impl:
+                # already closed
+                return
+            if hard:
+                self._impl.close()
         except CONNECTION_EXCEPTIONS:
             # ignored
             pass

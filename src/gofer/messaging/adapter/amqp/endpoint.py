@@ -36,7 +36,7 @@ def reliable(fn):
             try:
                 return fn(endpoint, *args, **kwargs)
             except CONNECTION_EXCEPTIONS:
-                endpoint.close()
+                endpoint.close(hard=True)
                 sleep(3)
                 endpoint.open()
     return _fn
@@ -90,7 +90,8 @@ class Endpoint(BaseEndpoint):
         Open and configure the endpoint.
         """
         connection = Connection(self.url)
-        self._connection = connection.open()
+        connection.open()
+        self._connection = connection
         self._channel = connection.channel()
 
     @reliable
@@ -113,12 +114,14 @@ class Endpoint(BaseEndpoint):
         """
         self._channel.basic_reject(message.delivery_info[DELIVERY_TAG], requeue)
 
-    def close(self):
+    def close(self, hard=False):
         """
         Close the endpoint.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
         try:
             self._channel.close()
-            self._connection.close()
+            self._connection.close(hard)
         except (CONNECTION_EXCEPTIONS, ChannelError), e:
             log.exception(str(e))
