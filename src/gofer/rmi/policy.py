@@ -197,8 +197,6 @@ class Synchronous(RequestMethod):
         :raise Exception: returned by the peer.
         """
         replyto = self.queue.destination(self.url)
-        queue = Queue(destination.routing_key)
-        queue.declare(self.url)
         producer = Producer(self.url)
         producer.authenticator = self.authenticator
         producer.open()
@@ -216,12 +214,12 @@ class Synchronous(RequestMethod):
         reader.authenticator = self.authenticator
         reader.open()
         try:
-            self.__get_accepted(sn, reader)
-            return self.__get_reply(sn, reader)
+            self._get_accepted(sn, reader)
+            return self._get_reply(sn, reader)
         finally:
             reader.close()
 
-    def __get_accepted(self, sn, reader):
+    def _get_accepted(self, sn, reader):
         """
         Get the 'accepted' reply matched by serial number.
         In the event the 'accepted' message got lost, the 'started'
@@ -247,7 +245,7 @@ class Synchronous(RequestMethod):
         else:
             self.__on_reply(document)
 
-    def __get_reply(self, sn, reader):
+    def _get_reply(self, sn, reader):
         """
         Get the reply matched by serial number.
         :param sn: The request serial number.
@@ -275,11 +273,11 @@ class Synchronous(RequestMethod):
             if document.status in ('accepted', 'started'):
                 continue
             if document.status == 'progress':
-                self.__on_progress(document)
+                self._on_progress(document)
             else:
-                return self.__on_reply(document)
+                return self._on_reply(document)
         
-    def __on_reply(self, document):
+    def _on_reply(self, document):
         """
         Handle the reply.
         :param document: The reply document.
@@ -293,23 +291,23 @@ class Synchronous(RequestMethod):
         else:
             raise RemoteException.instance(reply)
         
-    def __on_progress(self, document):
+    def _on_progress(self, document):
         """
         Handle the progress report.
         :param document: The status document.
         :type document: Document
         """
         try:
-            callback = self.progress
-            if callable(callback):
+            reporter = self.progress
+            if callable(reporter):
                 report = dict(
                     sn=document.sn,
                     any=document.any,
                     total=document.total,
                     completed=document.completed,
                     details=document.details)
-                callback(report)
-        except:
+                reporter(report)
+        except Exception:
             log.error('progress callback failed', exc_info=1)
 
 
@@ -389,18 +387,18 @@ class Asynchronous(RequestMethod):
 class Trigger:
     """
     Asynchronous trigger.
-    :ivar __pending: pending flag.
-    :type __pending: bool
-    :ivar __sn: serial number
-    :type __sn: str
-    :ivar __policy: The policy object.
-    :type __policy: Asynchronous
-    :ivar __destination: An AMQP destination.
-    :type __destination: gofer.messaging.adapter.model.Destination
-    :ivar __request: A request to send.
-    :type __request: object
-    :ivar __any: Any (extra) data.
-    :type __any: dict
+    :ivar _pending: pending flag.
+    :type _pending: bool
+    :ivar _sn: serial number
+    :type _sn: str
+    :ivar _policy: The policy object.
+    :type _policy: Asynchronous
+    :ivar _destination: An AMQP destination.
+    :type _destination: gofer.messaging.adapter.model.Destination
+    :ivar _request: A request to send.
+    :type _request: object
+    :ivar _any: Any (extra) data.
+    :type _any: dict
     """
 
     def __init__(self, policy, destination, request, any):
@@ -413,12 +411,12 @@ class Trigger:
         :type request: object
         :keyword any: Any (extra) data.
         """
-        self.__pending = True
-        self.__sn = str(uuid4())
-        self.__policy = policy
-        self.__destination = destination
-        self.__request = request
-        self.__any = any
+        self._pending = True
+        self._sn = str(uuid4())
+        self._policy = policy
+        self._destination = destination
+        self._request = request
+        self._any = any
         
     @property
     def sn(self):
@@ -427,27 +425,25 @@ class Trigger:
         :return: The request serial number.
         :rtype: str
         """
-        return self.__sn
+        return self._sn
         
-    def __send(self):
+    def _send(self):
         """
         Send the request using the specified policy
         object and generated serial number.
         """
-        policy = self.__policy
-        destination = self.__destination
+        policy = self._policy
+        destination = self._destination
         replyto = policy.replyto()
-        request = self.__request
-        any = self.__any
-        queue = Queue(destination.routing_key)
-        queue.declare(policy.url)
+        request = self._request
+        any = self._any
         producer = Producer(policy.url)
         producer.authenticator = policy.authenticator
         producer.open()
         try:
             producer.send(
                 destination,
-                sn=self.__sn,
+                sn=self._sn,
                 ttl=policy.timeout,
                 replyto=replyto,
                 request=request,
@@ -457,11 +453,11 @@ class Trigger:
         log.debug('sent (%s): %s', repr(destination), request)
     
     def __str__(self):
-        return self.__sn
+        return self._sn
     
     def __call__(self):
-        if self.__pending:
-            self.__send()
-            self.__pending = False
+        if self._pending:
+            self._send()
+            self._pending = False
         else:
             raise Exception('trigger already executed')

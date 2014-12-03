@@ -60,7 +60,7 @@ class Method:
         :type kws: dict
         """
         opts = Options()
-        for k,v in kws.items():
+        for k, v in kws.items():
             if k in ('window', 'any',):
                 opts[k] = v
                 del kws[k]
@@ -87,8 +87,8 @@ class Stub:
     :type __policy: Policy
     """
     
-    @classmethod
-    def stub(cls, name, url, destination, options):
+    @staticmethod
+    def stub(name, url, destination, options):
         """
         Factory method.
         :param name: The stub class (or module) name.
@@ -147,14 +147,14 @@ class Stub:
         opts = Options(self.__options)
         opts += options
         request.cntr = self.__called[1]
-        policy = self.__getpolicy()
+        policy = self.__get_policy()
         if isinstance(self.__destination, (list, tuple)):
             return policy.broadcast(
                 self.__destination,
                 request,
                 window=opts.window,
                 secret=opts.secret,
-                pam=self.__getpam(opts),
+                pam=self.__get_pam(opts),
                 any=opts.any)
         else:
             return policy.send(
@@ -162,10 +162,10 @@ class Stub:
                 request,
                 window=opts.window,
                 secret=opts.secret,
-                pam=self.__getpam(opts),
+                pam=self.__get_pam(opts),
                 any=opts.any)
             
-    def __getpam(self, opts):
+    def __get_pam(self, opts):
         """
         Get PAM options.
         :param opts: options dict.
@@ -173,12 +173,10 @@ class Stub:
         :return: pam options
         :rtype: Options
         """
-        user = opts.user
         if opts.user:
-            return Options(
-                user=opts.user,
-                password=opts.password)
-        return None
+            return Options(user=opts.user, password=opts.password)
+        else:
+            return None
 
     def __getattr__(self, name):
         """
@@ -222,7 +220,7 @@ class Stub:
             self.__called = (n+1, (args, options))
         return self
 
-    def __getpolicy(self):
+    def __get_policy(self):
         """
         Get the request policy based on options.
         The policy is cached for performance.
@@ -230,10 +228,10 @@ class Stub:
         :rtype: gofer.rmi.policy.RequestMethod
         """
         if self.__policy is None:
-            self.__setpolicy()
+            self.__set_policy()
         return self.__policy
     
-    def __setpolicy(self):
+    def __set_policy(self):
         """
         Set the request policy based on options.
         """
@@ -252,9 +250,9 @@ class Stub:
         if self.__options.ctag or self.__options.async or self.__options.trigger:
             return True
         return isinstance(self.__destination, (list, tuple))
-    
+
     def __lock(self):
         self.__mutex.acquire()
-        
+
     def __unlock(self):
         self.__mutex.release()
