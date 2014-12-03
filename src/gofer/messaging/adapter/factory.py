@@ -28,9 +28,9 @@ log = logging.getLogger(__name__)
 
 # symbols required to be supported by all adapters
 REQUIRED = [
-    'Exchange',
-    'Broker',
+    'Connection',
     'Endpoint',
+    'Exchange',
     'Queue',
     'Producer',
     'BinaryProducer',

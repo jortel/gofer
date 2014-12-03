@@ -16,16 +16,12 @@
 """
 AMQP endpoint base classes.
 """
-
-import atexit
-
-from threading import RLock
 from logging import getLogger
 
 from qpid.messaging import Disposition, RELEASED, REJECTED
 
 from gofer.messaging.adapter.model import BaseEndpoint
-from gofer.messaging.adapter.qpid.broker import Broker
+from gofer.messaging.adapter.qpid.connection import Connection
 
 
 log = getLogger(__name__)
@@ -34,10 +30,10 @@ log = getLogger(__name__)
 class Endpoint(BaseEndpoint):
     """
     Base class for an AMQP endpoint.
-    :ivar __mutex: The endpoint mutex.
-    :type __mutex: RLock
-    :ivar __session: An AMQP session.
-    :type __session: qpid.messaging.Session
+    :ivar _connection: An AMQP session.
+    :type _connection: qpid.messaging.Channel
+    :ivar _channel: An AMQP session.
+    :type _channel: qpid.messaging.Session
     """
 
     def __init__(self, url):
@@ -46,9 +42,8 @@ class Endpoint(BaseEndpoint):
         :type url: str
         """
         BaseEndpoint.__init__(self, url)
-        self.__mutex = RLock()
-        self.__session = None
-        atexit.register(self.close)
+        self._connection = None
+        self._channel = None
 
     def channel(self):
         """
@@ -56,15 +51,7 @@ class Endpoint(BaseEndpoint):
         :return: An open session.
         :rtype: qpid.messaging.Session
         """
-        self._lock()
-        try:
-            if self.__session is None:
-                broker = Broker(self.url)
-                connection = broker.connect()
-                self.__session = connection.session()
-            return self.__session
-        finally:
-            self._unlock()
+        return self._channel
 
     def ack(self, message):
         """
@@ -72,7 +59,7 @@ class Endpoint(BaseEndpoint):
         :param message: The message to acknowledge.
         :type message: qpid.messaging.Message
         """
-        self.__session.acknowledge(message=message)
+        self._channel.acknowledge(message=message)
 
     def reject(self, message, requeue=True):
         """
@@ -86,45 +73,22 @@ class Endpoint(BaseEndpoint):
             disposition = Disposition(RELEASED)
         else:
             disposition = Disposition(REJECTED)
-        self.__session.acknowledge(message=message, disposition=disposition)
+        self._channel.acknowledge(message=message, disposition=disposition)
 
     def open(self):
         """
-        Open and configure the endpoint.
+        Open the endpoint.
         """
-        pass
+        connection = Connection(self.url)
+        self._connection = connection.open()
+        self._channel = connection.channel()
 
     def close(self):
         """
-        Close (shutdown) the endpoint.
+        Close the endpoint.
         """
-        self._lock()
-        try:
-            if self.__session is None:
-                return
-            self.__session.close()
-            self.__session = None
-        finally:
-            self._unlock()
-            
-    def _lock(self):
-        self.__mutex.acquire()
-        
-    def _unlock(self):
-        self.__mutex.release()
-
-    def __del__(self):
-        try:
-            self.close()
-        except:
-            log.error(self.uuid, exc_info=1)
+        self._channel.close()
+        self._connection.close()
 
     def __str__(self):
         return 'Endpoint id:%s broker @ %s' % (self.id(), self.url)
-
-    def __enter__(self):
-        self.open()
-        return self
-
-    def __exit__(self, *unused):
-        self.close()

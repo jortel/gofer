@@ -19,18 +19,18 @@ Defined Qpid broker objects.
 
 from logging import getLogger
 
-from qpid.messaging import Connection
+from qpid.messaging import Connection as RealConnection
 from qpid.messaging.transports import TRANSPORTS
 
-from gofer.messaging.adapter.model import BaseBroker
+from gofer.messaging.adapter.model import Cloud, BaseConnection
 
 
 log = getLogger(__name__)
 
 
-class Broker(BaseBroker):
+class Connection(BaseConnection):
     """
-    Represents a Qpid broker.
+    Represents a Qpid connection.
     """
 
     @staticmethod
@@ -48,45 +48,39 @@ class Broker(BaseBroker):
     def __init__(self, url):
         """
         :param url: The broker url.
-          Format: <adapter>+<scheme>://<user>:<password>@<host>:<port></>.
         :type url: str
         """
-        BaseBroker.__init__(self, url)
+        BaseConnection.__init__(self, url)
+        self._impl = None
 
-    def connect(self):
+    def open(self):
         """
         Connect to the broker.
         :return: The AMQP connection object.
         :rtype: Connection
         """
-        Broker.add_transports()
-        try:
-            return self.connection.cached
-        except AttributeError:
-            log.info('connecting: %s', self)
-            con = Connection(
-                host=self.host,
-                port=self.port,
-                tcp_nodelay=True,
-                reconnect=True,
-                transport=self.scheme,
-                username=self.userid,
-                password=self.password,
-                ssl_trustfile=self.cacert,
-                ssl_keyfile=self.clientkey,
-                ssl_certfile=self.clientcert,
-                ssl_skip_hostname_check=(not self.host_validation))
-            con.attach()
-            self.connection.cached = con
-            log.info('{%s} connected to AMQP', self.id)
-            return con
+        broker = Cloud.find(self.url)
+        ssl = broker.ssl
+        Connection.add_transports()
+        log.info('connecting: %s', self)
+        self._impl = RealConnection(
+            host=broker.host,
+            port=broker.port,
+            tcp_nodelay=True,
+            reconnect=True,
+            transport=broker.scheme,
+            username=broker.userid,
+            password=broker.password,
+            ssl_trustfile=ssl.ca_certificate,
+            ssl_keyfile=ssl.client_key,
+            ssl_certfile=ssl.client_certificate,
+            ssl_skip_hostname_check=(not ssl.host_validation))
+        self._impl.attach()
+        log.info('connected: %s', self.url)
+        return self
+
+    def channel(self):
+        return self._impl.session()
 
     def close(self):
-        """
-        Close the connection to the broker.
-        """
-        try:
-            self.connection.cached.close()
-            del self.connection.cached
-        except AttributeError:
-            pass
+        self._impl.close()

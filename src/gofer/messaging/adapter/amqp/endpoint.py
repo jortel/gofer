@@ -10,14 +10,12 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 from time import sleep
-from threading import RLock
 from logging import getLogger
 
 from amqp import ChannelError
 
-from gofer import synchronized
 from gofer.messaging.adapter.model import BaseEndpoint
-from gofer.messaging.adapter.amqp.broker import Broker, CONNECTION_EXCEPTIONS
+from gofer.messaging.adapter.amqp.connection import Connection, CONNECTION_EXCEPTIONS
 
 
 log = getLogger(__name__)
@@ -38,11 +36,9 @@ def reliable(fn):
             try:
                 return fn(endpoint, *args, **kwargs)
             except CONNECTION_EXCEPTIONS:
-                broker = Broker(endpoint.url)
                 endpoint.close()
-                broker.close()
                 sleep(3)
-                endpoint.channel()
+                endpoint.open()
     return _fn
 
 
@@ -52,6 +48,7 @@ def reliable(fn):
 def endpoint(fn):
     def _fn(url):
         _endpoint = Endpoint(url)
+        _endpoint.open()
         try:
             return fn(_endpoint)
         finally:
@@ -65,10 +62,10 @@ def endpoint(fn):
 class Endpoint(BaseEndpoint):
     """
     Base class for an AMQP endpoint.
-    :ivar __mutex: The endpoint mutex.
-    :type __mutex: RLock
-    :ivar __channel: An AMQP channel.
-    :type __channel: amqplib.client_0_8.Channel
+    :ivar _connection: A connection.
+    :type _connection: Connection
+    :ivar _channel: An AMQP channel.
+    :type _channel: amqp..Channel
     """
 
     def __init__(self, url):
@@ -77,66 +74,51 @@ class Endpoint(BaseEndpoint):
         :type url: str
         """
         BaseEndpoint.__init__(self, url)
-        self.__mutex = RLock()
-        self.__channel = None
+        self._connection = None
+        self._channel = None
 
-    @synchronized
     def channel(self):
         """
         Get a channel for the open connection.
         :return: An open channel.
-        :rtype: amqplib.client_0_8.Channel
+        :rtype: amqp.Channel
         """
-        if self.__channel is None:
-            broker = Broker(self.url)
-            conn = broker.connect()
-            self.__channel = conn.channel()
-        return self.__channel
+        return self._channel
 
     def open(self):
         """
         Open and configure the endpoint.
         """
-        pass
+        connection = Connection(self.url)
+        self._connection = connection.open()
+        self._channel = connection.channel()
 
     @reliable
     def ack(self, message):
         """
         Ack the specified message.
         :param message: The message to acknowledge.
-        :type message: amqplib.client_0_8.Message
+        :type message: amqp.Message
         """
-        channel = self.channel()
-        channel.basic_ack(message.delivery_info[DELIVERY_TAG])
+        self._channel.basic_ack(message.delivery_info[DELIVERY_TAG])
 
     @reliable
     def reject(self, message, requeue=True):
         """
         Reject the specified message.
         :param message: The message to reject.
-        :type message: amqplib.client_0_8.Message
+        :type message: amqp.Message
         :param requeue: Requeue the message or discard it.
         :type requeue: bool
         """
-        channel = self.channel()
-        channel.basic_reject(message.delivery_info[DELIVERY_TAG], requeue)
+        self._channel.basic_reject(message.delivery_info[DELIVERY_TAG], requeue)
 
-    @synchronized
     def close(self):
         """
         Close the endpoint.
         """
         try:
-            channel = self.__channel
-            self.__channel = None
-            if channel is not None:
-                channel.close()
+            self._channel.close()
+            self._connection.close()
         except (CONNECTION_EXCEPTIONS, ChannelError), e:
             log.exception(str(e))
-
-    def __del__(self):
-        try:
-            self.close()
-        except Exception:
-            # ignored
-            pass

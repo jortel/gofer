@@ -11,7 +11,7 @@
 
 
 from gofer.messaging.adapter.amqplib.model import Exchange, Queue
-from gofer.messaging.adapter.amqplib.broker import Broker
+from gofer.messaging.adapter.amqplib.connection import Connection
 from gofer.messaging.adapter.amqplib.consumer import Reader
 from gofer.messaging.adapter.amqplib.producer import Producer, send
 from gofer.messaging.adapter.amqplib.endpoint import Endpoint

@@ -12,7 +12,7 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.curdir, '../../src'))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.curdir, '../../../src')))
 
 from logging import basicConfig
 
@@ -23,10 +23,11 @@ from gofer.messaging.adapter.factory import Loader
 basicConfig()
 
 URL = 'amqp://localhost:5673'
+PATH = os.path.abspath(os.path.join(os.path.curdir, '../../../etc/gofer/messaging/adapters'))
 
 if __name__ == '__main__':
     loader = Loader()
-    loader.load()
+    loader.load(PATH)
     # AMQP-0-8
     adapter = loader.adapters['amqp-0-9-1']
     test = Test(URL, adapter)

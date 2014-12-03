@@ -22,6 +22,8 @@ from gofer.messaging.adapter.factory import \
     NoAdaptersLoaded
 
 from gofer.messaging.adapter.model import \
+    SSL, \
+    Connection, \
     Destination, \
     Exchange, \
     Queue, \

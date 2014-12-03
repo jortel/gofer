@@ -46,6 +46,20 @@ class Task:
     
     context = Local()
 
+    @staticmethod
+    def _producer(plugin):
+        """
+        Get a configured producer.
+        :param plugin: A plugin.
+        :type plugin: Plugin
+        :return: A producer.
+        :rtype: Producer
+        """
+        url = plugin.get_url()
+        producer = Producer(url)
+        producer.authenticator = plugin.authenticator
+        return producer
+
     def __init__(self, plugin, request, commit):
         """
         :param plugin: A plugin.
@@ -59,6 +73,7 @@ class Task:
         self.request = request
         self.commit = commit
         self.window = request.window
+        self.producer = self._producer(plugin)
         self.ts = time()
         
     def __call__(self):
@@ -69,12 +84,14 @@ class Task:
         self.context.sn = request.sn
         self.context.progress = Progress(self)
         self.context.cancelled = Cancelled(request.sn)
+        self.producer.open()
         try:
             self.__call()
         finally:
             self.context.sn = None
             self.context.progress = None
             self.context.cancelled = None
+            self.producer.close()
 
     def __call(self):
         """
@@ -118,16 +135,12 @@ class Task:
         if not replyto:
             return
         try:
-            producer = self.producer()
-            try:
-                producer.send(
-                    Destination.create(replyto),
-                    sn=sn,
-                    any=any,
-                    status='started',
-                    timestamp=timestamp())
-            finally:
-                producer.close()
+            self.producer.send(
+                Destination.create(replyto),
+                sn=sn,
+                any=any,
+                status='started',
+                timestamp=timestamp())
         except Exception:
             log.exception('send (started), failed')
             
@@ -149,29 +162,14 @@ class Task:
         if not replyto:
             return
         try:
-            producer = self.producer()
-            try:
-                producer.send(
-                    Destination.create(replyto),
-                    sn=sn,
-                    any=any,
-                    result=result,
-                    timestamp=timestamp())
-            finally:
-                producer.close()
+            self.producer.send(
+                Destination.create(replyto),
+                sn=sn,
+                any=any,
+                result=result,
+                timestamp=timestamp())
         except Exception:
             log.exception('send failed: %s', result)
-
-    def producer(self):
-        """
-        Get a configured producer.
-        :return: A producer.
-        :rtype: Producer
-        """
-        url = self.plugin.get_url()
-        producer = Producer(url)
-        producer.authenticator = self.plugin.authenticator
-        return producer
 
 
 class TrashPlugin:
@@ -291,6 +289,15 @@ class Progress:
         self.completed = 0
         self.details = {}
 
+    @property
+    def producer(self):
+        """
+        Get a producer.
+        :return: An AMQP producer.
+        :rtype: Producer
+        """
+        return self.task.producer
+
     def report(self):
         """
         Send the progress report.
@@ -301,19 +308,15 @@ class Progress:
         if not replyto:
             return
         try:
-            producer = self.task.producer()
-            try:
-                producer.send(
-                    Destination.create(replyto),
-                    sn=sn,
-                    any=any,
-                    status='progress',
-                    total=self.total,
-                    completed=self.completed,
-                    details=self.details)
-            finally:
-                producer.close()
-        except:
+            self.producer.send(
+                Destination.create(replyto),
+                sn=sn,
+                any=any,
+                status='progress',
+                total=self.total,
+                completed=self.completed,
+                details=self.details)
+        except Exception:
             log.exception('send (progress), failed')
 
 

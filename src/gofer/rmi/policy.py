@@ -197,10 +197,11 @@ class Synchronous(RequestMethod):
         :raise Exception: returned by the peer.
         """
         replyto = self.queue.destination(self.url)
-        producer = Producer(self.url)
-        producer.authenticator = self.authenticator
         queue = Queue(destination.routing_key)
         queue.declare(self.url)
+        producer = Producer(self.url)
+        producer.authenticator = self.authenticator
+        producer.open()
         try:
             sn = producer.send(
                 destination,
@@ -213,6 +214,7 @@ class Synchronous(RequestMethod):
         log.debug('sent (%s): %s', repr(destination), request)
         reader = Reader(self.queue, self.url)
         reader.authenticator = self.authenticator
+        reader.open()
         try:
             self.__get_accepted(sn, reader)
             return self.__get_reply(sn, reader)
@@ -437,10 +439,11 @@ class Trigger:
         replyto = policy.replyto()
         request = self.__request
         any = self.__any
-        producer = Producer(policy.url)
-        producer.authenticator = policy.authenticator
         queue = Queue(destination.routing_key)
         queue.declare(policy.url)
+        producer = Producer(policy.url)
+        producer.authenticator = policy.authenticator
+        producer.open()
         try:
             producer.send(
                 destination,

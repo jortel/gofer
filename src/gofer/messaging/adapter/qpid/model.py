@@ -82,6 +82,7 @@ class Exchange(BaseExchange):
         if not self.policy:
             return
         endpoint = Endpoint(url)
+        endpoint.open()
         try:
             session = endpoint.channel()
             sender = session.sender(self.address())
@@ -193,6 +194,7 @@ class Queue(BaseQueue):
         :type url: str
         """
         endpoint = Endpoint(url)
+        endpoint.open()
         try:
             session = endpoint.channel()
             sender = session.sender(self.address())
