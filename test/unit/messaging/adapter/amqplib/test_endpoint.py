@@ -216,15 +216,25 @@ class TestEndpoint(TestCase):
         self.assertFalse(channel.close.called)
         self.assertFalse(connection.close.called)
 
-    def test_close_exception(self):
+    def test_close_channel(self):
         channel = Mock()
-        channel.close.side_effect = CONNECTION_EXCEPTIONS[0]
 
          # test
         endpoint = Endpoint('')
         endpoint._channel = channel
-        endpoint._connection = Mock()
-        endpoint.close()
+        endpoint._close_channel()
+
+        # validation
+        channel.close.assert_called_once_with()
+
+    def test_close_channel_exception(self):
+        channel = Mock()
+        channel.close.side_effect = ValueError
+
+         # test
+        endpoint = Endpoint('')
+        endpoint._channel = channel
+        endpoint._close_channel()
 
         # validation
         channel.close.assert_called_once_with()

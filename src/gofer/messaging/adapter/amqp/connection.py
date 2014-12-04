@@ -115,16 +115,26 @@ class Connection(BaseConnection):
     def close(self, hard=False):
         """
         Close the connection.
+        A *soft* close is essentially a non-operation and provides
+        for connection caching.  A *hard* close actually closes the
+        connection to the broker.
         :param hard: Force the connection closed.
         :type hard: bool
         """
+        if not self.is_open():
+            # not open
+            return
+        if not hard:
+            # soft
+            return
+        self._disconnect()
+        self._impl = None
+
+    def _disconnect(self):
+        """
+        Safely close the *real* connection.
+        """
         try:
-            if not self.is_open():
-                # already closed
-                return
-            if hard:
-                self._impl.close()
-                self._impl = None
-        except CONNECTION_EXCEPTIONS:
-            # ignored
-            pass
+            self._impl.close()
+        except Exception, e:
+            log.debug(str(e))

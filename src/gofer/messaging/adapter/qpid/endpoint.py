@@ -51,19 +51,18 @@ class Endpoint(BaseEndpoint):
         :return: True if open.
         :rtype bool
         """
-        return self._channel and self._connection
+        return self._channel or self._connection
 
     def open(self):
         """
-        Open the endpoint.
+        Open and configure the endpoint.
         """
         if self.is_open():
             # already open
             return
-        connection = Connection(self.url)
-        connection.open()
-        self._connection = connection
-        self._channel = connection.channel()
+        self._connection = Connection(self.url)
+        self._connection.open()
+        self._channel = self._connection.channel()
 
     def channel(self):
         """
@@ -104,10 +103,19 @@ class Endpoint(BaseEndpoint):
         if not self.is_open():
             # not open
             return
-        self._channel.close()
+        self._close_channel()
         self._connection.close(hard)
-        self._channel = None
         self._connection = None
+        self._channel = None
+
+    def _close_channel(self):
+        """
+        Safely close the channel.
+        """
+        try:
+            self._channel.close()
+        except Exception, e:
+            log.debug(str(e))
 
     def __str__(self):
         return 'Endpoint id:%s broker @ %s' % (self.id(), self.url)

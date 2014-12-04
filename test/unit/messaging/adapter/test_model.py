@@ -940,30 +940,23 @@ class TestConnection(TestCase):
 
 class TestLocalConnection(TestCase):
 
-    @patch('gofer.messaging.adapter.model.LocalConnection.local')
-    def test_connections(self, local):
-        connections = LocalConnection.connections()
-        self.assertEqual(connections, local.d)
+    def test_connections(self):
+        connection = LocalConnection('fake', (), {})
+        # create (local.d)
+        self.assertEqual(connection.connections, connection.local.d)
+        self.assertTrue(isinstance(connection, LocalConnection))
+        # already created
+        self.assertEqual(connection.connections, connection.local.d)
+        self.assertTrue(isinstance(connection, LocalConnection))
 
-    @patch('gofer.messaging.adapter.model.LocalConnection.local', Local())
-    def test_connections_not_attribute(self):
-        connections = LocalConnection.connections()
-        self.assertEqual(connections, {})
-
-    @patch('gofer.messaging.adapter.model.LocalConnection.local')
-    def test_call(self, local):
+    def test_call(self):
         url = TEST_URL
-        local.d = {url: 'A'}
-        fake = FakeConnection(url)
-        self.assertEqual(fake, 'A')
+        fake1 = FakeConnection(url)
+        fake2 = FakeConnection(url)
+        fake3 = FakeConnection('')
+        self.assertEqual(fake1, fake2)
+        self.assertNotEqual(fake1, fake3)
 
-    @patch('gofer.messaging.adapter.model.LocalConnection.local')
-    def test_call_not_cached(self, local):
-        url = TEST_URL
-        local.d = {}
-        fake = FakeConnection(url)
-        self.assertTrue(isinstance(fake, FakeConnection))
-        self.assertEqual(fake.url, url)
 
 # --- cloud ------------------------------------------------------------------
 

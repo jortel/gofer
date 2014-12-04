@@ -19,7 +19,7 @@ from mock import patch, Mock
 from gofer.devel import ipatch
 
 with ipatch('amqp'):
-    from gofer.messaging.adapter.model import Broker, LocalConnection
+    from gofer.messaging.adapter.model import Broker
     from gofer.messaging.adapter.amqp.connection import Connection, BaseConnection
     from gofer.messaging.adapter.amqp.connection import CONNECTION_EXCEPTIONS
 
@@ -29,10 +29,10 @@ TEST_URL = 'amqp+amqps://elmer:fudd@redhat.com:1234/test-virtual-host'
 class TestConnection(TestCase):
 
     def setUp(self):
-        LocalConnection.local.d = {}
+        Connection.local.d = {}
 
     def tearDown(self):
-        LocalConnection.local.d = {}
+        Connection.local.d = {}
 
     def test_init(self):
         url = TEST_URL
@@ -132,12 +132,20 @@ class TestConnection(TestCase):
         c._impl = None
         c.close()
 
-    def test_close_exception(self):
+    def test_disconnect(self):
+        url = TEST_URL
+        c = Connection(url)
+        c._impl = Mock()
+        c._disconnect()
+        c._impl.close.assert_called_with()
+
+    def test_disconnect_exception(self):
         url = TEST_URL
         c = Connection(url)
         c._impl = Mock()
         c._impl.close.side_effect = CONNECTION_EXCEPTIONS[0]
-        c.close(True)
+        c._disconnect()
+        c._impl.close.assert_called_with()
 
     def test_ssl(self):
         url = TEST_URL

@@ -19,7 +19,7 @@ from mock import patch, Mock
 from gofer.devel import ipatch
 
 with ipatch('qpid.messaging'):
-    from gofer.messaging.adapter.model import Broker, LocalConnection
+    from gofer.messaging.adapter.model import Broker
     from gofer.messaging.adapter.qpid.connection import Connection, BaseConnection
 
 
@@ -33,10 +33,10 @@ class Local(object):
 class TestConnection(TestCase):
 
     def setUp(self):
-        LocalConnection.local.d = {}
+        Connection.local.d = {}
 
     def tearDown(self):
-        LocalConnection.local.d = {}
+        Connection.local.d = {}
 
     def test_init(self):
         url = TEST_URL
@@ -119,3 +119,18 @@ class TestConnection(TestCase):
         # not open
         c._impl = None
         c.close()
+
+    def test_disconnect(self):
+        url = TEST_URL
+        c = Connection(url)
+        c._impl = Mock()
+        c._disconnect()
+        c._impl.close.assert_called_with()
+
+    def test_disconnect_exception(self):
+        url = TEST_URL
+        c = Connection(url)
+        c._impl = Mock()
+        c._impl.close.side_effect = ValueError
+        c._disconnect()
+        c._impl.close.assert_called_with()

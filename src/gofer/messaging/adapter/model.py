@@ -897,28 +897,30 @@ class Connection(BaseConnection):
 class LocalConnection(type):
     """
     Locally cached connection metaclass.
+    Usage: __metaclass__ = LocalConnection()
     """
 
-    local = Local()
+    def __init__(cls, what, bases, _dict):
+        super(LocalConnection, cls).__init__(what, bases, _dict)
+        cls.local = Local()
 
-    @staticmethod
-    def connections():
+    @property
+    def connections(self):
         try:
-            return LocalConnection.local.d
+            return self.local.d
         except AttributeError:
             d = {}
-            LocalConnection.local.d = d
+            self.local.d = d
             return d
 
     def __call__(cls, url):
         url = str(url)
-        connections = LocalConnection.connections()
         try:
-            return connections[url]
+            return cls.connections[url]
         except KeyError:
-            connection = super(LocalConnection, cls).__call__(url)
-            connections[url] = connection
-            return connection
+            inst = super(LocalConnection, cls).__call__(url)
+            cls.connections[url] = inst
+            return inst
 
 
 # --- cloud|broker -----------------------------------------------------------

@@ -12,8 +12,6 @@
 from time import sleep
 from logging import getLogger
 
-from amqp import ChannelError
-
 from gofer.messaging.adapter.model import BaseEndpoint
 from gofer.messaging.adapter.amqp.connection import Connection, CONNECTION_EXCEPTIONS
 
@@ -36,8 +34,8 @@ def reliable(fn):
             try:
                 return fn(endpoint, *args, **kwargs)
             except CONNECTION_EXCEPTIONS:
-                endpoint.close(hard=True)
                 sleep(3)
+                endpoint.close(hard=True)
                 endpoint.open()
     return _fn
 
@@ -91,8 +89,9 @@ class Endpoint(BaseEndpoint):
         :return: True if open.
         :rtype bool
         """
-        return self._channel and self._connection
+        return self._channel or self._connection
 
+    @reliable
     def open(self):
         """
         Open and configure the endpoint.
@@ -100,10 +99,9 @@ class Endpoint(BaseEndpoint):
         if self.is_open():
             # already open
             return
-        connection = Connection(self.url)
-        connection.open()
-        self._connection = connection
-        self._channel = connection.channel()
+        self._connection = Connection(self.url)
+        self._connection.open()
+        self._channel = self._connection.channel()
 
     @reliable
     def ack(self, message):
@@ -131,13 +129,19 @@ class Endpoint(BaseEndpoint):
         :param hard: Force the connection closed.
         :type hard: bool
         """
+        if not self.is_open():
+            # not open
+            return
+        self._close_channel()
+        self._connection.close(hard)
+        self._connection = None
+        self._channel = None
+
+    def _close_channel(self):
+        """
+        Safely close the channel.
+        """
         try:
-            if not self.is_open():
-                # not open
-                return
             self._channel.close()
-            self._connection.close(hard)
-            self._channel = None
-            self._connection = None
-        except (CONNECTION_EXCEPTIONS, ChannelError), e:
-            log.exception(str(e))
+        except Exception, e:
+            log.debug(str(e))
