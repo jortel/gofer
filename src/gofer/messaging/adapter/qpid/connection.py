@@ -22,7 +22,7 @@ from logging import getLogger
 from qpid.messaging import Connection as RealConnection
 from qpid.messaging.transports import TRANSPORTS
 
-from gofer.messaging.adapter.model import Cloud, BaseConnection, LocalConnection
+from gofer.messaging.adapter.model import Cloud, BaseConnection, SharedConnection
 
 
 log = getLogger(__name__)
@@ -33,7 +33,7 @@ class Connection(BaseConnection):
     Represents a Qpid connection.
     """
 
-    __metaclass__ = LocalConnection
+    __metaclass__ = SharedConnection
 
     @staticmethod
     def add_transports():

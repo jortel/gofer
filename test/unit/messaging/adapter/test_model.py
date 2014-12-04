@@ -29,7 +29,7 @@ from gofer.messaging.adapter.model import BaseReader, Reader
 from gofer.messaging.adapter.model import BaseProducer, Producer
 from gofer.messaging.adapter.model import BasePlainProducer, PlainProducer
 from gofer.messaging.adapter.model import Broker, SSL, Cloud
-from gofer.messaging.adapter.model import BaseConnection, Connection, LocalConnection
+from gofer.messaging.adapter.model import BaseConnection, Connection, SharedConnection
 from gofer.messaging.adapter.model import Ack
 
 
@@ -42,7 +42,7 @@ class Local(object):
 
 class FakeConnection(object):
 
-    __metaclass__ = LocalConnection
+    __metaclass__ = SharedConnection
 
     def __init__(self, url):
         self.url = url
@@ -938,16 +938,16 @@ class TestConnection(TestCase):
         _impl.close.assert_called_once_with(True)
 
 
-class TestLocalConnection(TestCase):
+class TestSharedConnection(TestCase):
 
     def test_connections(self):
-        connection = LocalConnection('fake', (), {})
+        connection = SharedConnection('fake', (), {})
         # create (local.d)
         self.assertEqual(connection.connections, connection.local.d)
-        self.assertTrue(isinstance(connection, LocalConnection))
+        self.assertTrue(isinstance(connection, SharedConnection))
         # already created
         self.assertEqual(connection.connections, connection.local.d)
-        self.assertTrue(isinstance(connection, LocalConnection))
+        self.assertTrue(isinstance(connection, SharedConnection))
 
     def test_call(self):
         url = TEST_URL

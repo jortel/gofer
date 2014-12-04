@@ -18,7 +18,7 @@ from socket import error as SocketError
 from amqplib.client_0_8 import Connection as RealConnection
 from amqplib.client_0_8 import AMQPConnectionException
 
-from gofer.messaging.adapter.model import Cloud, BaseConnection, LocalConnection
+from gofer.messaging.adapter.model import Cloud, BaseConnection, SharedConnection
 
 log = getLogger(__name__)
 
@@ -34,14 +34,14 @@ class Connection(BaseConnection):
     A generic AMQP broker connection.
     """
 
-    __metaclass__ = LocalConnection
+    __metaclass__ = SharedConnection
 
     @staticmethod
     def _ssl(broker):
         """
         Get SSL properties
         :param broker: A broker object.
-        :type broker: gofer.messaging.Broker
+        :type broker: gofer.messaging.adapter.model.Broker
         :return: The SSL properties
         :rtype: dict
         """
