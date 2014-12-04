@@ -23,11 +23,12 @@ from gofer.messaging.adapter.factory import \
 
 from gofer.messaging.adapter.model import \
     SSL, \
+    Broker, \
+    Cloud, \
     Connection, \
     Destination, \
     Exchange, \
     Queue, \
-    Broker, \
     Reader, \
     Producer, \
     PlainProducer

@@ -23,6 +23,9 @@ from gofer.messaging.consumer import \
 
 from gofer.messaging.adapter import \
     URL, \
+    SSL, \
+    Broker, \
+    Cloud, \
     Adapter, \
     AdapterError, \
     AdapterNotFound, \
@@ -30,7 +33,6 @@ from gofer.messaging.adapter import \
     Destination, \
     Exchange, \
     Queue, \
-    Broker, \
     Reader, \
     Producer, \
     PlainProducer
