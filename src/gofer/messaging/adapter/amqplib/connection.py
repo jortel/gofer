@@ -94,7 +94,7 @@ class Connection(BaseConnection):
                     ssl=self._ssl(broker),
                     userid=broker.userid or USERID,
                     password=broker.password or PASSWORD)
-                log.info('connected: %s', broker)
+                log.info('connected: %s', broker.url)
                 break
             except CONNECTION_EXCEPTIONS:
                 log.exception(str(self.url))

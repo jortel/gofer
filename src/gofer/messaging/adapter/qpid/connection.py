@@ -87,7 +87,7 @@ class Connection(BaseConnection):
             ssl_certfile=ssl.client_certificate,
             ssl_skip_hostname_check=(not ssl.host_validation))
         self._impl.attach()
-        log.info('connected: %s', broker)
+        log.info('connected: %s', broker.url)
 
     def channel(self):
         """
