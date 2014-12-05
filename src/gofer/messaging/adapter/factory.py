@@ -72,25 +72,29 @@ class Loader:
     :cvar PATH: The default (absolute) path to a directory
         containing descriptors to be loaded.
     :type PATH: str
-    :ivar adapters: Loaded adapters.
-    :type adapters: dict
+    :ivar list: A list of loaded adapters.
+    :type list: list
+    :ivar catalog: A catalog of loaded adapters by capabilities.
+    :type catalog: dict
     """
 
     PATH = '/etc/gofer/messaging/adapters'
 
     def __init__(self):
-        self.adapters = {}
+        self.list = []
+        self.catalog = {}
 
     @staticmethod
     def _load(path):
         """
-        Load adapters.
+        Load the adapters and return a list and catalog.
         :param path: The absolute path to a directory containing descriptors.
         :type path: str
-        :return: The loaded adapters.
-        :rtype: dict
+        :return: A tuple of (list, dict)
+        :rtype: tuple
         """
-        adapters = {}
+        _list = []
+        catalog = {}
         for descriptor in Descriptor.load(path):
             if not get_bool(descriptor.main.enabled):
                 continue
@@ -98,13 +102,14 @@ class Loader:
             try:
                 pkg = __import__(package, {}, {}, REQUIRED)
                 name = pkg.__name__.split('.')[-1]
-                adapters[name] = pkg
-                adapters[package] = pkg
+                _list.append(pkg)
+                catalog[name] = pkg
+                catalog[package] = pkg
                 for capability in descriptor.provides:
-                    adapters[capability] = pkg
+                    catalog[capability] = pkg
             except (ImportError, AttributeError):
                 log.exception(package)
-        return adapters
+        return _list, catalog
 
     def load(self, path=PATH):
         """
@@ -114,41 +119,64 @@ class Loader:
         :return: The loaded adapters.
         :rtype: dict
         """
-        if not len(self.adapters):
-            self.adapters = Loader._load(path)
-        return self.adapters
+        if not self.list:
+            _list, catalog = Loader._load(path)
+            self.list = _list
+            self.catalog = catalog
+        return self.list, self.catalog
 
 
 class Adapter(object):
+    """
+    A messaging adapter factory object.
+    :cvar bindings: A mapping of URL to adapter.
+    :type bindings: dict
+    :cvar loader: An adapter loader.
+    :type loader: Loader
+    """
 
-    urls = {}
+    bindings = {}
     loader = Loader()
 
     @staticmethod
     def bind(url, name):
-        adapters = Adapter.loader.load()
-        loaded = sorted(adapters)
-        if not loaded:
+        """
+        Bind (associate) a URL to an adapter.
+        :param url: A broker URL.
+        :type url: str
+        :param name: An adapter name or capability.
+        :type name: str
+        :raises: KeyError
+        """
+        _list, catalog = Adapter.loader.load()
+        if not _list:
             raise NoAdaptersLoaded()
         try:
             url = URL(url)
-            Adapter.urls[url.simple()] = adapters[name]
+            Adapter.bindings[url.simple()] = catalog[name]
         except KeyError:
             raise AdapterNotFound(name)
 
     @staticmethod
     def find(url=None):
-        adapters = Adapter.loader.load()
-        loaded = sorted(adapters)
-        if not loaded:
+        """
+        Find an adapter by URL.
+        :param url: A broker URL.
+        :type url: str
+        :return: The requested adapter or the adapter with the
+            highest *priority*.
+        """
+        _list, catalog = Adapter.loader.load()
+        if not _list:
             raise NoAdaptersLoaded()
         if not url:
-            url = loaded[0]
+            return _list[0]
         try:
             url = URL(url)
             if url.adapter:
-                return adapters[url.adapter]
+                return catalog[url.adapter]
             else:
-                return Adapter.urls[url.simple()]
+                return Adapter.bindings[url.simple()]
         except KeyError:
-            return adapters[loaded[0]]
+            return _list[0]
+

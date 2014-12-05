@@ -29,14 +29,14 @@ if __name__ == '__main__':
     # AMQP-0-10
     loader = Loader()
     loader.load(PATH)
-    adapter = loader.adapters['amqp-0-10']
+    adapter = loader.catalog['amqp-0-10']
     test = Test(URL, adapter)
     test()
     # qpid
-    adapter = loader.adapters['qpid']
+    adapter = loader.catalog['qpid']
     test = Test(URL, adapter)
     test()
     # qpid-messaging
-    adapter = loader.adapters['qpid.messaging']
+    adapter = loader.catalog['qpid.messaging']
     test = Test(URL, adapter)
     test()

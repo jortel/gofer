@@ -116,6 +116,3 @@ class Endpoint(BaseEndpoint):
             self._channel.close()
         except Exception, e:
             log.debug(str(e))
-
-    def __str__(self):
-        return 'Endpoint id:%s broker @ %s' % (self.id(), self.url)

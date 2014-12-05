@@ -158,7 +158,7 @@ class Exchange(BaseExchange):
         """
         BaseExchange.__init__(self, name, policy)
 
-    def declare(self, url=DEFAULT_URL):
+    def declare(self, url=None):
         """
         Declare the node.
         :param url: The broker URL.
@@ -170,7 +170,7 @@ class Exchange(BaseExchange):
         impl.auto_delete = self.auto_delete
         impl.declare(url)
 
-    def delete(self, url=DEFAULT_URL):
+    def delete(self, url=None):
         """
         Delete the node.
         :param url: The broker URL.
@@ -243,7 +243,7 @@ class Queue(BaseQueue):
         """
         BaseQueue.__init__(self, name, exchange, routing_key)
 
-    def declare(self, url=DEFAULT_URL):
+    def declare(self, url=None):
         """
         Declare the node.
         :param url: The broker URL.
@@ -483,7 +483,7 @@ class Reader(BaseReader):
     An AMQP message reader.
     """
 
-    def __init__(self, queue, url=DEFAULT_URL):
+    def __init__(self, queue, url=None):
         """
         :param queue: The queue to consumer.
         :type queue: gofer.messaging.adapter.model.BaseQueue
@@ -617,7 +617,7 @@ class Producer(BaseProducer):
     An AMQP (message producer.
     """
 
-    def __init__(self, url=DEFAULT_URL):
+    def __init__(self, url=None):
         """
         :param url: The broker url.
         :type url: str
@@ -725,7 +725,7 @@ class PlainProducer(BasePlainProducer):
     An plain AMQP message producer.
     """
 
-    def __init__(self, url=DEFAULT_URL):
+    def __init__(self, url=None):
         """
         :param url: The broker url <adapter>://<user>:<pass>@<host>:<port>/<virtual-host>.
         :type url: str
@@ -859,7 +859,7 @@ class Connection(BaseConnection):
     An AMQP channel object.
     """
 
-    def __init__(self, url=DEFAULT_URL):
+    def __init__(self, url=None):
         BaseConnection.__init__(self, url)
         adapter = Adapter.find(url)
         self._impl = adapter.Connection(url)
@@ -914,7 +914,6 @@ class SharedConnection(type):
             return d
 
     def __call__(cls, url):
-        url = str(url)
         try:
             return cls.connections[url]
         except KeyError:
@@ -942,7 +941,7 @@ class Cloud(object):
         :param broker: A broker.
         :type broker: Broker
         """
-        Cloud.nodes[broker.url] = broker
+        Cloud.nodes[broker.url.input] = broker
 
     @staticmethod
     def find(url):
@@ -953,12 +952,10 @@ class Cloud(object):
         :return: The found broker.
         :rtype: Broker
         """
-        if not isinstance(url, URL):
-            url = URL(url)
         try:
             return Cloud.nodes[url]
         except KeyError:
-            return Broker(url.input)
+            return Broker(url)
 
 
 class SSL(object):
@@ -998,13 +995,13 @@ class Broker(object):
     :type ssl: SSL
     """
 
-    def __init__(self, url=DEFAULT_URL):
+    def __init__(self, url=None):
         """
         :param url: The broker url:
             <adapter>+<scheme>://<userid:password@<host>:<port>/<virtual-host>.
         :type url: str
         """
-        self.url = URL(url)
+        self.url = URL(url or DEFAULT_URL)
         self.ssl = SSL()
 
     @property

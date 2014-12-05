@@ -86,15 +86,15 @@ class Connection(BaseConnection):
             return
         while True:
             try:
-                log.info('connecting: %s', self)
                 broker = Cloud.find(self.url)
+                log.info('connecting: %s', broker)
                 self._impl = RealConnection(
                     host=':'.join((broker.host, str(broker.port))),
                     virtual_host=broker.virtual_host or VIRTUAL_HOST,
                     ssl=self._ssl(broker),
                     userid=broker.userid or USERID,
                     password=broker.password or PASSWORD)
-                log.info('connected: %s', self.url)
+                log.info('connected: %s', broker)
                 break
             except CONNECTION_EXCEPTIONS:
                 log.exception(str(self.url))

@@ -73,7 +73,7 @@ class Connection(BaseConnection):
         broker = Cloud.find(self.url)
         ssl = broker.ssl
         Connection.add_transports()
-        log.info('connecting: %s', self)
+        log.info('connecting: %s', broker)
         self._impl = RealConnection(
             host=broker.host,
             port=broker.port,
@@ -87,7 +87,7 @@ class Connection(BaseConnection):
             ssl_certfile=ssl.client_certificate,
             ssl_skip_hostname_check=(not ssl.host_validation))
         self._impl.attach()
-        log.info('connected: %s', self.url)
+        log.info('connected: %s', broker)
 
     def channel(self):
         """

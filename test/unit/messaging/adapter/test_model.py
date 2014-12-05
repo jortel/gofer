@@ -966,7 +966,7 @@ class TestCloud(TestCase):
     @patch('gofer.messaging.adapter.model.Cloud.nodes', {})
     def test_add(self):
         url = TEST_URL
-        broker = Mock(url=url)
+        broker = Mock(url=URL(url))
         Cloud.add(broker)
         self.assertEqual(Cloud.nodes[url], broker)
 

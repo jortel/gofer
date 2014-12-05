@@ -29,10 +29,10 @@ if __name__ == '__main__':
     loader = Loader()
     loader.load(PATH)
     # AMQP-0-8
-    adapter = loader.adapters['amqp-0-8']
+    adapter = loader.catalog['amqp-0-8']
     test = Test(URL, adapter)
     test()
     # amqplib
-    adapter = loader.adapters['amqplib']
+    adapter = loader.catalog['amqplib']
     test = Test(URL, adapter)
     test()

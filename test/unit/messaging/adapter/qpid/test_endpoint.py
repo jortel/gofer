@@ -189,8 +189,3 @@ class TestEndpoint(TestCase):
 
         # validation
         channel.close.assert_called_once_with()
-
-    def test_str(self):
-        endpoint = Endpoint('test-url')
-        endpoint.uuid = 'test-uuid'
-        self.assertEqual(str(endpoint), 'Endpoint id:test-uuid broker @ test-url')
