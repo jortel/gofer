@@ -941,14 +941,14 @@ class Cloud(object):
         :param broker: A broker.
         :type broker: Broker
         """
-        Cloud.nodes[broker.url.input] = broker
+        Cloud.nodes[str(broker.url)] = broker
 
     @staticmethod
     def find(url):
         """
         Find a broker by URL.
         :param url: A broker URL.
-        :type url: str|URL
+        :type url: str
         :return: The found broker.
         :rtype: Broker
         """
