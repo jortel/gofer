@@ -21,7 +21,7 @@ from logging import getLogger
 
 from gofer.common import Options
 from gofer.messaging import Destination
-from gofer.rmi.stub import Stub
+from gofer.rmi.stub import Builder
 from gofer.rmi.window import Window
 
 
@@ -76,7 +76,8 @@ class Container:
         :return: A stub object.
         :rtype: Stub
         """
-        return Stub.stub(
+        builder = Builder()
+        return builder(
             name,
             self.__url,
             self.__destination(),
