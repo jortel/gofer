@@ -30,7 +30,14 @@ VERSION = '0.5'
 # --- exceptions -------------------------------------------------------------
 
 
-class InvalidDocument(Exception):
+class ModelError(Exception):
+    """
+    Base for all messaging model exceptions.
+    """
+    pass
+
+
+class InvalidDocument(ModelError):
     """
     Base for all message/document validation.
     """

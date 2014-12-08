@@ -18,6 +18,7 @@ from gofer.messaging.adapter.factory import Loader, REQUIRED
 from gofer.messaging.adapter.factory import Adapter
 from gofer.messaging.adapter.factory import AdapterError, AdapterNotFound, NoAdaptersLoaded
 from gofer.messaging.adapter.url import URL
+from gofer.messaging.model import ModelError
 
 
 class TestDescriptor(object):
@@ -30,7 +31,7 @@ class TestDescriptor(object):
 class TestExceptions(TestCase):
 
     def test_adapter_error(self):
-        self.assertTrue(isinstance(AdapterError(), Exception))
+        self.assertTrue(isinstance(AdapterError(), ModelError))
 
     def test_no_adapters_loaded(self):
         exception = NoAdaptersLoaded()

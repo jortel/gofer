@@ -32,3 +32,4 @@ from gofer.messaging.adapter.model import \
     Reader, \
     Producer, \
     PlainProducer
+

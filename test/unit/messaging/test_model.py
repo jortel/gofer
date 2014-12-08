@@ -12,10 +12,14 @@
 from unittest import TestCase
 
 from gofer.messaging.model import VERSION, Document, validate
-from gofer.messaging.model import InvalidDocument, InvalidVersion
+from gofer.messaging.model import ModelError, InvalidDocument, InvalidVersion
 
 
 class TestExceptions(TestCase):
+
+    def test_model_error(self):
+        exception = ModelError()
+        self.assertTrue(isinstance(exception, Exception))
 
     def test_invalid_document(self):
         code = '1'
@@ -31,6 +35,7 @@ class TestExceptions(TestCase):
         self.assertEqual(exception.args, ('2 : 4',))
         self.assertEqual(exception.document, document)
         self.assertEqual(exception.details, details)
+        self.assertTrue(isinstance(exception, ModelError))
 
     def test_invalid_version(self):
         document = Document(version='1.0')
@@ -44,6 +49,7 @@ class TestExceptions(TestCase):
         self.assertEqual(exception.args, ('%s : 4' % InvalidVersion.DESCRIPTION,))
         self.assertEqual(exception.document, document.dump())
         self.assertEqual(exception.details, details)
+        self.assertTrue(isinstance(exception, ModelError))
 
 
 class TestValidate(TestCase):

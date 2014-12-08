@@ -17,6 +17,7 @@ import logging
 
 from gofer.config import get_bool
 
+from gofer.messaging.model import ModelError
 from gofer.messaging.adapter.descriptor import Descriptor
 from gofer.messaging.adapter.url import URL
 
@@ -42,7 +43,7 @@ REQUIRED = [
 # --- exceptions -------------------------------------------------------------
 
 
-class AdapterError(Exception):
+class AdapterError(ModelError):
     pass
 
 

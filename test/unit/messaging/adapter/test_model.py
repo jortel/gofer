@@ -30,7 +30,7 @@ from gofer.messaging.adapter.model import BaseProducer, Producer
 from gofer.messaging.adapter.model import BasePlainProducer, PlainProducer
 from gofer.messaging.adapter.model import Broker, SSL, Cloud
 from gofer.messaging.adapter.model import BaseConnection, Connection, SharedConnection
-from gofer.messaging.adapter.model import Ack
+from gofer.messaging.adapter.model import Ack, model, ModelError
 
 
 TEST_URL = 'qpid+amqp://elmer:fudd@test.com/test'
@@ -46,6 +46,27 @@ class FakeConnection(object):
 
     def __init__(self, url):
         self.url = url
+
+
+class TestModelDecorator(TestCase):
+
+    def test_call(self):
+        fn = Mock()
+        _fn = model(fn)
+        args = [1, 2, 3]
+        keywords = dict(a=1, b=2)
+        _fn(*args, **keywords)
+        fn.assert_called_once_with(*args, **keywords)
+
+    def test_raised_model_error(self):
+        fn = Mock(side_effect=ModelError)
+        _fn = model(fn)
+        self.assertRaises(ModelError, _fn)
+
+    def test_raised_other(self):
+        fn = Mock(side_effect=ValueError)
+        _fn = model(fn)
+        self.assertRaises(ModelError, _fn)
 
 
 class TestDestination(TestCase):

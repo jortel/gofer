@@ -20,6 +20,7 @@ from uuid import uuid4
 
 from gofer.messaging.adapter.url import URL
 from gofer.messaging.adapter.factory import Adapter
+from gofer.messaging.model import ModelError
 
 # routing key
 ROUTE_ALL = '#'
@@ -32,6 +33,17 @@ DEFAULT_URL = 'amqp://localhost'
 
 
 log = getLogger(__name__)
+
+
+def model(fn):
+    def dfn(*args, **keywords):
+        try:
+            return fn(*args, **keywords)
+        except ModelError:
+            raise
+        except Exception, e:
+            raise ModelError(e)
+    return dfn
 
 
 class Destination(object):
@@ -156,11 +168,13 @@ class Exchange(BaseExchange):
         """
         BaseExchange.__init__(self, name, policy)
 
+    @model
     def declare(self, url=None):
         """
         Declare the node.
         :param url: The broker URL.
         :type url: str
+        :raise: ModelError
         """
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name, policy=self.policy)
@@ -168,11 +182,13 @@ class Exchange(BaseExchange):
         impl.auto_delete = self.auto_delete
         impl.declare(url)
 
+    @model
     def delete(self, url=None):
         """
         Delete the node.
         :param url: The broker URL.
         :type url: str
+        :raise: ModelError
         """
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name)
@@ -241,11 +257,13 @@ class Queue(BaseQueue):
         """
         BaseQueue.__init__(self, name, exchange, routing_key)
 
+    @model
     def declare(self, url=None):
         """
         Declare the node.
         :param url: The broker URL.
         :type url: str
+        :raise: ModelError
         """
         adapter = Adapter.find(url)
         impl = adapter.Queue(self.name, self.exchange, self.routing_key)
@@ -254,11 +272,13 @@ class Queue(BaseQueue):
         impl.exclusive = self.exclusive
         impl.declare(url)
 
+    @model
     def delete(self, url=None):
         """
         Delete the node.
         :param url: The broker URL.
         :type url: str
+        :raise: ModelError
         """
         adapter = Adapter.find(url)
         impl = adapter.Queue(self.name)
@@ -491,52 +511,65 @@ class Reader(BaseReader):
         adapter = Adapter.find(url)
         self._impl = adapter.Reader(queue, url)
 
+    @model
     def channel(self):
         """
         Get a channel for the open connection.
         :return: An open channel.
+        :raise: ModelError
         """
         return self._impl.channel()
 
+    @model
     def open(self):
         """
         Open the reader.
+        :raise: ModelError
         """
         self._impl.open()
 
+    @model
     def ack(self, message):
         """
         Ack the specified message.
         :param message: The message to acknowledge.
+        :raise: ModelError
         """
         self._impl.ack(message)
 
+    @model
     def reject(self, message, requeue=True):
         """
         Reject the specified message.
         :param message: The message to reject.
         :param requeue: Requeue the message or discard it.
         :type requeue: bool
+        :raise: ModelError
         """
         self._impl.reject(message, requeue)
 
+    @model
     def close(self, hard=False):
         """
         Close the reader.
         :param hard: Force the connection closed.
         :type hard: bool
+        :raise: ModelError
         """
         self._impl.close(hard)
 
+    @model
     def get(self, timeout=None):
         """
         Get the next message.
         :param timeout: The read timeout.
         :type timeout: int
         :return: The next message, or (None).
+        :raise: ModelError
         """
         return self._impl.get(timeout)
 
+    @model
     def next(self, timeout=90):
         """
         Get the next document from the queue.
@@ -544,11 +577,13 @@ class Reader(BaseReader):
         :type timeout: int
         :return: A tuple of: (document, ack())
         :rtype: (Document, callable)
-        :raises: model.InvalidDocument
+        :raise: model.InvalidDocument
+        :raise: ModelError
         """
         self._impl.authenticator = self.authenticator
         return self._impl.next(timeout)
 
+    @model
     def search(self, sn, timeout=90):
         """
         Search the reply queue for the document with the matching serial #.
@@ -558,6 +593,7 @@ class Reader(BaseReader):
         :type timeout: int
         :return: The next document.
         :rtype: Document
+        :raise: ModelError
         """
         log.debug('searching for: sn=%s', sn)
         while True:
@@ -622,43 +658,54 @@ class Producer(BaseProducer):
         adapter = Adapter.find(url)
         self._impl = adapter.Producer(url)
 
+    @model
     def channel(self):
         """
         Get a channel for the open connection.
         :return: An open channel.
+        :raise: ModelError
         """
         return self._impl.channel()
 
+    @model
     def open(self):
         """
         Open the producer.
+        :raise: ModelError
         """
         self._impl.open()
 
+    @model
     def ack(self, message):
         """
         Ack the specified message.
         :param message: The message to acknowledge.
+        :raise: ModelError
         """
         self._impl.ack(message)
 
+    @model
     def reject(self, message, requeue=True):
         """
         Reject the specified message.
         :param message: The message to reject.
         :param requeue: Requeue the message or discard it.
         :type requeue: bool
+        :raise: ModelError
         """
         self._impl.reject(message, requeue)
 
+    @model
     def close(self, hard=False):
         """
         Close the producer.
         :param hard: Force the connection closed.
         :type hard: bool
+        :raise: ModelError
         """
         self._impl.close(hard)
 
+    @model
     def send(self, destination, ttl=None, **body):
         """
         Send a message.
@@ -669,10 +716,12 @@ class Producer(BaseProducer):
         :keyword body: document body.
         :return: The message serial number.
         :rtype: str
+        :raise: ModelError
         """
         self._impl.authenticator = self.authenticator
         return self._impl.send(destination, ttl, **body)
 
+    @model
     def broadcast(self, destinations, ttl=None, **body):
         """
         Broadcast a message to (N) queues.
@@ -683,6 +732,7 @@ class Producer(BaseProducer):
         :keyword body: document body.
         :return: A list of (addr,sn).
         :rtype: list
+        :raise: ModelError
         """
         self._impl.authenticator = self.authenticator
         return self._impl.broadcast(destinations, ttl, **body)
@@ -730,43 +780,54 @@ class PlainProducer(BasePlainProducer):
         adapter = Adapter.find(url)
         self._impl = adapter.PlainProducer(url)
 
+    @model
     def channel(self):
         """
         Get a channel for the open connection.
         :return: An open channel.
+        :raise: ModelError
         """
         return self._impl.channel()
 
+    @model
     def open(self):
         """
         Open the producer.
+        :raise: ModelError
         """
         self._impl.open()
 
+    @model
     def ack(self, message):
         """
         Ack the specified message.
         :param message: The message to acknowledge.
+        :raise: ModelError
         """
         self._impl.ack(message)
 
+    @model
     def reject(self, message, requeue=True):
         """
         Reject the specified message.
         :param message: The message to reject.
         :param requeue: Requeue the message or discard it.
         :type requeue: bool
+        :raise: ModelError
         """
         self._impl.reject(message, requeue)
 
+    @model
     def close(self, hard=False):
         """
         Close the producer.
         :param hard: Force the connection closed.
         :type hard: bool
+        :raise: ModelError
         """
         self._impl.close(hard)
 
+    @model
     def send(self, destination, content, ttl=None):
         """
         Send a message.
@@ -776,10 +837,12 @@ class PlainProducer(BasePlainProducer):
         :type content: buf
         :param ttl: Time to Live (seconds)
         :type ttl: float
+        :raise: ModelError
         """
         self._impl.authenticator = self.authenticator
         return self._impl.send(destination, content, ttl)
 
+    @model
     def broadcast(self, destinations, content, ttl=None):
         """
         Broadcast a message to (N) queues.
@@ -787,6 +850,7 @@ class PlainProducer(BasePlainProducer):
         :type destinations: [gofer.messaging.adapter.node.Node,..]
         :param content: The message content
         :type content: buf
+        :raise: ModelError
         """
         self._impl.authenticator = self.authenticator
         return self._impl.broadcast(destinations, content, ttl)
@@ -868,24 +932,30 @@ class Connection(BaseConnection):
         """
         return self._impl.is_open()
 
+    @model
     def open(self):
         """
         Open the connection.
+        :raise: ModelError
         """
         self._impl.open()
 
+    @model
     def channel(self):
         """
         Open a channel.
         :return The *real* channel.
+        :raise: ModelError
         """
         return self._impl.channel()
 
+    @model
     def close(self, hard=False):
         """
         Close the connection.
         :param hard: Force the connection closed.
         :type hard: bool
+        :raise: ModelError
         """
         self._impl.close(hard)
 

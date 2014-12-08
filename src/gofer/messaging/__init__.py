@@ -11,6 +11,7 @@
 
 from gofer.messaging.model import \
     Document, \
+    ModelError, \
     InvalidDocument, \
     InvalidVersion
 
