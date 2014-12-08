@@ -19,7 +19,6 @@ Provides AMQP message consumer classes.
 """
 
 from time import sleep
-from threading import RLock
 from logging import getLogger
 
 from qpid.messaging import Empty
@@ -54,10 +53,8 @@ def subject(message):
 class Reader(BaseReader):
     """
     An AMQP message reader.
-    :ivar __opened: Indicates that open() has been called.
-    :type __opened: bool
-    :ivar __receiver: An AMQP receiver to read.
-    :type __receiver: qpid.messaging.Receiver
+    :ivar _receiver: An AMQP receiver to read.
+    :type _receiver: qpid.messaging.Receiver
     """
     
     def __init__(self, queue, url=None):
@@ -70,9 +67,7 @@ class Reader(BaseReader):
         """
         BaseReader.__init__(self, queue, url)
         self.queue = queue
-        self.__opened = False
-        self.__receiver = None
-        self.__mutex = RLock()
+        self._receiver = None
         self._endpoint = Endpoint(url)
 
     def endpoint(self):
@@ -87,31 +82,24 @@ class Reader(BaseReader):
         """
         Open the reader.
         """
+        if self.is_open():
+            # already open
+            return
         BaseReader.open(self)
-        self.__lock()
-        try:
-            if self.__opened:
-                return
-            session = self.channel()
-            self.__receiver = session.receiver(self.queue.name)
-            self.__opened = True
-        finally:
-            self.__unlock()
+        channel = self.channel()
+        self._receiver = channel.receiver(self.queue.name)
     
-    def close(self):
+    def close(self, hard=False):
         """
         Close the reader.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
-        self.__lock()
-        try:
-            if not self.__opened:
-                return
-            self.__receiver.close()
-            self.__receiver = None
-            self.__opened = False
-        finally:
-            self.__unlock()
-        BaseReader.close(self)
+        if not self.is_open():
+            # not open
+            return
+        self._receiver.close()
+        BaseReader.close(self, hard)
 
     def get(self, timeout=None):
         """
@@ -122,8 +110,7 @@ class Reader(BaseReader):
         :rtype: qpid.messaging.Message
         """
         try:
-            self.open()
-            return self.__receiver.fetch(timeout=timeout)
+            return self._receiver.fetch(timeout=timeout)
         except Empty:
             pass
         except Exception:
@@ -152,9 +139,3 @@ class Reader(BaseReader):
             log.debug('read next: %s', document)
             return document, Ack(self, message)
         return None, None
-
-    def __lock(self):
-        self.__mutex.acquire()
-
-    def __unlock(self):
-        self.__mutex.release()

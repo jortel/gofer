@@ -13,12 +13,11 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-from threading import local as Local
 from logging import getLogger
+from threading import local as Local
 
 from uuid import uuid4
 
-from gofer import Singleton
 from gofer.messaging.adapter.url import URL
 from gofer.messaging.adapter.factory import Adapter
 
@@ -159,7 +158,7 @@ class Exchange(BaseExchange):
         """
         BaseExchange.__init__(self, name, policy)
 
-    def declare(self, url=DEFAULT_URL):
+    def declare(self, url=None):
         """
         Declare the node.
         :param url: The broker URL.
@@ -171,7 +170,7 @@ class Exchange(BaseExchange):
         impl.auto_delete = self.auto_delete
         impl.declare(url)
 
-    def delete(self, url=DEFAULT_URL):
+    def delete(self, url=None):
         """
         Delete the node.
         :param url: The broker URL.
@@ -244,7 +243,7 @@ class Queue(BaseQueue):
         """
         BaseQueue.__init__(self, name, exchange, routing_key)
 
-    def declare(self, url=DEFAULT_URL):
+    def declare(self, url=None):
         """
         Declare the node.
         :param url: The broker URL.
@@ -313,6 +312,14 @@ class BaseEndpoint(object):
         """
         return self.uuid
 
+    def is_open(self):
+        """
+        Get whether the endpoint has been opened.
+        :return: True if open.
+        :rtype bool
+        """
+        raise NotImplementedError()
+
     def channel(self):
         """
         Get a channel for the open connection.
@@ -342,9 +349,11 @@ class BaseEndpoint(object):
         """
         raise NotImplementedError()
 
-    def close(self):
+    def close(self, hard=False):
         """
         Close the endpoint.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
         raise NotImplementedError()
 
@@ -371,6 +380,14 @@ class Messenger(BaseEndpoint):
         :rtype: BaseEndpoint
         """
         raise NotImplementedError()
+
+    def is_open(self):
+        """
+        Get whether the messenger has been opened.
+        :return: True if open.
+        :rtype bool
+        """
+        return self.endpoint().is_open()
 
     def channel(self):
         """
@@ -401,11 +418,13 @@ class Messenger(BaseEndpoint):
         """
         self.endpoint().reject(message, requeue)
 
-    def close(self):
+    def close(self, hard=False):
         """
-        Close the endpoint.
+        Close the messenger.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
-        self.endpoint().close()
+        self.endpoint().close(hard)
 
 
 # --- reader -----------------------------------------------------------------
@@ -464,7 +483,7 @@ class Reader(BaseReader):
     An AMQP message reader.
     """
 
-    def __init__(self, queue, url=DEFAULT_URL):
+    def __init__(self, queue, url=None):
         """
         :param queue: The queue to consumer.
         :type queue: gofer.messaging.adapter.model.BaseQueue
@@ -505,11 +524,13 @@ class Reader(BaseReader):
         """
         self._impl.reject(message, requeue)
 
-    def close(self):
+    def close(self, hard=False):
         """
         Close the reader.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
-        self._impl.close()
+        self._impl.close(hard)
 
     def get(self, timeout=None):
         """
@@ -596,7 +617,7 @@ class Producer(BaseProducer):
     An AMQP (message producer.
     """
 
-    def __init__(self, url=DEFAULT_URL):
+    def __init__(self, url=None):
         """
         :param url: The broker url.
         :type url: str
@@ -634,11 +655,13 @@ class Producer(BaseProducer):
         """
         self._impl.reject(message, requeue)
 
-    def close(self):
+    def close(self, hard=False):
         """
         Close the producer.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
-        self._impl.close()
+        self._impl.close(hard)
 
     def send(self, destination, ttl=None, **body):
         """
@@ -702,7 +725,7 @@ class PlainProducer(BasePlainProducer):
     An plain AMQP message producer.
     """
 
-    def __init__(self, url=DEFAULT_URL):
+    def __init__(self, url=None):
         """
         :param url: The broker url <adapter>://<user>:<pass>@<host>:<port>/<virtual-host>.
         :type url: str
@@ -740,11 +763,13 @@ class PlainProducer(BasePlainProducer):
         """
         self._impl.reject(message, requeue)
 
-    def close(self):
+    def close(self, hard=False):
         """
         Close the producer.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
-        self._impl.close()
+        self._impl.close(hard)
 
     def send(self, destination, content, ttl=None):
         """
@@ -771,88 +796,213 @@ class PlainProducer(BasePlainProducer):
         return self._impl.broadcast(destinations, content, ttl)
 
 
-# --- broker -----------------------------------------------------------------
+# --- connection -------------------------------------------------------------
 
 
-class BrokerSingleton(Singleton):
+class BaseConnection(object):
     """
-    Broker MetaClass.
-    Singleton by simple url.
+    Base AMQP connection.
+    :ivar url: A broker URL.
+    :type url: str
     """
-
-    @staticmethod
-    def key(t, d):
-        url = t[0]
-        if isinstance(url, (str, URL)):
-            return str(url)
-        else:
-            raise ValueError('url must be: str|URL')
-
-    def __call__(cls, *args, **kwargs):
-        if not args:
-            args = (DEFAULT_URL,)
-        return Singleton.__call__(cls, *args, **kwargs)
-
-
-class BaseBroker(object):
-    """
-    Represents an AMQP broker.
-    :ivar connection: A thread local containing an open connection.
-    :type connection: Local
-    :ivar url: The broker's url.
-    :type url: URL
-    :ivar cacert: Path to a PEM encoded file containing
-        the CA certificate used to validate the server certificate.
-    :type cacert: str
-    :ivar clientkey: Path to a PEM encoded file containing
-        the private key used for client authentication.
-    :type clientkey: str
-    :ivar clientcert: Path to a PEM encoded file containing
-        the certificate used for client authentication.  This file may also contain the
-        PEM encoded private key.
-    :type clientcert: str
-    :ivar host_validation: Enable SSL host validation.
-    :type host_validation: bool
-    """
-
-    __metaclass__ = BrokerSingleton
 
     def __init__(self, url):
         """
-        :param url: The broker url:
-            <adapter>+<scheme>://<userid:password@<host>:<port>/<virtual-host>.
-        :type url: str|URL
+        :param url: A broker URL.
+        :type url: str
+        :see: URL
         """
-        if not isinstance(url, URL):
-            url = URL(url)
         self.url = url
-        self.connection = Local()
-        self.cacert = None
-        self.clientkey = None
-        self.clientcert = None
-        self.host_validation = False
 
-    def connect(self):
+    def is_open(self):
         """
-        Connect to the broker.
-        :return: The AMQP connection object.
+        Get whether the connection has been opened.
+        :return: True if open.
+        :rtype bool
         """
         raise NotImplementedError()
 
-    def close(self):
+    def open(self):
         """
-        Close the connection to the broker.
+        Open a connection.
         """
         raise NotImplementedError()
+
+    def channel(self):
+        """
+        Open a channel.
+        :return: The open channel.
+        """
+        raise NotImplementedError()
+
+    def close(self, hard=False):
+        """
+        Close the connection.
+        :param hard: Force the connection closed.
+        :type hard: bool
+        """
+        raise NotImplementedError()
+
+    def __str__(self):
+        return str(self.url)
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, *unused):
+        self.close()
+
+
+class Connection(BaseConnection):
+    """
+    An AMQP channel object.
+    """
+
+    def __init__(self, url=None):
+        BaseConnection.__init__(self, url)
+        adapter = Adapter.find(url)
+        self._impl = adapter.Connection(url)
+
+    def is_open(self):
+        """
+        Get whether the connection has been opened.
+        :return: True if open.
+        :rtype bool
+        """
+        return self._impl.is_open()
+
+    def open(self):
+        """
+        Open the connection.
+        """
+        self._impl.open()
+
+    def channel(self):
+        """
+        Open a channel.
+        :return The *real* channel.
+        """
+        return self._impl.channel()
+
+    def close(self, hard=False):
+        """
+        Close the connection.
+        :param hard: Force the connection closed.
+        :type hard: bool
+        """
+        self._impl.close(hard)
+
+
+class SharedConnection(type):
+    """
+    Thread local shared connection metaclass.
+    Usage: __metaclass__ = SharedConnection
+    """
+
+    def __init__(cls, what, bases, _dict):
+        super(SharedConnection, cls).__init__(what, bases, _dict)
+        cls.local = Local()
 
     @property
-    def id(self):
+    def connections(self):
+        try:
+            return self.local.d
+        except AttributeError:
+            d = {}
+            self.local.d = d
+            return d
+
+    def __call__(cls, url):
+        try:
+            return cls.connections[url]
+        except KeyError:
+            inst = super(SharedConnection, cls).__call__(url)
+            cls.connections[url] = inst
+            return inst
+
+
+# --- cloud|broker -----------------------------------------------------------
+
+
+class Cloud(object):
+    """
+    A collection of AMQP brokers.
+    :cvar nodes: Brokers by URL.
+    :type nodes: dict
+    """
+
+    nodes = {}
+
+    @staticmethod
+    def add(broker):
         """
-        Get the broker identity.
-        :return: The broker ID which is defined by the URL.
-        :rtype: str
+        Add a broker.
+        :param broker: A broker.
+        :type broker: Broker
         """
-        return self.url.simple()
+        Cloud.nodes[str(broker.url)] = broker
+
+    @staticmethod
+    def find(url):
+        """
+        Find a broker by URL.
+        :param url: A broker URL.
+        :type url: str
+        :return: The found broker.
+        :rtype: Broker
+        """
+        try:
+            return Cloud.nodes[url]
+        except KeyError:
+            return Broker(url)
+
+
+class SSL(object):
+    """
+    SSL configuration.
+    :ivar ca_certificate: The absolute path to a CA certificate.
+    :type ca_certificate: str
+    :ivar client_key: The absolute path to a client key.
+    :type client_key: str
+    :ivar client_certificate: The absolute path to a client certificate.
+    :type client_certificate: str
+    :ivar host_validation: Do SSL host validation.
+    :type host_validation: bool
+    """
+
+    def __init__(self):
+        self.ca_certificate = None
+        self.client_key = None
+        self.client_certificate = None
+        self.host_validation = False
+
+    def __str__(self):
+        s = list()
+        s.append('ca: %s' % self.ca_certificate)
+        s.append('key: %s' % self.client_key)
+        s.append('certificate: %s' % self.client_certificate)
+        s.append('host-validation: %s' % self.host_validation)
+        return '|'.join(s)
+
+
+class Broker(object):
+    """
+    Represents an AMQP broker.
+    :ivar url: The broker's url.
+    :type url: URL
+    :ivar ssl: The SSL configuration.
+    :type ssl: SSL
+    """
+
+    def __init__(self, url=None):
+        """
+        :param url: The broker url:
+            <adapter>+<scheme>://<userid:password@<host>:<port>/<virtual-host>.
+        :type url: str
+        """
+        self.url = URL(url or DEFAULT_URL)
+        self.ssl = SSL()
 
     @property
     def adapter(self):
@@ -919,59 +1069,43 @@ class BaseBroker(object):
 
     def __str__(self):
         s = list()
-        s.append('url=%s' % self.url)
-        s.append('cacert=%s' % self.cacert)
-        s.append('clientkey=%s' % self.clientkey)
-        s.append('clientcert=%s' % self.clientcert)
-        s.append('host-validation=%s' % self.host_validation)
+        s.append('URL: %s' % self.url)
+        s.append('SSL: %s' % self.ssl)
         return '|'.join(s)
 
 
-class Broker(BaseBroker):
-    """
-    Represents an AMQP broker.
-    """
-
-    def __init__(self, url=DEFAULT_URL):
-        """
-        :param url: The broker url:
-            <adapter>+<scheme>://<userid:password@<host>:<port>/<virtual-host>.
-        :type url: str|URL
-        """
-        BaseBroker.__init__(self, url)
-        adapter = Adapter.find(url)
-        self._impl = adapter.Broker(url)
-
-    def connect(self):
-        """
-        Connect to the broker.
-        """
-        self._impl.cacert = self.cacert
-        self._impl.clientkey = self.clientkey
-        self._impl.clientcert = self.clientcert
-        self._impl.host_validation = self.host_validation
-        self._impl.connect()
-
-    def close(self):
-        """
-        Close the connection to the broker.
-        """
-        self._impl.close()
-        
-        
 # --- ACK --------------------------------------------------------------------
 
 
 class Ack:
+    """
+    Message acknowledgment.
+    :ivar endpoint: An AMQP endpoint.
+    :type endpoint: BaseEndpoint
+    :ivar message: A received message.
+    """
 
     def __init__(self, endpoint, message):
+        """
+        :param endpoint: An AMQP endpoint.
+        :type endpoint: BaseEndpoint
+        :param message: A received message.
+        """
         self.endpoint = endpoint
         self.message = message
 
     def accept(self):
+        """
+        Accept the message.
+        """
         self.endpoint.ack(self.message)
 
     def reject(self, requeue=True):
+        """
+        Reject the message.
+        :param requeue: Requeue the rejected message.
+        :type requeue: bool
+        """
         self.endpoint.reject(self.message, requeue)
 
     def __call__(self):

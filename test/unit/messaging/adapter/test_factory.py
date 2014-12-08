@@ -51,7 +51,8 @@ class TestLoader(TestCase):
 
     def test_construction(self):
         ldr = Loader()
-        self.assertEqual(ldr.adapters, {})
+        self.assertEqual(ldr.list, [])
+        self.assertEqual(ldr.catalog, {})
 
     @patch('__builtin__.__import__')
     @patch('gofer.messaging.adapter.descriptor.Descriptor.load')
@@ -68,27 +69,31 @@ class TestLoader(TestCase):
         _load.return_value = [p[0] for p in adapters]
         _import.side_effect = [p[1] for p in adapters if get_bool(p[0].main.enabled)]
 
-        loaded = Loader._load(Loader.PATH)
+        _list, catalog = Loader._load(Loader.PATH)
         self.assertEqual(_import.call_args_list, self._import_calls(adapters))
-        self.assertEqual(loaded, self._load(adapters))
+        self.assertEqual(_list, self._load(adapters)[0])
+        self.assertEqual(catalog, self._load(adapters)[1])
 
     @patch('gofer.messaging.adapter.factory.Loader._load')
     def test_load(self, _load):
-        adapters = Mock()
-        _load.return_value = adapters
+        _load.return_value = ([], {})
         ldr = Loader()
-        loaded = ldr.load()
+        _list, catalog = ldr.load()
         _load.assert_called_with(Loader.PATH)
-        self.assertEqual(loaded, adapters)
+        self.assertEqual(_list, _load.return_value[0])
+        self.assertEqual(catalog, _load.return_value[1])
+        self.assertEqual(ldr.list, _load.return_value[0])
+        self.assertEqual(ldr.catalog, _load.return_value[1])
 
     @patch('gofer.messaging.adapter.factory.Loader._load')
     def test_already_loaded(self, _load):
-        adapters = {'A': 1}
         ldr = Loader()
-        ldr.adapters = adapters
-        loaded = ldr.load()
+        ldr.list = [1, 2]
+        ldr.catalog = {'A': 1, 'B': 2}
+        _list, catalog = ldr.load()
         self.assertFalse(_load.called)
-        self.assertEqual(loaded, adapters)
+        self.assertEqual(_list, ldr.list)
+        self.assertEqual(catalog, ldr.catalog)
 
     def _import_calls(self, adapters):
         calls = []
@@ -107,59 +112,65 @@ class TestLoader(TestCase):
         return False
 
     def _load(self, adapters):
-        loaded = {}
+        _list = []
+        catalog = {}
         for p in adapters:
             if self._skip(p):
                 continue
-            loaded[p[0].main.package] = p[1]
-            loaded[p[1].__name__] = p[1]
+            _list.append(p[1])
+            catalog[p[0].main.package] = p[1]
+            catalog[p[1].__name__] = p[1]
             for capability in p[0].provides:
-                loaded[capability] = p[1]
-        return loaded
+                catalog[capability] = p[1]
+        return _list, catalog
 
 
 class AdapterTest(TestCase):
 
+    @patch('gofer.messaging.adapter.factory.Adapter.bindings', {})
     @patch('gofer.messaging.adapter.factory.Loader.load')
     def test_bind(self, _load):
         name = 'qpid'
         adapter = Mock()
         url = URL('redhat.com')
-        _load.return_value = {name: adapter}
+        _load.return_value = [adapter], {name: adapter}
 
         Adapter.bind(str(url), name)
 
         _load.assert_called_with()
-        self.assertEqual(Adapter.urls, {url.simple(): adapter})
+        self.assertEqual(Adapter.bindings, {url.simple(): adapter})
 
+    @patch('gofer.messaging.adapter.factory.Adapter.bindings', {})
     @patch('gofer.messaging.adapter.factory.Loader.load')
     def test_bind_not_found(self, _load):
-        _load.return_value = {'A': Mock()}
+        _load.return_value = [Mock()], {'A': Mock()}
         self.assertRaises(AdapterNotFound, Adapter.bind, '', '')
 
     @patch('gofer.messaging.adapter.factory.Loader.load')
     def test_bind_nothing_loaded(self, _load):
-        _load.return_value = {}
+        _load.return_value = [], {}
         self.assertRaises(NoAdaptersLoaded, Adapter.bind, '', '')
 
+    @patch('gofer.messaging.adapter.factory.Adapter.bindings', {})
     @patch('gofer.messaging.adapter.factory.Loader.load')
     def test_find(self, _load):
         name = 'A'
         url = '%s+http://redhat.com' % name
         adapter = Mock()
-        _load.return_value = {name: adapter}
+        _load.return_value = [adapter], {name: adapter}
 
         p = Adapter.find(url)
 
         _load.assert_called_with()
         self.assertEqual(p, adapter)
 
+    @patch('gofer.messaging.adapter.factory.Adapter.bindings', {})
     @patch('gofer.messaging.adapter.factory.Loader.load')
     def test_find_with_binding(self, _load):
         name = 'A'
         url = 'http://redhat.com'
         adapter = Mock()
-        _load.return_value = {name: adapter}
+        _load.return_value = [adapter], {name: adapter}
 
         Adapter.bind(url, name)
         p = Adapter.find(url)
@@ -167,18 +178,35 @@ class AdapterTest(TestCase):
         _load.assert_called_with()
         self.assertEqual(p, adapter)
 
+    @patch('gofer.messaging.adapter.factory.Adapter.bindings', {})
     @patch('gofer.messaging.adapter.factory.Loader.load')
     def test_find_not_matched(self, _load):
-        adapters = {
-            'C': Mock(),
-            'B': Mock(),
-            'A': Mock()
+        url = 'http://redhat.com'
+        _list = [1, 2, 3]
+        catalog = {
+            'C': _list[0],
+            'B': _list[1],
+            'A': _list[2]
         }
-        _load.return_value = adapters
-        p = Adapter.find('')
-        self.assertEqual(p, adapters['A'])
+        _load.return_value = _list, catalog
+        p = Adapter.find(url)
+        self.assertEqual(p, _list[0])
 
+    @patch('gofer.messaging.adapter.factory.Adapter.bindings', {})
+    @patch('gofer.messaging.adapter.factory.Loader.load')
+    def test_find_without_url(self, _load):
+        _list = [1, 2, 3]
+        catalog = {
+            'C': _list[0],
+            'B': _list[1],
+            'A': _list[2]
+        }
+        _load.return_value = _list, catalog
+        p = Adapter.find('')
+        self.assertEqual(p, _list[0])
+
+    @patch('gofer.messaging.adapter.factory.Adapter.bindings', {})
     @patch('gofer.messaging.adapter.factory.Loader.load')
     def test_find_nothing_loaded(self, _load):
-        _load.return_value = {}
+        _load.return_value = [], {}
         self.assertRaises(NoAdaptersLoaded, Adapter.find, '')

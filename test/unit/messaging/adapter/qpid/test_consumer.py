@@ -37,8 +37,7 @@ class Empty(Exception):
 class TestReader(TestCase):
 
     @patch('gofer.messaging.adapter.qpid.consumer.Endpoint')
-    @patch('gofer.messaging.adapter.qpid.consumer.RLock')
-    def test_init(self, rlock, endpoint):
+    def test_init(self, endpoint):
         queue = Mock()
         url = 'test-url'
 
@@ -50,89 +49,80 @@ class TestReader(TestCase):
         self.assertTrue(isinstance(reader, BaseReader))
         self.assertEqual(reader.url, url)
         self.assertEqual(reader.queue, queue)
-        self.assertFalse(reader._Reader__opened)
-        self.assertEqual(reader._Reader__receiver, None)
-        self.assertEqual(reader._Reader__mutex, rlock.return_value)
+        self.assertEqual(reader._receiver, None)
         self.assertEqual(reader._endpoint, endpoint.return_value)
 
     @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.qpid.consumer.RLock', Mock())
     def test_endpoint(self):
         reader = Reader(None)
         returned = reader.endpoint()
         self.assertEqual(returned, reader._endpoint)
 
     @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.qpid.consumer.RLock', Mock())
     @patch('gofer.messaging.adapter.qpid.consumer.BaseReader.open')
     def test_open(self, open):
         queue = Mock(name='test-queue')
-        session = Mock()
+        channel = Mock()
 
         # test
         reader = Reader(queue)
-        reader.channel = Mock(return_value=session)
+        reader.channel = Mock(return_value=channel)
+        reader.is_open = Mock(return_value=False)
         reader.open()
 
         # validation
         open.assert_called_once_with(reader)
-        session.receiver.assert_called_once_with(queue.name)
-        self.assertTrue(reader._Reader__opened)
-        self.assertEqual(reader._Reader__receiver, session.receiver.return_value)
-
+        channel.receiver.assert_called_once_with(queue.name)
+        self.assertEqual(reader._receiver, channel.receiver.return_value)
+        
     @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.qpid.consumer.RLock', Mock())
     @patch('gofer.messaging.adapter.qpid.consumer.BaseReader.open')
     def test_open_already(self, open):
         queue = Mock(name='test-queue')
-        session = Mock()
+        channel = Mock()
 
         # test
         reader = Reader(queue)
-        reader.channel = Mock(return_value=session)
-        reader._Reader__opened = True
+        reader.channel = Mock(return_value=channel)
+        reader.is_open = Mock(return_value=True)
         reader.open()
 
         # validation
-        self.assertTrue(open.called)
-        self.assertFalse(session.receiver.called)
+        self.assertFalse(open.called)
+        self.assertFalse(channel.receiver.called)
 
     @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.qpid.consumer.RLock', Mock())
     @patch('gofer.messaging.adapter.qpid.consumer.BaseReader.close')
     def test_close(self, close):
         receiver = Mock()
 
         # test
         reader = Reader(None)
-        reader._Reader__opened = True
-        reader._Reader__receiver = receiver
+        reader._receiver = receiver
+        reader.is_open = Mock(return_value=True)
         reader.close()
 
         # validation
         receiver.close.assert_called_once_with()
-        close.assert_called_once_with(reader)
-        self.assertFalse(reader._Reader__opened)
-        self.assertEqual(reader._Reader__receiver, None)
+        close.assert_called_once_with(reader, False)
 
     @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.qpid.consumer.RLock', Mock())
     @patch('gofer.messaging.adapter.qpid.consumer.BaseReader.close')
     def test_close_not_open(self, close):
         receiver = Mock()
 
         # test
         reader = Reader(None)
-        reader._Reader__opened = False
-        reader._Reader__receiver = receiver
+        reader._receiver = receiver
+        reader.is_open = Mock(return_value=False)
         reader.close()
 
         # validation
         self.assertFalse(receiver.close.called)
+        self.assertFalse(close.called)
 
     @patch('gofer.messaging.adapter.qpid.consumer.sleep')
     @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.qpid.consumer.RLock', Mock())
     def test_get(self, sleep):
         msg = Mock()
         receiver = Mock()
@@ -140,12 +130,11 @@ class TestReader(TestCase):
 
         # test
         reader = Reader(None)
-        reader._Reader__receiver = receiver
+        reader._receiver = receiver
         reader.open = Mock()
         message = reader.get(10)
 
         # validation
-        reader.open.assert_called_once_with()
         receiver.fetch.assert_called_once_with(timeout=10)
         self.assertEqual(msg, message)
         self.assertFalse(sleep.called)
@@ -153,7 +142,6 @@ class TestReader(TestCase):
     @patch('gofer.messaging.adapter.qpid.consumer.sleep')
     @patch('gofer.messaging.adapter.qpid.consumer.Empty', Empty)
     @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.qpid.consumer.RLock', Mock())
     def test_get_empty_raised(self, sleep):
         receiver = Mock()
         receiver.fetch.side_effect = Empty
@@ -161,7 +149,7 @@ class TestReader(TestCase):
         # test
         reader = Reader(None)
         reader.open = Mock()
-        reader._Reader__receiver = receiver
+        reader._receiver = receiver
         message = reader.get()
 
         # validation
@@ -170,7 +158,6 @@ class TestReader(TestCase):
 
     @patch('gofer.messaging.adapter.qpid.consumer.sleep')
     @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.qpid.consumer.RLock', Mock())
     def test_get_exception_raised(self, sleep):
         receiver = Mock()
         receiver.fetch.side_effect = Exception
@@ -178,7 +165,7 @@ class TestReader(TestCase):
         # test
         reader = Reader(None)
         reader.open = Mock()
-        reader._Reader__receiver = receiver
+        reader._receiver = receiver
         message = reader.get()
 
         # validation
@@ -190,7 +177,6 @@ class TestReader(TestCase):
     @patch('gofer.messaging.adapter.qpid.consumer.model')
     @patch('gofer.messaging.adapter.qpid.consumer.auth')
     @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.qpid.consumer.RLock', Mock())
     def test_next(self, auth, model, subject, ack):
         timeout = 10
         ttl = 55
@@ -220,7 +206,6 @@ class TestReader(TestCase):
     @patch('gofer.messaging.adapter.qpid.consumer.model.validate')
     @patch('gofer.messaging.adapter.qpid.consumer.auth')
     @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.qpid.consumer.RLock', Mock())
     def test_next_invalid_document(self, auth, validate, subject):
         message = Mock(ttl=0, content='test-content')
         subject.return_value = 'test-subject'
@@ -236,24 +221,9 @@ class TestReader(TestCase):
         reader.ack.assert_called_once_with(message)
 
     @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.qpid.consumer.RLock', Mock())
     def test_next_nothing(self):
         reader = Reader(None)
         reader.get = Mock(return_value=None)
         document, ack = reader.next()
         self.assertEqual(document, None)
         self.assertEqual(ack, None)
-
-    @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.qpid.consumer.RLock')
-    def test_lock(self, lock):
-        reader = Reader(None)
-        reader._Reader__lock()
-        lock.return_value.acquire.assert_called_once_with()
-
-    @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.qpid.consumer.RLock')
-    def test_unlock(self, lock):
-        reader = Reader(None)
-        reader._Reader__unlock()
-        lock.return_value.release.assert_called_once_with()

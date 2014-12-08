@@ -35,7 +35,7 @@ from gofer.config import Config, Graph, get_bool
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
 from gofer.collator import Module
-from gofer.messaging import Broker, Queue
+from gofer.messaging import Broker, Cloud, Queue
 
 
 log = getLogger(__name__)
@@ -229,13 +229,14 @@ class Plugin(object):
         plugin = self.descriptor
         url = self.get_url()
         broker = Broker(url)
-        broker.cacert = \
+        broker.ssl.ca_certificate = \
             plugin.messaging.cacert or agent.messaging.cacert
-        broker.clientcert = \
+        broker.ssl.client_certificate = \
             plugin.messaging.clientcert or agent.messaging.clientcert
-        broker.host_validation = \
+        broker.ssl.host_validation = \
             get_bool(plugin.messaging.host_validation or agent.messaging.host_validation)
-        log.debug('broker (qpid) configured: %s', broker)
+        Cloud.add(broker)
+        log.debug('broker configured: %s', broker)
         return broker
 
     def get_queue(self, name):

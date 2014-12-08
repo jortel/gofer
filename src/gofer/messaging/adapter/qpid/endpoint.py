@@ -16,16 +16,12 @@
 """
 AMQP endpoint base classes.
 """
-
-import atexit
-
-from threading import RLock
 from logging import getLogger
 
 from qpid.messaging import Disposition, RELEASED, REJECTED
 
 from gofer.messaging.adapter.model import BaseEndpoint
-from gofer.messaging.adapter.qpid.broker import Broker
+from gofer.messaging.adapter.qpid.connection import Connection
 
 
 log = getLogger(__name__)
@@ -34,10 +30,10 @@ log = getLogger(__name__)
 class Endpoint(BaseEndpoint):
     """
     Base class for an AMQP endpoint.
-    :ivar __mutex: The endpoint mutex.
-    :type __mutex: RLock
-    :ivar __session: An AMQP session.
-    :type __session: qpid.messaging.Session
+    :ivar _connection: An AMQP session.
+    :type _connection: qpid.messaging.Channel
+    :ivar _channel: An AMQP session.
+    :type _channel: qpid.messaging.Session
     """
 
     def __init__(self, url):
@@ -46,9 +42,27 @@ class Endpoint(BaseEndpoint):
         :type url: str
         """
         BaseEndpoint.__init__(self, url)
-        self.__mutex = RLock()
-        self.__session = None
-        atexit.register(self.close)
+        self._connection = None
+        self._channel = None
+
+    def is_open(self):
+        """
+        Get whether the endpoint has been opened.
+        :return: True if open.
+        :rtype bool
+        """
+        return self._channel or self._connection
+
+    def open(self):
+        """
+        Open and configure the endpoint.
+        """
+        if self.is_open():
+            # already open
+            return
+        self._connection = Connection(self.url)
+        self._connection.open()
+        self._channel = self._connection.channel()
 
     def channel(self):
         """
@@ -56,15 +70,7 @@ class Endpoint(BaseEndpoint):
         :return: An open session.
         :rtype: qpid.messaging.Session
         """
-        self._lock()
-        try:
-            if self.__session is None:
-                broker = Broker(self.url)
-                connection = broker.connect()
-                self.__session = connection.session()
-            return self.__session
-        finally:
-            self._unlock()
+        return self._channel
 
     def ack(self, message):
         """
@@ -72,7 +78,7 @@ class Endpoint(BaseEndpoint):
         :param message: The message to acknowledge.
         :type message: qpid.messaging.Message
         """
-        self.__session.acknowledge(message=message)
+        self._channel.acknowledge(message=message)
 
     def reject(self, message, requeue=True):
         """
@@ -86,45 +92,27 @@ class Endpoint(BaseEndpoint):
             disposition = Disposition(RELEASED)
         else:
             disposition = Disposition(REJECTED)
-        self.__session.acknowledge(message=message, disposition=disposition)
+        self._channel.acknowledge(message=message, disposition=disposition)
 
-    def open(self):
+    def close(self, hard=False):
         """
-        Open and configure the endpoint.
+        Close the endpoint.
+        :param hard: Force the connection closed.
+        :type hard: bool
         """
-        pass
+        if not self.is_open():
+            # not open
+            return
+        self._close_channel()
+        self._connection.close(hard)
+        self._connection = None
+        self._channel = None
 
-    def close(self):
+    def _close_channel(self):
         """
-        Close (shutdown) the endpoint.
+        Safely close the channel.
         """
-        self._lock()
         try:
-            if self.__session is None:
-                return
-            self.__session.close()
-            self.__session = None
-        finally:
-            self._unlock()
-            
-    def _lock(self):
-        self.__mutex.acquire()
-        
-    def _unlock(self):
-        self.__mutex.release()
-
-    def __del__(self):
-        try:
-            self.close()
-        except:
-            log.error(self.uuid, exc_info=1)
-
-    def __str__(self):
-        return 'Endpoint id:%s broker @ %s' % (self.id(), self.url)
-
-    def __enter__(self):
-        self.open()
-        return self
-
-    def __exit__(self, *unused):
-        self.close()
+            self._channel.close()
+        except Exception, e:
+            log.debug(str(e))

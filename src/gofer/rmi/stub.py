@@ -22,73 +22,17 @@ classes on which we invoke methods.
 from new import classobj
 from threading import RLock
 
-from gofer.common import Options
+from gofer.common import Options, synchronized
 from gofer.rmi.policy import Synchronous, Asynchronous
 from gofer.rmi.dispatcher import Request
 
 
-class Method:
+class Builder(object):
     """
-    A dynamic method object used to wrap the RMI call.
-    :ivar classname: The target class name.
-    :type classname: str
-    :ivar name: The target method name.
-    :type name: str
-    :ivar stub: The stub object used to send the AMQP message.
-    :type stub: Stub
+    Stub builder.
     """
 
-    def __init__(self, classname, name, stub):
-        """
-        :param classname: The target class name.
-        :type classname: str
-        :param name: The target method name.
-        :type name: str
-        :param stub: The stub object used to send the AMQP message.
-        :type stub: Stub
-        """
-        self.classname = classname
-        self.name = name
-        self.stub = stub
-
-    def __call__(self, *args, **kws):
-        """
-        Invoke the method .
-        :param args: The args.
-        :type args: list
-        :param kws: The *keyword* arguments.
-        :type kws: dict
-        """
-        opts = Options()
-        for k,v in kws.items():
-            if k in ('window', 'any',):
-                opts[k] = v
-                del kws[k]
-        request = Request(
-            classname=self.classname,
-            method=self.name,
-            args=args,
-            kws=kws)
-        return self.stub._send(request, opts)
-
-
-class Stub:
-    """
-    The stub class for remote objects.
-    :ivar __url: The agent URL.
-    :type __url: str
-    :ivar __destination: The AMQP destination
-    :type __destination: gofer.messaging.adapter.model.Destination
-    :ivar __options: Stub options.
-    :type __options: Options
-    :ivar __mutex: The object mutex.
-    :type __mutex: RLock
-    :ivar __policy: The invocation policy.
-    :type __policy: Policy
-    """
-    
-    @classmethod
-    def stub(cls, name, url, destination, options):
+    def __call__(self, name, url, destination, options):
         """
         Factory method.
         :param name: The stub class (or module) name.
@@ -106,6 +50,68 @@ class Stub:
         inst = subclass(url, destination, options)
         return inst
 
+
+class Method:
+    """
+    A dynamic method object used to wrap the RMI call.
+    :ivar classname: The target class name.
+    :type classname: str
+    :ivar name: The target method name.
+    :type name: str
+    :ivar stub: The stub object used to send the AMQP message.
+    :type stub: Stub
+    """
+
+    def __init__(self, classname, name, send):
+        """
+        :param classname: The target class name.
+        :type classname: str
+        :param name: The target method name.
+        :type name: str
+        :param send: The function used to send the AMQP message.
+        :type send: callable
+        """
+        self.classname = classname
+        self.name = name
+        self.send = send
+
+    def __call__(self, *args, **kws):
+        """
+        Invoke the method .
+        :param args: The args.
+        :type args: list
+        :param kws: The *keyword* arguments.
+        :type kws: dict
+        """
+        opts = Options()
+        for k, v in kws.items():
+            if k in ('window', 'any',):
+                opts[k] = v
+                del kws[k]
+        request = Request(
+            classname=self.classname,
+            method=self.name,
+            args=args,
+            kws=kws)
+        return self.send(request, opts)
+
+
+class Stub:
+    """
+    The stub class for remote objects.
+    All methods mangled because as to not shadow method on the remote.
+    :ivar __url: The agent URL.
+    :type __url: str
+    :ivar __destination: The AMQP destination
+    :type __destination: gofer.messaging.adapter.model.Destination
+    :ivar __options: Stub options.
+    :type __options: Options
+    :ivar __mutex: The mutex prevents concurrent calls.
+    :type __mutex: RLock
+    :ivar __policy: The invocation policy.
+    :type __policy: Policy
+    """
+
     def __init__(self, url, destination, options):
         """
         :param url: The agent URL.
@@ -122,20 +128,7 @@ class Stub:
         self.__mutex = RLock()
         self.__policy = None
 
-    def _send(self, request, options):
-        """
-        Send the request using the configured request method.
-        :param request: An RMI request.
-        :type request: str
-        :param options: Invocation options.
-        :type options: Options
-        """
-        self.__lock()
-        try:
-            return self.__send(request, options)
-        finally:
-            self.__unlock()
-            
+    @synchronized
     def __send(self, request, options):
         """
         Send the request using the configured request method.
@@ -147,14 +140,14 @@ class Stub:
         opts = Options(self.__options)
         opts += options
         request.cntr = self.__called[1]
-        policy = self.__getpolicy()
+        policy = self.__get_policy()
         if isinstance(self.__destination, (list, tuple)):
             return policy.broadcast(
                 self.__destination,
                 request,
                 window=opts.window,
                 secret=opts.secret,
-                pam=self.__getpam(opts),
+                pam=self.__get_pam(opts),
                 any=opts.any)
         else:
             return policy.send(
@@ -162,23 +155,21 @@ class Stub:
                 request,
                 window=opts.window,
                 secret=opts.secret,
-                pam=self.__getpam(opts),
+                pam=self.__get_pam(opts),
                 any=opts.any)
             
-    def __getpam(self, opts):
+    def __get_pam(self, opts):
         """
         Get PAM options.
         :param opts: options dict.
-        :type opts: dict
+        :type opts: Options
         :return: pam options
         :rtype: Options
         """
-        user = opts.user
         if opts.user:
-            return Options(
-                user=opts.user,
-                password=opts.password)
-        return None
+            return Options(user=opts.user, password=opts.password)
+        else:
+            return None
 
     def __getattr__(self, name):
         """
@@ -189,12 +180,14 @@ class Stub:
         :return: A method object.
         :rtype: Method
         """
+        if name.startswith('_'):
+            raise AttributeError('protected')
         cn = self.__class__.__name__
-        return Method(cn, name, self)
+        return Method(cn, name, self.__send)
     
     def __getitem__(self, name):
         """
-        Python vodo.
+        Python magic.
         Get a *Method* object for any requested attribute.
         :param name: The attribute name.
         :type name: str
@@ -222,7 +215,7 @@ class Stub:
             self.__called = (n+1, (args, options))
         return self
 
-    def __getpolicy(self):
+    def __get_policy(self):
         """
         Get the request policy based on options.
         The policy is cached for performance.
@@ -230,19 +223,20 @@ class Stub:
         :rtype: gofer.rmi.policy.RequestMethod
         """
         if self.__policy is None:
-            self.__setpolicy()
+            self.__set_policy()
         return self.__policy
     
-    def __setpolicy(self):
+    def __set_policy(self):
         """
         Set the request policy based on options.
         """
-        if self.__async():
-            self.__policy = Asynchronous(self.__url, self.__options)
+        if self.__is_asynchronous():
+            policy = Asynchronous(self.__url, self.__options)
         else:
-            self.__policy = Synchronous(self.__url, self.__options)
+            policy = Synchronous(self.__url, self.__options)
+        self.__policy = policy
 
-    def __async(self):
+    def __is_asynchronous(self):
         """
         Get whether an *asynchronous* request method
         should be used based on selected options.
@@ -252,9 +246,3 @@ class Stub:
         if self.__options.ctag or self.__options.async or self.__options.trigger:
             return True
         return isinstance(self.__destination, (list, tuple))
-    
-    def __lock(self):
-        self.__mutex.acquire()
-        
-    def __unlock(self):
-        self.__mutex.release()
