@@ -159,7 +159,7 @@ class URL:
             <adapter>://<host>:<port>userid:password@<adapter>://<host>:<port>.
         :type url: str
         """
-        self.input = url
+        self._input = url
         self.adapter, \
             self.scheme,\
             self.host, \
@@ -186,5 +186,5 @@ class URL:
         return self.simple() == other.simple()
 
     def __str__(self):
-        return self.input
+        return self._input
 
