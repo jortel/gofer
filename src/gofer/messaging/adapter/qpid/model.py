@@ -77,7 +77,6 @@ class Exchange(BaseExchange):
         Declare the node.
         :param url: The broker URL.
         :type url: str
-        :return: self
         """
         if not self.policy:
             return

@@ -102,7 +102,6 @@ class Node(object):
         Declare the node.
         :param url: The broker URL.
         :type url: str
-        :return: self
         """
         raise NotImplementedError()
 
@@ -111,7 +110,6 @@ class Node(object):
         Delete the node.
         :param url: The broker URL.
         :type url: str
-        :return: self
         """
         raise NotImplementedError()
 
@@ -248,7 +246,6 @@ class Queue(BaseQueue):
         Declare the node.
         :param url: The broker URL.
         :type url: str
-        :return: self
         """
         adapter = Adapter.find(url)
         impl = adapter.Queue(self.name, self.exchange, self.routing_key)
@@ -262,7 +259,6 @@ class Queue(BaseQueue):
         Delete the node.
         :param url: The broker URL.
         :type url: str
-        :return: self
         """
         adapter = Adapter.find(url)
         impl = adapter.Queue(self.name)
