@@ -154,7 +154,11 @@ class TestExchange(TestCase):
         exchange = Exchange('test')
         exchange.durable = 1
         exchange.auto_delete = 2
+
+        # test
         exchange.declare(TEST_URL)
+
+        # validation
         plugin.Exchange.assert_called_with(exchange.name, policy=exchange.policy)
         impl = plugin.Exchange()
         impl.declare.assert_called_with(TEST_URL)
@@ -166,7 +170,11 @@ class TestExchange(TestCase):
         plugin = Mock()
         _find.return_value = plugin
         exchange = Exchange('test')
+
+        # test
         exchange.delete(TEST_URL)
+
+        # validation
         plugin.Exchange.assert_called_with(exchange.name)
         impl = plugin.Exchange()
         impl.delete.assert_called_with(TEST_URL)
@@ -230,7 +238,11 @@ class TestQueue(TestCase):
         queue.durable = 1
         queue.auto_delete = 2
         queue.exclusive = 3
+
+        # test
         queue.declare(TEST_URL)
+
+        # validation
         plugin.Queue.assert_called_with(name, exchange, routing_key)
         impl = plugin.Queue()
         impl.declare.assert_called_with(TEST_URL)
@@ -243,8 +255,12 @@ class TestQueue(TestCase):
         plugin = Mock()
         _find.return_value = plugin
         name = 'test'
+
+        # test
         queue = Queue(name)
         queue.delete(TEST_URL)
+
+        # validation
         plugin.Queue.assert_called_with(name)
         impl = plugin.Queue()
         impl.delete.assert_called_with(TEST_URL)
@@ -260,10 +276,37 @@ class TestQueue(TestCase):
         exchange = Exchange('test')
         routing_key = name
         queue = Queue(name, exchange, routing_key)
+
+        # test
         destination = queue.destination(TEST_URL)
+
+        # validation
         plugin.Queue.assert_called_with(name, exchange, routing_key)
         _impl.destination.assert_called_with(TEST_URL)
         self.assertEqual(destination, _impl.destination())
+
+    @patch('gofer.messaging.adapter.model.Reader')
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_purge(self, _find, _reader):
+        name = 'test'
+        _find.return_value = Mock()
+        queued = [
+            Mock(),
+            Mock(),
+            None
+        ]
+        _reader.return_value.get.side_effect = queued
+
+        # test
+        queue = Queue(name)
+        queue.purge(TEST_URL)
+
+        # validation
+        _reader.assert_called_once_with(queue, url=TEST_URL)
+        _reader.return_value.open.assert_called_once_with()
+        _reader.return_value.close.assert_called_once_with()
+        queued[0].ack.assert_called_once_with()
+        queued[1].ack.assert_called_once_with()
 
 
 # --- endpoint ---------------------------------------------------------------
@@ -411,7 +454,11 @@ class TestReader(TestCase):
         _find.return_value = plugin
         queue = BaseQueue('', Exchange(''), '')
         url = TEST_URL
+
+        # test
         Reader(queue, url)
+
+        # validation
         _find.assert_called_with(url)
         plugin.Reader.assert_called_with(queue, url)
 
@@ -423,9 +470,13 @@ class TestReader(TestCase):
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
         url = TEST_URL
+
+        # test
         queue = BaseQueue('', Exchange(''), '')
         reader = Reader(queue, url)
         channel = reader.channel()
+
+        # validation
         _impl.channel.assert_called_with()
         self.assertEqual(channel, _impl.channel())
 
@@ -494,7 +545,11 @@ class TestReader(TestCase):
         _find.return_value = plugin
         queue = BaseQueue('', Exchange(''), '')
         url = TEST_URL
+
+        # test
         reader = Reader(queue, url)
+
+        # validation
         m = reader.get(10)
         _impl.get.assert_called_with(10)
         self.assertEqual(m, message)

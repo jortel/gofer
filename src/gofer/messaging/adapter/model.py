@@ -286,6 +286,24 @@ class Queue(BaseQueue):
         impl = adapter.Queue(self.name, self.exchange, self.routing_key)
         return impl.destination(url)
 
+    def purge(self, url):
+        """
+        Purge (drain) all queued messages.
+        :param url: The broker URL.
+        :type url: str
+        """
+        reader = Reader(self, url=url)
+        reader.open()
+        try:
+            while True:
+                message = reader.get()
+                if message:
+                    message.ack()
+                else:
+                    break
+        finally:
+            reader.close()
+
 
 # --- endpoint ---------------------------------------------------------------
 
