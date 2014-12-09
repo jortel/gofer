@@ -286,6 +286,7 @@ class Queue(BaseQueue):
         impl = adapter.Queue(self.name, self.exchange, self.routing_key)
         return impl.destination(url)
 
+    @model
     def purge(self, url):
         """
         Purge (drain) all queued messages.
