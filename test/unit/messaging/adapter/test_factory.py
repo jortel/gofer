@@ -9,12 +9,13 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+import os
+
 from unittest import TestCase
 
 from mock import patch, call, Mock
 
-from gofer.config import get_bool
-from gofer.messaging.adapter.factory import Loader, REQUIRED
+from gofer.messaging.adapter.factory import Loader, REQUIRED, PACKAGE
 from gofer.messaging.adapter.factory import Adapter
 from gofer.messaging.adapter.factory import AdapterError, AdapterNotFound, NoAdaptersLoaded
 from gofer.messaging.adapter.url import URL
@@ -49,31 +50,52 @@ class TestLoader(TestCase):
         self.assertEqual(ldr.catalog, {})
 
     @patch('__builtin__.__import__')
-    @patch('gofer.messaging.adapter.descriptor.Descriptor.load')
-    def test__load(self, _load, _import):
-        adapters = [
-            [TestDescriptor('path-A', '1', 'p1', ['AA', 'TEST-A']), Mock(__name__='p1')],
-            [TestDescriptor('path-B', '1', 'p2', ['BB', 'TEST-B']), Mock(__name__='p2')],
-            [TestDescriptor('path-C', '1', 'p3', ['CC', 'TEST-C']), Mock(__name__='p3')],
-            [TestDescriptor('path-D', '0', 'p4', ['DD', 'TEST-E']), Mock(__name__='p4')],
-            [TestDescriptor('path-E', '1', 'p5', ['EE', 'TEST-E']), AttributeError()],
-            [TestDescriptor('path-E', '1', 'p6', ['FF', 'TEST-F']), ImportError()],
+    @patch('os.path.isdir')
+    @patch('os.listdir')
+    def test__load(self, _listdir, _isdir, _import):
+        listing = [
+            ['p1', Mock(__name__='p1', PROVIDES=['A', 'B'])],
+            ['p2', Mock(__name__='p2', PROVIDES=['C', 'D'])],
+            ['p3', Mock(__name__='p3', PROVIDES=['E', 'F'])],
+            ['p4', Mock(__name__='p4', PROVIDES=['G', 'H'])],
+            ['p5', AttributeError],
+            ['p6', ImportError],
+            ['f1', None],
         ]
 
-        _load.return_value = [p[0] for p in adapters]
-        _import.side_effect = [p[1] for p in adapters if get_bool(p[0].main.enabled)]
+        loaded = self._loaded(listing)
 
-        _list, catalog = Loader._load(Loader.PATH)
-        self.assertEqual(_import.call_args_list, self._import_calls(adapters))
-        self.assertEqual(_list, self._load(adapters)[0])
-        self.assertEqual(catalog, self._load(adapters)[1])
+        def isdir(p):
+            return os.path.basename(p).startswith('p')
+
+        _listdir.return_value = [p[0] for p in listing]
+        _isdir.side_effect = isdir
+        _import.side_effect = [p[1] for p in listing]
+        _list, catalog = Loader._load()
+        self.assertEqual(_list, loaded[0])
+        self.assertEqual(catalog, loaded[1])
+
+    def _loaded(self, listing):
+        _list = []
+        catalog = {}
+        for name, pkg in listing:
+            if not name.startswith('p'):
+                continue
+            if not isinstance(pkg, Mock):
+                continue
+            _list.append(pkg)
+            catalog[name] = pkg
+            catalog['.'.join((PACKAGE, name))] = pkg
+            for c in pkg.PROVIDES:
+                catalog[c] = pkg
+        return _list, catalog
 
     @patch('gofer.messaging.adapter.factory.Loader._load')
     def test_load(self, _load):
         _load.return_value = ([], {})
         ldr = Loader()
         _list, catalog = ldr.load()
-        _load.assert_called_with(Loader.PATH)
+        _load.assert_called_with()
         self.assertEqual(_list, _load.return_value[0])
         self.assertEqual(catalog, _load.return_value[1])
         self.assertEqual(ldr.list, _load.return_value[0])
@@ -88,35 +110,6 @@ class TestLoader(TestCase):
         self.assertFalse(_load.called)
         self.assertEqual(_list, ldr.list)
         self.assertEqual(catalog, ldr.catalog)
-
-    def _import_calls(self, adapters):
-        calls = []
-        for p in adapters:
-            if not get_bool(p[0].main.enabled):
-                continue
-            pkg = p[0].main.package
-            calls.append(call(pkg, {}, {}, REQUIRED))
-        return calls
-
-    def _skip(self, p):
-        if not get_bool(p[0].main.enabled):
-            return True
-        if isinstance(p[1], Exception):
-            return True
-        return False
-
-    def _load(self, adapters):
-        _list = []
-        catalog = {}
-        for p in adapters:
-            if self._skip(p):
-                continue
-            _list.append(p[1])
-            catalog[p[0].main.package] = p[1]
-            catalog[p[1].__name__] = p[1]
-            for capability in p[0].provides:
-                catalog[capability] = p[1]
-        return _list, catalog
 
 
 class AdapterTest(TestCase):
