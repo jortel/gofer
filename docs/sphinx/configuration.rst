@@ -90,25 +90,6 @@ Example:
  clientcert = /etc/pki/qpid/client/client.pem
 
 
-Adapter Descriptors
-^^^^^^^^^^^^^^^^^^^
-
-
-Each plugin has a configuration located in ``/etc/gofer/messaging/adapters``.  Adapter descriptors
-are *ini* style configuration that require the following sections and properties:
-
-[main]
-------
-
-Defines basic adapter properties.
-
-- **enabled** - Specify the adapter as enabled/disabled.
-- **package** - Specify the python package name.
-- **provides** - Specify a list of capabilities.  Comma (,) delimited list.
-- **priority** - Specify the priority used to resolve ambiguity when selecting
-  a adapter based on capability.
-
-
 Plugin Descriptors
 ^^^^^^^^^^^^^^^^^^
 
