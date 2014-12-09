@@ -9,11 +9,6 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-import os
-import sys
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.curdir, '../../../src')))
-
 from logging import basicConfig
 
 basicConfig()

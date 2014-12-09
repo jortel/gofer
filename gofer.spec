@@ -56,7 +56,6 @@ popd
 mkdir -p %{buildroot}/usr/bin
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/plugins
-mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/messaging/adapters
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/conf.d
 mkdir -p %{buildroot}/%{_sysconfdir}/init.d
 mkdir -p %{buildroot}/%{_unitdir}
@@ -67,7 +66,6 @@ mkdir -p %{buildroot}/%{_mandir}/man1
 cp bin/%{name}d %{buildroot}/usr/bin
 cp etc/%{name}/*.conf %{buildroot}/%{_sysconfdir}/%{name}
 cp etc/%{name}/plugins/*.conf %{buildroot}/%{_sysconfdir}/%{name}/plugins
-cp etc/%{name}/messaging/adapters/*.conf %{buildroot}/%{_sysconfdir}/%{name}/messaging/adapters
 cp src/plugins/*.py %{buildroot}/%{_usr}/share/%{name}/plugins
 cp docs/man/man1/* %{buildroot}/%{_mandir}/man1
 
@@ -154,7 +152,7 @@ Provides gofer python lib modules.
 %doc LICENSE
 
 
-# --- python qpid messaging adapter ------------------------------------------
+# --- python-qpid messaging adapter ------------------------------------------
 
 %package -n python-%{name}-qpid
 Summary: Gofer Qpid messaging adapter python package
@@ -170,12 +168,11 @@ Requires: python-ssl
 Provides the gofer qpid messaging adapter package.
 
 %files -n python-%{name}-qpid
-%{_sysconfdir}/%{name}/messaging/adapters/qpid.conf
 %{python_sitelib}/%{name}/messaging/adapter/qpid
 %doc LICENSE
 
 
-# --- python amqp messaging adapter ------------------------------------------
+# --- python-amqp messaging adapter ------------------------------------------
 
 %package -n python-%{name}-amqp
 Summary: Gofer amqp messaging adapter python package
@@ -188,12 +185,11 @@ Requires: python-amqp >= 1.4.5
 Provides the gofer amqp messaging adapter package.
 
 %files -n python-%{name}-amqp
-%{_sysconfdir}/%{name}/messaging/adapters/amqp.conf
 %{python_sitelib}/%{name}/messaging/adapter/amqp
 %doc LICENSE
 
 
-# --- python amqplib messaging adapter ---------------------------------------
+# --- python-amqplib messaging adapter ---------------------------------------
 
 %package -n python-%{name}-amqplib
 Summary: Gofer amqplib messaging adapter python package
@@ -206,7 +202,6 @@ Requires: python-amqplib >= 1.0.2
 Provides the gofer amqplib messaging adapter package.
 
 %files -n python-%{name}-amqplib
-%{_sysconfdir}/%{name}/messaging/adapters/amqplib.conf
 %{python_sitelib}/%{name}/messaging/adapter/amqplib
 %doc LICENSE
 

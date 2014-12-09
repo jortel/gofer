@@ -13,12 +13,10 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
+import os
 import logging
 
-from gofer.config import get_bool
-
 from gofer.messaging.model import ModelError
-from gofer.messaging.adapter.descriptor import Descriptor
 from gofer.messaging.adapter.url import URL
 
 
@@ -27,8 +25,12 @@ log = logging.getLogger(__name__)
 
 # --- constants --------------------------------------------------------------
 
+# __package__ not supported in python 2.4
+PACKAGE = '.'.join(__name__.split('.')[:-1])
+
 # symbols required to be supported by all adapters
 REQUIRED = [
+    'PROVIDES',
     'Connection',
     'Endpoint',
     'Exchange',
@@ -70,58 +72,50 @@ class AdapterNotFound(AdapterError):
 class Loader:
     """
     Adapter adapter loader.
-    :cvar PATH: The default (absolute) path to a directory
-        containing descriptors to be loaded.
-    :type PATH: str
     :ivar list: A list of loaded adapters.
     :type list: list
     :ivar catalog: A catalog of loaded adapters by capabilities.
     :type catalog: dict
     """
 
-    PATH = '/etc/gofer/messaging/adapters'
-
     def __init__(self):
         self.list = []
         self.catalog = {}
 
     @staticmethod
-    def _load(path):
+    def _load():
         """
         Load the adapters and return a list and catalog.
-        :param path: The absolute path to a directory containing descriptors.
-        :type path: str
         :return: A tuple of (list, dict)
         :rtype: tuple
         """
         _list = []
         catalog = {}
-        for descriptor in Descriptor.load(path):
-            if not get_bool(descriptor.main.enabled):
+        _dir = os.path.dirname(__file__)
+        for name in sorted(os.listdir(_dir)):
+            package = '.'.join((PACKAGE, name))
+            path = os.path.join(_dir, name)
+            if not os.path.isdir(path):
                 continue
-            package = descriptor.main.package
             try:
                 pkg = __import__(package, {}, {}, REQUIRED)
-                name = pkg.__name__.split('.')[-1]
                 _list.append(pkg)
                 catalog[name] = pkg
                 catalog[package] = pkg
-                for capability in descriptor.provides:
+                for capability in pkg.PROVIDES:
                     catalog[capability] = pkg
             except (ImportError, AttributeError):
                 log.exception(package)
         return _list, catalog
 
-    def load(self, path=PATH):
+    def load(self):
         """
         Load adapter adapters.
-        :param path: The absolute path to a directory containing descriptors.
-        :type path: str
         :return: The loaded adapters.
         :rtype: dict
         """
         if not self.list:
-            _list, catalog = Loader._load(path)
+            _list, catalog = Loader._load()
             self.list = _list
             self.catalog = catalog
         return self.list, self.catalog

@@ -18,6 +18,6 @@ from gofer.messaging.adapter.amqplib.endpoint import Endpoint
 
 
 PROVIDES = [
-    'AMQP-0-8',
-    'rabbitmq'
+    'amqp-0-8',
+    'rabbitmq',
 ]

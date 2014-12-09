@@ -21,13 +21,6 @@ from gofer.messaging.adapter.url import URL
 from gofer.messaging.model import ModelError
 
 
-class TestDescriptor(object):
-
-    def __init__(self, path, enabled, package, provides):
-        self.main = Mock(path=path, enabled=enabled, package=package)
-        self.provides = provides
-
-
 class TestExceptions(TestCase):
 
     def test_adapter_error(self):
