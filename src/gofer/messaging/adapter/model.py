@@ -20,30 +20,17 @@ from uuid import uuid4
 
 from gofer.messaging.adapter.url import URL
 from gofer.messaging.adapter.factory import Adapter
-from gofer.messaging.model import ModelError
+from gofer.messaging.adapter.decorators import model
+from gofer.messaging.model import ModelError, validate
+from gofer.messaging import auth as auth
 
-# routing key
+
 ROUTE_ALL = '#'
-
-# exchange types
 DIRECT = 'direct'
 TOPIC = 'topic'
-
 DEFAULT_URL = 'amqp://localhost'
 
-
 log = getLogger(__name__)
-
-
-def model(fn):
-    def dfn(*args, **keywords):
-        try:
-            return fn(*args, **keywords)
-        except ModelError:
-            raise
-        except Exception, e:
-            raise ModelError(e)
-    return dfn
 
 
 class Destination(object):
@@ -245,6 +232,9 @@ class BaseQueue(Node):
 
 
 class Queue(BaseQueue):
+    """
+    An AMQP message queue.
+    """
 
     def __init__(self, name, exchange=None, routing_key=None):
         """
@@ -418,22 +408,6 @@ class Messenger(BaseEndpoint):
         """
         self.endpoint().open()
 
-    def ack(self, message):
-        """
-        Ack the specified message.
-        :param message: The message to acknowledge.
-        """
-        self.endpoint().ack(message)
-
-    def reject(self, message, requeue=True):
-        """
-        Reject the specified message.
-        :param message: The message to reject.
-        :param requeue: Requeue the message or discard it.
-        :type requeue: bool
-        """
-        self.endpoint().reject(message, requeue)
-
     def close(self, hard=False):
         """
         Close the messenger.
@@ -444,6 +418,59 @@ class Messenger(BaseEndpoint):
 
 
 # --- reader -----------------------------------------------------------------
+
+
+class Message(object):
+    """
+    A read message.
+    :ivar _reader: The reader that read the message.
+    :type _reader: BaseReader
+    :ivar _impl: The *real* message.
+    :ivar _body: The *real* message body.
+    :type _body: str
+    """
+
+    def __init__(self, reader, impl, body):
+        """
+        :ivar reader: The reader that read the message.
+        :type reader: BaseReader
+        :ivar impl: The *real* message.
+        :ivar body: The *real* message body.
+        :type body: str
+        """
+        self._reader = reader
+        self._impl = impl
+        self._body = body
+
+    @property
+    def body(self):
+        """
+        Get the message body.
+        :return: The message body.
+        :rtype: str
+        """
+        return self._body
+
+    @model
+    def ack(self):
+        """
+        Ack this message.
+        :raise: ModelError
+        """
+        self._reader.ack(self._impl)
+
+    @model
+    def reject(self, requeue=True):
+        """
+        Reject this message.
+        :param requeue: Requeue the message or discard it.
+        :type requeue: bool
+        :raise: ModelError
+        """
+        self._reader.reject(self._impl, requeue)
+
+    def __str__(self):
+        return str(self._body)
 
 
 class BaseReader(Messenger):
@@ -463,40 +490,34 @@ class BaseReader(Messenger):
 
     def get(self, timeout=None):
         """
-        Get the next message.
-        :param timeout: The read timeout.
+        Get the next *message* from the queue.
+        :param timeout: The read timeout in seconds.
         :type timeout: int
         :return: The next message, or (None).
+        :rtype: Message
         """
         raise NotImplementedError()
 
-    def next(self, timeout=90):
+    def ack(self, message):
         """
-        Get the next document from the queue.
-        :param timeout: The read timeout.
-        :type timeout: int
-        :return: A tuple of: (document, ack())
-        :rtype: (Document, callable)
-        :raises: model.InvalidDocument
+        Ack the specified message.
+        :param message: The message to acknowledge.
         """
-        raise NotImplementedError()
+        self.endpoint().ack(message)
 
-    def search(self, sn, timeout=90):
+    def reject(self, message, requeue=True):
         """
-        Search the reply queue for the document with the matching serial #.
-        :param sn: The expected serial number.
-        :type sn: str
-        :param timeout: The read timeout.
-        :type timeout: int
-        :return: The next document.
-        :rtype: Document
+        Reject the specified message.
+        :param message: The message to reject.
+        :param requeue: Requeue the message or discard it.
+        :type requeue: bool
         """
-        raise NotImplementedError()
+        self.endpoint().reject(message, requeue)
 
 
 class Reader(BaseReader):
     """
-    An AMQP message reader.
+    An AMQP queue reader.
     """
 
     def __init__(self, queue, url=None):
@@ -533,20 +554,22 @@ class Reader(BaseReader):
         """
         Ack the specified message.
         :param message: The message to acknowledge.
+        :type message: Message
         :raise: ModelError
         """
-        self._impl.ack(message)
+        message.ack()
 
     @model
     def reject(self, message, requeue=True):
         """
         Reject the specified message.
         :param message: The message to reject.
+        :type message: Message
         :param requeue: Requeue the message or discard it.
         :type requeue: bool
         :raise: ModelError
         """
-        self._impl.reject(message, requeue)
+        message.reject(requeue)
 
     @model
     def close(self, hard=False):
@@ -562,7 +585,7 @@ class Reader(BaseReader):
     def get(self, timeout=None):
         """
         Get the next message.
-        :param timeout: The read timeout.
+        :param timeout: The read timeout in seconds.
         :type timeout: int
         :return: The next message, or (None).
         :raise: ModelError
@@ -572,41 +595,50 @@ class Reader(BaseReader):
     @model
     def next(self, timeout=90):
         """
-        Get the next document from the queue.
-        :param timeout: The read timeout.
+        Get the next valid *document* from the queue.
+        :param timeout: The read timeout in seconds.
         :type timeout: int
-        :return: A tuple of: (document, ack())
-        :rtype: (Document, callable)
-        :raise: model.InvalidDocument
-        :raise: ModelError
+        :return: The next document.
+        :rtype: tuple: (Message, Document)
+        :raises: model.InvalidDocument
         """
-        self._impl.authenticator = self.authenticator
-        return self._impl.next(timeout)
+        message = self.get(timeout)
+        if message:
+            try:
+                document = auth.validate(self.authenticator, message.body)
+                validate(document)
+            except ModelError:
+                message.ack()
+                raise
+            log.debug('read next: %s', document)
+            return message, document
+        else:
+            return None, None
 
     @model
     def search(self, sn, timeout=90):
         """
-        Search the reply queue for the document with the matching serial #.
-        :param sn: The expected serial number.
+        Search for a document by serial number.
+        :param sn: A serial number.
         :type sn: str
         :param timeout: The read timeout.
         :type timeout: int
-        :return: The next document.
+        :return: The matched document.
         :rtype: Document
         :raise: ModelError
         """
-        log.debug('searching for: sn=%s', sn)
         while True:
-            document, ack = self.next(timeout)
-            if document:
-                ack()
+            message, document = self.next(timeout)
+            if message:
+                message.ack()
             else:
                 return
             if sn == document.sn:
-                log.debug('search found: %s', document)
+                # matched
                 return document
             else:
-                log.debug('search discarding: %s', document)
+                # discarded
+                continue
 
 
 # --- producer ---------------------------------------------------------------
@@ -614,14 +646,14 @@ class Reader(BaseReader):
 
 class BaseProducer(Messenger):
     """
-    An AMQP (message producer.
+    An AMQP message producer.
     """
 
     def send(self, destination, ttl, **body):
         """
         Send a message.
         :param destination: An AMQP destination.
-        :type destination: gofer.messaging.adapter.model.Destination
+        :type destination: Destination
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
@@ -632,13 +664,13 @@ class BaseProducer(Messenger):
 
     def broadcast(self, destinations, ttl, **body):
         """
-        Broadcast a message to (N) queues.
-        :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.messaging.adapter.node.Node,..]
+        Send a message to multiple destinations.
+        :param destinations: A list of: Destination
+        :type destinations: list
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
-        :return: A list of (addr,sn).
+        :return: A list of (destination, sn).
         :rtype: list
         """
         raise NotImplementedError()
@@ -646,7 +678,7 @@ class BaseProducer(Messenger):
 
 class Producer(BaseProducer):
     """
-    An AMQP (message producer.
+    An AMQP message producer.
     """
 
     def __init__(self, url=None):
@@ -676,26 +708,6 @@ class Producer(BaseProducer):
         self._impl.open()
 
     @model
-    def ack(self, message):
-        """
-        Ack the specified message.
-        :param message: The message to acknowledge.
-        :raise: ModelError
-        """
-        self._impl.ack(message)
-
-    @model
-    def reject(self, message, requeue=True):
-        """
-        Reject the specified message.
-        :param message: The message to reject.
-        :param requeue: Requeue the message or discard it.
-        :type requeue: bool
-        :raise: ModelError
-        """
-        self._impl.reject(message, requeue)
-
-    @model
     def close(self, hard=False):
         """
         Close the producer.
@@ -710,7 +722,7 @@ class Producer(BaseProducer):
         """
         Send a message.
         :param destination: An AMQP destination.
-        :type destination: gofer.messaging.adapter.model.Destination
+        :type destination: Destination
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
@@ -724,13 +736,13 @@ class Producer(BaseProducer):
     @model
     def broadcast(self, destinations, ttl=None, **body):
         """
-        Broadcast a message to (N) queues.
-        :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.messaging.adapter.node.Node,..]
+        Send a message to multiple destinations.
+        :param destinations: A list of: Destination
+        :type destinations: list
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
-        :return: A list of (addr,sn).
+        :return: A list of (destination, sn).
         :rtype: list
         :raise: ModelError
         """
@@ -747,21 +759,25 @@ class BasePlainProducer(Messenger):
         """
         Send a message.
         :param destination: An AMQP destination.
-        :type destination: gofer.messaging.adapter.model.Destination
+        :type destination: Destination
         :param content: The message content
         :type content: buf
         :param ttl: Time to Live (seconds)
         :type ttl: float
+        :return: A message_id.
+        :rtype: str
         """
         raise NotImplementedError()
 
     def broadcast(self, destinations, content, ttl=None):
         """
-        Broadcast a message to (N) queues.
-        :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.messaging.adapter.node.Node,..]
+        Send a message to multiple destinations.
+        :param destinations: A list of: Destination
+        :type destinations: list
         :param content: The message content
         :type content: buf
+        :return: A list of message_id
+        :rtype: list
         """
         raise NotImplementedError()
 
@@ -773,7 +789,7 @@ class PlainProducer(BasePlainProducer):
 
     def __init__(self, url=None):
         """
-        :param url: The broker url <adapter>://<user>:<pass>@<host>:<port>/<virtual-host>.
+        :param url: The broker url.
         :type url: str
         """
         BasePlainProducer.__init__(self, url)
@@ -798,26 +814,6 @@ class PlainProducer(BasePlainProducer):
         self._impl.open()
 
     @model
-    def ack(self, message):
-        """
-        Ack the specified message.
-        :param message: The message to acknowledge.
-        :raise: ModelError
-        """
-        self._impl.ack(message)
-
-    @model
-    def reject(self, message, requeue=True):
-        """
-        Reject the specified message.
-        :param message: The message to reject.
-        :param requeue: Requeue the message or discard it.
-        :type requeue: bool
-        :raise: ModelError
-        """
-        self._impl.reject(message, requeue)
-
-    @model
     def close(self, hard=False):
         """
         Close the producer.
@@ -832,11 +828,13 @@ class PlainProducer(BasePlainProducer):
         """
         Send a message.
         :param destination: An AMQP destination.
-        :type destination: gofer.messaging.adapter.model.Destination
+        :type destination: Destination
         :param content: The message content
         :type content: buf
         :param ttl: Time to Live (seconds)
         :type ttl: float
+        :return: A message_id.
+        :rtype: str
         :raise: ModelError
         """
         self._impl.authenticator = self.authenticator
@@ -845,11 +843,13 @@ class PlainProducer(BasePlainProducer):
     @model
     def broadcast(self, destinations, content, ttl=None):
         """
-        Broadcast a message to (N) queues.
-        :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.messaging.adapter.node.Node,..]
+        Send a message to multiple destinations.
+        :param destinations: A list of: Destination
+        :type destinations: list
         :param content: The message content
         :type content: buf
+        :return: A list of message_id
+        :rtype: list
         :raise: ModelError
         """
         self._impl.authenticator = self.authenticator
@@ -1138,41 +1138,3 @@ class Broker(object):
         s.append('URL: %s' % self.url)
         s.append('SSL: %s' % self.ssl)
         return '|'.join(s)
-
-
-# --- ACK --------------------------------------------------------------------
-
-
-class Ack:
-    """
-    Message acknowledgment.
-    :ivar endpoint: An AMQP endpoint.
-    :type endpoint: BaseEndpoint
-    :ivar message: A received message.
-    """
-
-    def __init__(self, endpoint, message):
-        """
-        :param endpoint: An AMQP endpoint.
-        :type endpoint: BaseEndpoint
-        :param message: A received message.
-        """
-        self.endpoint = endpoint
-        self.message = message
-
-    def accept(self):
-        """
-        Accept the message.
-        """
-        self.endpoint.ack(self.message)
-
-    def reject(self, requeue=True):
-        """
-        Reject the message.
-        :param requeue: Requeue the rejected message.
-        :type requeue: bool
-        """
-        self.endpoint.reject(self.message, requeue)
-
-    def __call__(self):
-        self.accept()

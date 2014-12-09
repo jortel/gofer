@@ -18,7 +18,6 @@ from unittest import TestCase
 from mock import patch, Mock
 
 from gofer.messaging.model import Document
-
 from gofer.messaging.adapter.url import URL
 from gofer.messaging.adapter.model import Destination
 from gofer.messaging.adapter.model import Node
@@ -30,7 +29,8 @@ from gofer.messaging.adapter.model import BaseProducer, Producer
 from gofer.messaging.adapter.model import BasePlainProducer, PlainProducer
 from gofer.messaging.adapter.model import Broker, SSL, Cloud
 from gofer.messaging.adapter.model import BaseConnection, Connection, SharedConnection
-from gofer.messaging.adapter.model import Ack, model, ModelError
+from gofer.messaging.adapter.model import Message
+from gofer.messaging.adapter.model import ModelError
 
 
 TEST_URL = 'qpid+amqp://elmer:fudd@test.com/test'
@@ -48,27 +48,6 @@ class FakeConnection(object):
         self.url = url
 
 
-class TestModelDecorator(TestCase):
-
-    def test_call(self):
-        fn = Mock()
-        _fn = model(fn)
-        args = [1, 2, 3]
-        keywords = dict(a=1, b=2)
-        _fn(*args, **keywords)
-        fn.assert_called_once_with(*args, **keywords)
-
-    def test_raised_model_error(self):
-        fn = Mock(side_effect=ModelError)
-        _fn = model(fn)
-        self.assertRaises(ModelError, _fn)
-
-    def test_raised_other(self):
-        fn = Mock(side_effect=ValueError)
-        _fn = model(fn)
-        self.assertRaises(ModelError, _fn)
-
-
 class TestDestination(TestCase):
 
     def test_create(self):
@@ -77,7 +56,7 @@ class TestDestination(TestCase):
         self.assertEqual(destination.exchange, d[Destination.EXCHANGE])
         self.assertEqual(destination.routing_key, d[Destination.ROUTING_KEY])
 
-    def test_construction(self):
+    def test_init(self):
         exchange = 'EX'
         routing_key = 'RK'
         # both
@@ -119,7 +98,7 @@ class TestDestination(TestCase):
 
 class TestNode(TestCase):
 
-    def test_construction(self):
+    def test_init(self):
         name = 'test'
         n = Node(name)
         self.assertEqual(n.name, name)
@@ -135,7 +114,7 @@ class TestNode(TestCase):
 
 class TestBaseExchange(TestCase):
 
-    def test_construction(self):
+    def test_init(self):
         name = 'test'
         exchange = BaseExchange(name)
         self.assertEqual(exchange.name, name)
@@ -157,7 +136,7 @@ class TestBaseExchange(TestCase):
 
 class TestExchange(TestCase):
 
-    def test_construction(self):
+    def test_init(self):
         name = 'test'
         exchange = BaseExchange(name)
         self.assertEqual(exchange.name, name)
@@ -198,7 +177,7 @@ class TestExchange(TestCase):
 
 class TestBaseQueue(TestCase):
 
-    def test_construction(self):
+    def test_init(self):
         name = 'test'
         exchange = Exchange('amq.direct')
         routing_key = name
@@ -225,7 +204,7 @@ class TestBaseQueue(TestCase):
 
 class TestQueue(TestCase):
 
-    def test_construction(self):
+    def test_init(self):
         name = 'test'
         exchange = Exchange('amq.direct')
         routing_key = name
@@ -293,7 +272,7 @@ class TestQueue(TestCase):
 class TestBaseEndpoint(TestCase):
 
     @patch('gofer.messaging.adapter.model.uuid4')
-    def test_construction(self, _uuid4):
+    def test_init(self, _uuid4):
         _uuid4.return_value = '1234'
         endpoint = BaseEndpoint(TEST_URL)
         self.assertEqual(endpoint.url, TEST_URL)
@@ -374,20 +353,6 @@ class TestMessenger(TestCase):
         _endpoint().open.assert_called_with()
 
     @patch('gofer.messaging.adapter.model.Messenger.endpoint')
-    def test_ack(self, _endpoint):
-        message = 'hello'
-        messenger = Messenger(TEST_URL)
-        messenger.ack(message)
-        _endpoint().ack.assert_called_with(message)
-
-    @patch('gofer.messaging.adapter.model.Messenger.endpoint')
-    def test_reject(self, _endpoint):
-        message = 'hello'
-        messenger = Messenger(TEST_URL)
-        messenger.reject(message, True)
-        _endpoint().reject.assert_called_with(message, True)
-
-    @patch('gofer.messaging.adapter.model.Messenger.endpoint')
     def test_close(self, _endpoint):
         messenger = Messenger(TEST_URL)
         # soft
@@ -404,7 +369,7 @@ class TestMessenger(TestCase):
 
 class TestBaseReader(TestCase):
 
-    def test_construction(self):
+    def test_init(self):
         queue = Queue('')
         url = TEST_URL
         reader = BaseReader(queue, url)
@@ -417,23 +382,29 @@ class TestBaseReader(TestCase):
         reader = BaseReader(queue, url)
         self.assertRaises(NotImplementedError, reader.get, 10)
 
-    def test_next(self):
+    def test_ack(self):
+        message = Mock()
         queue = Queue('')
         url = TEST_URL
         reader = BaseReader(queue, url)
-        self.assertRaises(NotImplementedError, reader.next, 10)
+        reader.endpoint = Mock()
+        reader.ack(message)
+        reader.endpoint.return_value.ack.assert_called_once_with(message)
 
-    def test_search(self):
+    def test_reject(self):
+        message = Mock()
         queue = Queue('')
         url = TEST_URL
         reader = BaseReader(queue, url)
-        self.assertRaises(NotImplementedError, reader.search, None, 10)
+        reader.endpoint = Mock()
+        reader.reject(message, 29)
+        reader.endpoint.return_value.reject.assert_called_once_with(message, 29)
 
 
 class TestReader(TestCase):
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_construction(self, _find):
+    def test_init(self, _find):
         _impl = Mock()
         plugin = Mock()
         plugin.Reader.return_value = _impl
@@ -472,29 +443,29 @@ class TestReader(TestCase):
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_ack(self, _find):
-        message = Mock()
         _impl = Mock()
         plugin = Mock()
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
+        message = Mock()
         url = TEST_URL
         queue = BaseQueue('', Exchange(''), '')
         reader = Reader(queue, url)
         reader.ack(message)
-        _impl.ack.assert_called_with(message)
+        message.ack.assert_called_once_with()
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_reject(self, _find):
-        message = Mock()
         _impl = Mock()
         plugin = Mock()
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
+        message = Mock()
         url = TEST_URL
         queue = BaseQueue('', Exchange(''), '')
         reader = Reader(queue, url)
-        reader.reject(message, True)
-        _impl.reject.assert_called_with(message, True)
+        reader.reject(message, 29)
+        message.reject.assert_called_with(29)
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_close(self, _find):
@@ -513,7 +484,6 @@ class TestReader(TestCase):
         reader.close(True)
         _impl.close.assert_called_with(True)
 
-
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_get(self, _find):
         message = Mock()
@@ -529,63 +499,166 @@ class TestReader(TestCase):
         _impl.get.assert_called_with(10)
         self.assertEqual(m, message)
 
+    @patch('gofer.messaging.adapter.model.validate')
+    @patch('gofer.messaging.adapter.model.auth')
     @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_next(self, _find):
-        ack = Mock()
-        document = Mock()
+    def test_next(self, _find, auth, validate):
         _impl = Mock()
-        _impl.next.return_value = document, ack
         plugin = Mock()
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
-        queue = BaseQueue('', Exchange(''), '')
-        url = TEST_URL
-        reader = Reader(queue, url)
-        retval = reader.next(timeout=10)
-        _impl.next.assert_called_with(10)
-        self.assertEqual(retval[0], document)
-        self.assertEqual(retval[1], ack)
+        message = Mock(body='test-content')
+        document = Mock()
+        auth.validate.return_value = document
+
+        # test
+        reader = Reader(None)
+        reader.get = Mock(return_value=message)
+        reader.authenticator = Mock()
+        _message, _document = reader.next(10)
+
+        # validation
+        reader.get.assert_called_once_with(10)
+        auth.validate.assert_called_once_with(reader.authenticator, message.body)
+        validate.assert_called_once_with(document)
+        self.assertEqual(_message, reader.get.return_value)
+        self.assertEqual(_document, document)
+
+    @patch('gofer.messaging.adapter.model.validate')
+    @patch('gofer.messaging.adapter.model.auth')
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_next_auth_rejected(self, _find, auth, validate):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Reader.return_value = _impl
+        _find.return_value = plugin
+        message = Mock(body='test-content')
+        auth.validate.side_effect = ModelError
+
+        # test
+        reader = Reader(None)
+        reader.get = Mock(return_value=message)
+        reader.authenticator = Mock()
+        self.assertRaises(ModelError, reader.next, 10)
+
+        # validation
+        reader.get.assert_called_once_with(10)
+        auth.validate.assert_called_once_with(reader.authenticator, message.body)
+        message.ack.assert_called_once_with()
+        self.assertFalse(validate.called)
+
+    @patch('gofer.messaging.adapter.model.validate')
+    @patch('gofer.messaging.adapter.model.auth')
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_next_invalid(self, _find, auth, validate):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Reader.return_value = _impl
+        _find.return_value = plugin
+        message = Mock(body='test-content')
+        document = Mock()
+        auth.validate.return_value = document
+        validate.side_effect = ModelError
+
+        # test
+        reader = Reader(None)
+        reader.get = Mock(return_value=message)
+        reader.authenticator = Mock()
+        self.assertRaises(ModelError, reader.next, 10)
+
+        # validation
+        reader.get.assert_called_once_with(10)
+        auth.validate.assert_called_once_with(reader.authenticator, message.body)
+        message.ack.assert_called_once_with()
+        validate.assert_called_once_with(document)
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_search(self, _find):
-        received = [
-            (Document(sn='1'), Mock()),
-            (Document(sn='2'), Mock()),
-            (Document(sn='3'), Mock())
-        ]
         _impl = Mock()
-        _impl.next.side_effect = received
         plugin = Mock()
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
-        queue = BaseQueue('', Exchange(''), '')
+        received = [
+            (Mock(), Document(sn='1')),
+            (Mock(), Document(sn='2')),
+            (Mock(), Document(sn='3'))
+        ]
+
+        # test
         url = TEST_URL
-        sn = received[1][0].sn
+        queue = BaseQueue('', Exchange(''), '')
+        sn = received[1][1].sn
         reader = Reader(queue, url)
+        reader.next = Mock(side_effect=received)
         document = reader.search(sn, timeout=10)
-        next_calls = _impl.next.call_args_list
+
+        # validation
+        next_calls = reader.next.call_args_list
         self.assertEqual(len(next_calls), 2)
-        self.assertEqual(document, received[1][0])
+        self.assertEqual(document, received[1][1])
         for call in next_calls:
             self.assertEqual(call[0][0], 10)
-        self.assertTrue(received[0][1].called)
-        self.assertTrue(received[1][1].called)
-        self.assertFalse(received[2][1].called)
+        self.assertTrue(received[0][0].ack.called)
+        self.assertTrue(received[1][0].ack.called)
+        self.assertFalse(received[2][0].ack.called)
+
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_search_not_found(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Reader.return_value = _impl
+        _find.return_value = plugin
+        received = [
+            (Mock(), Document(sn='1')),
+            (Mock(), Document(sn='2')),
+            (Mock(), Document(sn='3')),
+            (None, None)
+        ]
+
+        # test
+        url = TEST_URL
+        queue = BaseQueue('', Exchange(''), '')
+        reader = Reader(queue, url)
+        reader.next = Mock(side_effect=received)
+        document = reader.search('', timeout=10)
+
+        # validation
+        next_calls = reader.next.call_args_list
+        self.assertEqual(len(next_calls), len(received))
+        self.assertEqual(document, None)
+        for call in next_calls:
+            self.assertEqual(call[0][0], 10)
+        self.assertTrue(received[0][0].ack.called)
+        self.assertTrue(received[1][0].ack.called)
+        self.assertTrue(received[2][0].ack.called)
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_search_timeout(self, _find):
         _impl = Mock()
-        _impl.next.return_value = (None, None)
         plugin = Mock()
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
-        queue = BaseQueue('', Exchange(''), '')
+        received = [
+            (Mock(), Document(sn='1')),
+            (Mock(), Document(sn='2')),
+            (None, None)
+        ]
+
+        # test
         url = TEST_URL
-        sn = 'serial'
+        queue = BaseQueue('', Exchange(''), '')
         reader = Reader(queue, url)
-        document = reader.search(sn, timeout=10)
-        _impl.next.assert_called_once_with(10)
+        reader.next = Mock(side_effect=received)
+        document = reader.search('', timeout=10)
+
+        # validation
+        next_calls = reader.next.call_args_list
+        self.assertEqual(len(next_calls), len(received))
         self.assertEqual(document, None)
+        for call in next_calls:
+            self.assertEqual(call[0][0], 10)
+        self.assertTrue(received[0][0].ack.called)
+        self.assertTrue(received[1][0].ack.called)
 
 
 # --- producer ---------------------------------------------------------------
@@ -594,7 +667,7 @@ class TestReader(TestCase):
 class TestBaseProducer(TestCase):
 
     @patch('gofer.messaging.adapter.model.uuid4')
-    def test_construction(self, _uuid4):
+    def test_init(self, _uuid4):
         _uuid4.return_value = '1234'
         producer = BaseProducer(TEST_URL)
         self.assertEqual(producer.url, TEST_URL)
@@ -614,7 +687,7 @@ class TestProducer(TestCase):
 
     @patch('gofer.messaging.adapter.model.uuid4')
     @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_construction(self, _find, _uuid4):
+    def test_init(self, _find, _uuid4):
         _impl = Mock()
         plugin = Mock()
         plugin.Producer.return_value = _impl
@@ -651,30 +724,6 @@ class TestProducer(TestCase):
         producer = Producer(url)
         producer.open()
         _impl.open.assert_called_with()
-
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_ack(self, _find):
-        message = Mock()
-        _impl = Mock()
-        plugin = Mock()
-        plugin.Producer.return_value = _impl
-        _find.return_value = plugin
-        url = TEST_URL
-        producer = Producer(url)
-        producer.ack(message)
-        _impl.ack.assert_called_with(message)
-
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_reject(self, _find):
-        message = Mock()
-        _impl = Mock()
-        plugin = Mock()
-        plugin.Producer.return_value = _impl
-        _find.return_value = plugin
-        url = TEST_URL
-        producer = Producer(url)
-        producer.reject(message, True)
-        _impl.reject.assert_called_with(message, True)
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_close(self, _find):
@@ -729,7 +778,7 @@ class TestProducer(TestCase):
 class TestBasePlainProducer(TestCase):
 
     @patch('gofer.messaging.adapter.model.uuid4')
-    def test_construction(self, _uuid4):
+    def test_init(self, _uuid4):
         _uuid4.return_value = '1234'
         producer = BasePlainProducer(TEST_URL)
         self.assertEqual(producer.url, TEST_URL)
@@ -749,7 +798,7 @@ class TestPlainProducer(TestCase):
 
     @patch('gofer.messaging.adapter.model.uuid4')
     @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_construction(self, _find, _uuid4):
+    def test_init(self, _find, _uuid4):
         _impl = Mock()
         plugin = Mock()
         plugin.PlainProducer.return_value = _impl
@@ -786,30 +835,6 @@ class TestPlainProducer(TestCase):
         producer = PlainProducer(url)
         producer.open()
         _impl.open.assert_called_with()
-
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_ack(self, _find):
-        message = Mock()
-        _impl = Mock()
-        plugin = Mock()
-        plugin.PlainProducer.return_value = _impl
-        _find.return_value = plugin
-        url = TEST_URL
-        producer = PlainProducer(url)
-        producer.ack(message)
-        _impl.ack.assert_called_with(message)
-
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_reject(self, _find):
-        message = Mock()
-        _impl = Mock()
-        plugin = Mock()
-        plugin.PlainProducer.return_value = _impl
-        _find.return_value = plugin
-        url = TEST_URL
-        producer = PlainProducer(url)
-        producer.reject(message, True)
-        _impl.reject.assert_called_with(message, True)
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_close(self, _find):
@@ -864,7 +889,7 @@ class TestPlainProducer(TestCase):
 
 class TestBaseConnection(TestCase):
 
-    def test_construction(self):
+    def test_init(self):
         connection = BaseConnection(TEST_URL)
         self.assertEqual(connection.url, TEST_URL)
 
@@ -896,7 +921,7 @@ class TestBaseConnection(TestCase):
 class TestConnection(TestCase):
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_construction(self, _find):
+    def test_init(self, _find):
         _impl = Mock()
         plugin = Mock()
         plugin.Connection.return_value = _impl
@@ -1052,35 +1077,46 @@ class TestBroker(TestCase):
             'key: test-key|certificate: test-cert|host-validation: False')
 
 
-# --- ack --------------------------------------------------------------------
+# --- message ----------------------------------------------------------------
 
 
-class TestAck(TestCase):
+class TestMessage(TestCase):
 
-    def test_construction(self):
-        endpoint = Mock()
-        message = Mock()
-        ack = Ack(endpoint, message)
-        self.assertEqual(ack.endpoint, endpoint)
-        self.assertEqual(ack.message, message)
+    def test_init(self):
+        reader = Mock()
+        impl = Mock()
+        body = 'test-body'
+        message = Message(reader, impl, body)
+        self.assertEqual(message._reader, reader)
+        self.assertEqual(message._impl, impl)
+        self.assertEqual(message._body, body)
 
-    def test_call(self):
-        endpoint = Mock()
-        message = Mock()
-        ack = Ack(endpoint, message)
-        ack()
-        endpoint.ack.assert_called_with(message)
+    def test_body(self):
+        reader = Mock()
+        impl = Mock()
+        body = 'test-body'
+        message = Message(reader, impl, body)
+        self.assertEqual(message.body, body)
 
     def test_accept(self):
-        endpoint = Mock()
-        message = Mock()
-        ack = Ack(endpoint, message)
-        ack.accept()
-        endpoint.ack.assert_called_with(message)
+        reader = Mock()
+        impl = Mock()
+        body = 'test-body'
+        message = Message(reader, impl, body)
+        message.ack()
+        reader.ack.assert_called_with(impl)
 
     def test_reject(self):
-        endpoint = Mock()
-        message = Mock()
-        ack = Ack(endpoint, message)
-        ack.reject(True)
-        endpoint.reject.assert_called_with(message, True)
+        reader = Mock()
+        impl = Mock()
+        body = 'test-body'
+        message = Message(reader, impl, body)
+        message.reject(True)
+        reader.reject.assert_called_with(impl, True)
+
+    def test_str(self):
+        reader = Mock()
+        impl = Mock()
+        body = 'test-body'
+        message = Message(reader, impl, body)
+        self.assertEqual(str(message), body)

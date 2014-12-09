@@ -128,12 +128,12 @@ class Producer(BaseProducer):
     def broadcast(self, destinations, ttl=None, **body):
         """
         Broadcast a message to (N) queues.
-        :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.messaging.adapter.node.Destination,..]
+        :param destinations: A list of: gofer.messaging.adapter.model.Destination
+        :type destinations: list
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
-        :return: A list of (addr, sn).
+        :return: A list of (destination, sn).
         :rtype: list
         """
         sns = []
@@ -144,6 +144,9 @@ class Producer(BaseProducer):
 
 
 class PlainProducer(BasePlainProducer):
+    """
+    An plain AMQP message producer.
+    """
 
     def __init__(self, url=None):
         """
@@ -163,10 +166,30 @@ class PlainProducer(BasePlainProducer):
 
     @reliable
     def send(self, destination, content, ttl=None):
+        """
+        Send a message.
+        :param destination: An AMQP destination.
+        :type destination: gofer.messaging.adapter.model.Destination
+        :param content: The message content
+        :type content: buf
+        :param ttl: Time to Live (seconds)
+        :type ttl: float
+        :return: The message ID.
+        :rtype: str
+        """
         return plain_send(self, destination, content, ttl=ttl)
 
     @reliable
     def broadcast(self, destinations, content, ttl=None):
+        """
+        Send a message to multiple destinations.
+        :param destinations: A list of: gofer.messaging.adapter.model.Destination
+        :type destinations: list
+        :param content: The message content
+        :type content: buf
+        :return: A list of (destination, id).
+        :rtype: list
+        """
         id_list = []
         for destination in destinations:
             sn = plain_send(self, destination, content, ttl=ttl)

@@ -76,9 +76,9 @@ class TestBaseConsumer(TestCase):
 
     def test_read(self):
         reader = Mock()
+        message = Mock()
         document = Mock()
-        ack = Mock()
-        reader.next.return_value = (document, ack)
+        reader.next.return_value = (message, document)
         consumer = BaseConsumer(reader)
         consumer.dispatch = Mock()
 
@@ -87,11 +87,10 @@ class TestBaseConsumer(TestCase):
 
         # validate
         consumer.dispatch.assert_called_once_with(document)
-        ack.assert_called_once_with()
+        message.ack.assert_called_once_with()
 
     def test_read_nothing(self):
         reader = Mock()
-        ack = Mock()
         reader.next.return_value = (None, None)
         consumer = BaseConsumer(reader)
         consumer.dispatch = Mock()
@@ -101,7 +100,6 @@ class TestBaseConsumer(TestCase):
 
         # validate
         self.assertFalse(consumer.dispatch.called)
-        self.assertFalse(ack.called)
 
     def test_read_validation_failed(self):
         reader = Mock()
@@ -114,7 +112,7 @@ class TestBaseConsumer(TestCase):
         consumer._read()
 
         # validate
-        consumer._rejected.assert_called_once_with(vf.code, vf.details, message=vf.document)
+        consumer._rejected.assert_called_once_with(vf.code, vf.details, vf.document)
 
     def test_read_invalid_document(self):
         reader = Mock()
@@ -131,7 +129,7 @@ class TestBaseConsumer(TestCase):
         consumer._read()
 
         # validate
-        consumer._rejected.assert_called_once_with(ir.code, ir.details, document=ir.document)
+        consumer._rejected.assert_called_once_with(ir.code, ir.details, ir.document)
 
     @patch('gofer.messaging.consumer.sleep')
     def test_read_exception(self, sleep):

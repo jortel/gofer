@@ -38,11 +38,11 @@ class Test(object):
         received = 0
         with Reader(queue, url=self.url) as r:
             while received < N:
-                m, ack = r.next()
+                m, d = r.next()
                 if m is None:
                     break
-                ack()
-                print '#%d - received: %s' % (received, m)
+                m.ack()
+                print '#%d - received: %s' % (received, d)
                 received += 1
         print 'end'
 

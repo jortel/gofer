@@ -9,10 +9,6 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-
-from gofer.messaging.consumer import Consumer
-
-
 N = 10
 
 
@@ -32,40 +28,12 @@ class Test(object):
         received = 0
         with self.adapter.Reader(queue, url=self.url) as r:
             while received < N:
-                m, ack = r.next()
+                m = r.get()
                 if m is None:
                     break
-                ack()
+                m.ack()
                 print '#%d - received: %s' % (received, m)
                 received += 1
-        print 'end'
-
-    def producer_consumer(self, queue):
-        print 'using producer/consumer'
-    
-        class TestCon(Consumer):
-    
-            def __init__(self, url, adapter):
-                Consumer.__init__(self, queue, url=url)
-                self.reader = adapter.Reader(queue, url=url)
-                self.received = 0
-    
-            def dispatch(self, document):
-                self.received += 1
-                print '%d/%d - %s' % (self.received, N, document)
-                if self.received == N:
-                    self.stop()
-    
-        c = TestCon(self.url, self.adapter)
-        c.start()
-    
-        with self.adapter.Producer(url=self.url) as p:
-            for x in range(0, N):
-                d = queue.destination(self.url)
-                print '#%d - sent: %s' % (x, d.dict())
-                p.send(d)
-    
-        c.join()
         print 'end'
     
     def test_no_exchange(self):
@@ -118,19 +86,10 @@ class Test(object):
         queue.declare(self.url)
         self.producer_reader(queue)
 
-    def test_consumer(self):
-        print 'test consumer builtin (direct) exchange'
-        queue = self.adapter.Queue('test_4')
-        queue.durable = False
-        queue.auto_delete = True
-        queue.declare(self.url)
-        self.producer_consumer(queue)
-
     def __call__(self):
         self.test_no_exchange()
         self.test_direct_exchange()
         self.test_custom_direct_exchange()
         self.test_topic_exchange()
         self.test_custom_topic_exchange()
-        self.test_consumer()
         print 'DONE'

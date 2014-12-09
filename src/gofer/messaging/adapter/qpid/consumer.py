@@ -23,14 +23,14 @@ from logging import getLogger
 
 from qpid.messaging import Empty
 
-from gofer.messaging import auth
-from gofer.messaging import model
-from gofer.messaging.model import Document
-from gofer.messaging.adapter.model import BaseReader, Ack
+from gofer.messaging.adapter.model import BaseReader, Message
 from gofer.messaging.adapter.qpid.endpoint import Endpoint
 
 
 log = getLogger(__name__)
+
+
+NO_DELAY = 0.0010
 
 
 # --- utils ------------------------------------------------------------------
@@ -103,39 +103,20 @@ class Reader(BaseReader):
 
     def get(self, timeout=None):
         """
-        Get the next message.
-        :param timeout: The read timeout.
+        Get the next message from the queue.
+        :param timeout: The read timeout in seconds.
         :type timeout: int
-        :return: The next message, or (None).
-        :rtype: qpid.messaging.Message
+        :return: The next message or None.
+        :rtype: Message
         """
         try:
-            return self._receiver.fetch(timeout=timeout)
+            impl = self._receiver.fetch(timeout or NO_DELAY)
+            if impl:
+                return Message(self, impl, impl.content)
+            else:
+                return None
         except Empty:
             pass
         except Exception:
-            log.error(self.id(), exc_info=1)
+            log.exception(self.id())
             sleep(10)
-
-    def next(self, timeout=90):
-        """
-        Get the next document from the queue.
-        :param timeout: The read timeout.
-        :type timeout: int
-        :return: A tuple of: (document, ack())
-        :rtype: (Document, callable)
-        :raises: model.InvalidDocument
-        """
-        message = self.get(timeout)
-        if message:
-            try:
-                document = auth.validate(self.authenticator, message.content)
-                document.subject = subject(message)
-                document.ttl = message.ttl
-                model.validate(document)
-            except model.InvalidDocument:
-                self.ack(message)
-                raise
-            log.debug('read next: %s', document)
-            return document, Ack(self, message)
-        return None, None

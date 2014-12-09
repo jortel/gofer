@@ -146,7 +146,7 @@ class Producer(BaseProducer):
 
 class PlainProducer(BasePlainProducer):
     """
-    An Plain AMQP message producer.
+    A plain AMQP message producer.
     """
 
     def __init__(self, url=None):
@@ -181,9 +181,9 @@ class PlainProducer(BasePlainProducer):
 
     def broadcast(self, destinations, content, ttl=None):
         """
-        Broadcast a message to (N) queues.
-        :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.messaging.adapter.node.Node,..]
+        Send a message to multiple destinations.
+        :param destinations: A list of: gofer.messaging.adapter.model.Destination
+        :type destinations: list
         :param content: The message content
         :type content: buf
         :return: A list of (destination, id).

@@ -13,8 +13,7 @@ from time import sleep
 from threading import Thread
 from logging import getLogger
 
-from gofer.messaging import auth
-from gofer.messaging import model
+from gofer.messaging.model import InvalidDocument
 from gofer.messaging.adapter.model import Reader
 
 
@@ -70,16 +69,14 @@ class BaseConsumer(Thread):
         Read and process incoming documents.
         """
         try:
-            document, ack = self.reader.next(10)
-            if document is None:
+            message, document = self.reader.next(10)
+            if message is None:
                 return
             log.debug('{%s} read: %s', self.getName(), document)
             self.dispatch(document)
-            ack()
-        except auth.ValidationFailed, vf:
-            self._rejected(vf.code, vf.details, message=vf.document)
-        except model.InvalidDocument, ir:
-            self._rejected(ir.code, ir.details, document=ir.document)
+            message.ack()
+        except InvalidDocument, vf:
+            self._rejected(vf.code, vf.details, vf.document)
         except Exception:
             log.exception(self.getName())
             sleep(10)

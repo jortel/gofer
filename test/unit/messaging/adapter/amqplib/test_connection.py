@@ -157,7 +157,7 @@ class TestConnection(TestCase):
         b.ssl.client_certificate = 'test-crt'
         ssl = Connection._ssl(b)
 
-        self.assertEqual(b.url.input, url)
+        self.assertEqual(str(b.url), url)
 
         # validation
         self.assertEqual(
@@ -176,7 +176,7 @@ class TestConnection(TestCase):
         b = Broker(url)
         ssl = Connection._ssl(b)
 
-        self.assertEqual(b.url.input, url)
+        self.assertEqual(str(b.url), url)
 
         # validation
         self.assertEqual(
@@ -195,7 +195,7 @@ class TestConnection(TestCase):
         b = Broker(url)
         ssl = Connection._ssl(b)
 
-        self.assertEqual(b.url.input, url)
+        self.assertEqual(str(b.url), url)
 
         # validation
         self.assertEqual(ssl, None)
