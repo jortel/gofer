@@ -165,5 +165,6 @@ class TestConsumer(TestCase):
         consumer = Consumer(queue, url)
 
         # validation
+        self.assertEqual(consumer.reader, reader.return_value)
         self.assertEqual(consumer.queue, queue)
         self.assertEqual(consumer.url, url)

@@ -146,12 +146,6 @@ Defines basic plugin properties.
 - **threads** - The (optional) number of threads for the RMI dispatcher.
   Default to (1) when not specified.
 
-[queue]
--------
-
-- **declare** - (optional) Declare the request queue (default: true)
-
-
 This example enables messaging and defines the uuid:
 
 ::

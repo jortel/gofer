@@ -239,22 +239,6 @@ class Plugin(object):
         log.debug('broker configured: %s', broker)
         return broker
 
-    def get_queue(self, name):
-        """
-        Get the plugin request queue.
-        The queue is declared as defined by the plugin descriptor.
-        :param name: The queue name.
-        :type name: str
-        :return: The queue.
-        :rtype: gofer.messaging.Queue
-        """
-        queue = Queue(name)
-        plugin = self.descriptor
-        if get_bool(plugin.queue.declare):
-            url = self.get_url()
-            queue.declare(url)
-        return queue
-
     def attach(self, uuid=None):
         """
         Attach (connect) to AMQP broker using the specified uuid.
@@ -267,7 +251,8 @@ class Plugin(object):
         url = self.get_url()
         if uuid and url:
             self.update_broker()
-            queue = self.get_queue(uuid)
+            queue = Queue(uuid)
+            queue.declare(url)
             consumer = RequestConsumer(queue, url)
             consumer.reader.authenticator = self.authenticator
             consumer.start()

@@ -60,11 +60,6 @@ PLUGIN_SCHEMA = (
             ('threads', OPTIONAL, NUMBER),
         )
     ),
-    ('queue', REQUIRED,
-        (
-            ('declare', OPTIONAL, BOOL),
-        )
-    ),
 )
 
 
@@ -75,9 +70,6 @@ PLUGIN_DEFAULTS = {
     'messaging': {
         'threads': '1',
     },
-    'queue': {
-        'declare': '1'
-    }
 }
 
 
