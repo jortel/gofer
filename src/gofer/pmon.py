@@ -18,15 +18,19 @@ Provides path and process monitoring classes.
 
 import os
 
+from gofer import synchronized
+
 from hashlib import sha256
 from time import sleep
 from threading import Thread, RLock
 from logging import getLogger
 
+
 log = getLogger(__name__)
 
 
 # --- utils ------------------------------------------------------------------
+
 
 def last_modified(path):
     """
@@ -40,8 +44,6 @@ def last_modified(path):
         return os.path.getmtime(path)
     except OSError:
         pass
-    except:
-        log.exception(path)
     return 0
 
 
@@ -66,32 +68,85 @@ def digest(path):
             return h.hexdigest()
         finally:
             fp.close()
-    except IOError:
+    except (IOError, OSError):
         pass
-    except:
-        log.exception(path)
     return None
 
 
 # --- monitor ----------------------------------------------------------------
 
 
-class PathMonitor:
+class Tracker(object):
     """
-    Path monitor.
-    :ivar __paths: A list of paths to monitor.
-    :type __paths: list path:[last_modified, digest, function]
-    :ivar __mutex: The mutex.
-    :type __mutex: RLock
-    :ivar __thread: The optional thread.  see: start().
-    :type __thread: Thread
+    Path monitoring tracker.
+    :ivar path: The absolute path to track.
+    :type path: str
+    :ivar last_modified: Last modified (m-time).
+    :type last_modified: int
+    :ivar digest: hex digest of file content.
+    :type digest: str
+    :ivar target: Called when path change detected.
+    :type target: callable
+    :ivar skip: The calls to skip due to prior call error.
+    :type skip: int
     """
 
-    def __init__(self):
-        self.__paths = {}
+    def __init__(self, path, target):
+        """
+        :param path: The absolute path to track.
+        :type path: str
+        :param target: Called when path change detected.
+        :type target: callable
+        """
+        self.path = path
+        self.last_modified = last_modified(path)
+        self.digest = digest(path)
+        self.target = target
+        self.skip = 0
+
+    def __call__(self, last_modified, digest):
+        """
+        Called when path change detected.
+        :param last_modified: Last modified (m-time).
+        :type last_modified: int
+        :param digest: hex digest of file content.
+        :type digest: str
+        """
+        try:
+            if self.skip:
+                self.skip -= 1
+                return
+            self.target(self.path)
+            self.last_modified = last_modified
+            self.digest = digest
+        except Exception, e:
+            log.info('path: "%s" call raised: "%s"', self, e)
+            self.skip = 30
+
+    def __eq__(self, other):
+        return self.path == other.path and self.target == other.function
+
+    def __str__(self):
+        return self.path
+
+
+class PathMonitor(Thread):
+    """
+    Tracker monitor.
+    :ivar _paths: A list of paths to monitor.
+    :type _paths: list path:[last_modified, digest, function, skip]
+    :ivar __mutex: The mutex.
+    :type __mutex: RLock
+    """
+
+    def __init__(self, precision=1.0):
+        super(PathMonitor, self).__init__()
         self.__mutex = RLock()
-        self.__thread = None
-        
+        self._precision = precision
+        self._paths = []
+        self.setDaemon(True)
+
+    @synchronized
     def add(self, path, target):
         """
         Add a path to be monitored.
@@ -100,137 +155,55 @@ class PathMonitor:
         :param target: Called when a change at path is detected.
         :type target: callable
         """
-        self.__lock()
-        try:
-            self.__paths[path] = [last_modified(path), digest(path), target]
-        finally:
-            self.__unlock()
-        
-    def delete(self, path):
+        self._paths.append(Tracker(path, target))
+
+    @synchronized
+    def delete(self, path, target):
         """
         Delete a path to be monitored.
         :param path: An absolute path to monitor.
         :type path: str
-        """
-        self.__lock()
-        try:
-            try:
-                del self.__paths[path]
-            except KeyError:
-                pass
-        finally:
-            self.__unlock()
-            
-    def start(self, precision=1.0):
-        """
-        Start the monitor thread.
-        :param precision: The precision (how often to check).
-        :type precision: float
-        :return: self
-        :rtype: PathMonitor
-        """
-        self.__lock()
-        try:
-            if self.__thread:
-                raise Exception('already started')
-            thread = MonitorThread(self, precision)
-            thread.start()
-            self.__thread = thread
-            return self
-        finally:
-            self.__unlock()
-    
-    def join(self):
-        """
-        Join the monitoring thread.
-        """
-        if not self.__thread:
-            raise Exception('not started')
-        self.__thread.join()
-
-    def check(self):
-        """
-        Check paths and notify.
-        """
-        self.__lock()
-        try:
-            paths = self.__paths.items()
-        finally:
-            self.__unlock()
-        for k, v in paths:
-            self.__sniff(k, v)
-            
-    def __sniff(self, path, stat):
-        """
-        Sniff and compare the stats of the file at the specified *path*.
-        First, check the modification time, if different, then
-        check the *hash* of the file content to see if it really
-        changed.  If changed, notify the registered listener.
-        :param path: The path of the file to sniff.
-        :type path: str
-        :param stat: The cached stat [last_modified, digest, target]
-        :type stat: list
-        """
-        try:
-            current = [0, None]
-            current[0] = last_modified(path)
-            if current[0] == stat[0]:
-                return
-            current[1] = digest(path)
-            if (current[1] and stat[1]) and (current[1] == stat[1]):
-                return
-            self.__notify(path, stat[2])
-            stat[0] = current[0]
-            stat[1] = current[1]
-        except:
-            log.exception(path)
-    
-    def __notify(self, path, target):
-        """
-        Safely invoke registered callback.
-        :param path: The path of the changed file.
-        :type path: str
-        :param target: A registered callback.
+        :param target: Called when a change at path is detected.
         :type target: callable
         """
         try:
-            target(path)
-        except:
-            log.exception(path)
+            self._paths.remove(Tracker(path, target))
+        except KeyError:
+            pass
 
-    def __lock(self):
-        self.__mutex.acquire()
-        
-    def __unlock(self):
-        self.__mutex.release()
-        
+    @synchronized
+    def paths(self):
+        """
+        A cloned list of paths.
+        :return: List of: Tracker.
+        :rtype: list
+        """
+        return list(self._paths)
 
-class MonitorThread(Thread):
-    """
-    Monitor thread.
-    :ivar monitor: A monitor object.
-    :type monitor: PathMonitor
-    :ivar precision: The level of precision (seconds).
-    :type precision: float
-    """
-    
-    def __init__(self, monitor, precision):
-        """
-        :param monitor: A monitor object.
-        :type monitor: PathMonitor
-        :param precision: The level of precision (seconds).
-        :type precision: float
-        """
-        Thread.__init__(self, name='PathMonitor%s' % precision)
-        self.monitor = monitor
-        self.precision = precision
-        self.setDaemon(True)
-        
     def run(self):
         """
-        Thread main run().
+        Thread main.
         """
-        monitor = self.monitor
+        delay = self._precision
         while True:
-            monitor.check()
-            sleep(self.precision)
+            for tracker in self.paths():
+                sleep(delay)
+                self._sniff(tracker)
+            
+    def _sniff(self, tracker):
+        """
+        Sniff the path.
+          1. diff file modified times.
+          2. diff file hash.
+          3. target()
+        :param tracker: A path to sniff.
+        :type tracker: Tracker
+        """
+        path = tracker.path
+        _last_modified = last_modified(path)
+        if _last_modified == tracker.last_modified:
+            return
+        _digest = digest(path)
+        if _digest == tracker.digest:
+            return
+        tracker(_last_modified, _digest)
