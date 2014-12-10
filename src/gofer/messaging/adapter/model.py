@@ -1240,9 +1240,9 @@ class Domain(object):
     """
     Model object domains.
     :cvar broker: Collection of brokers.
-    :type broker: Domain
+    :type broker: _Domain
     :cvar external: External (not managed) nodes.
-    :type external: Domain
+    :type external: _Domain
     """
     broker = _Domain(Broker)
     external = _Domain()
