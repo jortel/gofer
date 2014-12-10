@@ -40,7 +40,7 @@ class TestConnection(TestCase):
         self.assertTrue(isinstance(c, BaseConnection))
         self.assertEqual(c.url, url)
 
-    @patch('gofer.messaging.adapter.amqplib.connection.Cloud.find')
+    @patch('gofer.messaging.adapter.amqplib.connection.Domain.broker.find')
     @patch('gofer.messaging.adapter.amqplib.connection.Connection._ssl')
     @patch('gofer.messaging.adapter.amqplib.connection.RealConnection')
     def test_open(self, connection, _ssl, find):

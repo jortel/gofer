@@ -26,7 +26,7 @@ from gofer.messaging.adapter import \
     URL, \
     SSL, \
     Broker, \
-    Cloud, \
+    Domain, \
     Adapter, \
     AdapterError, \
     AdapterNotFound, \

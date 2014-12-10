@@ -35,7 +35,7 @@ from gofer.config import Config, Graph, get_bool
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
 from gofer.collator import Module
-from gofer.messaging import Broker, Cloud, Queue
+from gofer.messaging import Broker, Domain, Queue
 
 
 log = getLogger(__name__)
@@ -235,7 +235,7 @@ class Plugin(object):
             plugin.messaging.clientcert or agent.messaging.clientcert
         broker.ssl.host_validation = \
             get_bool(plugin.messaging.host_validation or agent.messaging.host_validation)
-        Cloud.add(broker)
+        Domain.broker.add(broker)
         log.debug('broker configured: %s', broker)
         return broker
 

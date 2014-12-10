@@ -33,7 +33,84 @@ DEFAULT_URL = 'amqp://localhost'
 log = getLogger(__name__)
 
 
-class Destination(object):
+# --- domain -----------------------------------------------------------------
+
+
+class Model(object):
+
+    @property
+    def domain_id(self):
+        raise NotImplementedError()
+
+
+class _Domain(object):
+    """
+    Base domain container.
+    """
+
+    def __init__(self, builder=None):
+        """
+        :param builder: A factory method.
+        :type builder: callable
+        :return:
+        """
+        self.content = {}
+        self.builder = builder
+
+    def add(self, thing):
+        """
+        Add the object.
+        :param thing: An object to be added.
+        :type thing: Model
+        """
+        self.content[thing.domain_id] = thing
+
+    def find(self, key):
+        """
+        Find the domain object by key.
+        Returns the found object or the object created by the
+        optional builder called as: builder(key).
+        :param key: The object key.
+        :type key: str
+        :return: The requested object.
+        :rtype: object
+        """
+        try:
+            return self.content[key]
+        except KeyError:
+            pass
+        if self.builder:
+            return self.builder(key)
+
+    def delete(self, thing):
+        """
+        Delete the specified node.
+        :param thing: An object to be deleted.
+        :type thing: Model
+        """
+        del self.content[thing.domain_id]
+
+    def has(self, thing):
+        """
+        Test whether the thing is a member of the domain.
+        :param thing: A thing to test.
+        :type thing: Model
+        :return: True if contained.
+        :rtype: bool
+        """
+        return thing.domain_id in self.content
+
+    def __contains__(self, thing):
+        return self.has(thing)
+
+    def __len__(self):
+        return len(self.content)
+
+
+# --- destination ------------------------------------------------------------
+
+
+class Destination(Model):
     """
     An AMQP destination.
     :ivar routing_key: Message routing key.
@@ -82,7 +159,7 @@ class Destination(object):
 # --- node -------------------------------------------------------------------
 
 
-class Node(object):
+class Node(Model):
     """
     An AMQP node.
     :ivar name: The node name.
@@ -95,6 +172,15 @@ class Node(object):
         :type name: str
         """
         self.name = name
+
+    @property
+    def domain_id(self):
+        """
+        Get the domain ID.
+        :return: The domain id.
+        :rtype: str
+        """
+        return '::'.join((self.__class__.__name__, self.name))
 
     def declare(self, url):
         """
@@ -163,6 +249,9 @@ class Exchange(BaseExchange):
         :type url: str
         :raise: ModelError
         """
+        if self in Domain.external:
+            # not managed
+            return
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name, policy=self.policy)
         impl.durable = self.durable
@@ -177,6 +266,9 @@ class Exchange(BaseExchange):
         :type url: str
         :raise: ModelError
         """
+        if self in Domain.external:
+            # not managed
+            return
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name)
         impl.delete(url)
@@ -255,6 +347,9 @@ class Queue(BaseQueue):
         :type url: str
         :raise: ModelError
         """
+        if self in Domain.external:
+            # not managed
+            return
         adapter = Adapter.find(url)
         impl = adapter.Queue(self.name, self.exchange, self.routing_key)
         impl.durable = self.durable
@@ -270,6 +365,9 @@ class Queue(BaseQueue):
         :type url: str
         :raise: ModelError
         """
+        if self in Domain.external:
+            # not managed
+            return
         adapter = Adapter.find(url)
         impl = adapter.Queue(self.name)
         impl.delete(url)
@@ -309,7 +407,7 @@ class Queue(BaseQueue):
 # --- endpoint ---------------------------------------------------------------
 
 
-class BaseEndpoint(object):
+class BaseEndpoint(Model):
     """
     Base class for an AMQP endpoint.
     :ivar url: The broker URL.
@@ -439,7 +537,7 @@ class Messenger(BaseEndpoint):
 # --- reader -----------------------------------------------------------------
 
 
-class Message(object):
+class Message(Model):
     """
     A read message.
     :ivar _reader: The reader that read the message.
@@ -878,7 +976,7 @@ class PlainProducer(BasePlainProducer):
 # --- connection -------------------------------------------------------------
 
 
-class BaseConnection(object):
+class BaseConnection(Model):
     """
     Base AMQP connection.
     :ivar url: A broker URL.
@@ -1007,43 +1105,10 @@ class SharedConnection(type):
             return inst
 
 
-# --- cloud|broker -----------------------------------------------------------
+# --- broker -----------------------------------------------------------------
 
 
-class Cloud(object):
-    """
-    A collection of AMQP brokers.
-    :cvar nodes: Brokers by URL.
-    :type nodes: dict
-    """
-
-    nodes = {}
-
-    @staticmethod
-    def add(broker):
-        """
-        Add a broker.
-        :param broker: A broker.
-        :type broker: Broker
-        """
-        Cloud.nodes[str(broker.url)] = broker
-
-    @staticmethod
-    def find(url):
-        """
-        Find a broker by URL.
-        :param url: A broker URL.
-        :type url: str
-        :return: The found broker.
-        :rtype: Broker
-        """
-        try:
-            return Cloud.nodes[url]
-        except KeyError:
-            return Broker(url)
-
-
-class SSL(object):
+class SSL(Model):
     """
     SSL configuration.
     :ivar ca_certificate: The absolute path to a CA certificate.
@@ -1071,7 +1136,7 @@ class SSL(object):
         return '|'.join(s)
 
 
-class Broker(object):
+class Broker(Model):
     """
     Represents an AMQP broker.
     :ivar url: The broker's url.
@@ -1088,6 +1153,15 @@ class Broker(object):
         """
         self.url = URL(url or DEFAULT_URL)
         self.ssl = SSL()
+
+    @property
+    def domain_id(self):
+        """
+        Get the domain ID.
+        :return: The domain id.
+        :rtype: str
+        """
+        return str(self.url)
 
     @property
     def adapter(self):
@@ -1157,3 +1231,18 @@ class Broker(object):
         s.append('URL: %s' % self.url)
         s.append('SSL: %s' % self.ssl)
         return '|'.join(s)
+
+
+# --- doamin -----------------------------------------------------------------
+
+
+class Domain(object):
+    """
+    Model object domains.
+    :cvar broker: Collection of brokers.
+    :type broker: Domain
+    :cvar external: External (not managed) nodes.
+    :type external: Domain
+    """
+    broker = _Domain(Broker)
+    external = _Domain()

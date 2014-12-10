@@ -22,7 +22,7 @@ from logging import getLogger
 from qpid.messaging import Connection as RealConnection
 from qpid.messaging.transports import TRANSPORTS
 
-from gofer.messaging.adapter.model import Cloud, BaseConnection, SharedConnection
+from gofer.messaging.adapter.model import Domain, BaseConnection, SharedConnection
 
 
 log = getLogger(__name__)
@@ -70,7 +70,7 @@ class Connection(BaseConnection):
         if self.is_open():
             # already open
             return
-        broker = Cloud.find(self.url)
+        broker = Domain.broker.find(self.url)
         ssl = broker.ssl
         Connection.add_transports()
         log.info('connecting: %s', broker)

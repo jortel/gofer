@@ -20,14 +20,14 @@ from mock import patch, Mock
 from gofer.messaging.model import Document
 from gofer.messaging.adapter.url import URL
 from gofer.messaging.adapter.model import Destination
-from gofer.messaging.adapter.model import Node
+from gofer.messaging.adapter.model import _Domain, Node
 from gofer.messaging.adapter.model import BaseExchange, Exchange
 from gofer.messaging.adapter.model import BaseQueue, Queue
 from gofer.messaging.adapter.model import BaseEndpoint, Messenger
 from gofer.messaging.adapter.model import BaseReader, Reader
 from gofer.messaging.adapter.model import BaseProducer, Producer
 from gofer.messaging.adapter.model import BasePlainProducer, PlainProducer
-from gofer.messaging.adapter.model import Broker, SSL, Cloud
+from gofer.messaging.adapter.model import Broker, SSL
 from gofer.messaging.adapter.model import BaseConnection, Connection, SharedConnection
 from gofer.messaging.adapter.model import Message
 from gofer.messaging.adapter.model import ModelError
@@ -96,6 +96,37 @@ class TestDestination(TestCase):
 # --- node ---------------------------------------------------------
 
 
+class TestDomain(TestCase):
+
+    def test_init(self):
+        builder = Mock()
+        domain = _Domain(builder)
+        self.assertEqual(domain.builder, builder)
+        self.assertEqual(domain.content, {})
+
+    def test_all(self):
+        cat = Node('cat')
+        dog = Queue('dog')
+        builder = Mock()
+        domain = _Domain(builder)
+        domain.add(cat)
+        # add
+        domain.add(dog)
+        self.assertEqual(domain.content, {'Node::cat': cat, 'Queue::dog': dog})
+        # has
+        self.assertTrue(domain.has(dog))
+        self.assertFalse(domain.has(Node('dog')))
+        self.assertTrue(dog in domain)
+        # find
+        self.assertEqual(domain.find(dog.domain_id), dog)
+        # find (with builder)
+        self.assertEqual(domain.find('123'), builder.return_value)
+        builder.assert_called_once_with('123')
+        # delete
+        domain.delete(dog)
+        self.assertEqual(domain.content, {'Node::cat': cat})
+
+
 class TestNode(TestCase):
 
     def test_init(self):
@@ -107,6 +138,10 @@ class TestNode(TestCase):
         n = Node('test')
         self.assertRaises(NotImplementedError, n.declare, '')
         self.assertRaises(NotImplementedError, n.delete, '')
+
+    def test_domain_id(self):
+        n = Node('test')
+        self.assertEqual(n.domain_id, 'Node::test')
 
 
 # --- exchange ---------------------------------------------------------------
@@ -165,6 +200,18 @@ class TestExchange(TestCase):
         self.assertEqual(impl.durable, exchange.durable)
         self.assertEqual(impl.auto_delete, exchange.auto_delete)
 
+    @patch('gofer.messaging.adapter.model._Domain.has')
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_declare_external(self, _find, _has):
+        _has.return_value = True
+        exchange = Exchange('')
+
+        # test
+        exchange.declare('')
+
+        # validation
+        self.assertFalse(_find.called)
+
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_delete(self, _find):
         plugin = Mock()
@@ -178,6 +225,18 @@ class TestExchange(TestCase):
         plugin.Exchange.assert_called_with(exchange.name)
         impl = plugin.Exchange()
         impl.delete.assert_called_with(TEST_URL)
+
+    @patch('gofer.messaging.adapter.model._Domain.has')
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_delete_external(self, _find, _has):
+        _has.return_value = True
+        exchange = Exchange('')
+
+        # test
+        exchange.delete('')
+
+        # validation
+        self.assertFalse(_find.called)
 
 
 # --- queue ------------------------------------------------------------------
@@ -250,6 +309,18 @@ class TestQueue(TestCase):
         self.assertEqual(impl.auto_delete, queue.auto_delete)
         self.assertEqual(impl.exclusive, queue.exclusive)
 
+    @patch('gofer.messaging.adapter.model._Domain.has')
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_declare_external(self, _find, _has):
+        _has.return_value = True
+        queue = Queue('')
+
+        # test
+        queue.declare('')
+
+        # validation
+        self.assertFalse(_find.called)
+
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_delete(self, _find):
         plugin = Mock()
@@ -264,6 +335,18 @@ class TestQueue(TestCase):
         plugin.Queue.assert_called_with(name)
         impl = plugin.Queue()
         impl.delete.assert_called_with(TEST_URL)
+
+    @patch('gofer.messaging.adapter.model._Domain.has')
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_delete_external(self, _find, _has):
+        _has.return_value = True
+        queue = Queue('')
+
+        # test
+        queue.delete('')
+
+        # validation
+        self.assertFalse(_find.called)
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_destination(self, _find):
@@ -1059,27 +1142,6 @@ class TestSharedConnection(TestCase):
         self.assertNotEqual(fake1, fake3)
 
 
-# --- cloud ------------------------------------------------------------------
-
-
-class TestCloud(TestCase):
-
-    @patch('gofer.messaging.adapter.model.Cloud.nodes', {})
-    def test_add(self):
-        url = TEST_URL
-        broker = Mock(url=URL(url))
-        Cloud.add(broker)
-        self.assertEqual(Cloud.nodes[url], broker)
-
-    @patch('gofer.messaging.adapter.model.Cloud.nodes', {})
-    def test_find(self):
-        url = TEST_URL
-        broker = Cloud.find(url)
-        self.assertEqual(broker.url, URL(url))
-        Cloud.add(broker)
-        self.assertEqual(Cloud.find(url), broker)
-
-
 # --- broker -----------------------------------------------------------------
 
 
@@ -1130,6 +1192,11 @@ class TestBroker(TestCase):
             str(b),
             'URL: qpid+amqp://elmer:fudd@test.com/test|SSL: ca: test-ca|'
             'key: test-key|certificate: test-cert|host-validation: False')
+
+    def test_domain_id(self):
+        url = 'amqp://localhost'
+        b = Broker(url)
+        self.assertEqual(b.domain_id, url)
 
 
 # --- message ----------------------------------------------------------------

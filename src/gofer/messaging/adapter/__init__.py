@@ -24,7 +24,7 @@ from gofer.messaging.adapter.factory import \
 from gofer.messaging.adapter.model import \
     SSL, \
     Broker, \
-    Cloud, \
+    Domain, \
     Connection, \
     Destination, \
     Exchange, \

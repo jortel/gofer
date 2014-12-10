@@ -18,7 +18,7 @@ from socket import error as SocketError
 from amqplib.client_0_8 import Connection as RealConnection
 from amqplib.client_0_8 import AMQPConnectionException
 
-from gofer.messaging.adapter.model import Cloud, BaseConnection, SharedConnection
+from gofer.messaging.adapter.model import Domain, BaseConnection, SharedConnection
 
 log = getLogger(__name__)
 
@@ -86,7 +86,7 @@ class Connection(BaseConnection):
             return
         while True:
             try:
-                broker = Cloud.find(self.url)
+                broker = Domain.broker.find(self.url)
                 log.info('connecting: %s', broker)
                 self._impl = RealConnection(
                     host=':'.join((broker.host, str(broker.port))),
