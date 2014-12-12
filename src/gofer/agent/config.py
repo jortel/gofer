@@ -22,16 +22,6 @@ AGENT_SCHEMA = (
     ('logging', REQUIRED,
         []
     ),
-    ('messaging', REQUIRED,
-        (
-            ('url', OPTIONAL, ANY),
-            ('userid', OPTIONAL, ANY),
-            ('password', OPTIONAL, ANY),
-            ('cacert', OPTIONAL, ANY),
-            ('clientcert', OPTIONAL, ANY),
-            ('host_validation', OPTIONAL, BOOL),
-        )
-    ),
     ('pam', REQUIRED,
         (
             ('service', OPTIONAL, ANY),
@@ -52,8 +42,6 @@ PLUGIN_SCHEMA = (
         (
             ('uuid', OPTIONAL, ANY),
             ('url', OPTIONAL, ANY),
-            ('userid', OPTIONAL, ANY),
-            ('password', OPTIONAL, ANY),
             ('cacert', OPTIONAL, ANY),
             ('clientcert', OPTIONAL, ANY),
             ('host_validation', OPTIONAL, BOOL),

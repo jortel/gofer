@@ -30,7 +30,7 @@ from gofer.rmi.threadpool import ThreadPool
 from gofer.rmi.consumer import RequestConsumer
 from gofer.rmi.decorators import Remote
 from gofer.agent.deplist import DepList
-from gofer.agent.config import AgentConfig, PLUGIN_SCHEMA, PLUGIN_DEFAULTS
+from gofer.agent.config import PLUGIN_SCHEMA, PLUGIN_DEFAULTS
 from gofer.config import Config, Graph, get_bool
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
@@ -179,8 +179,8 @@ class Plugin(object):
         
     def get_uuid(self):
         """
-        Get the plugin's messaging UUID.
-        :return: The plugin's messaging UUID.
+        Get the plugin messaging UUID.
+        :return: The plugin messaging UUID.
         :rtype: str
         """
         return self.descriptor.messaging.uuid
@@ -191,9 +191,7 @@ class Plugin(object):
         :return: The broker URL
         :rtype: str
         """
-        agent = AgentConfig()
-        plugin = self.descriptor
-        return plugin.messaging.url or agent.messaging.url
+        return self.descriptor.messaging.url
 
     def get_broker(self):
         """
@@ -225,16 +223,12 @@ class Plugin(object):
         :return: The updated broker.
         :rtype: gofer.messaging.adapter.model.Broker
         """
-        agent = AgentConfig()
-        plugin = self.descriptor
         url = self.get_url()
         broker = Broker(url)
-        broker.ssl.ca_certificate = \
-            plugin.messaging.cacert or agent.messaging.cacert
-        broker.ssl.client_certificate = \
-            plugin.messaging.clientcert or agent.messaging.clientcert
-        broker.ssl.host_validation = \
-            get_bool(plugin.messaging.host_validation or agent.messaging.host_validation)
+        messaging = self.descriptor.messaging
+        broker.ssl.ca_certificate = messaging.cacert
+        broker.ssl.client_certificate = messaging.clientcert
+        broker.ssl.host_validation = messaging.host_validation
         Domain.broker.add(broker)
         log.debug('broker configured: %s', broker)
         return broker

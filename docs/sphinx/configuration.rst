@@ -49,45 +49,10 @@ Examples:
  messaging = WARNING
 
 
-[messaging]
------------
+[pam]
+-----
 
-Defines messaging properties:
-
-- **url** - The broker connection URL.
-  No value indicates that gofer should **not** connect to the broker.
-  *format*: *<adapter>+<protocol>://<user>:<password>@<host>:<port>/<virtual-host>*,
-  protocol is one of:
-
-   - **tcp**:   non-SSL protocol
-   - **amqp**:  non-SSL protocol
-   - **ssl**:   SSL protocol
-   - **amqps**: SSL protocol
-
-  The <adapter>, <user>:<password> and /<virtual-host> are optional.
-  See: :doc:`adapter` for list of supported adapters.
-
-  The <port> is optional and defaults based on the protocol when not specified:
-
-   - (amqp|tcp)  port:5672
-   - (amqps|ssl) port:5671
-
-- **cacert** - The (optional) SSL CA certificate used to validate the server certificate.
-- **virtual_host** - The (optional) broker virtual host.
-- **clientcert** - The (optional) SSL client certificate.
-- **host_validation** - The (optional) flag indicates SSL host validation should be performed.
-- **userid** - The (optional) userid used for authentication.
-- **password** - The (optional) password used for authentication.
-  A (PEM) file containing **both** the private key and certificate.
-
-Example:
-
-::
-
- [messaging]
- url = amqp://localhost:5672
- cacert = /etc/pki/qpid/ca/ca.crt
- clientcert = /etc/pki/qpid/client/client.pem
+- **service** - The (optional) service to be used for PAM authentication.
 
 
 Plugin Descriptors
@@ -140,9 +105,9 @@ Defines basic plugin properties.
    - (amqps|ssl) port:5671
 
 - **cacert** - The (optional) SSL CA certificate used to validate the server certificate.
-- **clientcert** - The (optional) SSL client certificate.  A (PEM) file containing **both**
-  the private key and certificate.
-- **host_validation** - Enable SSL host validation.
+- **clientcert** - The (optional) SSL client certificate.
+  A (PEM) file containing **both** the private key and certificate.
+- **host_validation** - The (optional) flag indicates SSL host validation should be performed.
 - **threads** - The (optional) number of threads for the RMI dispatcher.
   Default to (1) when not specified.
 
