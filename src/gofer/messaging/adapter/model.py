@@ -13,6 +13,7 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
+from time import sleep
 from logging import getLogger
 from threading import local as Local
 
@@ -20,7 +21,6 @@ from uuid import uuid4
 
 from gofer.messaging.adapter.url import URL
 from gofer.messaging.adapter.factory import Adapter
-from gofer.messaging.adapter.decorators import model
 from gofer.messaging.model import ModelError, validate
 from gofer.messaging import auth as auth
 
@@ -29,17 +29,67 @@ ROUTE_ALL = '#'
 DIRECT = 'direct'
 TOPIC = 'topic'
 DEFAULT_URL = 'amqp://localhost'
+DELAY = 0.0010
+MAX_DELAY = 2.0
+DELAY_MULTIPLIER = 1.2
 
 log = getLogger(__name__)
+
+
+def model(fn):
+    def _fn(*args, **keywords):
+        try:
+            return fn(*args, **keywords)
+        except ModelError:
+            raise
+        except Exception, e:
+            raise ModelError(e)
+    return _fn
+
+
+def managed(fn):
+    def _fn(node, *args, **keywords):
+        if node in Domain.node.not_managed:
+            # not managed
+            return
+        else:
+            return fn(node, *args, **keywords)
+    return _fn
+
+
+def blocking(fn):
+    def _fn(reader, timeout=None):
+        delay = DELAY
+        timer = float(timeout or 0)
+        while True:
+            message = fn(reader, timer)
+            if message:
+                return message
+            if timer > 0:
+                sleep(delay)
+                timer -= delay
+                if delay < MAX_DELAY:
+                    delay *= DELAY_MULTIPLIER
+            else:
+                break
+    return _fn
 
 
 # --- domain -----------------------------------------------------------------
 
 
 class Model(object):
+    """
+    Adapter model object.
+    """
 
     @property
     def domain_id(self):
+        """
+        Unique domain ID.
+        :return: A unique domain ID.
+        :rtype: str
+        """
         raise NotImplementedError()
 
 
@@ -90,7 +140,7 @@ class _Domain(object):
         """
         del self.content[thing.domain_id]
 
-    def has(self, thing):
+    def contains(self, thing):
         """
         Test whether the thing is a member of the domain.
         :param thing: A thing to test.
@@ -101,7 +151,7 @@ class _Domain(object):
         return thing.domain_id in self.content
 
     def __contains__(self, thing):
-        return self.has(thing)
+        return self.contains(thing)
 
     def __len__(self):
         return len(self.content)
@@ -197,7 +247,7 @@ class Node(Model):
         :type url: str
         """
         raise NotImplementedError()
-
+    
 
 class BaseExchange(Node):
     """
@@ -242,6 +292,7 @@ class Exchange(BaseExchange):
         BaseExchange.__init__(self, name, policy)
 
     @model
+    @managed
     def declare(self, url=None):
         """
         Declare the node.
@@ -249,9 +300,6 @@ class Exchange(BaseExchange):
         :type url: str
         :raise: ModelError
         """
-        if self in Domain.external:
-            # not managed
-            return
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name, policy=self.policy)
         impl.durable = self.durable
@@ -259,6 +307,7 @@ class Exchange(BaseExchange):
         impl.declare(url)
 
     @model
+    @managed
     def delete(self, url=None):
         """
         Delete the node.
@@ -266,9 +315,6 @@ class Exchange(BaseExchange):
         :type url: str
         :raise: ModelError
         """
-        if self in Domain.external:
-            # not managed
-            return
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name)
         impl.delete(url)
@@ -340,6 +386,7 @@ class Queue(BaseQueue):
         BaseQueue.__init__(self, name, exchange, routing_key)
 
     @model
+    @managed
     def declare(self, url=None):
         """
         Declare the node.
@@ -347,9 +394,6 @@ class Queue(BaseQueue):
         :type url: str
         :raise: ModelError
         """
-        if self in Domain.external:
-            # not managed
-            return
         adapter = Adapter.find(url)
         impl = adapter.Queue(self.name, self.exchange, self.routing_key)
         impl.durable = self.durable
@@ -358,6 +402,7 @@ class Queue(BaseQueue):
         impl.declare(url)
 
     @model
+    @managed
     def delete(self, url=None):
         """
         Delete the node.
@@ -365,9 +410,6 @@ class Queue(BaseQueue):
         :type url: str
         :raise: ModelError
         """
-        if self in Domain.external:
-            # not managed
-            return
         adapter = Adapter.find(url)
         impl = adapter.Queue(self.name)
         impl.delete(url)
@@ -1233,7 +1275,14 @@ class Broker(Model):
         return '|'.join(s)
 
 
-# --- doamin -----------------------------------------------------------------
+# --- domain -----------------------------------------------------------------
+
+
+class _NodeDomain(object):
+    """
+    Node domain.
+    """
+    not_managed = _Domain()
 
 
 class Domain(object):
@@ -1241,8 +1290,8 @@ class Domain(object):
     Model object domains.
     :cvar broker: Collection of brokers.
     :type broker: _Domain
-    :cvar external: External (not managed) nodes.
-    :type external: _Domain
+    :cvar node: External (not managed) nodes.
+    :type node: _NodeDomain
     """
     broker = _Domain(Broker)
-    external = _Domain()
+    node = _NodeDomain()

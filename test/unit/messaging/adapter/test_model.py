@@ -31,6 +31,7 @@ from gofer.messaging.adapter.model import Broker, SSL
 from gofer.messaging.adapter.model import BaseConnection, Connection, SharedConnection
 from gofer.messaging.adapter.model import Message
 from gofer.messaging.adapter.model import ModelError
+from gofer.messaging.adapter.model import model, blocking, managed, DELAY, DELAY_MULTIPLIER
 
 
 TEST_URL = 'qpid+amqp://elmer:fudd@test.com/test'
@@ -46,6 +47,145 @@ class FakeConnection(object):
 
     def __init__(self, url):
         self.url = url
+
+
+# --- decorators -------------------------------------------------------------
+
+
+class TestModelDecorator(TestCase):
+
+    def test_call(self):
+        fn = Mock()
+        _fn = model(fn)
+        args = [1, 2, 3]
+        keywords = dict(a=1, b=2)
+        ret = _fn(*args, **keywords)
+        fn.assert_called_once_with(*args, **keywords)
+        self.assertEqual(ret, fn.return_value)
+
+    def test_raised_model_error(self):
+        fn = Mock(side_effect=ModelError)
+        _fn = model(fn)
+        self.assertRaises(ModelError, _fn)
+
+    def test_raised_other(self):
+        fn = Mock(side_effect=ValueError)
+        _fn = model(fn)
+        self.assertRaises(ModelError, _fn)
+
+
+class TestManagedDecorator(TestCase):
+
+    def test_call(self):
+        fn = Mock()
+        node = Mock(domain_id='node')
+        _fn = managed(fn)
+        args = [node, 2, 3]
+        keywords = dict(a=1, b=2)
+        ret = _fn(*args, **keywords)
+        fn.assert_called_once_with(*args, **keywords)
+        self.assertEqual(ret, fn.return_value)
+
+    @patch('gofer.messaging.adapter.model._Domain.contains')
+    def test_not_called(self, contains):
+        fn = Mock()
+        node = Mock(domain_id='node')
+        contains.return_value = True
+        _fn = managed(fn)
+        args = [node, 2, 3]
+        keywords = dict(a=1, b=2)
+        _fn(*args, **keywords)
+        self.assertFalse(fn.called)
+
+
+class TestBlockingDecorator(TestCase):
+
+    def test_call(self):
+        fn = Mock()
+        _fn = blocking(fn)
+        reader = Mock()
+        timeout = 10
+        message = _fn(reader, timeout)
+        fn.assert_called_once_with(reader, timeout)
+        self.assertEqual(message, fn.return_value)
+
+    @patch('gofer.messaging.adapter.model.sleep')
+    def test_delay(self, sleep):
+        received = [
+            None,
+            None,
+            Mock()]
+        fn = Mock(side_effect=received)
+        _fn = blocking(fn)
+        reader = Mock()
+        timeout = 10
+        message = _fn(reader, timeout)
+        self.assertEqual(
+            fn.call_args_list,
+            [
+                ((reader, float(timeout)), {}),
+                ((reader, float(timeout - DELAY)), {}),
+                ((reader, float(timeout - (DELAY + (DELAY * DELAY_MULTIPLIER)))), {})
+            ])
+        self.assertEqual(
+            sleep.call_args_list,
+            [
+                ((DELAY,), {}),
+                ((DELAY * DELAY_MULTIPLIER,), {})
+            ])
+        self.assertEqual(message, received[-1])
+
+    @patch('gofer.messaging.adapter.model.sleep')
+    def test_call_blocking(self, sleep):
+        fn = Mock(return_value=None)
+        _fn = blocking(fn)
+        reader = Mock()
+        timeout = 10
+        message = _fn(reader, timeout)
+        self.assertEqual(message, None)
+        total = 0.0
+        for call in sleep.call_args_list:
+            total += call[0][0]
+        self.assertEqual(int(total), timeout)
+        self.assertEqual(fn.call_count, 43)
+
+
+# --- domain -----------------------------------------------------------------
+
+
+class TestDomain(TestCase):
+
+    def test_init(self):
+        builder = Mock()
+        domain = _Domain(builder)
+        self.assertEqual(domain.builder, builder)
+        self.assertEqual(domain.content, {})
+
+    def test_all(self):
+        cat = Node('cat')
+        dog = Queue('dog')
+        builder = Mock()
+        domain = _Domain(builder)
+        domain.add(cat)
+        # add
+        domain.add(dog)
+        self.assertEqual(domain.content, {'Node::cat': cat, 'Queue::dog': dog})
+        # contains
+        self.assertTrue(domain.contains(dog))
+        self.assertFalse(domain.contains(Node('dog')))
+        self.assertTrue(dog in domain)
+        # find
+        self.assertEqual(domain.find(dog.domain_id), dog)
+        # find (with builder)
+        self.assertEqual(domain.find('123'), builder.return_value)
+        builder.assert_called_once_with('123')
+        # delete
+        domain.delete(dog)
+        self.assertEqual(domain.content, {'Node::cat': cat})
+
+
+
+# --- destination ------------------------------------------------------------
 
 
 class TestDestination(TestCase):
@@ -94,37 +234,6 @@ class TestDestination(TestCase):
 
 
 # --- node ---------------------------------------------------------
-
-
-class TestDomain(TestCase):
-
-    def test_init(self):
-        builder = Mock()
-        domain = _Domain(builder)
-        self.assertEqual(domain.builder, builder)
-        self.assertEqual(domain.content, {})
-
-    def test_all(self):
-        cat = Node('cat')
-        dog = Queue('dog')
-        builder = Mock()
-        domain = _Domain(builder)
-        domain.add(cat)
-        # add
-        domain.add(dog)
-        self.assertEqual(domain.content, {'Node::cat': cat, 'Queue::dog': dog})
-        # has
-        self.assertTrue(domain.has(dog))
-        self.assertFalse(domain.has(Node('dog')))
-        self.assertTrue(dog in domain)
-        # find
-        self.assertEqual(domain.find(dog.domain_id), dog)
-        # find (with builder)
-        self.assertEqual(domain.find('123'), builder.return_value)
-        builder.assert_called_once_with('123')
-        # delete
-        domain.delete(dog)
-        self.assertEqual(domain.content, {'Node::cat': cat})
 
 
 class TestNode(TestCase):
@@ -200,18 +309,6 @@ class TestExchange(TestCase):
         self.assertEqual(impl.durable, exchange.durable)
         self.assertEqual(impl.auto_delete, exchange.auto_delete)
 
-    @patch('gofer.messaging.adapter.model._Domain.has')
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_declare_external(self, _find, _has):
-        _has.return_value = True
-        exchange = Exchange('')
-
-        # test
-        exchange.declare('')
-
-        # validation
-        self.assertFalse(_find.called)
-
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_delete(self, _find):
         plugin = Mock()
@@ -225,18 +322,6 @@ class TestExchange(TestCase):
         plugin.Exchange.assert_called_with(exchange.name)
         impl = plugin.Exchange()
         impl.delete.assert_called_with(TEST_URL)
-
-    @patch('gofer.messaging.adapter.model._Domain.has')
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_delete_external(self, _find, _has):
-        _has.return_value = True
-        exchange = Exchange('')
-
-        # test
-        exchange.delete('')
-
-        # validation
-        self.assertFalse(_find.called)
 
 
 # --- queue ------------------------------------------------------------------
@@ -309,18 +394,6 @@ class TestQueue(TestCase):
         self.assertEqual(impl.auto_delete, queue.auto_delete)
         self.assertEqual(impl.exclusive, queue.exclusive)
 
-    @patch('gofer.messaging.adapter.model._Domain.has')
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_declare_external(self, _find, _has):
-        _has.return_value = True
-        queue = Queue('')
-
-        # test
-        queue.declare('')
-
-        # validation
-        self.assertFalse(_find.called)
-
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_delete(self, _find):
         plugin = Mock()
@@ -335,18 +408,6 @@ class TestQueue(TestCase):
         plugin.Queue.assert_called_with(name)
         impl = plugin.Queue()
         impl.delete.assert_called_with(TEST_URL)
-
-    @patch('gofer.messaging.adapter.model._Domain.has')
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_delete_external(self, _find, _has):
-        _has.return_value = True
-        queue = Queue('')
-
-        # test
-        queue.delete('')
-
-        # validation
-        self.assertFalse(_find.called)
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_destination(self, _find):
@@ -661,6 +722,24 @@ class TestReader(TestCase):
         validate.assert_called_once_with(document)
         self.assertEqual(_message, reader.get.return_value)
         self.assertEqual(_document, document)
+
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_next_not_found(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Reader.return_value = _impl
+        _find.return_value = plugin
+
+        # test
+        reader = Reader(None)
+        reader.get = Mock(return_value=None)
+        reader.authenticator = Mock()
+        _message, _document = reader.next(10)
+
+        # validation
+        reader.get.assert_called_once_with(10)
+        self.assertEqual(_message, None)
+        self.assertEqual(_document, None)
 
     @patch('gofer.messaging.adapter.model.validate')
     @patch('gofer.messaging.adapter.model.auth')

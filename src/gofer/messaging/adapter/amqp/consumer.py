@@ -11,8 +11,7 @@
 
 from logging import getLogger
 
-from gofer.messaging.adapter.model import BaseReader, Message
-from gofer.messaging.adapter.decorators import blocking
+from gofer.messaging.adapter.model import BaseReader, Message, blocking
 from gofer.messaging.adapter.amqp.endpoint import Endpoint, reliable
 
 
