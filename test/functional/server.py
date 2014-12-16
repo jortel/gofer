@@ -24,6 +24,7 @@ from datetime import timedelta as delta
 from logging import DEBUG, INFO, basicConfig, getLogger
 from threading import Thread
 
+from gofer.messaging import Queue
 from gofer.rmi.window import *
 from gofer.rmi.dispatcher import *
 from gofer.rmi.async import ReplyConsumer
@@ -487,6 +488,9 @@ if __name__ == '__main__':
         yp[u] = p
 
     url = options.url
+
+    queue = Queue(uuid)
+    queue.declare(url)
 
     if options.auth:
         authenticator = TestAuthenticator()
