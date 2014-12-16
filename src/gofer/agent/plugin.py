@@ -196,7 +196,8 @@ class Plugin(object):
         # queue
         if not get_bool(self.cfg.queue.managed):
             # not managed
-            Domain.node.not_managed.add(self.uuid)
+            queue = Queue(self.uuid)
+            Domain.node.not_managed.add(queue)
         # broker
         broker = Broker(self.url)
         messaging = self.cfg.messaging
