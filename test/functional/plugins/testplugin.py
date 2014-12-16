@@ -27,7 +27,6 @@ from gofer.messaging import Producer, Destination
 log = getLogger(__name__)
 plugin = Plugin.find(__name__)
 builtin = Plugin.find('builtin')
-cfg = plugin.cfg()
 
 HEARTBEAT = 500
 
@@ -61,7 +60,7 @@ class TestAuthenticator(Authenticator):
         raise ValidationFailed(
             'matching signatures: [%s, %s]' % (signature, digest))
 
-if cfg.messaging.auth:
+if plugin.cfg.messaging.auth:
     plugin.authenticator = TestAuthenticator()
 
 
@@ -255,11 +254,9 @@ class Heartbeat:
     @remote
     def send(self):
         delay = int(HEARTBEAT)
-        url = plugin.get_url()
         destination = Destination('heartbeat', exchange='amq.topic')
-        myid = plugin.get_uuid()
-        if myid:
-            with Producer(url) as p:
-                body = dict(uuid=myid, next=delay)
+        if plugin.uuid:
+            with Producer(plugin.url) as p:
+                body = dict(uuid=plugin.uuid, next=delay)
                 p.send(destination, ttl=delay, heartbeat=body)
-        return myid
+        return plugin.uuid

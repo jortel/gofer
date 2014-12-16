@@ -90,7 +90,7 @@ class Model(object):
         :return: A unique domain ID.
         :rtype: str
         """
-        raise NotImplementedError()
+        return '::'.join((self.__class__.__name__, str(id(self))))
 
 
 class _Domain(object):
@@ -403,13 +403,17 @@ class Queue(BaseQueue):
 
     @model
     @managed
-    def delete(self, url=None):
+    def delete(self, url=None, drain=True):
         """
         Delete the node.
         :param url: The broker URL.
         :type url: str
+        :param drain: Drain the queue.
+        :type drain: bool
         :raise: ModelError
         """
+        if drain:
+            self.purge(url)
         adapter = Adapter.find(url)
         impl = adapter.Queue(self.name)
         impl.delete(url)
@@ -427,7 +431,7 @@ class Queue(BaseQueue):
         return impl.destination(url)
 
     @model
-    def purge(self, url):
+    def purge(self, url=None):
         """
         Purge (drain) all queued messages.
         :param url: The broker URL.
@@ -795,9 +799,6 @@ class Reader(BaseReader):
             if sn == document.sn:
                 # matched
                 return document
-            else:
-                # discarded
-                continue
 
 
 # --- producer ---------------------------------------------------------------

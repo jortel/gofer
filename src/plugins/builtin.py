@@ -35,7 +35,7 @@ class TestAction:
     @action(hours=36)
     def hello(self):
         plugin = Plugin.find(__name__)
-        log.info('Hello:\n%s', plugin.cfg())
+        log.info('Hello:\n%s', plugin.cfg)
 
 
 class TestAdmin:
@@ -61,9 +61,9 @@ def echo(something):
 # specified in the config.
 #
 
-if not plugin.get_uuid():
+if not plugin.uuid:
     hostname = socket.gethostname()
     uuid = str(uuid4())
     if not hostname.startswith('localhost'):
         uuid = 'admin@%s' % hostname
-    plugin.set_uuid(uuid)
+    plugin.cfg.messaging.uuid = uuid

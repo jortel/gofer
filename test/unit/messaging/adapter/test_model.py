@@ -20,7 +20,7 @@ from mock import patch, Mock
 from gofer.messaging.model import Document
 from gofer.messaging.adapter.url import URL
 from gofer.messaging.adapter.model import Destination
-from gofer.messaging.adapter.model import _Domain, Node
+from gofer.messaging.adapter.model import Model, _Domain, Node
 from gofer.messaging.adapter.model import BaseExchange, Exchange
 from gofer.messaging.adapter.model import BaseQueue, Queue
 from gofer.messaging.adapter.model import BaseEndpoint, Messenger
@@ -153,6 +153,13 @@ class TestBlockingDecorator(TestCase):
 # --- domain -----------------------------------------------------------------
 
 
+class TestModel(TestCase):
+
+    def test_domain_id(self):
+        model = Model()
+        self.assertEqual(model.domain_id, '::'.join((model.__class__.__name__, str(id(model)))))
+
+
 class TestDomain(TestCase):
 
     def test_init(self):
@@ -179,10 +186,11 @@ class TestDomain(TestCase):
         # find (with builder)
         self.assertEqual(domain.find('123'), builder.return_value)
         builder.assert_called_once_with('123')
+        # len
+        self.assertEqual(len(domain), 2)
         # delete
         domain.delete(dog)
         self.assertEqual(domain.content, {'Node::cat': cat})
-
 
 
 # --- destination ------------------------------------------------------------
@@ -402,10 +410,12 @@ class TestQueue(TestCase):
 
         # test
         queue = Queue(name)
+        queue.purge = Mock()
         queue.delete(TEST_URL)
 
         # validation
         plugin.Queue.assert_called_with(name)
+        queue.purge.assert_called_once_with(TEST_URL)
         impl = plugin.Queue()
         impl.delete.assert_called_with(TEST_URL)
 

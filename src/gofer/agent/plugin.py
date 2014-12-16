@@ -168,89 +168,56 @@ class Plugin(object):
         self.authenticator = None
         self.consumer = None
         self.imported = {}
-    
+
+    @property
+    def cfg(self):
+        return self.descriptor
+
+    @property
+    def uuid(self):
+        return self.cfg.messaging.uuid
+
+    @property
+    def url(self):
+        return self.cfg.messaging.url
+
+    @property
     def enabled(self):
-        """
-        Get whether the plugin is enabled.
-        :return: True if enabled.
-        :rtype: bool
-        """
-        return get_bool(self.descriptor.main.enabled)
-        
-    def get_uuid(self):
-        """
-        Get the plugin messaging UUID.
-        :return: The plugin messaging UUID.
-        :rtype: str
-        """
-        return self.descriptor.messaging.uuid
-            
-    def get_url(self):
-        """
-        Get the broker URL
-        :return: The broker URL
-        :rtype: str
-        """
-        return self.descriptor.messaging.url
+        return get_bool(self.cfg.main.enabled)
 
-    def get_broker(self):
-        """
-        Get the broker for this plugin.
-        :return: The configured broker.
-        :rtype: gofer.messaging.adapter.model.Broker
-        """
-        return self.update_broker()
+    @property
+    def broker(self):
+        return Broker(self.url)
 
-    def set_uuid(self, uuid):
+    def refresh(self):
         """
-        Set the plugin's UUID.
-        :param uuid: The new UUID.
-        :type uuid: str
+        Refresh the AMQP configurations using the plugin configuration.
         """
-        self.descriptor.messaging.uuid = uuid
-            
-    def set_url(self, url):
-        """
-        Set the plugin's URL.
-        :param url: The new URL.
-        :type url: str
-        """
-        self.descriptor.messaging.url = url
-
-    def update_broker(self):
-        """
-        Update the broker configuration using the plugin configuration.
-        :return: The updated broker.
-        :rtype: gofer.messaging.adapter.model.Broker
-        """
-        url = self.get_url()
-        broker = Broker(url)
-        messaging = self.descriptor.messaging
+        # queue
+        if not get_bool(self.cfg.queue.managed):
+            # not managed
+            Domain.node.not_managed.add(self.uuid)
+        # broker
+        broker = Broker(self.url)
+        messaging = self.cfg.messaging
         broker.ssl.ca_certificate = messaging.cacert
         broker.ssl.client_certificate = messaging.clientcert
         broker.ssl.host_validation = messaging.host_validation
         Domain.broker.add(broker)
-        log.debug('broker configured: %s', broker)
-        return broker
 
-    def attach(self, uuid=None):
+    def attach(self):
         """
         Attach (connect) to AMQP broker using the specified uuid.
-        :param uuid: The (optional) messaging UUID.
-        :type uuid: str
         """
         self.detach()
-        if not uuid:
-            uuid = self.get_uuid()
-        url = self.get_url()
-        if uuid and url:
-            self.update_broker()
-            queue = Queue(uuid)
-            queue.declare(url)
-            consumer = RequestConsumer(queue, url)
+        if self.uuid and self.url:
+            self.refresh()
+            queue = Queue(self.uuid)
+            queue.declare(self.url)
+            consumer = RequestConsumer(queue, self.url)
             consumer.reader.authenticator = self.authenticator
             consumer.start()
-            log.info('plugin uuid="%s", attached', uuid)
+            log.info('plugin uuid="%s", attached', self.uuid)
             self.consumer = consumer
         else:
             log.error('plugin attach requires uuid and url')
@@ -258,22 +225,17 @@ class Plugin(object):
     def detach(self):
         """
         Detach (disconnect) from AMQP broker.
+        The queue is drained and deleted if the queue is managed.
         """
         if not self.consumer:
             return
+        queue = self.consumer.queue
         self.consumer.stop()
         self.consumer.join()
         self.consumer = None
-        log.info('plugin uuid="%s", detached', self.get_uuid())
-        
-    def cfg(self):
-        """
-        Get the plugin descriptor.
-        :return: The plugin descriptor
-        :rtype: PluginDescriptor
-        """
-        return self.descriptor
-    
+        log.info('plugin uuid="%s", detached', self.uuid)
+        queue.delete(self.url, drain=True)
+
     def dispatch(self, request):
         """
         Dispatch (invoke) the specified RMI request.
@@ -461,7 +423,7 @@ class PluginLoader:
             plugin = PluginLoader._import(name, descriptor)
             if not plugin:
                 continue  # load failed
-            if not plugin.enabled():
+            if not plugin.enabled:
                 log.warn('plugin: %s, DISABLED', name)
             loaded.append(plugin)
         return loaded
@@ -495,7 +457,7 @@ class PluginLoader:
 
             for fn in Remote.find(plugin.impl.__name__):
                 fn.gofer.plugin = plugin
-            if plugin.enabled():
+            if plugin.enabled:
                 collated = Remote.collated()
                 collated += PluginLoader.BUILTINS
                 plugin.dispatcher += collated

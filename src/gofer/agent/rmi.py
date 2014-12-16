@@ -31,7 +31,7 @@ log = getLogger(__name__)
 
 class Task:
     """
-    An RMI task to be scheduled on the plugin's thread pool.
+    An RMI task to be scheduled on the plugin thread pool.
     :ivar plugin: A plugin.
     :type plugin: gofer.agent.plugin.Plugin
     :ivar request: A gofer messaging request.
@@ -51,19 +51,18 @@ class Task:
         """
         Get a configured producer.
         :param plugin: A plugin.
-        :type plugin: Plugin
+        :type plugin: gofer.agent.plugin.Plugin
         :return: A producer.
         :rtype: Producer
         """
-        url = plugin.get_url()
-        producer = Producer(url)
+        producer = Producer(plugin.url)
         producer.authenticator = plugin.authenticator
         return producer
 
     def __init__(self, plugin, request, commit):
         """
         :param plugin: A plugin.
-        :type plugin: Plugin
+        :type plugin: gofer.agent.plugin.Plugin
         :param request: The inbound request to be dispatched.
         :type request: Document
         :param commit: Transaction commit function.
@@ -182,9 +181,6 @@ class TrashPlugin:
         self.url = url
         self.authenticator = None
         self.pool = Direct()
-
-    def get_url(self):
-        return self.url
     
     def dispatch(self, request):
         try:
@@ -249,7 +245,7 @@ class Scheduler(Thread):
         """
         uuid = request.routing[1]
         for plugin in self.plugins:
-            if plugin.get_uuid() == uuid:
+            if plugin.uuid == uuid:
                 return plugin
         log.info('plugin not found for uuid=%s', uuid)
         return TrashPlugin(request.inbound_url)

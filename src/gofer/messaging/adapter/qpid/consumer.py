@@ -111,10 +111,7 @@ class Reader(BaseReader):
         """
         try:
             impl = self._receiver.fetch(timeout or NO_DELAY)
-            if impl:
-                return Message(self, impl, impl.content)
-            else:
-                return None
+            return Message(self, impl, impl.content)
         except Empty:
             pass
         except Exception:

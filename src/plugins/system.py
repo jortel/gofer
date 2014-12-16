@@ -19,7 +19,7 @@ System plugin.
 from subprocess import Popen, PIPE, call
 from gofer.decorators import *
 from gofer.agent.plugin import Plugin
-from gofer.pam import PAM
+from gofer.pam import authenticate
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -42,7 +42,7 @@ class System:
         :see: shutdown(8)
         """
         command = 'shutdown -h %s &' % when
-        call(command, shell=1)
+        call(command, shell=True)
 
     @remote
     @pam(user='root')
@@ -58,7 +58,7 @@ class System:
         :see: shutdown(8)
         """
         command = 'shutdown -r %s &' % when
-        call(command, shell=1)
+        call(command, shell=True)
         
     @remote
     @pam(user='root')
@@ -66,7 +66,7 @@ class System:
         """
         Cancel a scheduled shutdown; halt() or reboot().
         """
-        call('shutdown -c', shell=1)
+        call('shutdown -c', shell=True)
 
 
 class Shell:
@@ -86,14 +86,13 @@ class Shell:
         :return: tuple (status, output)
         :rtype: tuple
         """
-        auth = PAM()
-        auth.authenticate(user, password)
+        authenticate(user, password)
         command = ('su', '-', user, '-c', cmd)
         p = Popen(command, stdout=PIPE)
         try:
             result = p.stdout.read()
             p.stdout.close()
             status = p.wait()
-            return (status, result)
+            return status, result
         except OSError, e:
-            return (-1, str(e))
+            return -1, str(e)

@@ -109,13 +109,11 @@ class Agent:
         :type plugins: list
         """
         for plugin in plugins:
-            uuid = plugin.get_uuid()
-            url = plugin.get_url()
-            if uuid and url and plugin.enabled():
+            if plugin.uuid and plugin.url and plugin.enabled:
                 try:
                     plugin.attach()
                 except Exception:
-                    log.exception(uuid)
+                    log.exception(plugin.uuid)
 
     def __init__(self, plugins):
         """
