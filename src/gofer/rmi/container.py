@@ -31,6 +31,30 @@ log = getLogger(__name__)
 class Container:
     """
     The stub container
+    Options:
+      - wait
+          (int) Seconds to wait for a synchronous reply (default:90).
+      - timeout
+          (int) Request timeout TTL (default: 10).
+      - window
+          (Window) Request valid window.
+      - authenticator
+          (Authenticator) A message authenticator.
+      - progress
+          (callable) A progress callback.
+      - secret
+          (str) A shared secret.
+      - user
+          (str) A user (name) used for authentication.
+      - password
+          (str) A password used for authentication.
+      - ctag
+          (str) An asynchronous reply correlation tag.
+      - async
+          (bool) Asynchronous request flag.
+      - trigger
+          (int) The trigger type (0=auto|1=manual).
+
     :ivar __id: The peer ID.
     :type __id: str
     :ivar __url: The peer URL.
@@ -50,24 +74,9 @@ class Container:
         """
         self.__id = uuid
         self.__url = url
-        self.__options = Options(window=Window())
+        self.__options = Options(window=Window(), queue_managed=True)
         self.__options += options
 
-    def __destination(self):
-        """
-        Get the stub destination(s).
-        :return: Either a queue destination or a list of destinations.
-        :rtype: gofer.messaging.adapter.model.Destination
-        """
-        if isinstance(self.__id, (list, tuple)):
-            destinations = []
-            for d in self.__id:
-                d = Destination(d)
-                destinations.append(d)
-            return destinations
-        else:
-            return Destination(self.__id)
-    
     def __getattr__(self, name):
         """
         Get a stub by name.
@@ -80,7 +89,7 @@ class Container:
         return builder(
             name,
             self.__url,
-            self.__destination(),
+            Destination(self.__id),
             self.__options)
         
     def __getitem__(self, name):

@@ -31,7 +31,7 @@ from gofer.messaging.adapter.model import Broker, SSL
 from gofer.messaging.adapter.model import BaseConnection, Connection, SharedConnection
 from gofer.messaging.adapter.model import Message
 from gofer.messaging.adapter.model import ModelError
-from gofer.messaging.adapter.model import model, blocking, managed, DELAY, DELAY_MULTIPLIER
+from gofer.messaging.adapter.model import model, blocking, DELAY, DELAY_MULTIPLIER
 
 
 TEST_URL = 'qpid+amqp://elmer:fudd@test.com/test'
@@ -72,30 +72,6 @@ class TestModelDecorator(TestCase):
         fn = Mock(side_effect=ValueError)
         _fn = model(fn)
         self.assertRaises(ModelError, _fn)
-
-
-class TestManagedDecorator(TestCase):
-
-    def test_call(self):
-        fn = Mock()
-        node = Mock(domain_id='node')
-        _fn = managed(fn)
-        args = [node, 2, 3]
-        keywords = dict(a=1, b=2)
-        ret = _fn(*args, **keywords)
-        fn.assert_called_once_with(*args, **keywords)
-        self.assertEqual(ret, fn.return_value)
-
-    @patch('gofer.messaging.adapter.model._Domain.contains')
-    def test_not_called(self, contains):
-        fn = Mock()
-        node = Mock(domain_id='node')
-        contains.return_value = True
-        _fn = managed(fn)
-        args = [node, 2, 3]
-        keywords = dict(a=1, b=2)
-        _fn(*args, **keywords)
-        self.assertFalse(fn.called)
 
 
 class TestBlockingDecorator(TestCase):
@@ -410,12 +386,10 @@ class TestQueue(TestCase):
 
         # test
         queue = Queue(name)
-        queue.purge = Mock()
         queue.delete(TEST_URL)
 
         # validation
         plugin.Queue.assert_called_with(name)
-        queue.purge.assert_called_once_with(TEST_URL)
         impl = plugin.Queue()
         impl.delete.assert_called_with(TEST_URL)
 

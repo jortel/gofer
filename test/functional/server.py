@@ -208,12 +208,6 @@ def test_triggers(uuid):
     t = dog.bark('delayed!')
     print t
     t()
-    # broadcast
-    agent = Agent([uuid,])
-    dog = agent.Dog(trigger=1)
-    for t in dog.bark('delayed!'):
-        print t
-        t()
     print 'Manual trigger, OK'
     
 
@@ -424,13 +418,6 @@ def main(uuid):
     print '(demo) asynchronous'
     window = Window(begin=dt.utcnow(), minutes=1)
     agent = Agent(uuid, ctag=tag, window=window)
-    demo(agent)
-
-    # asynchronous
-    print '(demo) group asynchronous'
-    group = (uuid, uuid)
-    window = Window(begin=dt.utcnow(), minutes=1)
-    agent = Agent(group, ctag=tag, window=window)
     demo(agent)
 
     # future

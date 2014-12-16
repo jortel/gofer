@@ -136,27 +136,16 @@ class RequestMethod:
         """
         self.url = url
 
-    def send(self, destination, request, **any):
+    def __call__(self, destination, request, **any):
         """
-        Send the request..
+        Send the request.
         :param destination: An AMQP destination.
         :type destination: gofer.messaging.adapter.model.Destination
         :param request: A request to send.
         :type request: object
         :keyword any: Any (extra) data.
         """
-        pass
-
-    def broadcast(self, addresses, request, **any):
-        """
-        Broadcast the request.
-        :param addresses: A list of destination AMQP queues.
-        :type addresses: [gofer.adapter.model.Destination,..]
-        :param request: A request to send.
-        :type request: object
-        :keyword any: Any (extra) data.
-        """
-        pass
+        raise NotImplementedError()
 
 
 class Synchronous(RequestMethod):
@@ -184,43 +173,6 @@ class Synchronous(RequestMethod):
         self.queue.auto_delete = True
         self.queue.declare(self.url)
 
-    def send(self, destination, request, **any):
-        """
-        Send the request then read the reply.
-        :param destination: An AMQP destination.
-        :type destination: gofer.messaging.adapter.model.Destination
-        :param request: A request to send.
-        :type request: object
-        :keyword any: Any (extra) data.
-        :return: The result of the request.
-        :rtype: object
-        :raise Exception: returned by the peer.
-        """
-        replyto = self.queue.destination(self.url)
-        queue = Queue(destination.routing_key)
-        queue.declare(self.url)
-        producer = Producer(self.url)
-        producer.authenticator = self.authenticator
-        producer.open()
-        try:
-            sn = producer.send(
-                destination,
-                ttl=self.timeout,
-                replyto=replyto.dict(),
-                request=request,
-                **any)
-        finally:
-            producer.close()
-        log.debug('sent (%s): %s', repr(destination), request)
-        reader = Reader(self.queue, self.url)
-        reader.authenticator = self.authenticator
-        reader.open()
-        try:
-            self._get_accepted(sn, reader)
-            return self._get_reply(sn, reader)
-        finally:
-            reader.close()
-
     def _get_accepted(self, sn, reader):
         """
         Get the 'accepted' reply matched by serial number.
@@ -245,7 +197,7 @@ class Synchronous(RequestMethod):
         if document.status in ('accepted', 'started'):
             log.debug('request (%s), %s', sn, document.status)
         else:
-            self.__on_reply(document)
+            self._on_reply(document)
 
     def _get_reply(self, sn, reader):
         """
@@ -312,6 +264,41 @@ class Synchronous(RequestMethod):
         except Exception:
             log.error('progress callback failed', exc_info=1)
 
+    def __call__(self, destination, request, **any):
+        """
+        Send the request then read the reply.
+        :param destination: An AMQP destination.
+        :type destination: gofer.messaging.adapter.model.Destination
+        :param request: A request to send.
+        :type request: object
+        :keyword any: Any (extra) data.
+        :return: The result of the request.
+        :rtype: object
+        :raise Exception: returned by the peer.
+        """
+        reply_destination = self.queue.destination(self.url)
+        producer = Producer(self.url)
+        producer.authenticator = self.authenticator
+        producer.open()
+        try:
+            sn = producer.send(
+                destination,
+                ttl=self.timeout,
+                replyto=reply_destination.dict(),
+                request=request,
+                **any)
+        finally:
+            producer.close()
+        log.debug('sent (%s): %s', repr(destination), request)
+        reader = Reader(self.queue, self.url)
+        reader.authenticator = self.authenticator
+        reader.open()
+        try:
+            self._get_accepted(sn, reader)
+            return self._get_reply(sn, reader)
+        finally:
+            reader.close()
+
 
 class Asynchronous(RequestMethod):
     """
@@ -331,7 +318,21 @@ class Asynchronous(RequestMethod):
         self.trigger = options.trigger
         self.authenticator = options.authenticator
 
-    def send(self, destination, request, **any):
+    def reply_destination(self):
+        """
+        Get replyto based on the correlation tag.
+        The ctag can be a string or a Destination object.
+        :return: The replyto AMQP destination.
+        :rtype: dict
+        """
+        if isinstance(self.ctag, str):
+            d = Destination(self.ctag)
+            return d.dict()
+        if isinstance(self.ctag, Destination):
+            d = self.ctag
+            return d.dict()
+
+    def __call__(self, destination, request, **any):
         """
         Send the specified request and redirect the reply to the
         queue for the specified reply *correlation* tag.
@@ -349,41 +350,6 @@ class Asynchronous(RequestMethod):
             return trigger
         trigger()
         return trigger.sn
-
-    def broadcast(self, destinations, request, **any):
-        """
-        Send the specified request and redirect the reply to the
-        queue for the specified reply *correlation* tag.
-        A trigger(1) specifies a *manual* trigger.
-        :param destinations: A list of destinations.
-        :type destinations: [gofer.adapter.model.Destination,..]
-        :param request: A request to send.
-        :type request: object
-        :keyword any: Any (extra) data.
-        """
-        triggers = []
-        for destination in destinations:
-            t = Trigger(self, destination, request, any)
-            triggers.append(t)
-        if self.trigger == 1:
-            return triggers
-        for trigger in triggers:
-            trigger()
-        return [t.sn for t in triggers]
-
-    def replyto(self):
-        """
-        Get replyto based on the correlation tag.
-        The ctag can be a string or a Destination object.
-        :return: The replyto AMQP destination.
-        :rtype: dict
-        """
-        if isinstance(self.ctag, str):
-            d = Destination(self.ctag)
-            return d.dict()
-        if isinstance(self.ctag, Destination):
-            d = self.ctag
-            return d.dict()
 
 
 class Trigger:
@@ -436,11 +402,8 @@ class Trigger:
         """
         policy = self._policy
         destination = self._destination
-        replyto = policy.replyto()
         request = self._request
         any = self._any
-        queue = Queue(destination.routing_key)
-        queue.declare(policy.url)
         producer = Producer(policy.url)
         producer.authenticator = policy.authenticator
         producer.open()
@@ -449,19 +412,19 @@ class Trigger:
                 destination,
                 sn=self._sn,
                 ttl=policy.timeout,
-                replyto=replyto,
+                replyto=policy.reply_destination(),
                 request=request,
                 **any)
         finally:
             producer.close()
         log.debug('sent (%s): %s', repr(destination), request)
-    
-    def __str__(self):
-        return self._sn
-    
+
     def __call__(self):
         if self._pending:
             self._send()
             self._pending = False
         else:
             raise Exception('trigger already executed')
+
+    def __str__(self):
+        return self._sn

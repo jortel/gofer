@@ -189,16 +189,14 @@ class Plugin(object):
     def broker(self):
         return Broker(self.url)
 
+    @property
+    def queue_managed(self):
+        return get_bool(self.cfg.queue.managed)
+
     def refresh(self):
         """
         Refresh the AMQP configurations using the plugin configuration.
         """
-        # queue
-        if not get_bool(self.cfg.queue.managed):
-            # not managed
-            queue = Queue(self.uuid)
-            Domain.node.not_managed.add(queue)
-        # broker
         broker = Broker(self.url)
         messaging = self.cfg.messaging
         broker.ssl.ca_certificate = messaging.cacert
@@ -214,7 +212,8 @@ class Plugin(object):
         if self.uuid and self.url:
             self.refresh()
             queue = Queue(self.uuid)
-            queue.declare(self.url)
+            if self.queue_managed:
+                queue.declare(self.url)
             consumer = RequestConsumer(queue, self.url)
             consumer.reader.authenticator = self.authenticator
             consumer.start()
@@ -229,13 +228,16 @@ class Plugin(object):
         The queue is drained and deleted if the queue is managed.
         """
         if not self.consumer:
+            # not attached
             return
         queue = self.consumer.queue
         self.consumer.stop()
         self.consumer.join()
         self.consumer = None
         log.info('plugin uuid="%s", detached', self.uuid)
-        queue.delete(self.url, drain=True)
+        if self.queue_managed:
+            queue.purge()
+            queue.delete(self.url)
 
     def dispatch(self, request):
         """

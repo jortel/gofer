@@ -47,16 +47,6 @@ def model(fn):
     return _fn
 
 
-def managed(fn):
-    def _fn(node, *args, **keywords):
-        if node in Domain.node.not_managed:
-            # not managed
-            return
-        else:
-            return fn(node, *args, **keywords)
-    return _fn
-
-
 def blocking(fn):
     def _fn(reader, timeout=None):
         delay = DELAY
@@ -292,7 +282,6 @@ class Exchange(BaseExchange):
         BaseExchange.__init__(self, name, policy)
 
     @model
-    @managed
     def declare(self, url=None):
         """
         Declare the node.
@@ -307,7 +296,6 @@ class Exchange(BaseExchange):
         impl.declare(url)
 
     @model
-    @managed
     def delete(self, url=None):
         """
         Delete the node.
@@ -386,7 +374,6 @@ class Queue(BaseQueue):
         BaseQueue.__init__(self, name, exchange, routing_key)
 
     @model
-    @managed
     def declare(self, url=None):
         """
         Declare the node.
@@ -402,18 +389,13 @@ class Queue(BaseQueue):
         impl.declare(url)
 
     @model
-    @managed
-    def delete(self, url=None, drain=True):
+    def delete(self, url=None):
         """
         Delete the node.
         :param url: The broker URL.
         :type url: str
-        :param drain: Drain the queue.
-        :type drain: bool
         :raise: ModelError
         """
-        if drain:
-            self.purge(url)
         adapter = Adapter.find(url)
         impl = adapter.Queue(self.name)
         impl.delete(url)
@@ -1279,20 +1261,11 @@ class Broker(Model):
 # --- domain -----------------------------------------------------------------
 
 
-class _NodeDomain(object):
-    """
-    Node domain.
-    """
-    not_managed = _Domain()
-
-
 class Domain(object):
     """
     Model object domains.
     :cvar broker: Collection of brokers.
     :type broker: _Domain
-    :cvar node: External (not managed) nodes.
-    :type node: _NodeDomain
     """
     broker = _Domain(Broker)
-    node = _NodeDomain()
+

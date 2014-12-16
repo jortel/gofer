@@ -23,6 +23,7 @@ from new import classobj
 from threading import RLock
 
 from gofer.common import Options, synchronized
+from gofer.messaging import Queue
 from gofer.rmi.policy import Synchronous, Asynchronous
 from gofer.rmi.dispatcher import Request
 
@@ -46,8 +47,8 @@ class Builder(object):
         :return: A stub instance.
         :rtype: Stub
         """
-        subclass = classobj(name, (Stub,), {})
-        inst = subclass(url, destination, options)
+        stub = classobj(name, (Stub,), {})
+        inst = stub(url, destination, options)
         return inst
 
 
@@ -75,7 +76,7 @@ class Method:
         self.name = name
         self.send = send
 
-    def __call__(self, *args, **kws):
+    def __call__(self, *args, **keywords):
         """
         Invoke the method .
         :param args: The args.
@@ -84,15 +85,15 @@ class Method:
         :type kws: dict
         """
         opts = Options()
-        for k, v in kws.items():
+        for k, v in keywords.items():
             if k in ('window', 'any',):
                 opts[k] = v
-                del kws[k]
+                del keywords[k]
         request = Request(
             classname=self.classname,
             method=self.name,
             args=args,
-            kws=kws)
+            kws=keywords)
         return self.send(request, opts)
 
 
@@ -117,7 +118,7 @@ class Stub:
         :param url: The agent URL.
         :type url: str
         :param destination: The AMQP destination
-        :type destination: str
+        :type destination: gofer.messaging.adapter.model.Destination
         :param options: Stub options.
         :type options: Options
         """
@@ -141,24 +142,15 @@ class Stub:
         opts += options
         request.cntr = self.__called[1]
         policy = self.__get_policy()
-        if isinstance(self.__destination, (list, tuple)):
-            return policy.broadcast(
-                self.__destination,
-                request,
-                window=opts.window,
-                secret=opts.secret,
-                pam=self.__get_pam(opts),
-                any=opts.any)
-        else:
-            return policy.send(
-                self.__destination,
-                request,
-                window=opts.window,
-                secret=opts.secret,
-                pam=self.__get_pam(opts),
-                any=opts.any)
-            
-    def __get_pam(self, opts):
+        return policy(
+            self.__destination,
+            request,
+            window=opts.window,
+            secret=opts.secret,
+            pam=self.__pam_options(opts),
+            any=opts.any)
+
+    def __pam_options(self, opts):
         """
         Get PAM options.
         :param opts: options dict.
@@ -245,4 +237,4 @@ class Stub:
         """
         if self.__options.ctag or self.__options.async or self.__options.trigger:
             return True
-        return isinstance(self.__destination, (list, tuple))
+        return False
