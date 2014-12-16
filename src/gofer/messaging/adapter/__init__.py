@@ -30,6 +30,6 @@ from gofer.messaging.adapter.model import \
     Exchange, \
     Queue, \
     Reader, \
-    Producer, \
-    PlainProducer
+    Sender, \
+    Producer
 

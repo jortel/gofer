@@ -19,6 +19,7 @@ from threading import local as Local
 
 from uuid import uuid4
 
+from gofer.messaging.model import VERSION, Document
 from gofer.messaging.adapter.url import URL
 from gofer.messaging.adapter.factory import Adapter
 from gofer.messaging.model import ModelError, validate
@@ -440,10 +441,6 @@ class BaseEndpoint(Model):
     Base class for an AMQP endpoint.
     :ivar url: The broker URL.
     :type url: str
-    :ivar uuid: The endpoint UUID.
-    :type uuid: str
-    :ivar authenticator: A message authenticator.
-    :type authenticator: gofer.messaging.auth.Authenticator
     """
 
     def __init__(self, url):
@@ -452,16 +449,6 @@ class BaseEndpoint(Model):
         :type url: str
         """
         self.url = url
-        self.uuid = str(uuid4())
-        self.authenticator = None
-
-    def id(self):
-        """
-        Get the endpoint id
-        :return: The id.
-        :rtype: str
-        """
-        return self.uuid
 
     def is_open(self):
         """
@@ -529,6 +516,20 @@ class Messenger(BaseEndpoint):
         Get the messenger endpoint.
         :return: An endpoint object.
         :rtype: BaseEndpoint
+        """
+        raise NotImplementedError()
+
+    def link(self, messenger):
+        """
+        Link to another messenger.
+        :param messenger: A messenger to link with.
+        :type messenger: Messenger
+        """
+        raise NotImplementedError()
+
+    def unlink(self):
+        """
+        Unlink with another messenger.
         """
         raise NotImplementedError()
 
@@ -663,6 +664,8 @@ class BaseReader(Messenger):
 class Reader(BaseReader):
     """
     An AMQP queue reader.
+    :ivar authenticator: A message authenticator.
+    :type authenticator: gofer.messaging.auth.Authenticator
     """
 
     def __init__(self, queue, url=None):
@@ -676,15 +679,15 @@ class Reader(BaseReader):
         BaseReader.__init__(self, queue, url)
         adapter = Adapter.find(url)
         self._impl = adapter.Reader(queue, url)
+        self.authenticator = None
 
-    @model
-    def channel(self):
+    def endpoint(self):
         """
-        Get a channel for the open connection.
-        :return: An open channel.
-        :raise: ModelError
+        Get the messenger endpoint.
+        :return: An endpoint object.
+        :rtype: BaseEndpoint
         """
-        return self._impl.channel()
+        return self._impl.endpoint()
 
     @model
     def open(self):
@@ -693,6 +696,27 @@ class Reader(BaseReader):
         :raise: ModelError
         """
         self._impl.open()
+
+    @model
+    def close(self, hard=False):
+        """
+        Close the reader.
+        :param hard: Force the connection closed.
+        :type hard: bool
+        :raise: ModelError
+        """
+        self._impl.close(hard)
+
+    @model
+    def get(self, timeout=None):
+        """
+        Get the next message.
+        :param timeout: The read timeout in seconds.
+        :type timeout: int
+        :return: The next message, or (None).
+        :raise: ModelError
+        """
+        return self._impl.get(timeout)
 
     @model
     def ack(self, message):
@@ -715,27 +739,6 @@ class Reader(BaseReader):
         :raise: ModelError
         """
         message.reject(requeue)
-
-    @model
-    def close(self, hard=False):
-        """
-        Close the reader.
-        :param hard: Force the connection closed.
-        :type hard: bool
-        :raise: ModelError
-        """
-        self._impl.close(hard)
-
-    @model
-    def get(self, timeout=None):
-        """
-        Get the next message.
-        :param timeout: The read timeout in seconds.
-        :type timeout: int
-        :return: The next message, or (None).
-        :raise: ModelError
-        """
-        return self._impl.get(timeout)
 
     @model
     def next(self, timeout=90):
@@ -783,68 +786,62 @@ class Reader(BaseReader):
                 return document
 
 
-# --- producer ---------------------------------------------------------------
+# --- sender/producer --------------------------------------------------------
 
 
-class BaseProducer(Messenger):
-    """
-    An AMQP message producer.
-    """
+class BaseSender(Messenger):
 
-    def send(self, destination, ttl, **body):
+    def send(self, destination, content, ttl):
         """
-        Send a message.
+        Send a message with content.
         :param destination: An AMQP destination.
-        :type destination: Destination
+        :type destination: gofer.messaging.adapter.model.Destination
+        :param content: The message content
         :param ttl: Time to Live (seconds)
         :type ttl: float
-        :keyword body: document body.
-        :return: The message serial number.
+        :return: The message ID.
         :rtype: str
         """
         raise NotImplementedError()
 
-    def broadcast(self, destinations, ttl, **body):
-        """
-        Send a message to multiple destinations.
-        :param destinations: A list of: Destination
-        :type destinations: list
-        :param ttl: Time to Live (seconds)
-        :type ttl: float
-        :keyword body: document body.
-        :return: A list of (destination, sn).
-        :rtype: list
-        """
-        raise NotImplementedError()
 
-
-class Producer(BaseProducer):
-    """
-    An AMQP message producer.
-    """
+class Sender(BaseSender):
 
     def __init__(self, url=None):
         """
         :param url: The broker url.
         :type url: str
         """
-        BaseProducer.__init__(self, url)
+        Messenger.__init__(self, url)
         adapter = Adapter.find(url)
-        self._impl = adapter.Producer(url)
+        self._impl = adapter.Sender(url)
 
-    @model
-    def channel(self):
+    def endpoint(self):
         """
-        Get a channel for the open connection.
-        :return: An open channel.
-        :raise: ModelError
+        Get the messenger endpoint.
+        :return: An endpoint object.
+        :rtype: BaseEndpoint
         """
-        return self._impl.channel()
+        return self._impl.endpoint()
+
+    def link(self, messenger):
+        """
+        Link to another messenger.
+        :param messenger: A messenger to link with.
+        :type messenger: Messenger
+        """
+        self._impl.link(messenger)
+
+    def unlink(self):
+        """
+        Unlink with another messenger.
+        """
+        self._impl.unlink()
 
     @model
     def open(self):
         """
-        Open the producer.
+        Open the reader.
         :raise: ModelError
         """
         self._impl.open()
@@ -852,7 +849,76 @@ class Producer(BaseProducer):
     @model
     def close(self, hard=False):
         """
-        Close the producer.
+        Close the reader.
+        :param hard: Force the connection closed.
+        :type hard: bool
+        :raise: ModelError
+        """
+        self._impl.close(hard)
+
+    def send(self, destination, content, ttl):
+        """
+        Send a message with content.
+        :param destination: An AMQP destination.
+        :type destination: gofer.messaging.adapter.model.Destination
+        :param content: The message content
+        :param ttl: Time to Live (seconds)
+        :type ttl: float
+        """
+        self._impl.send(destination, content, ttl)
+
+
+class Producer(Messenger):
+    """
+    An AMQP message producer.
+    :ivar authenticator: A message authenticator.
+    :type authenticator: gofer.messaging.auth.Authenticator
+    """
+
+    def __init__(self, url=None):
+        """
+        :param url: The broker url.
+        :type url: str
+        """
+        Messenger.__init__(self, url)
+        adapter = Adapter.find(url)
+        self._impl = adapter.Sender(url)
+        self.authenticator = None
+
+    def endpoint(self):
+        """
+        Get the messenger endpoint.
+        :return: An endpoint object.
+        :rtype: BaseEndpoint
+        """
+        return self._impl.endpoint()
+
+    def link(self, messenger):
+        """
+        Link to another messenger.
+        :param messenger: A messenger to link with.
+        :type messenger: Messenger
+        """
+        self._impl.link(messenger)
+
+    def unlink(self):
+        """
+        Unlink with another messenger.
+        """
+        self._impl.unlink()
+
+    @model
+    def open(self):
+        """
+        Open the reader.
+        :raise: ModelError
+        """
+        self._impl.open()
+
+    @model
+    def close(self, hard=False):
+        """
+        Close the reader.
         :param hard: Force the connection closed.
         :type hard: bool
         :raise: ModelError
@@ -872,130 +938,15 @@ class Producer(BaseProducer):
         :rtype: str
         :raise: ModelError
         """
-        self._impl.authenticator = self.authenticator
-        return self._impl.send(destination, ttl, **body)
-
-    @model
-    def broadcast(self, destinations, ttl=None, **body):
-        """
-        Send a message to multiple destinations.
-        :param destinations: A list of: Destination
-        :type destinations: list
-        :param ttl: Time to Live (seconds)
-        :type ttl: float
-        :keyword body: document body.
-        :return: A list of (destination, sn).
-        :rtype: list
-        :raise: ModelError
-        """
-        self._impl.authenticator = self.authenticator
-        return self._impl.broadcast(destinations, ttl, **body)
-
-
-class BasePlainProducer(Messenger):
-    """
-    An plain AMQP message producer.
-    """
-
-    def send(self, destination, content, ttl=None):
-        """
-        Send a message.
-        :param destination: An AMQP destination.
-        :type destination: Destination
-        :param content: The message content
-        :type content: buf
-        :param ttl: Time to Live (seconds)
-        :type ttl: float
-        :return: A message_id.
-        :rtype: str
-        """
-        raise NotImplementedError()
-
-    def broadcast(self, destinations, content, ttl=None):
-        """
-        Send a message to multiple destinations.
-        :param destinations: A list of: Destination
-        :type destinations: list
-        :param content: The message content
-        :type content: buf
-        :return: A list of message_id
-        :rtype: list
-        """
-        raise NotImplementedError()
-
-
-class PlainProducer(BasePlainProducer):
-    """
-    An plain AMQP message producer.
-    """
-
-    def __init__(self, url=None):
-        """
-        :param url: The broker url.
-        :type url: str
-        """
-        BasePlainProducer.__init__(self, url)
-        adapter = Adapter.find(url)
-        self._impl = adapter.PlainProducer(url)
-
-    @model
-    def channel(self):
-        """
-        Get a channel for the open connection.
-        :return: An open channel.
-        :raise: ModelError
-        """
-        return self._impl.channel()
-
-    @model
-    def open(self):
-        """
-        Open the producer.
-        :raise: ModelError
-        """
-        self._impl.open()
-
-    @model
-    def close(self, hard=False):
-        """
-        Close the producer.
-        :param hard: Force the connection closed.
-        :type hard: bool
-        :raise: ModelError
-        """
-        self._impl.close(hard)
-
-    @model
-    def send(self, destination, content, ttl=None):
-        """
-        Send a message.
-        :param destination: An AMQP destination.
-        :type destination: Destination
-        :param content: The message content
-        :type content: buf
-        :param ttl: Time to Live (seconds)
-        :type ttl: float
-        :return: A message_id.
-        :rtype: str
-        :raise: ModelError
-        """
-        self._impl.authenticator = self.authenticator
-        return self._impl.send(destination, content, ttl)
-
-    @model
-    def broadcast(self, destinations, content, ttl=None):
-        """
-        Send a message to multiple destinations.
-        :param destinations: A list of: Destination
-        :type destinations: list
-        :param content: The message content
-        :type content: buf
-        :return: A list of message_id
-        :rtype: list
-        :raise: ModelError
-        """
-        self._impl.authenticator = self.authenticator
-        return self._impl.broadcast(destinations, content, ttl)
+        sn = str(uuid4())
+        routing_key = destination.routing_key
+        routing = (None, routing_key)
+        document = Document(sn=sn, version=VERSION, routing=routing)
+        document += body
+        unsigned = document.dump()
+        signed = auth.sign(self.authenticator, unsigned)
+        self._impl.send(destination, signed, ttl)
+        return sn
 
 
 # --- connection -------------------------------------------------------------

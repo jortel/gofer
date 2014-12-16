@@ -20,11 +20,11 @@ class Test(object):
 
     def producer_reader(self, queue):
         print 'using producer/reader'
-        with self.adapter.Producer(url=self.url) as p:
+        with self.adapter.Sender(url=self.url) as p:
             for x in range(0, N):
                 d = queue.destination(self.url)
                 print '#%d - sent: %s' % (x, d.dict())
-                p.send(d)
+                p.send(d, 'hello')
         received = 0
         with self.adapter.Reader(queue, url=self.url) as r:
             while received < N:

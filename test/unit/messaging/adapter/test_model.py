@@ -17,7 +17,7 @@ from unittest import TestCase
 
 from mock import patch, Mock
 
-from gofer.messaging.model import Document
+from gofer.messaging.model import Document, VERSION
 from gofer.messaging.adapter.url import URL
 from gofer.messaging.adapter.model import Destination
 from gofer.messaging.adapter.model import Model, _Domain, Node
@@ -25,8 +25,7 @@ from gofer.messaging.adapter.model import BaseExchange, Exchange
 from gofer.messaging.adapter.model import BaseQueue, Queue
 from gofer.messaging.adapter.model import BaseEndpoint, Messenger
 from gofer.messaging.adapter.model import BaseReader, Reader
-from gofer.messaging.adapter.model import BaseProducer, Producer
-from gofer.messaging.adapter.model import BasePlainProducer, PlainProducer
+from gofer.messaging.adapter.model import BaseSender, Sender, Producer
 from gofer.messaging.adapter.model import Broker, SSL
 from gofer.messaging.adapter.model import BaseConnection, Connection, SharedConnection
 from gofer.messaging.adapter.model import Message
@@ -47,9 +46,6 @@ class FakeConnection(object):
 
     def __init__(self, url):
         self.url = url
-
-
-# --- decorators -------------------------------------------------------------
 
 
 class TestModelDecorator(TestCase):
@@ -126,9 +122,6 @@ class TestBlockingDecorator(TestCase):
         self.assertEqual(fn.call_count, 43)
 
 
-# --- domain -----------------------------------------------------------------
-
-
 class TestModel(TestCase):
 
     def test_domain_id(self):
@@ -167,9 +160,6 @@ class TestDomain(TestCase):
         # delete
         domain.delete(dog)
         self.assertEqual(domain.content, {'Node::cat': cat})
-
-
-# --- destination ------------------------------------------------------------
 
 
 class TestDestination(TestCase):
@@ -217,9 +207,6 @@ class TestDestination(TestCase):
         self.assertEqual(repr(d), repr(d.__dict__))
 
 
-# --- node ---------------------------------------------------------
-
-
 class TestNode(TestCase):
 
     def test_init(self):
@@ -235,9 +222,6 @@ class TestNode(TestCase):
     def test_domain_id(self):
         n = Node('test')
         self.assertEqual(n.domain_id, 'Node::test')
-
-
-# --- exchange ---------------------------------------------------------------
 
 
 class TestBaseExchange(TestCase):
@@ -306,9 +290,6 @@ class TestExchange(TestCase):
         plugin.Exchange.assert_called_with(exchange.name)
         impl = plugin.Exchange()
         impl.delete.assert_called_with(TEST_URL)
-
-
-# --- queue ------------------------------------------------------------------
 
 
 class TestBaseQueue(TestCase):
@@ -437,9 +418,6 @@ class TestQueue(TestCase):
         queued[1].ack.assert_called_once_with()
 
 
-# --- endpoint ---------------------------------------------------------------
-
-
 class TestBaseEndpoint(TestCase):
 
     @patch('gofer.messaging.adapter.model.uuid4')
@@ -447,14 +425,6 @@ class TestBaseEndpoint(TestCase):
         _uuid4.return_value = '1234'
         endpoint = BaseEndpoint(TEST_URL)
         self.assertEqual(endpoint.url, TEST_URL)
-        self.assertEqual(endpoint.uuid, str(_uuid4()))
-        self.assertEqual(endpoint.authenticator, None)
-
-    @patch('gofer.messaging.adapter.model.uuid4')
-    def test_id(self, _uuid4):
-        _uuid4.return_value = '1234'
-        endpoint = BaseEndpoint(TEST_URL)
-        self.assertEqual(endpoint.id(), endpoint.uuid)
 
     def test_is_open(self):
         endpoint = BaseEndpoint(TEST_URL)
@@ -494,14 +464,14 @@ class TestBaseEndpoint(TestCase):
         _close.assert_called_with()
 
 
-# --- reader -----------------------------------------------------------------
-
-
 class TestMessenger(TestCase):
 
-    def test_endpoint(self):
+    def test_init(self):
         messenger = Messenger(TEST_URL)
         self.assertRaises(NotImplementedError, messenger.endpoint)
+        self.assertRaises(NotImplementedError, messenger.link, Mock())
+        self.assertRaises(NotImplementedError, messenger.unlink)
+        self.assertTrue(isinstance(messenger, BaseEndpoint))
 
     @patch('gofer.messaging.adapter.model.Messenger.endpoint')
     def test_channel(self, _endpoint):
@@ -535,9 +505,6 @@ class TestMessenger(TestCase):
         _endpoint().close.assert_called_with(True)
 
 
-# --- messenger --------------------------------------------------------------
-
-
 class TestBaseReader(TestCase):
 
     def test_init(self):
@@ -546,6 +513,7 @@ class TestBaseReader(TestCase):
         reader = BaseReader(queue, url)
         self.assertEqual(reader.queue, queue)
         self.assertEqual(reader.url, url)
+        self.assertTrue(isinstance(reader, Messenger))
 
     def test_get(self):
         queue = Queue('')
@@ -584,29 +552,30 @@ class TestReader(TestCase):
         url = TEST_URL
 
         # test
-        Reader(queue, url)
+        reader = Reader(queue, url)
 
         # validation
         _find.assert_called_with(url)
         plugin.Reader.assert_called_with(queue, url)
+        self.assertEqual(reader.authenticator, None)
+        self.assertTrue(isinstance(reader, BaseReader))
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_channel(self, _find):
+    def test_endpoint(self, _find):
         _impl = Mock()
-        _impl.channel.return_value = Mock()
         plugin = Mock()
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
+        queue = BaseQueue('', Exchange(''), '')
         url = TEST_URL
 
         # test
-        queue = BaseQueue('', Exchange(''), '')
         reader = Reader(queue, url)
-        channel = reader.channel()
+        endpoint = reader.endpoint()
 
         # validation
-        _impl.channel.assert_called_with()
-        self.assertEqual(channel, _impl.channel())
+        _impl.endpoint.assert_called_once_with()
+        self.assertEqual(endpoint, _impl.endpoint.return_value)
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_open(self, _find):
@@ -862,64 +831,160 @@ class TestReader(TestCase):
         self.assertTrue(received[1][0].ack.called)
 
 
-# --- producer ---------------------------------------------------------------
+class TestBaseSender(TestCase):
+
+    def test_init(self):
+        url = TEST_URL
+        sender = BaseSender(url)
+        self.assertEqual(sender.url, url)
+        self.assertTrue(isinstance(sender, Messenger))
+
+    def test_abstract(self):
+        url = TEST_URL
+        sender = BaseSender(url)
+        self.assertRaises(NotImplementedError, sender.send, None, None, None)
 
 
-class TestBaseProducer(TestCase):
+class TestSender(TestCase):
 
-    @patch('gofer.messaging.adapter.model.uuid4')
-    def test_init(self, _uuid4):
-        _uuid4.return_value = '1234'
-        producer = BaseProducer(TEST_URL)
-        self.assertEqual(producer.url, TEST_URL)
-        self.assertEqual(producer.uuid, str(_uuid4()))
-        self.assertEqual(producer.authenticator, None)
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_init(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Sender.return_value = _impl
+        _find.return_value = plugin
+        url = TEST_URL
+        sender = Sender(url)
+        self.assertEqual(sender._impl, _impl)
+        self.assertTrue(isinstance(sender, BaseSender))
 
-    def test_send(self):
-        producer = BaseProducer(TEST_URL)
-        self.assertRaises(NotImplementedError, producer.send, None, 0)
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_endpoint(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Sender.return_value = _impl
+        _find.return_value = plugin
+        url = TEST_URL
 
-    def test_broadcast(self):
-        producer = BaseProducer(TEST_URL)
-        self.assertRaises(NotImplementedError, producer.broadcast, [], 0)
+        # test
+        sender = Sender(url)
+        endpoint = sender.endpoint()
+
+        # validation
+        _impl.endpoint.assert_called_once_with()
+        self.assertEqual(endpoint, _impl.endpoint.return_value)
+
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_link(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Sender.return_value = _impl
+        _find.return_value = plugin
+        url = TEST_URL
+        messenger = Mock()
+        sender = Sender(url)
+        sender.link(messenger)
+        _impl.link.assert_called_with(messenger)
+
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_unlink(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Sender.return_value = _impl
+        _find.return_value = plugin
+        url = TEST_URL
+        sender = Sender(url)
+        sender.unlink()
+        _impl.unlink.assert_called_with()
+
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_open(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Sender.return_value = _impl
+        _find.return_value = plugin
+        url = TEST_URL
+        sender = Sender(url)
+        sender.open()
+        _impl.open.assert_called_with()
+
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_close(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Sender.return_value = _impl
+        _find.return_value = plugin
+        url = TEST_URL
+        sender = Sender(url)
+        # soft
+        sender.close()
+        _impl.close.assert_called_with(False)
+        # hard
+        _impl.close.reset_mock()
+        sender.close(True)
+        _impl.close.assert_called_with(True)
 
 
 class TestProducer(TestCase):
 
-    @patch('gofer.messaging.adapter.model.uuid4')
     @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_init(self, _find, _uuid4):
+    def test_init(self, _find):
         _impl = Mock()
         plugin = Mock()
-        plugin.Producer.return_value = _impl
+        plugin.Sender.return_value = _impl
         _find.return_value = plugin
-        _uuid4.return_value = '1234'
         url = TEST_URL
         producer = Producer(url)
         _find.assert_called_with(url)
         self.assertEqual(producer.url, url)
-        self.assertEqual(producer.uuid, str(_uuid4()))
         self.assertEqual(producer.authenticator, None)
         self.assertEqual(producer._impl, _impl)
+        self.assertTrue(isinstance(producer, Messenger))
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_channel(self, _find):
+    def test_endpoint(self, _find):
         _impl = Mock()
-        _impl.channel.return_value = Mock()
         plugin = Mock()
-        plugin.Producer.return_value = _impl
+        plugin.Sender.return_value = _impl
+        _find.return_value = plugin
+        url = TEST_URL
+
+        # test
+        producer = Producer(url)
+        endpoint = producer.endpoint()
+
+        # validation
+        _impl.endpoint.assert_called_once_with()
+        self.assertEqual(endpoint, _impl.endpoint.return_value)
+
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_link(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Sender.return_value = _impl
+        _find.return_value = plugin
+        url = TEST_URL
+        messenger = Mock()
+        producer = Producer(url)
+        producer.link(messenger)
+        _impl.link.assert_called_with(messenger)
+
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_unlink(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Sender.return_value = _impl
         _find.return_value = plugin
         url = TEST_URL
         producer = Producer(url)
-        channel = producer.channel()
-        _impl.channel.assert_called_with()
-        self.assertEqual(channel, _impl.channel())
+        producer.unlink()
+        _impl.unlink.assert_called_with()
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_open(self, _find):
         _impl = Mock()
         plugin = Mock()
-        plugin.Producer.return_value = _impl
+        plugin.Sender.return_value = _impl
         _find.return_value = plugin
         url = TEST_URL
         producer = Producer(url)
@@ -930,7 +995,7 @@ class TestProducer(TestCase):
     def test_close(self, _find):
         _impl = Mock()
         plugin = Mock()
-        plugin.Producer.return_value = _impl
+        plugin.Sender.return_value = _impl
         _find.return_value = plugin
         url = TEST_URL
         producer = Producer(url)
@@ -942,150 +1007,37 @@ class TestProducer(TestCase):
         producer.close(True)
         _impl.close.assert_called_with(True)
 
+    @patch('gofer.messaging.adapter.model.Document')
+    @patch('gofer.messaging.adapter.model.uuid4')
+    @patch('gofer.messaging.adapter.model.auth')
     @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_send(self, _find):
+    def test_send(self, _find, auth, uuid4, document):
         _impl = Mock()
         _impl.send.return_value = '456'
         plugin = Mock()
-        plugin.Producer.return_value = _impl
+        plugin.Sender.return_value = _impl
         _find.return_value = plugin
+        uuid4.return_value = '<uuid>'
         destination = Destination('')
         ttl = 234
         body = {'A': 1, 'B': 2}
+
+        # test
         producer = Producer(TEST_URL)
+        producer.authenticator = Mock()
         sn = producer.send(destination, ttl=ttl, **body)
-        _impl.send.assert_called_with(destination, ttl, **body)
-        self.assertEqual(sn, _impl.send())
 
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_broadcast(self, _find):
-        _impl = Mock()
-        _impl.broadcast.return_value = ['456']
-        plugin = Mock()
-        plugin.Producer.return_value = _impl
-        _find.return_value = plugin
-        destination = Destination('')
-        ttl = 234
-        body = {'A': 1, 'B': 2}
-        producer = Producer(TEST_URL)
-        sn_list = producer.broadcast([destination], ttl=ttl, **body)
-        _impl.broadcast.assert_called_with([destination], ttl, **body)
-        self.assertEqual(sn_list, _impl.broadcast())
-
-
-# --- plain producer ---------------------------------------------------------
-
-
-class TestBasePlainProducer(TestCase):
-
-    @patch('gofer.messaging.adapter.model.uuid4')
-    def test_init(self, _uuid4):
-        _uuid4.return_value = '1234'
-        producer = BasePlainProducer(TEST_URL)
-        self.assertEqual(producer.url, TEST_URL)
-        self.assertEqual(producer.uuid, str(_uuid4()))
-        self.assertEqual(producer.authenticator, None)
-
-    def test_send(self):
-        producer = BasePlainProducer(TEST_URL)
-        self.assertRaises(NotImplementedError, producer.send, None, None, 0)
-
-    def test_broadcast(self):
-        producer = BasePlainProducer(TEST_URL)
-        self.assertRaises(NotImplementedError, producer.broadcast, [], None, 0)
-
-
-class TestPlainProducer(TestCase):
-
-    @patch('gofer.messaging.adapter.model.uuid4')
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_init(self, _find, _uuid4):
-        _impl = Mock()
-        plugin = Mock()
-        plugin.PlainProducer.return_value = _impl
-        _find.return_value = plugin
-        _uuid4.return_value = '1234'
-        url = TEST_URL
-        producer = PlainProducer(url)
-        _find.assert_called_with(url)
-        self.assertEqual(producer.url, url)
-        self.assertEqual(producer.uuid, str(_uuid4()))
-        self.assertEqual(producer.authenticator, None)
-        self.assertEqual(producer._impl, _impl)
-
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_channel(self, _find):
-        _impl = Mock()
-        _impl.channel.return_value = Mock()
-        plugin = Mock()
-        plugin.PlainProducer.return_value = _impl
-        _find.return_value = plugin
-        url = TEST_URL
-        producer = PlainProducer(url)
-        channel = producer.channel()
-        _impl.channel.assert_called_with()
-        self.assertEqual(channel, _impl.channel())
-
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_open(self, _find):
-        _impl = Mock()
-        plugin = Mock()
-        plugin.PlainProducer.return_value = _impl
-        _find.return_value = plugin
-        url = TEST_URL
-        producer = PlainProducer(url)
-        producer.open()
-        _impl.open.assert_called_with()
-
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_close(self, _find):
-        _impl = Mock()
-        plugin = Mock()
-        plugin.PlainProducer.return_value = _impl
-        _find.return_value = plugin
-        url = TEST_URL
-        producer = PlainProducer(url)
-        # soft
-        producer.close()
-        _impl.close.assert_called_with(False)
-        # hard
-        _impl.close.reset_mock()
-        producer.close(True)
-        _impl.close.assert_called_with(True)
-
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_send(self, _find):
-        _impl = Mock()
-        _impl.send.return_value = '456'
-        plugin = Mock()
-        plugin.PlainProducer.return_value = _impl
-        _find.return_value = plugin
-        destination = Destination('')
-        ttl = 234
-        content = Mock()
-        producer = PlainProducer(TEST_URL)
-        sn = producer.send(destination, content, ttl=ttl)
-        _impl.send.assert_called_with(destination, content, ttl)
-        self.assertEqual(sn, _impl.send())
-
-
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_broadcast(self, _find):
-        _impl = Mock()
-        _impl.broadcast.return_value = ['456']
-        plugin = Mock()
-        plugin.PlainProducer.return_value = _impl
-        _find.return_value = plugin
-        destination = Destination('')
-        ttl = 234
-        content = Mock()
-        producer = PlainProducer(TEST_URL)
-        sn_list = producer.broadcast([destination], content, ttl=ttl)
-        _impl.broadcast.assert_called_with([destination], content, ttl)
-        self.assertEqual(sn_list, _impl.broadcast())
-
-
-# --- connection -------------------------------------------------------------
+        # validation
+        document.assert_called_once_with(
+            sn=str(uuid4.return_value),
+            version=VERSION,
+            routing=(None, destination.routing_key)
+        )
+        unsigned = document.return_value
+        auth.sign.assert_called_once_with(
+            producer.authenticator, unsigned.__iadd__.return_value.dump.return_value)
+        _impl.send.assert_called_once_with(destination, auth.sign.return_value, ttl)
+        self.assertEqual(sn, uuid4.return_value)
 
 
 class TestBaseConnection(TestCase):
@@ -1205,9 +1157,6 @@ class TestSharedConnection(TestCase):
         self.assertNotEqual(fake1, fake3)
 
 
-# --- broker -----------------------------------------------------------------
-
-
 class TestSSL(TestCase):
 
     def test_init(self):
@@ -1260,9 +1209,6 @@ class TestBroker(TestCase):
         url = 'amqp://localhost'
         b = Broker(url)
         self.assertEqual(b.domain_id, url)
-
-
-# --- message ----------------------------------------------------------------
 
 
 class TestMessage(TestCase):

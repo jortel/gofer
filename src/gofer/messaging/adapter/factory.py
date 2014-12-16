@@ -35,9 +35,8 @@ REQUIRED = [
     'Endpoint',
     'Exchange',
     'Queue',
-    'Producer',
-    'BinaryProducer',
     'Reader',
+    'Sender',
     'send',
 ]
 

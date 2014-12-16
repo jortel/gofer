@@ -18,83 +18,19 @@ Contains AMQP message producer classes.
 """
 
 from logging import getLogger
-from uuid import uuid4
 
 from qpid.messaging import Message
 
-from gofer.messaging import auth
-from gofer.messaging.model import VERSION, Document
-from gofer.messaging.adapter.model import BaseProducer, BasePlainProducer
+from gofer.messaging.adapter.model import BaseSender
 from gofer.messaging.adapter.qpid.endpoint import Endpoint
 
 
 log = getLogger(__name__)
 
 
-# --- utils ------------------------------------------------------------------
-
-
-def send(endpoint, destination, ttl=None, **body):
+class Sender(BaseSender):
     """
-    Send a message.
-    :param endpoint: An AMQP endpoint.
-    :type endpoint: gofer.messaging.adapter.model.BaseEndpoint
-    :param destination: An AMQP destination.
-    :type destination: gofer.messaging.adapter.model.Destination
-    :param ttl: Time to Live (seconds)
-    :type ttl: float
-    :keyword body: document body.
-    :return: The message serial number.
-    :rtype: str
-    """
-    sn = str(uuid4())
-    if destination.exchange:
-        address = '/'.join((destination.exchange, destination.routing_key))
-    else:
-        address = destination.routing_key
-    routing = (endpoint.id(), destination.routing_key)
-    document = Document(sn=sn, version=VERSION, routing=routing)
-    document += body
-    unsigned = document.dump()
-    signed = auth.sign(endpoint.authenticator, unsigned)
-    message = Message(content=signed, durable=True, ttl=ttl)
-    channel = endpoint.channel()
-    sender = channel.sender(address)
-    sender.send(message)
-    sender.close()
-    log.debug('sent (%s) %s', destination, document)
-    return sn
-
-
-def plain_send(endpoint, destination, content, ttl=None):
-    """
-    Send a message with *raw* content.
-    :param destination: An AMQP destination.
-    :type destination: gofer.messaging.adapter.model.Destination
-    :param content: The message content
-    :param ttl: Time to Live (seconds)
-    :type ttl: float
-    :return: The message ID.
-    :rtype: str
-    """
-    if destination.exchange:
-        address = '/'.join((destination.exchange, destination.routing_key))
-    else:
-        address = destination.routing_key
-    message = Message(content=content, durable=True, ttl=ttl)
-    sender = endpoint.channel().sender(address)
-    sender.send(message)
-    sender.close()
-    log.debug('sent (%s) <Plain>', destination)
-    return message.id
-
-
-# --- producers --------------------------------------------------------------
-
-
-class Producer(BaseProducer):
-    """
-    An AMQP (message producer.
+    An AMQP message sender.
     """
 
     def __init__(self, url=None):
@@ -102,8 +38,9 @@ class Producer(BaseProducer):
         :param url: The broker url.
         :type url: str
         """
-        BaseProducer.__init__(self, url)
+        BaseSender.__init__(self, url)
         self._endpoint = Endpoint(url)
+        self._link = None
 
     def endpoint(self):
         """
@@ -111,59 +48,21 @@ class Producer(BaseProducer):
         :return: A concrete object.
         :rtype: BaseEndpoint
         """
-        return self._endpoint
+        return self._link or self._endpoint
 
-    def send(self, destination, ttl=None, **body):
+    def link(self, messenger):
         """
-        Send a message.
-        :param destination: An AMQP destination.
-        :type destination: gofer.messaging.adapter.model.Destination
-        :param ttl: Time to Live (seconds)
-        :type ttl: float
-        :keyword body: document body.
-        :return: The message serial number.
-        :rtype: str
+        Link to another messenger.
+        :param messenger: A messenger to link with.
+        :type messenger: gofer.messaging.adapter.model.Messenger
         """
-        return send(self, destination, ttl, **body)
+        self._link = messenger.endpoint()
 
-    def broadcast(self, destinations, ttl=None, **body):
+    def unlink(self):
         """
-        Broadcast a message to (N) queues.
-        :param destinations: A list of AMQP destinations.
-        :type destinations: [gofer.messaging.adapter.node.Node,..]
-        :param ttl: Time to Live (seconds)
-        :type ttl: float
-        :keyword body: document body.
-        :return: A list of (destination, sn).
-        :rtype: list
+        Unlink with another messenger.
         """
-        sn_list = []
-        for destination in destinations:
-            sn = send(self, destination, ttl, **body)
-            sn_list.append((repr(destination), sn))
-        return sn_list
-
-
-class PlainProducer(BasePlainProducer):
-    """
-    A plain AMQP message producer.
-    """
-
-    def __init__(self, url=None):
-        """
-        :param url: The broker url.
-        :type url: str
-        """
-        BasePlainProducer.__init__(self, url)
-        self._endpoint = Endpoint(url)
-
-    def endpoint(self):
-        """
-        Get a concrete object.
-        :return: A concrete object.
-        :rtype: BaseEndpoint
-        """
-        return self._endpoint
+        self._link = None
 
     def send(self, destination, content, ttl=None):
         """
@@ -174,23 +73,13 @@ class PlainProducer(BasePlainProducer):
         :type content: buf
         :param ttl: Time to Live (seconds)
         :type ttl: float
-        :return: The message ID.
-        :rtype: str
         """
-        return plain_send(self, destination, content, ttl=ttl)
-
-    def broadcast(self, destinations, content, ttl=None):
-        """
-        Send a message to multiple destinations.
-        :param destinations: A list of: gofer.messaging.adapter.model.Destination
-        :type destinations: list
-        :param content: The message content
-        :type content: buf
-        :return: A list of (destination, id).
-        :rtype: list
-        """
-        id_list = []
-        for destination in destinations:
-            sn = plain_send(self, destination, content, ttl=ttl)
-            id_list.append((repr(destination), sn))
-        return id_list
+        if destination.exchange:
+            address = '/'.join((destination.exchange, destination.routing_key))
+        else:
+            address = destination.routing_key
+        message = Message(content=content, durable=True, ttl=ttl)
+        sender = self.channel().sender(address)
+        sender.send(message)
+        sender.close()
+        log.debug('sent (%s)', destination)

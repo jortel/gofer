@@ -115,5 +115,5 @@ class Reader(BaseReader):
         except Empty:
             pass
         except Exception:
-            log.exception(self.id())
+            log.exception('fetch()')
             sleep(10)

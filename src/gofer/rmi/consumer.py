@@ -16,7 +16,7 @@
 from logging import getLogger
 
 from gofer.rmi.store import Pending
-from gofer.messaging import Adapter, Consumer, Document, Destination
+from gofer.messaging import Consumer, Producer, Document, Destination
 from gofer.metrics import timestamp
 
 log = getLogger(__name__)
@@ -58,11 +58,11 @@ class RequestConsumer(Consumer):
         if not replyto:
             return
         try:
-            endpoint = self.reader
             destination = Destination.create(replyto)
-            adapter = Adapter.find(self.url)
-            adapter.send(
-                endpoint,
+            producer = Producer(self.url)
+            producer.authenticator = self.reader.authenticator
+            producer.link(self.reader)
+            producer.send(
                 destination,
                 sn=sn,
                 any=any,

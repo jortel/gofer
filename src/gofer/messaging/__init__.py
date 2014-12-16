@@ -35,5 +35,5 @@ from gofer.messaging.adapter import \
     Exchange, \
     Queue, \
     Reader, \
-    Producer, \
-    PlainProducer
+    Sender, \
+    Producer
