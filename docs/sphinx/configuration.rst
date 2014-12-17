@@ -83,10 +83,8 @@ Defines basic plugin properties.
 [messaging]
 -----------
 
-- **uuid** - The default agent (UUID) identity.
-  This value may be overridden by an *identity* plugin.
-
-- **'url** - The (optional) QPID connection URL.
+- **uuid** - The agent identity. This value also specifies the queue name.
+- **'url** - The (optional) broker connection URL.
   No value indicates the plugin should **not** connect to broker.
   *format*: ``<adapter>+<protocol>://<user>:<password>@<host>:<port>/<virtual-host>``,
   protocol is one of:

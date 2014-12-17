@@ -13,57 +13,15 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-"""
-Builtin plugin.
-"""
-
-import socket
-
-from uuid import uuid4
-
-from gofer.decorators import *
-from gofer.agent.plugin import Plugin
-
-from logging import getLogger
-
-log = getLogger(__name__)
-plugin = Plugin.find(__name__)
+from gofer.decorators import remote
 
 
-class TestAction:
+class Builtin(object):
 
-    @action(hours=36)
+    @remote
     def hello(self):
-        plugin = Plugin.find(__name__)
-        log.info('Hello:\n%s', plugin.cfg)
-
-
-class TestAdmin:
+        return 'hello!'
 
     @remote
-    def echo(self, thing):
-        return thing
-
-
-class Rabbit:
-
-    @remote
-    def hop(self, n):
-        return 'Rabbit hopped %d times.' % n
-
-
-@remote
-def echo(something):
-    return something
-
-#
-# Set the uuid to the hostname when not
-# specified in the config.
-#
-
-if not plugin.uuid:
-    hostname = socket.gethostname()
-    uuid = str(uuid4())
-    if not hostname.startswith('localhost'):
-        uuid = 'admin@%s' % hostname
-    plugin.cfg.messaging.uuid = uuid
+    def echo(self, something):
+        return something

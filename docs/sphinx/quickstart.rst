@@ -8,11 +8,11 @@ First, install and start QPID (qpidd)
 
 Then,
 
-1. Install gofer
+1. Install gofer.
 
    ::
 
-     yum install gofer
+     yum install gofer python-gofer-qpid
 
 2. Edit the ``/etc/gofer/plugins/builtin.conf`` and set the url to point at your broker.
    Then, set uuid=123. Or, look in ``/var/log/messages`` to find the auto-assigned UUID
@@ -24,10 +24,10 @@ Then,
      enabled=1
 
      [messaging]
-     url=amqp://localhost:5672
+     url=amqp://localhost
      uuid=123
 
-3. Start the gefer service (goferd)
+3. Start the goferd service.
 
    ::
 
