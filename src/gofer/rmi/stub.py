@@ -128,6 +128,8 @@ class Stub:
         self.__called = (0, None)
         self.__mutex = RLock()
         self.__policy = None
+        queue = Queue(destination.routing_key)
+        queue.declare(url)
 
     @synchronized
     def __send(self, request, options):

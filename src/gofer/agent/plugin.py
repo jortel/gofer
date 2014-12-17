@@ -208,6 +208,7 @@ class Plugin(object):
         if self.uuid and self.url:
             self.refresh()
             queue = Queue(self.uuid)
+            queue.declare(self.url)
             consumer = RequestConsumer(queue, self.url)
             consumer.reader.authenticator = self.authenticator
             consumer.start()

@@ -56,7 +56,6 @@ Pending.PENDING = os.path.join(ROOT, 'messaging/pending')
 Pending.DELAYED = os.path.join(ROOT, 'messaging/delayed')
 
 # misc
-from gofer.messaging import Queue
 from gofer.agent.plugin import PluginDescriptor, PluginLoader
 from gofer.agent.main import Agent, setup_logging
 from gofer.config import Config
@@ -120,8 +119,6 @@ class TestAgent:
 
     def __init__(self, url, uuid, threads, auth):
         setup_logging()
-        queue = Queue(uuid)
-        queue.declare(url)
         install(url, uuid, threads, auth)
         plugins = PluginLoader.load()
         agent = Agent(plugins)
