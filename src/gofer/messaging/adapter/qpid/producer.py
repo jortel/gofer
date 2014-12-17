@@ -79,7 +79,8 @@ class Sender(BaseSender):
         else:
             address = destination.routing_key
         message = Message(content=content, durable=True, ttl=ttl)
-        sender = self.channel().sender(address)
+        channel = self.channel()
+        sender = channel.sender(address)
         sender.send(message)
         sender.close()
         log.debug('sent (%s)', destination)

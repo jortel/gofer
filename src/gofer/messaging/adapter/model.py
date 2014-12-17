@@ -856,6 +856,7 @@ class Sender(BaseSender):
         """
         self._impl.close(hard)
 
+    @model
     def send(self, destination, content, ttl):
         """
         Send a message with content.
