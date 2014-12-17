@@ -924,6 +924,20 @@ class TestSender(TestCase):
         sender.close(True)
         _impl.close.assert_called_with(True)
 
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_send(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Sender.return_value = _impl
+        _find.return_value = plugin
+        url = TEST_URL
+        destination = Mock()
+        content = '1234'
+        ttl = 10
+        sender = Sender(url)
+        sender.send(destination, content, ttl)
+        _impl.send.assert_called_once_with(destination, content, ttl)
+
 
 class TestProducer(TestCase):
 
