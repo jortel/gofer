@@ -167,11 +167,10 @@ class Synchronous(RequestMethod):
         self.timeout = Timeout.seconds(options.timeout or 10)
         self.wait = Timeout.seconds(options.wait or 90)
         self.progress = options.progress
-        self.queue = Queue(str(uuid4()))
         self.authenticator = options.authenticator
-        self.queue.durable = False
+        self.queue = Queue(str(uuid4()))
         self.queue.auto_delete = True
-        self.queue.declare(self.url)
+        self.queue.durable = False
 
     def _get_accepted(self, sn, reader):
         """
@@ -276,6 +275,7 @@ class Synchronous(RequestMethod):
         :rtype: object
         :raise Exception: returned by the peer.
         """
+        self.queue.declare(self.url)
         reply_destination = self.queue.destination(self.url)
         producer = Producer(self.url)
         producer.authenticator = self.authenticator

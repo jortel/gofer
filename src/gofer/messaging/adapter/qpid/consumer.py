@@ -114,6 +114,6 @@ class Reader(BaseReader):
             return Message(self, impl, impl.content)
         except Empty:
             pass
-        except Exception:
-            log.exception('fetch()')
-            sleep(10)
+        except Exception, e:
+            log.error(str(e))
+            sleep(60)
