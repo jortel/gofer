@@ -28,7 +28,7 @@ class Test(object):
         received = 0
         with self.adapter.Reader(queue, url=self.url) as r:
             while received < N:
-                m = r.get()
+                m = r.get(10)
                 if m is None:
                     break
                 m.ack()

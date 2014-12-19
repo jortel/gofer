@@ -60,7 +60,7 @@ class TestReader(TestCase):
 
     @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
     @patch('gofer.messaging.adapter.qpid.consumer.BaseReader.open')
-    def test_open(self, open):
+    def test_open(self, _open):
         queue = Mock(name='test-queue')
         channel = Mock()
 
@@ -71,13 +71,13 @@ class TestReader(TestCase):
         reader.open()
 
         # validation
-        open.assert_called_once_with(reader)
+        _open.assert_called_once_with(reader)
         channel.receiver.assert_called_once_with(queue.name)
         self.assertEqual(reader._receiver, channel.receiver.return_value)
         
     @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
     @patch('gofer.messaging.adapter.qpid.consumer.BaseReader.open')
-    def test_open_already(self, open):
+    def test_open_already(self, _open):
         queue = Mock(name='test-queue')
         channel = Mock()
 
@@ -88,7 +88,7 @@ class TestReader(TestCase):
         reader.open()
 
         # validation
-        self.assertFalse(open.called)
+        self.assertFalse(_open.called)
         self.assertFalse(channel.receiver.called)
 
     def test_get(self):
@@ -138,7 +138,7 @@ class TestReader(TestCase):
 
         # validation
         reader._receiver.fetch.assert_called_once_with(10)
-        sleep.assert_called_once_with(10)
+        sleep.assert_called_once_with(60)
         self.assertEqual(message, None)
 
     @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())

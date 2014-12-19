@@ -9,13 +9,20 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+import select
+
+from Queue import Empty
+from Queue import Queue as Inbox
 from logging import getLogger
 
-from gofer.messaging.adapter.model import BaseReader, Message, blocking
+from gofer.messaging.adapter.model import BaseReader, Message
 from gofer.messaging.adapter.amqplib.endpoint import Endpoint, reliable
 
 
 log = getLogger(__name__)
+
+
+NO_DELAY = 0
 
 
 class Reader(BaseReader):
@@ -35,6 +42,30 @@ class Reader(BaseReader):
         """
         BaseReader.__init__(self, queue, url)
         self._endpoint = Endpoint(url)
+        self._receiver = None
+
+    def open(self):
+        """
+        Open the reader.
+        """
+        if self.is_open():
+            # already open
+            return
+        BaseReader.open(self)
+        self._receiver = Receiver(self)
+        self._receiver.open()
+
+    def close(self, hard=False):
+        """
+        Close the reader.
+        :param hard: Force the connection closed.
+        :type hard: bool
+        """
+        if not self.is_open():
+            # not open
+            return
+        self._receiver.close()
+        BaseReader.close(self, hard)
 
     def endpoint(self):
         """
@@ -44,7 +75,6 @@ class Reader(BaseReader):
         """
         return self._endpoint
 
-    @blocking
     @reliable
     def get(self, timeout=None):
         """
@@ -54,9 +84,90 @@ class Reader(BaseReader):
         :return: The next message or None.
         :rtype: Message
         """
-        channel = self.channel()
-        impl = channel.basic_get(self.queue.name)
-        if impl:
+        try:
+            impl = self._receiver.fetch(timeout or NO_DELAY)
             return Message(self, impl, impl.body)
-        else:
-            return None
+        except Empty:
+            pass
+
+
+class Receiver(object):
+    """
+    Message receiver.
+    :ivar reader: A message reader.
+    :type reader: Reader
+    :ivar inbox: The message inbox.
+    :type inbox: Inbox
+    """
+
+    @staticmethod
+    def _wait(fd, channel, timeout):
+        """
+        Wait on channel.
+        :param fd: The connection file descriptor.
+        :type fd: int
+        :return: The channel.
+        :rtype: amqp.channel.Channel
+        :param timeout: The read timeout in seconds.
+        :type timeout: int
+        """
+        epoll = select.epoll()
+        epoll.register(fd, select.EPOLLIN)
+        try:
+            if epoll.poll(timeout):
+                channel.wait()
+        finally:
+            epoll.unregister(fd)
+            epoll.close()
+
+    def __init__(self, reader):
+        """
+        :param reader: A message reader.
+        :type reader: Reader
+        """
+        self.reader = reader
+        self.inbox = Inbox()
+        self.tag = None
+
+    def channel(self):
+        """
+        :return: The channel.
+        :rtype: amqp.channel.Channel
+        """
+        return self.reader.channel()
+
+    def open(self):
+        """
+        Open the receiver.
+        """
+        fn = self.inbox.put
+        channel = self.channel()
+        name = self.reader.queue.name
+        self.tag = channel.basic_consume(name, callback=fn)
+
+    def close(self):
+        """
+        Close the receiver.
+        """
+        try:
+            channel = self.channel()
+            channel.basic_cancel(self.tag)
+            self.tag = None
+        except Exception, e:
+            log.debug(str(e))
+
+    def fetch(self, timeout=None):
+        """
+        Fetch the next message
+        :param timeout: The read timeout in seconds.
+        :type timeout: int
+        :return: The next message.
+        :rtype: amqp.message.Message
+        :raise: Empty
+        """
+        inbox = self.inbox
+        if inbox.empty():
+            channel = self.channel()
+            fd = channel.connection.transport.sock.fileno()
+            self._wait(fd, channel, timeout)
+        return inbox.get(block=False)
