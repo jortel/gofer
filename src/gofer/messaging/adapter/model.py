@@ -44,6 +44,7 @@ def model(fn):
         except ModelError:
             raise
         except Exception, e:
+            log.exception(str(e))
             raise ModelError(e)
     return _fn
 
@@ -263,6 +264,22 @@ class BaseExchange(Node):
         self.durable = True
         self.auto_delete = False
 
+    def bind(self, queue, url):
+        """
+        Bind the specified queue.
+        :param queue: The queue to bind.
+        :type queue: BaseQueue
+        """
+        raise NotImplementedError()
+
+    def unbind(self, queue, url):
+        """
+        Unbind the specified queue.
+        :param queue: The queue to unbind.
+        :type queue: BaseQueue
+        """
+        raise NotImplementedError()
+
     def __eq__(self, other):
         return isinstance(other, BaseExchange) and \
             self.name == other.name
@@ -308,14 +325,32 @@ class Exchange(BaseExchange):
         impl = adapter.Exchange(self.name)
         impl.delete(url)
 
+    @model
+    def bind(self, queue, url=None):
+        """
+        Bind the specified queue.
+        :param queue: The queue to bind.
+        :type queue: BaseQueue
+        """
+        adapter = Adapter.find(url)
+        impl = adapter.Exchange(self.name)
+        impl.bind(queue, url)
+
+    @model
+    def unbind(self, queue, url=None):
+        """
+        Unbind the specified queue.
+        :param queue: The queue to unbind.
+        :type queue: BaseQueue
+        """
+        adapter = Adapter.find(url)
+        impl = adapter.Exchange(self.name)
+        impl.unbind(queue, url)
+
 
 class BaseQueue(Node):
     """
     An AMQP queue.
-    :ivar exchange: An AMQP exchange.
-    :type exchange: Exchange
-    :ivar routing_key: Message routing key.
-    :type routing_key: str
     :ivar durable: Indicates the queue is durable.
     :type durable: bool
     :ivar auto_delete: The queue is auto deleted.
@@ -324,31 +359,15 @@ class BaseQueue(Node):
     :type exclusive: bool
     """
 
-    def __init__(self, name, exchange, routing_key):
+    def __init__(self, name):
         """
         :param name: The queue name.
         :type name: str
-        :param exchange: An AMQP exchange
-        :type exchange: BaseExchange
-        :param routing_key: Message routing key.
-        :type routing_key: str
         """
         Node.__init__(self, name)
-        self.exchange = exchange
-        self.routing_key = routing_key
         self.durable = True
         self.auto_delete = False
         self.exclusive = False
-
-    def destination(self, url):
-        """
-        Get a destination object for the node.
-        :param url: The broker URL.
-        :type url: str
-        :return: A destination for the node.
-        :rtype: Destination
-        """
-        raise NotImplementedError()
 
     def __eq__(self, other):
         return isinstance(other, BaseQueue) and \
@@ -363,16 +382,12 @@ class Queue(BaseQueue):
     An AMQP message queue.
     """
 
-    def __init__(self, name, exchange=None, routing_key=None):
+    def __init__(self, name):
         """
         :param name: The queue name.
         :type name: str
-        :param exchange: An AMQP exchange
-        :type exchange: BaseExchange
-        :param routing_key: Message routing key.
-        :type routing_key: str
         """
-        BaseQueue.__init__(self, name, exchange, routing_key)
+        BaseQueue.__init__(self, name)
 
     @model
     def declare(self, url=None):
@@ -383,7 +398,7 @@ class Queue(BaseQueue):
         :raise: ModelError
         """
         adapter = Adapter.find(url)
-        impl = adapter.Queue(self.name, self.exchange, self.routing_key)
+        impl = adapter.Queue(self.name)
         impl.durable = self.durable
         impl.auto_delete = self.auto_delete
         impl.exclusive = self.exclusive
@@ -400,18 +415,6 @@ class Queue(BaseQueue):
         adapter = Adapter.find(url)
         impl = adapter.Queue(self.name)
         impl.delete(url)
-        
-    def destination(self, url):
-        """
-        Get a destination object for the node.
-        :param url: The broker URL.
-        :type url: str
-        :return: A destination for the node.
-        :rtype: Destination
-        """
-        adapter = Adapter.find(url)
-        impl = adapter.Queue(self.name, self.exchange, self.routing_key)
-        return impl.destination(url)
 
     @model
     def purge(self, url=None):

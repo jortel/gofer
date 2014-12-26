@@ -237,6 +237,11 @@ class TestBaseExchange(TestCase):
         self.assertEqual(exchange.name, name)
         self.assertEqual(exchange.policy, policy)
 
+    def test_abstract(self):
+        exchange = BaseExchange('')
+        self.assertRaises(NotImplementedError, exchange.bind, '', '')
+        self.assertRaises(NotImplementedError, exchange.unbind, '', '')
+
     def test_eq(self):
         self.assertTrue(Exchange('1') == Exchange('1'))
         self.assertFalse(Exchange('1') == Exchange('2'))
@@ -291,59 +296,66 @@ class TestExchange(TestCase):
         impl = plugin.Exchange()
         impl.delete.assert_called_with(TEST_URL)
 
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_bind(self, _find):
+        plugin = Mock()
+        _find.return_value = plugin
+        queue = Mock()
+
+        # test
+        exchange = Exchange('test')
+        exchange.bind(queue, TEST_URL)
+
+        # validation
+        plugin.Exchange.assert_called_with(exchange.name)
+        impl = plugin.Exchange()
+        impl.bind.assert_called_with(queue, TEST_URL)
+
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_unbind(self, _find):
+        plugin = Mock()
+        _find.return_value = plugin
+        queue = Mock()
+
+        # test
+        exchange = Exchange('test')
+        exchange.unbind(queue, TEST_URL)
+
+        # validation
+        plugin.Exchange.assert_called_with(exchange.name)
+        impl = plugin.Exchange()
+        impl.unbind.assert_called_with(queue, TEST_URL)
+
 
 class TestBaseQueue(TestCase):
 
     def test_init(self):
         name = 'test'
-        exchange = Exchange('amq.direct')
-        routing_key = name
-        queue = BaseQueue(name, exchange, routing_key)
+        queue = BaseQueue(name)
         self.assertEqual(queue.name, name)
-        self.assertEqual(queue.exchange, exchange)
-        self.assertEqual(queue.routing_key, routing_key)
-
-    def test_destination(self):
-        name = 'test'
-        exchange = Exchange('amq.direct')
-        routing_key = name
-        queue = BaseQueue(name, exchange, routing_key)
-        self.assertRaises(NotImplementedError, queue.destination, '')
 
     def test_eq(self):
-        self.assertTrue(BaseQueue('1', Exchange(''), 'RK') == BaseQueue('1', Exchange(''), 'XX'))
-        self.assertFalse(BaseQueue('1', Exchange(''), 'RK') == BaseQueue('2', Exchange(''), 'RK'))
+        self.assertTrue(BaseQueue('1') == BaseQueue('1'))
+        self.assertFalse(BaseQueue('1') == BaseQueue('2'))
 
     def test_neq(self):
-        self.assertTrue(BaseQueue('1', Exchange(''), 'RK') != BaseQueue('2', Exchange(''), 'XX'))
-        self.assertFalse(BaseQueue('1', Exchange(''), 'RK') != BaseQueue('1', Exchange(''), 'RK'))
+        self.assertTrue(BaseQueue('1') != BaseQueue('2'))
+        self.assertFalse(BaseQueue('1') != BaseQueue('1'))
 
 
 class TestQueue(TestCase):
 
     def test_init(self):
         name = 'test'
-        exchange = Exchange('amq.direct')
-        routing_key = name
-        # just name
         queue = Queue(name)
         self.assertEqual(queue.name, name)
-        self.assertEqual(queue.exchange, None)
-        self.assertEqual(queue.routing_key, None)
-        # all parameters
-        queue = Queue(name, exchange, routing_key)
-        self.assertEqual(queue.name, name)
-        self.assertEqual(queue.exchange, exchange)
-        self.assertEqual(queue.routing_key, routing_key)
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_declare(self, _find):
         plugin = Mock()
         _find.return_value = plugin
         name = 'test'
-        exchange = Exchange('test')
-        routing_key = name
-        queue = Queue(name, exchange, routing_key)
+        queue = Queue(name)
         queue.durable = 1
         queue.auto_delete = 2
         queue.exclusive = 3
@@ -352,7 +364,7 @@ class TestQueue(TestCase):
         queue.declare(TEST_URL)
 
         # validation
-        plugin.Queue.assert_called_with(name, exchange, routing_key)
+        plugin.Queue.assert_called_with(name)
         impl = plugin.Queue()
         impl.declare.assert_called_with(TEST_URL)
         self.assertEqual(impl.durable, queue.durable)
@@ -373,26 +385,6 @@ class TestQueue(TestCase):
         plugin.Queue.assert_called_with(name)
         impl = plugin.Queue()
         impl.delete.assert_called_with(TEST_URL)
-
-    @patch('gofer.messaging.adapter.model.Adapter.find')
-    def test_destination(self, _find):
-        _impl = Mock()
-        plugin = Mock()
-        plugin.Queue.return_value = _impl
-        _impl.destination.return_value = Mock()
-        _find.return_value = plugin
-        name = 'test'
-        exchange = Exchange('test')
-        routing_key = name
-        queue = Queue(name, exchange, routing_key)
-
-        # test
-        destination = queue.destination(TEST_URL)
-
-        # validation
-        plugin.Queue.assert_called_with(name, exchange, routing_key)
-        _impl.destination.assert_called_with(TEST_URL)
-        self.assertEqual(destination, _impl.destination())
 
     @patch('gofer.messaging.adapter.model.Reader')
     @patch('gofer.messaging.adapter.model.Adapter.find')
@@ -548,7 +540,7 @@ class TestReader(TestCase):
         plugin = Mock()
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
-        queue = BaseQueue('', Exchange(''), '')
+        queue = BaseQueue('')
         url = TEST_URL
 
         # test
@@ -566,7 +558,7 @@ class TestReader(TestCase):
         plugin = Mock()
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
-        queue = BaseQueue('', Exchange(''), '')
+        queue = BaseQueue('')
         url = TEST_URL
 
         # test
@@ -584,7 +576,7 @@ class TestReader(TestCase):
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
         url = TEST_URL
-        queue = BaseQueue('', Exchange(''), '')
+        queue = BaseQueue('')
         reader = Reader(queue, url)
         reader.open()
         _impl.open.assert_called_with()
@@ -597,7 +589,7 @@ class TestReader(TestCase):
         _find.return_value = plugin
         message = Mock()
         url = TEST_URL
-        queue = BaseQueue('', Exchange(''), '')
+        queue = BaseQueue('')
         reader = Reader(queue, url)
         reader.ack(message)
         message.ack.assert_called_once_with()
@@ -610,7 +602,7 @@ class TestReader(TestCase):
         _find.return_value = plugin
         message = Mock()
         url = TEST_URL
-        queue = BaseQueue('', Exchange(''), '')
+        queue = BaseQueue('')
         reader = Reader(queue, url)
         reader.reject(message, 29)
         message.reject.assert_called_with(29)
@@ -622,7 +614,7 @@ class TestReader(TestCase):
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
         url = TEST_URL
-        queue = BaseQueue('', Exchange(''), '')
+        queue = BaseQueue('')
         reader = Reader(queue, url)
         # soft
         reader.close()
@@ -640,7 +632,7 @@ class TestReader(TestCase):
         plugin = Mock()
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
-        queue = BaseQueue('', Exchange(''), '')
+        queue = BaseQueue('')
         url = TEST_URL
 
         # test
@@ -756,7 +748,7 @@ class TestReader(TestCase):
 
         # test
         url = TEST_URL
-        queue = BaseQueue('', Exchange(''), '')
+        queue = BaseQueue('')
         sn = received[1][1].sn
         reader = Reader(queue, url)
         reader.next = Mock(side_effect=received)
@@ -787,7 +779,7 @@ class TestReader(TestCase):
 
         # test
         url = TEST_URL
-        queue = BaseQueue('', Exchange(''), '')
+        queue = BaseQueue('')
         reader = Reader(queue, url)
         reader.next = Mock(side_effect=received)
         document = reader.search('', timeout=10)
@@ -816,7 +808,7 @@ class TestReader(TestCase):
 
         # test
         url = TEST_URL
-        queue = BaseQueue('', Exchange(''), '')
+        queue = BaseQueue('')
         reader = Reader(queue, url)
         reader.next = Mock(side_effect=received)
         document = reader.search('', timeout=10)

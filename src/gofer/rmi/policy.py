@@ -276,7 +276,7 @@ class Synchronous(RequestMethod):
         :raise Exception: returned by the peer.
         """
         self.queue.declare(self.url)
-        reply_destination = self.queue.destination(self.url)
+        reply_destination = Destination(self.queue.name)
         producer = Producer(self.url)
         producer.authenticator = self.authenticator
         producer.open()

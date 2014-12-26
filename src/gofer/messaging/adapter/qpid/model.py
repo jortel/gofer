@@ -9,34 +9,39 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+from qpidtoollibs import BrokerAgent
 
-import string
+from gofer.messaging.adapter.model import BaseExchange, BaseQueue
 
-from gofer.messaging.adapter.qpid.endpoint import Endpoint
-
-from gofer.messaging.adapter.model import BaseExchange, BaseQueue, Destination
-
-
-# --- utils ------------------------------------------------------------------
+from gofer.messaging.adapter.qpid.connection import Connection
 
 
-def squash(s):
+class Broker(BrokerAgent):
     """
-    Squash the string by stripping white space.
-    :param s: A string to squash.
-    :type s: str
-    :return: The squashed string.
-    :rtype: str
+    Broker Agent.
     """
-    sq = []
-    for c in s:
-        if c in string.whitespace:
-            continue
-        sq.append(c)
-    return ''.join(sq)
 
+    def __init__(self, url):
+        """
+        :param url: A broker URL.
+        :type url: str
+        """
+        self._connection = Connection(url)
+        self._connection.open()
+        super(Broker, self).__init__(self._connection.real)
 
-# --- model ------------------------------------------------------------------
+    def close(self):
+        """
+        Close the agent.
+        """
+        BrokerAgent.close(self)
+        self._connection.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *unused):
+        self.close()
 
 
 class Exchange(BaseExchange):
@@ -53,41 +58,62 @@ class Exchange(BaseExchange):
         """
         BaseExchange.__init__(self, name, policy=policy)
 
-    def address(self):
-        """
-        Get the *special* qpid messaging address string.
-        :return: The qpid address string.
-        :rtype: str
-        """
-        fmt = squash("""
-        %(name)s;{
-          create:always,
-          node:{
-            type:topic,
-            durable:%(durable)s,
-            x-declare:{exchange:'%(name)s',type:%(policy)s}
-          }
-        }
-        """)
-        args = dict(name=self.name, durable=self.durable, policy=self.policy)
-        return fmt % args
-
     def declare(self, url):
         """
         Declare the node.
         :param url: The broker URL.
         :type url: str
         """
-        if not self.policy:
-            return
-        endpoint = Endpoint(url)
-        endpoint.open()
+        broker = Broker(url)
         try:
-            session = endpoint.channel()
-            sender = session.sender(self.address())
-            sender.close()
+            if broker.getExchange(self.name):
+                return
+            options = {
+                'durable': self.durable,
+                'auto-delete': self.auto_delete
+            }
+            broker.addExchange(self.policy, self.name, options)
         finally:
-            endpoint.close()
+            broker.close()
+
+    def delete(self, url):
+        """
+        Delete the node.
+        :param url: The broker URL.
+        :type url: str
+        :raise: ModelError
+        """
+        broker = Broker(url)
+        try:
+            broker.delExchange(self.name)
+        finally:
+            broker.close()
+
+    def bind(self, queue, url):
+        """
+        Bind the specified queue.
+        :param queue: The queue to bind.
+        :type queue: Queue
+        """
+        broker = Broker(url)
+        try:
+            key = queue.name
+            broker.bind(self.name, queue.name, key)
+        finally:
+            broker.close()
+
+    def unbind(self, queue, url):
+        """
+        Bind the specified queue.
+        :param queue: The queue to unbind.
+        :type queue: BaseQueue
+        """
+        broker = Broker(url)
+        try:
+            key = queue.name
+            broker.unbind(self.name, queue.name, key)
+        finally:
+            broker.close()
 
 
 class Queue(BaseQueue):
@@ -95,157 +121,34 @@ class Queue(BaseQueue):
     A qpid AMQP queue.
     """
 
-    def __init__(self, name, exchange=None, routing_key=None):
-        """
-        :param name: The queue name.
-        :type name: str
-        :param exchange: An AMQP exchange
-        :type exchange: BaseExchange
-        :param routing_key: Message routing key.
-        :type routing_key: str
-        """
-        BaseQueue.__init__(
-            self,
-            name,
-            exchange=exchange or Exchange(''),
-            routing_key=routing_key or name)
-
-    def bindings(self):
-        """
-        Get the *x-bindings* part of the address.
-        :return: The bindings part.
-        :rtype: str
-        """
-        if self.exchange != Exchange(''):
-            binding = XBinding(self.exchange, self.routing_key)
-            return XBindings(binding)
-        else:
-            return XBindings()
-
-    def x_declare(self):
-        """
-        Get the *x-declare* part of the address.
-        :return: The bindings part.
-        :rtype: str
-        """
-        if self.auto_delete:
-            return squash("""
-                x-declare:{
-                  auto-delete:True,
-                  arguments:{'qpid.auto_delete_timeout':10}
-                },
-            """)
-        else:
-            return ''
-
-    def address(self):
-        """
-        Get the *special* qpid messaging address string.
-        :return: The qpid address string.
-        :rtype: str
-        """
-        if self.durable:
-            fmt = squash("""
-            %(name)s;{
-              create:always,
-              node:{
-                type:queue,
-                durable:True,
-                %(x_declare)s
-                %(x_bindings)s
-              },
-              link:{
-                durable:True,
-                reliability:at-least-once,
-                x-subscribe:{exclusive:%(exclusive)s}
-              }
-            }
-            """)
-        else:
-            fmt = squash("""
-            %(name)s;{
-              create:always,
-              delete:receiver,
-              node:{
-                type:queue,
-                durable:False,
-                %(x_declare)s
-                %(x_bindings)s
-              },
-              link:{
-                durable:True,
-                reliability:at-least-once,
-                x-subscribe:{exclusive:%(exclusive)s}
-              }
-            }
-            """)
-        args = dict(
-            name=self.name,
-            x_declare=self.x_declare(),
-            x_bindings=self.bindings(),
-            exclusive=self.exclusive)
-        return fmt % args
-
     def declare(self, url):
         """
         Declare the node.
         :param url: The broker URL.
         :type url: str
         """
-        endpoint = Endpoint(url)
-        endpoint.open()
+        broker = Broker(url)
         try:
-            session = endpoint.channel()
-            sender = session.sender(self.address())
-            sender.close()
+            if broker.getQueue(self.name):
+                return
+            options = {
+                'durable': self.durable,
+                'auto-delete': self.auto_delete,
+                'exclusive': self.exclusive
+            }
+            broker.addQueue(self.name, options)
         finally:
-            endpoint.close()
+            broker.close()
 
-    def destination(self, url):
+    def delete(self, url):
         """
-        Get a destination object for the node.
-        :return: A destination for the node.
-        :rtype: Destination
+        Delete the node.
+        :param url: The broker URL.
+        :type url: str
+        :raise: ModelError
         """
-        return Destination(routing_key=self.routing_key, exchange=self.exchange.name)
-
-    def __str__(self):
-        return self.address()
-
-
-# --- bindings ---------------------------------------------------------------
-
-
-class XBinding:
-
-    def __init__(self, exchange, routing_key=None):
-        self.exchange = exchange.name
-        self.routing_key = routing_key
-
-    def __str__(self):
-        if self.routing_key:
-            return "{exchange:'%s',key:'%s'}" % (self.exchange, self.routing_key)
-        else:
-            return "{exchange:'%s'}" % self.exchange
-
-
-class XBindings:
-
-    def __init__(self, *bindings):
-        self.bindings = bindings
-
-    def __bindings(self):
-        bindings = []
-        i = 0
-        for b in self.bindings:
-            if i > 0:
-                bindings.append(',')
-            bindings.append(str(b))
-            i += 1
-        return ''.join(bindings)
-
-    def __str__(self):
-        if self.bindings:
-            return 'x-bindings:[%s]' % self.__bindings()
-        else:
-            return ''
+        broker = Broker(url)
+        try:
+            broker.delQueue(self.name)
+        finally:
+            broker.close()

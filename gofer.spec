@@ -159,7 +159,8 @@ Summary: Gofer Qpid messaging adapter python package
 Group: Development/Languages
 BuildRequires: python
 Requires: python-%{name} >= %{version}
-Requires: python-qpid >= 0.18
+Requires: python-qpid >= 0.21
+Requires: python-qpid-qmf >= 21
 %if 0%{?rhel} && 0%{?rhel} < 6
 Requires: python-ssl
 %endif

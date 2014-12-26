@@ -68,7 +68,7 @@ class Endpoint(BaseEndpoint):
         """
         Get a session for the open connection.
         :return: An open session.
-        :rtype: qpid.messaging.Session
+        :rtype: qpid.session.Session
         """
         return self._channel
 

@@ -89,10 +89,20 @@ class Connection(BaseConnection):
         self._impl.attach()
         log.info('connected: %s', broker.url)
 
+    @property
+    def real(self):
+        """
+        Get the *real* connection.
+        :return: The real connection.
+        :rtype: qpid.messaging.Connection
+        """
+        return self._impl
+
     def channel(self):
         """
         Open a channel.
         :return The *real* channel.
+        :rtype qpid.session.Session
         """
         return self._impl.session()
 

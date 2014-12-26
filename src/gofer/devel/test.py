@@ -22,7 +22,7 @@ class Module(object):
         pass
 
 
-class Fake:
+class Fake(object):
     pass
 
 
@@ -35,9 +35,11 @@ class Import(object):
 
     def find(self, n, f):
         m = self.modules.setdefault(n, Module())
+        if not f:
+            return Fake
         for t in f:
             if not hasattr(m, t):
-                setattr(m, t, Fake())
+                setattr(m, t, Fake)
         return m
 
     def __call__(self, name, globals=None, locals=None, fromlist=None, level=-1):

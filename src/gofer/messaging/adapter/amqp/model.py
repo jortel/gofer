@@ -13,7 +13,7 @@ from logging import getLogger
 
 from gofer.messaging.adapter.amqp import endpoint
 
-from gofer.messaging.adapter.model import BaseExchange, BaseQueue, Destination
+from gofer.messaging.adapter.model import BaseExchange, BaseQueue
 
 
 log = getLogger(__name__)
@@ -60,15 +60,32 @@ class Exchange(BaseExchange):
             channel.exchange_delete(self.name, nowait=True)
         _fn(url)
 
+    def bind(self, queue, url):
+        """
+        Bind the specified queue.
+        :param queue: The queue to bind.
+        :type queue: BaseQueue
+        """
+        @reliable
+        def _fn(_endpoint):
+            channel = _endpoint.channel()
+            channel.queue_bind(queue.name, exchange=self.name, routing_key=queue.name)
+        _fn(url)
+
+    def unbind(self, queue, url):
+        """
+        Bind the specified queue.
+        :param queue: The queue to unbind.
+        :type queue: BaseQueue
+        """
+        @reliable
+        def _fn(_endpoint):
+            channel = _endpoint.channel()
+            channel.queue_unbind(queue.name, exchange=self.name, routing_key=queue.name)
+        _fn(url)
+
 
 class Queue(BaseQueue):
-
-    def __init__(self, name, exchange=None, routing_key=None):
-        BaseQueue.__init__(
-            self,
-            name,
-            exchange=exchange or Exchange(''),
-            routing_key=routing_key or name)
 
     def declare(self, url):
         @reliable
@@ -84,11 +101,6 @@ class Queue(BaseQueue):
                 auto_delete=self.auto_delete,
                 exclusive=self.exclusive,
                 arguments=arguments)
-            if self.exchange != Exchange(''):
-                channel.queue_bind(
-                    self.name,
-                    exchange=self.exchange.name,
-                    routing_key=self.routing_key)
         _fn(url)
 
     def delete(self, url):
@@ -97,12 +109,3 @@ class Queue(BaseQueue):
             channel = _endpoint.channel()
             channel.queue_delete(self.name, nowait=True)
         _fn(url)
-
-    def destination(self, url):
-        """
-        Get a destination object for the node.
-        :return: A destination for the node.
-        :rtype: Destination
-        """
-        return Destination(routing_key=self.routing_key, exchange=self.exchange.name)
-

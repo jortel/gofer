@@ -20,7 +20,7 @@ from threading import Thread
 from uuid import uuid4
 
 from gofer.messaging.consumer import Consumer
-from gofer.adapter.model import Queue, Reader, Producer, PlainProducer
+from gofer.messaging.adapter.model import Queue, Reader, Producer, Sender, Destination
 from logging import getLogger
 
 log = getLogger(__name__)
@@ -48,7 +48,7 @@ class Bridge(Consumer):
         sock.connect((self.host, self.port))
         p = Producer(self.url)
         try:
-            peer = self.queue.destination(self.url)
+            peer = Destination(self.queue.name)
             p.send(env.peer, peer=peer.dict())
         finally:
             p.close()
@@ -85,10 +85,10 @@ class Gateway(Thread):
     
     def accepted(self, sock):
         uuid = str(uuid4())
-        queue = Queue(uuid, self.url)
+        queue = Queue(uuid)
         p = Producer(self.url)
         try:
-            peer = queue.destination(self.url)
+            peer = Destination(queue.name)
             p.send(self.peer, peer=peer.dict())
         finally:
             p.close()
@@ -160,7 +160,7 @@ class TunnelWriter(Thread):
         self.setDaemon(True)
     
     def run(self):
-        p = PlainProducer(self.url)
+        p = Sender(self.url)
         try:
             while True:
                 content = self.__read()
