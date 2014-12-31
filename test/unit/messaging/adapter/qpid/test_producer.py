@@ -17,7 +17,7 @@ from mock import Mock, patch
 from gofer.messaging.adapter.model import Destination
 from gofer.devel import ipatch
 
-with ipatch('qpid.messaging'):
+with ipatch('qpid'):
     from gofer.messaging.adapter.qpid.producer import BaseSender, Sender
 
 

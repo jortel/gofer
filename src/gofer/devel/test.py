@@ -23,7 +23,10 @@ class Module(object):
 
 
 class Fake(object):
-    pass
+
+    def __init__(self, *args, **keywords):
+        self.args = args
+        self.keywords = keywords
 
 
 class Import(object):

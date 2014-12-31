@@ -18,7 +18,7 @@ from mock import patch, Mock
 
 from gofer.devel import ipatch
 
-with ipatch('qpid.messaging'):
+with ipatch('qpid'):
     from gofer.messaging.adapter.model import Broker
     from gofer.messaging.adapter.qpid.connection import Connection, BaseConnection
 
@@ -43,6 +43,11 @@ class TestConnection(TestCase):
         c = Connection(url)
         self.assertTrue(isinstance(c, BaseConnection))
         self.assertEqual(c.url, url)
+
+    def test_impl(self):
+        c = Connection(TEST_URL)
+        c._impl = 10
+        self.assertEqual(c.impl, c._impl)
 
     def test_add_transports(self):
         transports = {

@@ -15,7 +15,7 @@ from mock import Mock, patch
 
 from gofer.devel import ipatch
 
-with ipatch('qpid.messaging'):
+with ipatch('qpid'):
     from gofer.messaging.adapter.qpid.endpoint import Endpoint, BaseEndpoint
 
 

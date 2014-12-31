@@ -17,7 +17,7 @@ from gofer.devel import ipatch
 
 from gofer.messaging.adapter.model import Message
 
-with ipatch('qpid.messaging'):
+with ipatch('qpid'):
     from gofer.messaging.adapter.qpid.consumer import subject
     from gofer.messaging.adapter.qpid.consumer import Reader, BaseReader
 
@@ -138,7 +138,7 @@ class TestReader(TestCase):
 
         # validation
         reader._receiver.fetch.assert_called_once_with(10)
-        sleep.assert_called_once_with(10)
+        sleep.assert_called_once_with(60)
         self.assertEqual(message, None)
 
     @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
