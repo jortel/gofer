@@ -28,7 +28,7 @@ class Broker(BrokerAgent):
         """
         self._connection = Connection(url)
         self._connection.open()
-        super(Broker, self).__init__(self._connection.real)
+        super(Broker, self).__init__(self._connection.impl)
 
     def close(self):
         """
@@ -66,13 +66,16 @@ class Exchange(BaseExchange):
         """
         broker = Broker(url)
         try:
-            if broker.getExchange(self.name):
-                return
             options = {
                 'durable': self.durable,
                 'auto-delete': self.auto_delete
             }
-            broker.addExchange(self.policy, self.name, options)
+            try:
+                broker.addExchange(self.policy, self.name, options)
+            except Exception, e:
+                # already created
+                if ': 7' in str(e):
+                    pass
         finally:
             broker.close()
 
@@ -129,14 +132,17 @@ class Queue(BaseQueue):
         """
         broker = Broker(url)
         try:
-            if broker.getQueue(self.name):
-                return
             options = {
                 'durable': self.durable,
                 'auto-delete': self.auto_delete,
                 'exclusive': self.exclusive
             }
-            broker.addQueue(self.name, options)
+            try:
+                broker.addQueue(self.name, options)
+            except Exception, e:
+                # already created
+                if ': 7' in str(e):
+                    pass
         finally:
             broker.close()
 

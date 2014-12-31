@@ -90,7 +90,7 @@ class Connection(BaseConnection):
         log.info('connected: %s', broker.url)
 
     @property
-    def real(self):
+    def impl(self):
         """
         Get the *real* connection.
         :return: The real connection.
