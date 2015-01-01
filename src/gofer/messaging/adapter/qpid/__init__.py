@@ -9,7 +9,7 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from gofer.messaging.adapter.qpid.model import Exchange, Queue
+from gofer.messaging.adapter.qpid.model import Exchange, Queue, Route
 from gofer.messaging.adapter.qpid.connection import Connection
 from gofer.messaging.adapter.qpid.consumer import Reader
 from gofer.messaging.adapter.qpid.producer import Sender

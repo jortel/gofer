@@ -35,7 +35,7 @@ from gofer.config import Config, Graph, get_bool
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
 from gofer.collator import Module
-from gofer.messaging import Broker, Domain, Queue
+from gofer.messaging import Broker, Domain, Route
 
 
 log = getLogger(__name__)
@@ -189,6 +189,10 @@ class Plugin(object):
     def broker(self):
         return Broker(self.url)
 
+    @property
+    def route(self):
+        return self.cfg.messaging.route or self.uuid
+
     def refresh(self):
         """
         Refresh the AMQP configurations using the plugin configuration.
@@ -207,9 +211,9 @@ class Plugin(object):
         self.detach()
         if self.uuid and self.url:
             self.refresh()
-            queue = Queue(self.uuid)
-            queue.declare(self.url)
-            consumer = RequestConsumer(queue, self.url)
+            route = Route(self.route)
+            route.declare(self.url)
+            consumer = RequestConsumer(route.queue, self.url)
             consumer.reader.authenticator = self.authenticator
             consumer.start()
             log.info('plugin uuid="%s", attached', self.uuid)

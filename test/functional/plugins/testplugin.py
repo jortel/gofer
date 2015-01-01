@@ -22,7 +22,7 @@ from gofer.decorators import *
 from gofer.agent.plugin import Plugin
 from gofer.agent.rmi import Context
 from gofer.messaging.auth import Authenticator, ValidationFailed
-from gofer.messaging import Producer, Destination
+from gofer.messaging import Producer
 
 log = getLogger(__name__)
 plugin = Plugin.find(__name__)
@@ -254,9 +254,9 @@ class Heartbeat:
     @remote
     def send(self):
         delay = int(HEARTBEAT)
-        destination = Destination('heartbeat', exchange='amq.topic')
+        route = 'amq.topic/heartbeat'
         if plugin.uuid:
             with Producer(plugin.url) as p:
                 body = dict(uuid=plugin.uuid, next=delay)
-                p.send(destination, ttl=delay, heartbeat=body)
+                p.send(route, ttl=delay, heartbeat=body)
         return plugin.uuid

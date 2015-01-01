@@ -16,9 +16,19 @@
 from gofer.rmi.container import Container
 
 
-def Agent(uuid, **options):
-    """ backwards compat """
-    return agent(uuid, **options)
+class Agent(Container):
+    """
+    A remote agent.
+    """
+
+    def __init__(self, uuid, **options):
+        """
+        :param uuid: An agent ID.
+        :type uuid: str
+        :see: Container
+        """
+        url = options.pop('url', None)
+        super(Agent, self).__init__(uuid, url, **options)
 
 
 def agent(uuid, **options):
@@ -27,7 +37,6 @@ def agent(uuid, **options):
     :param uuid: An agent ID.
     :type uuid: str
     :return: An agent (proxy).
-    :rtype: Container
+    :rtype: Agent
     """
-    url = options.pop('url', None)
-    return Container(uuid, url, **options)
+    return Agent(uuid, **options)

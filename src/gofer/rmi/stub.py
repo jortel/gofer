@@ -23,7 +23,7 @@ from new import classobj
 from threading import RLock
 
 from gofer.common import Options, synchronized
-from gofer.messaging import Queue
+from gofer.messaging import Route
 from gofer.rmi.policy import Synchronous, Asynchronous
 from gofer.rmi.dispatcher import Request
 
@@ -33,22 +33,22 @@ class Builder(object):
     Stub builder.
     """
 
-    def __call__(self, name, url, destination, options):
+    def __call__(self, name, url, route, options):
         """
         Factory method.
         :param name: The stub class (or module) name.
         :type name: str
         :param url: The agent URL.
         :type url: str
-        :param destination: The AMQP destination
-        :type destination: gofer.messaging.adapter.model.Destination
+        :param route: The AMQP route
+        :type route: str
         :param options: A dict of gofer options
         :param options: Options
         :return: A stub instance.
         :rtype: Stub
         """
         stub = classobj(name, (Stub,), {})
-        inst = stub(url, destination, options)
+        inst = stub(url, route, options)
         return inst
 
 
@@ -103,8 +103,8 @@ class Stub:
     All methods mangled because as to not shadow method on the remote.
     :ivar __url: The agent URL.
     :type __url: str
-    :ivar __destination: The AMQP destination
-    :type __destination: gofer.messaging.adapter.model.Destination
+    :ivar __route: The AMQP route
+    :type __route: str
     :ivar __options: Stub options.
     :type __options: Options
     :ivar __mutex: The mutex prevents concurrent calls.
@@ -113,23 +113,23 @@ class Stub:
     :type __policy: Policy
     """
 
-    def __init__(self, url, destination, options):
+    def __init__(self, url, route, options):
         """
         :param url: The agent URL.
         :type url: str
-        :param destination: The AMQP destination
-        :type destination: gofer.messaging.adapter.model.Destination
+        :param route: The AMQP route
+        :type route: str
         :param options: Stub options.
         :type options: Options
         """
         self.__url = url
-        self.__destination = destination
+        self.__route = route
         self.__options = Options(options)
         self.__called = (0, None)
         self.__mutex = RLock()
         self.__policy = None
-        queue = Queue(destination.routing_key)
-        queue.declare(url)
+        route = Route(self.__route)
+        route.declare(url)
 
     @synchronized
     def __send(self, request, options):
@@ -145,7 +145,7 @@ class Stub:
         request.cntr = self.__called[1]
         policy = self.__get_policy()
         return policy(
-            self.__destination,
+            self.__route,
             request,
             window=opts.window,
             secret=opts.secret,
@@ -237,6 +237,6 @@ class Stub:
         :return: True if async.
         :rtype: bool
         """
-        if self.__options.ctag or self.__options.async or self.__options.trigger:
+        if self.__options.reply or self.__options.async or self.__options.trigger:
             return True
         return False

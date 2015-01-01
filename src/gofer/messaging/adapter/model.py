@@ -149,53 +149,34 @@ class _Domain(object):
         return len(self.content)
 
 
-# --- destination ------------------------------------------------------------
+# --- routing ----------------------------------------------------------------
 
 
-class Destination(Model):
-    """
-    An AMQP destination.
-    :ivar routing_key: Message routing key.
-    :type routing_key: str
-    :ivar exchange: An (optional) AMQP exchange.
-    :type exchange: str
-    """
-
-    ROUTING_KEY = 'routing_key'
-    EXCHANGE = 'exchange'
+class Route(object):
 
     @staticmethod
-    def create(d):
-        return Destination(d[Destination.ROUTING_KEY], d[Destination.EXCHANGE])
+    def parts(route):
+        parts = route.split('/')
+        if len(parts) > 1:
+            return parts[0], parts[1]
+        else:
+            return '', parts[0]
 
-    def __init__(self, routing_key, exchange=''):
-        """
-        :param exchange: An AMQP exchange.
-        :type exchange: str
-        :param routing_key: Message routing key.
-        :type routing_key: str
-        """
-        self.routing_key = routing_key
-        self.exchange = exchange
+    def __init__(self, route):
+        parts = Route.parts(route)
+        self.exchange = Exchange(parts[0])
+        self.queue = Queue(parts[1])
 
-    def dict(self):
-        return {
-            Destination.ROUTING_KEY: self.routing_key,
-            Destination.EXCHANGE: self.exchange,
-        }
-
-    def __eq__(self, other):
-        return isinstance(other, Destination) and \
-            self.__dict__ == other.__dict__
-
-    def __ne__(self, other):
-        return not (self == other)
+    def declare(self, url=None):
+        self.queue.declare(url)
+        self.exchange.declare(url)
+        self.exchange.bind(self.queue, url)
 
     def __str__(self):
-        return str(self.__dict__)
-
-    def __repr__(self):
-        return repr(self.__dict__)
+        if self.exchange.name:
+            return '/'.join((self.exchange.name, self.queue.name))
+        else:
+            return self.queue.name
 
 
 # --- node -------------------------------------------------------------------
@@ -239,6 +220,9 @@ class Node(Model):
         :type url: str
         """
         raise NotImplementedError()
+
+    def __str__(self):
+        return self.name
     
 
 class BaseExchange(Node):
@@ -290,6 +274,8 @@ class BaseExchange(Node):
 
 class Exchange(BaseExchange):
 
+    RESERVED = ('', 'amq.direct', 'amq.topic')
+
     def __init__(self, name, policy=None):
         """
         :param name: The exchange name.
@@ -307,6 +293,9 @@ class Exchange(BaseExchange):
         :type url: str
         :raise: ModelError
         """
+        if self.is_reserved():
+            # reserved
+            return
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name, policy=self.policy)
         impl.durable = self.durable
@@ -321,6 +310,9 @@ class Exchange(BaseExchange):
         :type url: str
         :raise: ModelError
         """
+        if self.is_reserved():
+            # reserved
+            return
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name)
         impl.delete(url)
@@ -332,6 +324,9 @@ class Exchange(BaseExchange):
         :param queue: The queue to bind.
         :type queue: BaseQueue
         """
+        if not self.name:
+            # anonymous
+            return
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name)
         impl.bind(queue, url)
@@ -346,6 +341,9 @@ class Exchange(BaseExchange):
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name)
         impl.unbind(queue, url)
+
+    def is_reserved(self):
+        return self.name in Exchange.RESERVED
 
 
 class BaseQueue(Node):
@@ -794,11 +792,11 @@ class Reader(BaseReader):
 
 class BaseSender(Messenger):
 
-    def send(self, destination, content, ttl):
+    def send(self, route, content, ttl):
         """
         Send a message with content.
-        :param destination: An AMQP destination.
-        :type destination: gofer.messaging.adapter.model.Destination
+        :param route: An AMQP route.
+        :type route: str
         :param content: The message content
         :param ttl: Time to Live (seconds)
         :type ttl: float
@@ -860,16 +858,16 @@ class Sender(BaseSender):
         self._impl.close(hard)
 
     @model
-    def send(self, destination, content, ttl):
+    def send(self, route, content, ttl):
         """
         Send a message with content.
-        :param destination: An AMQP destination.
-        :type destination: gofer.messaging.adapter.model.Destination
+        :param route: An AMQP route.
+        :type route: str
         :param content: The message content
         :param ttl: Time to Live (seconds)
         :type ttl: float
         """
-        self._impl.send(destination, content, ttl)
+        self._impl.send(route, content, ttl)
 
 
 class Producer(Messenger):
@@ -930,11 +928,11 @@ class Producer(Messenger):
         self._impl.close(hard)
 
     @model
-    def send(self, destination, ttl=None, **body):
+    def send(self, route, ttl=None, **body):
         """
         Send a message.
-        :param destination: An AMQP destination.
-        :type destination: Destination
+        :param route: An AMQP route.
+        :type route: str
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
@@ -943,13 +941,12 @@ class Producer(Messenger):
         :raise: ModelError
         """
         sn = str(uuid4())
-        routing_key = destination.routing_key
-        routing = (None, routing_key)
+        routing = (None, route)
         document = Document(sn=sn, version=VERSION, routing=routing)
         document += body
         unsigned = document.dump()
         signed = auth.sign(self.authenticator, unsigned)
-        self._impl.send(destination, signed, ttl)
+        self._impl.send(route, signed, ttl)
         return sn
 
 

@@ -20,7 +20,6 @@ Agent base classes.
 from logging import getLogger
 
 from gofer.common import Options
-from gofer.messaging import Destination
 from gofer.rmi.stub import Builder
 from gofer.rmi.window import Window
 
@@ -28,7 +27,7 @@ from gofer.rmi.window import Window
 log = getLogger(__name__)
 
         
-class Container:
+class Container(object):
     """
     The stub container
     Options:
@@ -48,8 +47,10 @@ class Container:
           (str) A user (name) used for authentication.
       - password
           (str) A password used for authentication.
-      - ctag
-          (str) An asynchronous reply correlation tag.
+      - route
+          (str) An AMQP route.  Eg: amq.direct/queue
+      - reply
+          (str) An asynchronous reply route.
       - async
           (bool) Asynchronous request flag.
       - trigger
@@ -68,12 +69,13 @@ class Container:
         :param uuid: The peer ID.
         :type uuid: str
         :param url: The agent URL.
-        :type url: str
+        :type url: str|None
         :param options: keyword options.  See documentation.
         :type options: dict
         """
         self.__id = uuid
         self.__url = url
+        self.__route = options.pop('route', uuid)
         self.__options = Options(window=Window(), queue_managed=True)
         self.__options += options
 
@@ -86,11 +88,7 @@ class Container:
         :rtype: Stub
         """
         builder = Builder()
-        return builder(
-            name,
-            self.__url,
-            Destination(self.__id),
-            self.__options)
+        return builder(name, self.__url, self.__route, self.__options)
         
     def __getitem__(self, name):
         """

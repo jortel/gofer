@@ -22,7 +22,7 @@ from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import Pending
 from gofer.rmi.dispatcher import Return, PluginNotFound
 from gofer.rmi.threadpool import Direct
-from gofer.messaging import Document, Producer, Destination
+from gofer.messaging import Document, Producer
 from gofer.metrics import Timer, timestamp
 
 
@@ -130,12 +130,12 @@ class Task:
         """
         sn = request.sn
         any = request.any
-        replyto = request.replyto
-        if not replyto:
+        route = request.replyto
+        if not route:
             return
         try:
             self.producer.send(
-                Destination.create(replyto),
+                route,
                 sn=sn,
                 any=any,
                 status='started',
@@ -156,13 +156,13 @@ class Task:
         ts = request.ts
         now = time()
         duration = Timer(ts, now)
-        replyto = request.replyto
+        route = request.replyto
         log.info('sn=%s processed in: %s', sn, duration)
-        if not replyto:
+        if not route:
             return
         try:
             self.producer.send(
-                Destination.create(replyto),
+                route,
                 sn=sn,
                 any=any,
                 result=result,
@@ -300,12 +300,12 @@ class Progress:
         """
         sn = self.task.request.sn
         any = self.task.request.any
-        replyto = self.task.request.replyto
-        if not replyto:
+        route = self.task.request.replyto
+        if not route:
             return
         try:
             self.producer.send(
-                Destination.create(replyto),
+                route,
                 sn=sn,
                 any=any,
                 status='progress',

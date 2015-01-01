@@ -226,11 +226,11 @@ def demotest_performance(uuid, n=50):
 
 
 def demo_window(uuid, exit=0):
-    tag = uuid.upper()
+    route = uuid.upper()
     print 'demo window, +10, +10min seconds'
     begin = later(seconds=10)
     window = Window(begin=begin, seconds=5)
-    agent = Agent(uuid, ctag=tag)
+    agent = Agent(uuid, reply=route)
     dog = agent.Dog(window=window, any='demo')
     print dt.now()
     print dog.bark('hello, after 10 seconds')
@@ -388,7 +388,7 @@ def demo_progress(uuid, exit=0):
     
 
 def main(uuid):
-    tag = uuid.upper()
+    route = uuid.upper()
 
     # test timeout (not expired)
     agent = Agent(uuid)
@@ -413,7 +413,7 @@ def main(uuid):
     # asynchronous
     print '(demo) asynchronous'
     window = Window(begin=dt.utcnow(), minutes=1)
-    agent = Agent(uuid, ctag=tag, window=window)
+    agent = Agent(uuid, reply=route, window=window)
     demo(agent)
 
     # future

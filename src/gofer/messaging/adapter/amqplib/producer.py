@@ -15,6 +15,7 @@ from amqplib.client_0_8 import Message
 
 from gofer.messaging.adapter.model import BaseSender
 from gofer.messaging.adapter.amqplib.endpoint import Endpoint, reliable
+from gofer.messaging.adapter.amqplib.model import Route
 
 
 log = getLogger(__name__)
@@ -73,11 +74,11 @@ class Sender(BaseSender):
         self._link = None
 
     @reliable
-    def send(self, destination, content, ttl=None):
+    def send(self, route, content, ttl=None):
         """
         Send a message.
-        :param destination: An AMQP destination.
-        :type destination: gofer.messaging.adapter.model.Destination
+        :param route: An AMQP route.
+        :type route: str
         :param content: The message content
         :type content: buf
         :param ttl: Time to Live (seconds)
@@ -85,8 +86,9 @@ class Sender(BaseSender):
         """
         channel = self.channel()
         message = build_message(content, ttl)
-        channel.basic_publish(
-            message,
-            exchange=destination.exchange,
-            routing_key=destination.routing_key)
-        log.debug('sent (%s)', destination)
+        route = Route(route)
+        route = Route(route)
+        exchange = route.exchange.name
+        key = route.queue.name
+        channel.basic_publish(message, exchange=exchange, routing_key=key)
+        log.debug('sent (%s)', route)

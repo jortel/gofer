@@ -64,23 +64,19 @@ class Sender(BaseSender):
         """
         self._link = None
 
-    def send(self, destination, content, ttl=None):
+    def send(self, route, content, ttl=None):
         """
         Send a message.
-        :param destination: An AMQP destination.
-        :type destination: gofer.messaging.adapter.model.Destination
+        :param route: An AMQP route.
+        :type route: str
         :param content: The message content
         :type content: buf
         :param ttl: Time to Live (seconds)
         :type ttl: float
         """
-        if destination.exchange:
-            address = '/'.join((destination.exchange, destination.routing_key))
-        else:
-            address = destination.routing_key
         message = Message(content=content, durable=True, ttl=ttl)
         channel = self.channel()
-        sender = channel.sender(address)
+        sender = channel.sender(route)
         sender.send(message)
         sender.close()
-        log.debug('sent (%s)', destination)
+        log.debug('sent (%s)', route)

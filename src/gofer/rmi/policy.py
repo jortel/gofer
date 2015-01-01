@@ -21,7 +21,7 @@ from logging import getLogger
 from uuid import uuid4
 
 from gofer.messaging import Document, InvalidDocument
-from gofer.messaging import Producer, Reader, Queue, Destination
+from gofer.messaging import Producer, Reader, Queue, Route
 from gofer.rmi.dispatcher import Return, RemoteException
 from gofer.metrics import Timer
 
@@ -136,11 +136,11 @@ class RequestMethod:
         """
         self.url = url
 
-    def __call__(self, destination, request, **any):
+    def __call__(self, route, request, **any):
         """
         Send the request.
-        :param destination: An AMQP destination.
-        :type destination: gofer.messaging.adapter.model.Destination
+        :param route: An AMQP route.
+        :type route: str
         :param request: A request to send.
         :type request: object
         :keyword any: Any (extra) data.
@@ -152,8 +152,6 @@ class Synchronous(RequestMethod):
     """
     The synchronous request method.
     This method blocks until a reply is received.
-    :ivar queue: An AMQP queue.
-    :type queue: gofer.messaging.adapter.model.Queue
     """
 
     def __init__(self, url, options):
@@ -168,9 +166,6 @@ class Synchronous(RequestMethod):
         self.wait = Timeout.seconds(options.wait or 90)
         self.progress = options.progress
         self.authenticator = options.authenticator
-        self.queue = Queue(str(uuid4()))
-        self.queue.auto_delete = True
-        self.queue.durable = False
 
     def _get_accepted(self, sn, reader):
         """
@@ -263,11 +258,11 @@ class Synchronous(RequestMethod):
         except Exception:
             log.error('progress callback failed', exc_info=1)
 
-    def __call__(self, destination, request, **any):
+    def __call__(self, route, request, **any):
         """
         Send the request then read the reply.
-        :param destination: An AMQP destination.
-        :type destination: gofer.messaging.adapter.model.Destination
+        :param route: An AMQP route.
+        :type route: str
         :param request: A request to send.
         :type request: object
         :keyword any: Any (extra) data.
@@ -275,22 +270,25 @@ class Synchronous(RequestMethod):
         :rtype: object
         :raise Exception: returned by the peer.
         """
-        self.queue.declare(self.url)
-        reply_destination = Destination(self.queue.name)
+        reply = Route(route)
+        reply.queue = Queue(str(uuid4()))
+        reply.queue.durable = False
+        reply.queue.auto_delete = True
+        reply.declare(self.url)
         producer = Producer(self.url)
         producer.authenticator = self.authenticator
         producer.open()
         try:
             sn = producer.send(
-                destination,
+                route,
                 ttl=self.timeout,
-                replyto=reply_destination.dict(),
+                replyto=str(reply),
                 request=request,
                 **any)
         finally:
             producer.close()
-        log.debug('sent (%s): %s', repr(destination), request)
-        reader = Reader(self.queue, self.url)
+        log.debug('sent (%s): %s', route, request)
+        reader = Reader(reply.queue, self.url)
         reader.authenticator = self.authenticator
         reader.open()
         try:
@@ -313,39 +311,25 @@ class Asynchronous(RequestMethod):
         :type options: gofer.messaging.model.Options
         """
         RequestMethod.__init__(self, url)
-        self.ctag = options.ctag
+        self.reply = options.reply
         self.timeout = Timeout.seconds(options.timeout)
         self.trigger = options.trigger
         self.authenticator = options.authenticator
 
-    def reply_destination(self):
-        """
-        Get replyto based on the correlation tag.
-        The ctag can be a string or a Destination object.
-        :return: The replyto AMQP destination.
-        :rtype: dict
-        """
-        if isinstance(self.ctag, str):
-            d = Destination(self.ctag)
-            return d.dict()
-        if isinstance(self.ctag, Destination):
-            d = self.ctag
-            return d.dict()
-
-    def __call__(self, destination, request, **any):
+    def __call__(self, route, request, **any):
         """
         Send the specified request and redirect the reply to the
         queue for the specified reply *correlation* tag.
         A trigger(1) specifies a *manual* trigger.
-        :param destination: An AMQP destination.
-        :type destination: gofer.messaging.adapter.model.Destination
+        :param route: An AMQP route.
+        :type route: route
         :param request: A request to send.
         :type request: object
         :keyword any: Any (extra) data.
         :return: The request serial number.
         :rtype: str
         """
-        trigger = Trigger(self, destination, request, any)
+        trigger = Trigger(self, route, request, any)
         if self.trigger == 1:
             return trigger
         trigger()
@@ -361,20 +345,20 @@ class Trigger:
     :type _sn: str
     :ivar _policy: The policy object.
     :type _policy: Asynchronous
-    :ivar _destination: An AMQP destination.
-    :type _destination: gofer.messaging.adapter.model.Destination
+    :ivar _route: An AMQP route.
+    :type _route: str
     :ivar _request: A request to send.
     :type _request: object
     :ivar _any: Any (extra) data.
     :type _any: dict
     """
 
-    def __init__(self, policy, destination, request, any):
+    def __init__(self, policy, route, request, any):
         """
         :param policy: The policy object.
         :type policy: Asynchronous
-        :param destination: An AMQP destination.
-        :type destination: gofer.messaging.adapter.model.Destination
+        :param route: An AMQP route.
+        :type route: str
         :param request: A request to send.
         :type request: object
         :keyword any: Any (extra) data.
@@ -382,7 +366,7 @@ class Trigger:
         self._pending = True
         self._sn = str(uuid4())
         self._policy = policy
-        self._destination = destination
+        self._route = route
         self._request = request
         self._any = any
         
@@ -401,7 +385,7 @@ class Trigger:
         object and generated serial number.
         """
         policy = self._policy
-        destination = self._destination
+        route = self._route
         request = self._request
         any = self._any
         producer = Producer(policy.url)
@@ -409,15 +393,15 @@ class Trigger:
         producer.open()
         try:
             producer.send(
-                destination,
+                route,
                 sn=self._sn,
                 ttl=policy.timeout,
-                replyto=policy.reply_destination(),
+                replyto=policy.reply,
                 request=request,
                 **any)
         finally:
             producer.close()
-        log.debug('sent (%s): %s', repr(destination), request)
+        log.debug('sent (%s): %s', route, request)
 
     def __call__(self):
         if self._pending:
