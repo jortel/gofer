@@ -14,7 +14,6 @@ from unittest import TestCase
 
 from mock import Mock, patch
 
-from gofer.messaging.adapter.model import Destination
 from gofer.devel import ipatch
 
 with ipatch('qpid'):
@@ -69,38 +68,16 @@ class TestPlainSend(TestCase):
         channel = Mock()
         channel.sender.return_value = _sender
         endpoint.return_value.channel.return_value = channel
-        destination = Destination('elmer')
+        route = 'q1'
         content = 'hello'
 
         # test
         sender = Sender('')
-        sender.send(destination, content, ttl=ttl)
+        sender.send(route, content, ttl=ttl)
 
         # validation
         message.assert_called_once_with(content=content, durable=True, ttl=ttl)
         endpoint.return_value.channel.assert_called_once_with()
-        channel.sender.assert_called_once_with('elmer')
-        _sender.send.assert_called_once_with(message.return_value)
-        _sender.close.assert_called_once_with()
-
-    @patch('gofer.messaging.adapter.qpid.producer.Message')
-    @patch('gofer.messaging.adapter.qpid.producer.Endpoint')
-    def test_send_explict_exchange(self, endpoint, message):
-        ttl = 10
-        _sender = Mock()
-        channel = Mock()
-        channel.sender.return_value = _sender
-        endpoint.return_value.channel.return_value = channel
-        destination = Destination('elmer', exchange='direct')
-        content = 'hello'
-
-        # test
-        sender = Sender('')
-        sender.send(destination, content, ttl=ttl)
-
-        # validation
-        message.assert_called_once_with(content=content, durable=True, ttl=ttl)
-        endpoint.return_value.channel.assert_called_once_with()
-        channel.sender.assert_called_once_with('direct/elmer')
+        channel.sender.assert_called_once_with(route)
         _sender.send.assert_called_once_with(message.return_value)
         _sender.close.assert_called_once_with()

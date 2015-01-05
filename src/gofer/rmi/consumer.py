@@ -15,8 +15,9 @@
 
 from logging import getLogger
 
+from gofer import Options
 from gofer.rmi.store import Pending
-from gofer.messaging import Consumer, Producer, Document, Route
+from gofer.messaging import Consumer, Producer, Document
 from gofer.metrics import timestamp
 
 log = getLogger(__name__)
@@ -77,6 +78,9 @@ class RequestConsumer(Consumer):
         :type request: Document
         """
         self._send(request, 'accepted')
-        request.inbound_url = self.url
+        inbound = Options()
+        inbound.url = self.url
+        inbound.queue = self.queue.name
+        request.inbound = inbound
         pending = Pending()
         pending.put(request)

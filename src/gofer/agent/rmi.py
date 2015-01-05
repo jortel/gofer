@@ -177,15 +177,16 @@ class TrashPlugin:
     Used when the appropriate plugin cannot be found.
     """
 
-    def __init__(self, url):
-        self.url = url
+    def __init__(self, inbound):
+        self.url = inbound.url
+        self.queue = inbound.queue
         self.authenticator = None
         self.pool = Direct()
     
     def dispatch(self, request):
         try:
             log.info('request sn=%s, trashed', request.sn)
-            raise PluginNotFound(request.routing[1])
+            raise PluginNotFound(self.queue)
         except PluginNotFound:
             return Return.exception()
 
@@ -231,6 +232,7 @@ class Scheduler(Thread):
                 task = Task(plugin, request, self.pending.commit)
                 plugin.pool.run(task)
             except Exception:
+                self.pending.commit(request.sn)
                 log.exception(request.sn)
         
     def find_plugin(self, request):
@@ -243,12 +245,12 @@ class Scheduler(Thread):
         :return: The appropriate plugin.
         :rtype: gofer.agent.plugin.Plugin
         """
-        uuid = request.routing[1]
+        inbound = Options(request.inbound)
         for plugin in self.plugins:
-            if plugin.uuid == uuid:
+            if plugin.queue == inbound.queue:
                 return plugin
-        log.info('plugin not found for uuid=%s', uuid)
-        return TrashPlugin(request.inbound_url)
+        log.info('plugin not found for "%s"', inbound.queue)
+        return TrashPlugin(inbound)
     
 
 class Context:

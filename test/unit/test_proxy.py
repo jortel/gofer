@@ -11,27 +11,48 @@
 
 from unittest import TestCase
 
-from mock import patch
+from mock import patch, Mock
 
+from gofer import Options
 from gofer.proxy import Agent, agent
+from gofer.rmi.container import Container
 
 
-class Test(TestCase):
+class TestProxy(TestCase):
 
-    @patch('gofer.proxy.Container')
-    def test_agent_1(self, fake_container):
+    def test_init(self):
         uuid = 'xyz'
-        options = {'url': 'qpid+amqp://host', 'A': 1, 'B': 2}
-        container = Agent(uuid, **options)
+        window = Mock()
+        options = {'url': 'qpid+amqp://host', 'A': 1, 'B': 2, 'window': window}
+        _agent = Agent(uuid, **options)
         url = options.pop('url')
-        fake_container.assert_called_with(uuid, url, **options)
-        self.assertEqual(container, fake_container())
+        _options = Options(window=window)
+        _options += options
+        self.assertTrue(_agent, Container)
+        self.assertEqual(_agent._Container__id, uuid)
+        self.assertEqual(_agent._Container__url, url)
+        self.assertEqual(_agent._Container__route, uuid)
+        self.assertEqual(_agent._Container__options.__dict__, _options.__dict__)
 
-    @patch('gofer.proxy.Container')
-    def test_agent(self, fake_container):
+    @patch('gofer.rmi.container.Window')
+    def test_init_defaults(self, window):
+        uuid = 'xyz'
+
+        options = {'url': 'qpid+amqp://host', 'A': 1, 'B': 2}
+        _agent = Agent(uuid, **options)
+        url = options.pop('url')
+        _options = Options(window=window.return_value)
+        _options += options
+        self.assertTrue(_agent, Container)
+        self.assertEqual(_agent._Container__id, uuid)
+        self.assertEqual(_agent._Container__url, url)
+        self.assertEqual(_agent._Container__route, uuid)
+        self.assertEqual(_agent._Container__options.__dict__, _options.__dict__)
+
+    @patch('gofer.proxy.Agent')
+    def test_agent(self, _agent):
         uuid = 'xyz'
         options = {'url': 'amqp://host', 'A': 1, 'B': 2}
-        container = agent(uuid, **options)
-        url = options.pop('url')
-        fake_container.assert_called_with(uuid, url, **options)
-        self.assertEqual(container, fake_container())
+        proxy = agent(uuid, **options)
+        _agent.assert_called_with(uuid, **options)
+        self.assertEqual(proxy, _agent.return_value)

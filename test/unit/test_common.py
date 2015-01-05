@@ -13,7 +13,7 @@ from unittest import TestCase
 
 from mock import Mock
 
-from gofer.common import Singleton, Options, synchronized, conditional
+from gofer.common import Singleton, Options, synchronized, conditional, nvl
 
 
 class Thing(object):
@@ -52,6 +52,13 @@ class Thing3(object):
     @conditional
     def bar(self, n, a=0):
         return n, a
+
+
+class TestNVL(TestCase):
+
+    def test_call(self):
+        self.assertEqual(nvl(None, 3), 3)
+        self.assertEqual(nvl(1, 2), 1)
 
 
 class TestSingleton(TestCase):

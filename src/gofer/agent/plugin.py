@@ -35,7 +35,7 @@ from gofer.config import Config, Graph, get_bool
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
 from gofer.collator import Module
-from gofer.messaging import Broker, Domain, Route
+from gofer.messaging import Broker, Domain, Queue, Exchange
 
 
 log = getLogger(__name__)
@@ -190,8 +190,12 @@ class Plugin(object):
         return Broker(self.url)
 
     @property
-    def route(self):
-        return self.cfg.messaging.route or self.uuid
+    def exchange(self):
+        return self.cfg.messaging.exchange
+
+    @property
+    def queue(self):
+        return self.cfg.messaging.queue or self.uuid
 
     def refresh(self):
         """
@@ -211,9 +215,12 @@ class Plugin(object):
         self.detach()
         if self.uuid and self.url:
             self.refresh()
-            route = Route(self.route)
-            route.declare(self.url)
-            consumer = RequestConsumer(route.queue, self.url)
+            queue = Queue(self.queue)
+            queue.declare(self.url)
+            if self.exchange:
+                exchange = Exchange(self.exchange)
+                exchange.bind(queue, self.url)
+            consumer = RequestConsumer(queue, self.url)
             consumer.reader.authenticator = self.authenticator
             consumer.start()
             log.info('plugin uuid="%s", attached', self.uuid)

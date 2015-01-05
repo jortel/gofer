@@ -11,7 +11,28 @@
 
 N = 10
 
-from gofer.messaging import Queue, Destination
+from gofer.messaging import Queue
+
+
+class Route(object):
+
+    def __init__(self, route):
+        self.route = route
+        self.parts = route.split('/')
+
+    @property
+    def exchange(self):
+        if len(self.parts) > 1:
+            return self.parts[0]
+        else:
+            return ''
+
+    @property
+    def queue(self):
+        return self.parts[-1]
+
+    def __str__(self):
+        return self.route
 
 
 class Test(object):
@@ -20,14 +41,14 @@ class Test(object):
         self.url = url
         self.adapter = adapter
 
-    def producer_reader(self, destination):
+    def producer_reader(self, route):
         print 'using producer/reader'
         with self.adapter.Sender(url=self.url) as p:
             for x in range(0, N):
-                print '#%d - sent: %s' % (x, destination.dict())
-                p.send(destination, 'hello')
+                print '#%d - sent: %s' % (x, route)
+                p.send(str(route), 'hello')
         received = 0
-        queue = Queue(destination.routing_key)
+        queue = Queue(route.queue)
         with self.adapter.Reader(queue, url=self.url) as r:
             while received < N:
                 m = r.get(1)
@@ -41,67 +62,67 @@ class Test(object):
     
     def test_no_exchange(self):
         print 'test builtin (direct) exchange'
-        queue = self.adapter.Queue('test_1')
+        route = Route('test_1')
+        queue = self.adapter.Queue(route.queue)
         queue.durable = False
         queue.auto_delete = True
         queue.declare(self.url)
-        destination = Destination(queue.name)
-        self.producer_reader(destination)
+        self.producer_reader(route)
 
     def test_direct_exchange(self):
         print 'test explicit (direct) exchange'
-        exchange = self.adapter.Exchange('amq.direct')
-        queue = self.adapter.Queue('test_2')
+        route = Route('amq.direct/test_2')
+        exchange = self.adapter.Exchange(route.exchange, 'direct')
+        queue = self.adapter.Queue(route.queue)
         queue.durable = False
         queue.auto_delete = True
         queue.declare(self.url)
         exchange.bind(queue, self.url)
-        destination = Destination(queue.name, exchange.name)
-        self.producer_reader(destination)
+        self.producer_reader(route)
 
     def test_custom_direct_exchange(self):
         print 'test custom (direct) exchange'
-        exchange = self.adapter.Exchange('test_1.direct', 'direct')
+        route = Route('test_3.direct/test_3')
+        exchange = self.adapter.Exchange(route.exchange, 'direct')
         exchange.durable = False
         exchange.auto_delete = True
         exchange.declare(self.url)
-        queue = self.adapter.Queue('test_5')
+        queue = self.adapter.Queue(route.queue)
         queue.durable = False
         queue.auto_delete = True
         queue.declare(self.url)
         exchange.bind(queue, self.url)
-        destination = Destination(queue.name, exchange.name)
-        self.producer_reader(destination)
-    
-    def test_topic_exchange(self):
-        print 'test explicit (topic) exchange'
-        exchange = self.adapter.Exchange('amq.topic')
-        queue = self.adapter.Queue('test_3')
-        queue.durable = False
-        queue.auto_delete = True
-        queue.declare(self.url)
-        exchange.bind(queue, self.url)
-        destination = Destination(queue.name, exchange.name)
-        self.producer_reader(destination)
+        self.producer_reader(route)
 
     def test_custom_topic_exchange(self):
         print 'test custom (topic) exchange'
-        exchange = self.adapter.Exchange('test_2.topic', 'topic')
+        route = Route('test_4.topic/test_4')
+        exchange = self.adapter.Exchange(route.exchange, 'topic')
         exchange.durable = False
         exchange.auto_delete = True
         exchange.declare(self.url)
-        queue = self.adapter.Queue('test_6')
+        queue = self.adapter.Queue(route.queue)
         queue.durable = False
         queue.auto_delete = True
         queue.declare(self.url)
         exchange.bind(queue, self.url)
-        destination = Destination(queue.name, exchange.name)
-        self.producer_reader(destination)
+        self.producer_reader(route)
+
+    def test_crud(self):
+        print 'test CRUD'
+        queue = self.adapter.Queue('test_crud_5')
+        queue.durable = False
+        queue.declare(self.url)
+        exchange = self.adapter.Exchange('test_crud_5.direct', 'direct')
+        exchange.declare(self.url)
+        exchange.bind(queue, self.url)
+        queue.delete(self.url)
+        exchange.delete(self.url)
 
     def __call__(self):
+        self.test_crud()
         self.test_no_exchange()
         self.test_direct_exchange()
         self.test_custom_direct_exchange()
-        self.test_topic_exchange()
         self.test_custom_topic_exchange()
         print 'DONE'

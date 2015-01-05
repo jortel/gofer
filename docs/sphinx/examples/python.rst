@@ -164,7 +164,7 @@ number of the request.
  from gofer.proxy import Agent
 
  #create an agent where consumerid = "jortel"
- agent = Agent('jortel', async=True)
+ agent = Agent('jortel', wait=0)
 
  # invoke methods on the agent (remotely)
  dog = agent.Dog()
@@ -198,9 +198,9 @@ the caller to further correlate request & response.
  from gofer.proxy import Agent
  from gofer.messaging.async import ReplyConsumer
 
- # specify a correlation tag to be used to correlate the responses.
+ # specify a reply route to be used for asynchronous responses.
 
- ctag = 'tasks'
+ reply_to = 'tasks'
 
  # create my listener class
 
@@ -238,17 +238,15 @@ the caller to further correlate request & response.
         """
         pass
 
- # create my reply consumer using the correlation tag and
- # my listener
+ # create my reply consumer using the reply to and my listener
 
- reader = ReplyConsumer(tag)
+ reader = ReplyConsumer(reply_to)
  reader.start(Listener())
 
- #create an agent where consumer ID = "jortel" and
- # setup for asynchronous invocation with my correlation tag.   The async=True
- # not needed because a ctag was specified.
+ # create an agent where consumer ID = "jortel" and
+ # setup for asynchronous invocation with my reply route.
 
- agent = Agent('jortel', ctag=tag)
+ agent = Agent('jortel', reply=reply_to)
 
  # invoke methods on the agent (remotely)
  dog = agent.Dog()
@@ -263,9 +261,9 @@ method on reply.
 
 ::
 
- # specify a correlation tag to be used to correlate the responses.
+ # specify a reply route to be used for responses.
 
- ctag = 'tasks'
+ reply_to = 'tasks'
 
  # create my listener
 
@@ -282,10 +280,9 @@ method on reply.
         # handle general exception
         pass
 
- # create my reply consumer using the correlation tag and
- # my callback
+ # create my reply consumer using the reply route and my callback
 
- reader = ReplyConsumer(ctag)
+ reader = ReplyConsumer(reply_to)
  reader.start(callback)
  ...
 
@@ -307,7 +304,7 @@ Eg:
 
  #create an agent with a list of consumer ids.
  group = ('a', 'b', 'c',)
- agent = Agent(group, ctag='tasks')
+ agent = Agent(group, reply='tasks')
  dog = agent.Dog()
  print dog.wag(10) # request sent to (a,b,c) and asynchronous replies sent to 'tasks' queue.
    [('a', 'e688f50b-3108-43dd-9a57-813f434749a8'), ('b', 'e4e60889-edac-42f1-8b64-443dbe693566'), ('c', '95960889-edac-42f1-8b64-443dbe693f23')]
@@ -340,7 +337,7 @@ Eg:
  group = ('a', 'b', 'c',)
  start = datetime(2010, 7, 26, 10)
  maint = Window(begin=start, hours=1)
- agent = Agent(group, ctag='tasks', window=maint)
+ agent = Agent(group, reply='tasks', window=maint)
  dog = agent.Dog()
  print dog.wag(10) # request sent to (a,b,c) and asynchronous replies sent to 'tasks' queue.
    [('a', 'e688f50b-3108-43dd-9a57-813f434749a8'), ('b', 'e4e60889-edac-42f1-8b64-443dbe693566'), ('c', '95960889-edac-42f1-8b64-443dbe693f23')]

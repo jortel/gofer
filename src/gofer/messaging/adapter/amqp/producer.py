@@ -15,7 +15,6 @@ from amqp import Message
 
 from gofer.messaging.adapter.model import BaseSender
 from gofer.messaging.adapter.amqp.endpoint import Endpoint, reliable
-from gofer.messaging.adapter.amqp.model import Route
 
 
 log = getLogger(__name__)
@@ -32,9 +31,9 @@ def build_message(body, ttl):
     """
     if ttl:
         ms = ttl * 1000  # milliseconds
-        return Message(body, durable=True, expiration=str(ms))
+        return Message(body, delivery_mode=2, expiration=str(ms))
     else:
-        return Message(body, durable=True)
+        return Message(body, delivery_mode=2)
 
 
 class Sender(BaseSender):
@@ -84,10 +83,13 @@ class Sender(BaseSender):
         :param ttl: Time to Live (seconds)
         :type ttl: float
         """
+        parts = route.split('/')
+        if len(parts) > 1:
+            exchange = parts[0]
+        else:
+            exchange = ''
+        key = parts[-1]
         channel = self.channel()
         message = build_message(content, ttl)
-        route = Route(route)
-        exchange = route.exchange.name
-        key = route.queue.name
-        channel.basic_publish(message, exchange=exchange, routing_key=key)
+        channel.basic_publish(message, mandatory=True, exchange=exchange, routing_key=key)
         log.debug('sent (%s)', route)

@@ -23,8 +23,7 @@ from new import classobj
 from threading import RLock
 
 from gofer.common import Options, synchronized
-from gofer.messaging import Route
-from gofer.rmi.policy import Synchronous, Asynchronous
+from gofer.rmi.policy import Policy
 from gofer.rmi.dispatcher import Request
 
 
@@ -55,24 +54,24 @@ class Builder(object):
 class Method:
     """
     A dynamic method object used to wrap the RMI call.
-    :ivar classname: The target class name.
-    :type classname: str
+    :ivar cn: The target class name.
+    :type cn: str
     :ivar name: The target method name.
     :type name: str
-    :ivar stub: The stub object used to send the AMQP message.
-    :type stub: Stub
+    :ivar send: The method used to send the AMQP message.
+    :type send: Stub
     """
 
-    def __init__(self, classname, name, send):
+    def __init__(self, cn, name, send):
         """
-        :param classname: The target class name.
-        :type classname: str
+        :param cn: The class name.
+        :type cn: str
         :param name: The target method name.
         :type name: str
         :param send: The function used to send the AMQP message.
         :type send: callable
         """
-        self.classname = classname
+        self.cn = cn
         self.name = name
         self.send = send
 
@@ -84,17 +83,12 @@ class Method:
         :param kws: The *keyword* arguments.
         :type kws: dict
         """
-        opts = Options()
-        for k, v in keywords.items():
-            if k in ('window', 'any',):
-                opts[k] = v
-                del keywords[k]
         request = Request(
-            classname=self.classname,
+            classname=self.cn,
             method=self.name,
             args=args,
             kws=keywords)
-        return self.send(request, opts)
+        return self.send(request)
 
 
 class Stub:
@@ -105,12 +99,12 @@ class Stub:
     :type __url: str
     :ivar __route: The AMQP route
     :type __route: str
-    :ivar __options: Stub options.
-    :type __options: Options
     :ivar __mutex: The mutex prevents concurrent calls.
     :type __mutex: RLock
     :ivar __policy: The invocation policy.
     :type __policy: Policy
+    :ivar __cntr: The constructor arguments.
+    :type __cntr: tuple
     """
 
     def __init__(self, url, route, options):
@@ -124,50 +118,23 @@ class Stub:
         """
         self.__url = url
         self.__route = route
-        self.__options = Options(options)
-        self.__called = (0, None)
         self.__mutex = RLock()
-        self.__policy = None
-        route = Route(self.__route)
-        route.declare(url)
+        self.__policy = Policy(url, route, options)
+        self.__cntr = None
 
     @synchronized
-    def __send(self, request, options):
+    def __send(self, request):
         """
         Send the request using the configured request method.
         :param request: An RMI request.
         :type request: str
-        :param options: Invocation options.
-        :type options: Options
         """
-        opts = Options(self.__options)
-        opts += options
-        request.cntr = self.__called[1]
-        policy = self.__get_policy()
-        return policy(
-            self.__route,
-            request,
-            window=opts.window,
-            secret=opts.secret,
-            pam=self.__pam_options(opts),
-            any=opts.any)
-
-    def __pam_options(self, opts):
-        """
-        Get PAM options.
-        :param opts: options dict.
-        :type opts: Options
-        :return: pam options
-        :rtype: Options
-        """
-        if opts.user:
-            return Options(user=opts.user, password=opts.password)
-        else:
-            return None
+        request.cntr = self.__cntr
+        return self.__policy(request)
 
     def __getattr__(self, name):
         """
-        Python vodo.
+        Python magic.
         Get a *Method* object for any requested attribute.
         :param name: The attribute name.
         :type name: str
@@ -190,53 +157,11 @@ class Stub:
         """
         return getattr(self, name)
 
-    def __call__(self, *args, **options):
+    def __call__(self, *args, **keywords):
         """
         Simulated constructor.
-        The 1st call updates stub options.
-        The 2nd call updates remote object constructor
-        parameters which are passed on RMI calls.
         :param options: keyword options.
         :type options: dict
-        :return: self
-        :rtype: Stub
         """
-        if not self.__called[0]:
-            self.__called = (1, None)
-            self.__options += options
-        else:
-            n = self.__called[0]
-            self.__called = (n+1, (args, options))
+        self.__cntr = (args, keywords)
         return self
-
-    def __get_policy(self):
-        """
-        Get the request policy based on options.
-        The policy is cached for performance.
-        :return: The request policy.
-        :rtype: gofer.rmi.policy.RequestMethod
-        """
-        if self.__policy is None:
-            self.__set_policy()
-        return self.__policy
-    
-    def __set_policy(self):
-        """
-        Set the request policy based on options.
-        """
-        if self.__is_asynchronous():
-            policy = Asynchronous(self.__url, self.__options)
-        else:
-            policy = Synchronous(self.__url, self.__options)
-        self.__policy = policy
-
-    def __is_asynchronous(self):
-        """
-        Get whether an *asynchronous* request method
-        should be used based on selected options.
-        :return: True if async.
-        :rtype: bool
-        """
-        if self.__options.reply or self.__options.async or self.__options.trigger:
-            return True
-        return False

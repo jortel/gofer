@@ -84,6 +84,8 @@ Defines basic plugin properties.
 -----------
 
 - **uuid** - The agent identity. This value also specifies the queue name.
+- **queue** - An (optional) explicit queue name.  Supersedes the *uuid*.
+- **exchange** An (optional) AMQP exchange.
 - **'url** - The (optional) broker connection URL.
   No value indicates the plugin should **not** connect to broker.
   *format*: ``<adapter>+<protocol>://<user>:<password>@<host>:<port>/<virtual-host>``,

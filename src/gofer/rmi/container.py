@@ -47,12 +47,12 @@ class Container(object):
           (str) A user (name) used for authentication.
       - password
           (str) A password used for authentication.
+      - exchange
+          (str) An optional AMQP exchange used for synchronous replies.
       - route
-          (str) An AMQP route.  Eg: amq.direct/queue
+          (str) An AMQP route to the agent.  Eg: amq.direct/queue
       - reply
           (str) An asynchronous reply route.
-      - async
-          (bool) Asynchronous request flag.
       - trigger
           (int) The trigger type (0=auto|1=manual).
 
@@ -76,7 +76,7 @@ class Container(object):
         self.__id = uuid
         self.__url = url
         self.__route = options.pop('route', uuid)
-        self.__options = Options(window=Window(), queue_managed=True)
+        self.__options = Options(window=Window())
         self.__options += options
 
     def __getattr__(self, name):

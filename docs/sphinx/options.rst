@@ -10,10 +10,8 @@ These options are as follows:
 Summary
 ^^^^^^^
 
- *async*
-   The asynchronous RMI flag
- *ctag*
-   The asynchronous RMI reply correlation tag
+ *reply*
+   The asynchronous RMI reply route.  Eg: amq.direct/test-queue
  *trigger*
    Specifies trigger used for RMI calls. (0=auto <default>, 1=manual)
  *winndow*
@@ -23,7 +21,7 @@ Summary
  *timeout*
    The timeout (seconds) for the agent to accept the RMI request.
  *wait*
-   The time (seconds) to wait for a result using the synchronous policy.
+   The time (seconds) to wait (block) for a result.
  *progress*
    A progress callback specified for synchronous RMI. Must have signature: fn(report).
  *user*
@@ -36,47 +34,12 @@ Summary
 
 Details
 ^^^^^^^
-   
-async
+
+reply
 -----
 
-The **async** option indicates that RMI requests are asynchronous.  The default is *False*.
-
-Passed to proxy.agent() and apply to all RMI calls.
-
-::
-
- from gofer import proxy
-
- agent = proxy.agent(uuid, async=True)
-
-
-Passed to Agent() and apply to all RMI calls.
-
-::
-
- from gofer.proxy import Agent
-
- agent = Agent(uuid, async=True)
-
-
-Passed to stub constructor and apply only to calls to this stub.  Assume a class named *Dog*:
-
-::
-
- from gofer import proxy
-
- agent = proxy.agent(uuid)
- dog = agent.Dog(async=True)
-
-
-
-ctag
-----
-
-The **ctag** option specifies the asynchronous *correlation tag*.  When specified, it implies all requests
-are asynchronous and that all replies are sent to the AMQP destination (topic or queue) named *ctag*.
-The *async* option can also be specified but is redundant when specifying the *ctag* option.
+The **reply** option specifies the reply route.  When specified, it implies all requests
+are asynchronous and that all replies are sent to the AMQP route.
 
 Example: Assume a reply listener on the topic or queue named: "foo":
 
@@ -86,7 +49,7 @@ Passed to proxy.agent() and apply to all RMI calls.
 
  from gofer import proxy
 
- agent = proxy.agent(uuid, ctag='foo')
+ agent = proxy.agent(uuid, reply='foo')
 
 
 Passed to Agent() and apply to all RMI calls.
@@ -95,25 +58,15 @@ Passed to Agent() and apply to all RMI calls.
 
  from gofer.proxy import Agent
 
- agent = Agent(uuid, ctag='foo')
-
-
-Passed to stub constructor and apply only to calls to this stub.  Assume a class named *Dog*:
-
-::
-
- from gofer import proxy
-
- agent = proxy.agent(uuid)
- dog = agent.Dog(ctag='foo')
+ agent = Agent(uuid, reply='foo')
 
 
 trigger
 -------
 
-The **trigger** option specifies the *trigger* used for asynchronous RMI.  Like, *ctag*, implies RMI is
-to be asynchronous.  When the trigger is specified as *manual*, asynchronous RMI calls return a *trigger*
-object instead of the request serial number.  In the case of *broadcast*, a list of triggers is returned.
+The **trigger** option specifies the *trigger* used for asynchronous RMI.
+When the trigger is specified as *manual*, the RMI calls return a *trigger*
+object instead of the request serial number.
 Each trigger contains a **sn** (serial number) property that can be used for reply correlation.
 The trigger is *pulled* by calling the trigger as: *trigger()*.
 
@@ -138,27 +91,6 @@ Passed to proxy.agent() and apply to all RMI calls.
  # broadcast
  agent = proxy.agent([uuid,], trigger=1)
  dog = agent.Dog()
- for trigger in dog.bark('delayed!'):
-     print trigger.sn  # do something with serial number
-     trigger()         # pull the trigger
-
-
-Passed to stub constructor and apply only to calls to this stub.  Assume a class named *Dog*:
-
-::
-
- from gofer import proxy
-
- #single shot
- agent = proxy.agent(uuid)
- dog = agent.Dog(trigger=1)
- trigger = dog.bark('delayed!')
- print trigger.sn      # do something with serial number
- trigger()             # pull the trigger
-
- # broadcast
- agent = proxy.agent([uuid,])
- dog = agent.Dog(trigger=1)
  for trigger in dog.bark('delayed!'):
      print trigger.sn  # do something with serial number
      trigger()         # pull the trigger
@@ -203,16 +135,6 @@ Passed to Agent() and apply to all RMI calls.
  agent = Agent(uuid, window=window)
 
 
-Passed to stub constructor and apply only to calls to this stub.  Assume a class named *Dog*:
-
-::
-
- from gofer import proxy
-
- agent = proxy.agent(uuid)
- dog = agent.Dog(window=window)
-
-
 secret
 ------
 
@@ -239,16 +161,6 @@ Passed to Agent() and apply to all RMI calls.
  agent = Agent(uuid, secret='foobar')
 
 
-Passed to stub constructor and apply only to calls to this stub.  Assume a class named *Dog*:
-
-::
-
- from gofer import proxy
-
- agent = proxy.agent(uuid)
- dog = agent.Dog(secret='foobar')
-
-
 timeout and wait
 ----------------
 
@@ -256,9 +168,10 @@ The **timeout** option is used to specify the RMI call timeout. The *timeout* is
 for the agent to *accept* the request.  The message TTL (time-to-live) is set to the *timeout* for both
 synchronous and asynchronous RMI call.  Additionally, for synchronous RMI, the caller is blocked for
 the number of seconds specified in the *wait* option.  The default *timeout* is 10 seconds and the
-default *wait* for synchronous RMI is 90 seconds.
+default *wait* for synchronous RMI is 90 seconds. A *wait=0* indicates that the stub should not
+block and wait for a reply.
 
-In 0.75+, the *timeout* and *wait* can be a string and supports a suffix to define the unit of time.
+The *timeout* and *wait* can be a string and supports a suffix to define the unit of time.
 The supported units are as follows:
 
 - **s** : seconds
@@ -292,18 +205,6 @@ Passed to Agent() and apply to all RMI calls.
  agent = Agent(uuid,  timeout=10)
 
 
-Passed to stub constructor and apply only to calls to this stub.  Assume a class named *Dog*:
-
-::
-
- from gofer import proxy
-
- # timeout 10 seconds
- agent = proxy.agent(uuid)
- dog = agent.Dog(timeout=10)
-
-
-
 user/password
 -------------
 
@@ -329,14 +230,3 @@ Passed to Agent() and apply to all RMI calls.
  from gofer.proxy import Agent
 
  agent = Agent(uuid, user='root', password='xxx')
-
-
-Passed to stub constructor and apply only to calls to this stub.  Assume a class named *Dog*:
-
-::
-
- from gofer import proxy
-
- agent = proxy.agent(uuid))
- dog = agent.Dog(user='root', password='xxx')
-

@@ -10,7 +10,7 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 
-from gofer.messaging.adapter.amqplib.model import Exchange, Queue, Route
+from gofer.messaging.adapter.amqplib.model import Exchange, Queue
 from gofer.messaging.adapter.amqplib.connection import Connection
 from gofer.messaging.adapter.amqplib.consumer import Reader
 from gofer.messaging.adapter.amqplib.producer import Sender

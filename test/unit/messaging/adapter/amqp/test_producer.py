@@ -14,7 +14,6 @@ from unittest import TestCase
 
 from mock import Mock, patch
 
-from gofer.messaging.adapter.model import Destination
 from gofer.devel import ipatch
 
 with ipatch('amqp'):
@@ -33,7 +32,7 @@ class TestBuildMessage(TestCase):
         m = build_message(body, ttl)
 
         # validation
-        message.assert_called_once_with(body, durable=True, expiration=str(ttl * 1000))
+        message.assert_called_once_with(body, delivery_mode=2, expiration=str(ttl * 1000))
         self.assertEqual(m, message.return_value)
 
     @patch('gofer.messaging.adapter.amqp.producer.Message')
@@ -45,7 +44,7 @@ class TestBuildMessage(TestCase):
         m = build_message(body, ttl)
 
         # validation
-        message.assert_called_once_with(body, durable=True)
+        message.assert_called_once_with(body, delivery_mode=2)
         self.assertEqual(m, message.return_value)
 
 
@@ -95,17 +94,42 @@ class TestSender(TestCase):
         ttl = 10
         channel = Mock()
         endpoint.return_value.channel.return_value = channel
-        destination = Destination('elmer')
+        route = 'jeff'
         content = 'hello'
 
         # test
         sender = Sender('')
-        sender.send(destination, content, ttl=ttl)
+        sender.send(route, content, ttl=ttl)
 
         # validation
         build.assert_called_once_with(content, ttl)
         endpoint.return_value.channel.assert_called_once_with()
         channel.basic_publish.assert_called_once_with(
             build.return_value,
-            exchange=destination.exchange,
-            routing_key=destination.routing_key)
+            mandatory=True,
+            exchange='',
+            routing_key='jeff')
+
+    @patch('gofer.messaging.adapter.amqp.producer.build_message')
+    @patch('gofer.messaging.adapter.amqp.producer.Endpoint')
+    def test_send_exchange(self, endpoint, build):
+        ttl = 10
+        channel = Mock()
+        endpoint.return_value.channel.return_value = channel
+        exchange = 'amq.direct'
+        key = 'bar'
+        route = '/'.join((exchange, key))
+        content = 'hello'
+
+        # test
+        sender = Sender('')
+        sender.send(route, content, ttl=ttl)
+
+        # validation
+        build.assert_called_once_with(content, ttl)
+        endpoint.return_value.channel.assert_called_once_with()
+        channel.basic_publish.assert_called_once_with(
+            build.return_value,
+            mandatory=True,
+            exchange=exchange,
+            routing_key=key)

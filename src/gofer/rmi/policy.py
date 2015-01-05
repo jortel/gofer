@@ -20,16 +20,14 @@ Contains request delivery policies.
 from logging import getLogger
 from uuid import uuid4
 
+from gofer.common import Options, nvl
 from gofer.messaging import Document, InvalidDocument
-from gofer.messaging import Producer, Reader, Queue, Route
+from gofer.messaging import Producer, Reader, Queue, Exchange
 from gofer.rmi.dispatcher import Return, RemoteException
 from gofer.metrics import Timer
 
 
 log = getLogger(__name__)
-
-
-# --- utils ------------------------------------------------------------------
 
 
 class Timeout:
@@ -97,9 +95,6 @@ class Timeout:
         return self.start, self.duration
 
 
-# --- exceptions -------------------------------------------------------------
-
-
 class RequestTimeout(Exception):
     """
     Request timeout.
@@ -117,57 +112,80 @@ class RequestTimeout(Exception):
     
     def timeout(self):
         return self.args[1]
-        
-
-# --- policy -----------------------------------------------------------------
 
 
-class RequestMethod:
+class Policy(object):
     """
-    Base class for request methods.
-    :ivar url: The agent URL.
+    The method invocation policy.
+    :ivar url: The broker URL.
     :type url: str
+    :ivar route: The AMQP route.
+    :type route: str
+    :ivar options: The RMI options.
+    :type options: gofer.Options
     """
-    
-    def __init__(self, url):
+
+    def __init__(self, url, route, options):
         """
-        :param url: The agent URL.
+        :param url: The broker URL.
         :type url: str
+        :param route: The AMQP route.
+        :type route: str
+        :param options: The RMI options.
+        :type options: gofer.Options
         """
         self.url = url
+        self.route = route
+        self.options = options
 
-    def __call__(self, route, request, **any):
-        """
-        Send the request.
-        :param route: An AMQP route.
-        :type route: str
-        :param request: A request to send.
-        :type request: object
-        :keyword any: Any (extra) data.
-        """
-        raise NotImplementedError()
+    @property
+    def timeout(self):
+        return Timeout.seconds(nvl(self.options.timeout, 10))
 
+    @property
+    def wait(self):
+        return Timeout.seconds(nvl(self.options.wait, 90))
 
-class Synchronous(RequestMethod):
-    """
-    The synchronous request method.
-    This method blocks until a reply is received.
-    """
+    @property
+    def progress(self):
+        return self.options.progress
 
-    def __init__(self, url, options):
-        """
-        :param url: The agent URL.
-        :type url: str
-        :param options: Policy options.
-        :type options: gofer.messaging.model.Options
-        """
-        RequestMethod.__init__(self, url)
-        self.timeout = Timeout.seconds(options.timeout or 10)
-        self.wait = Timeout.seconds(options.wait or 90)
-        self.progress = options.progress
-        self.authenticator = options.authenticator
+    @property
+    def authenticator(self):
+        return self.options.authenticator
 
-    def _get_accepted(self, sn, reader):
+    @property
+    def reply(self):
+        return self.options.reply
+
+    @property
+    def trigger(self):
+        return self.options.trigger
+
+    @property
+    def pam(self):
+        if self.options.user:
+            return Options(user=self.options.user, password=self.options.password)
+        else:
+            return None
+
+    @property
+    def secret(self):
+        return self.options.secret
+
+    @property
+    def window(self):
+        return self.options.window
+
+    @property
+    def any(self):
+        return self.options.any
+
+    @property
+    def exchange(self):
+        return self.options.exchange
+
+    def get_accepted(self, sn, reader):
         """
         Get the 'accepted' reply matched by serial number.
         In the event the 'accepted' message got lost, the 'started'
@@ -191,9 +209,9 @@ class Synchronous(RequestMethod):
         if document.status in ('accepted', 'started'):
             log.debug('request (%s), %s', sn, document.status)
         else:
-            self._on_reply(document)
+            self.on_reply(document)
 
-    def _get_reply(self, sn, reader):
+    def get_reply(self, sn, reader):
         """
         Get the reply matched by serial number.
         :param sn: The request serial number.
@@ -221,11 +239,11 @@ class Synchronous(RequestMethod):
             if document.status in ('accepted', 'started'):
                 continue
             if document.status == 'progress':
-                self._on_progress(document)
+                self.on_progress(document)
             else:
-                return self._on_reply(document)
+                return self.on_reply(document)
         
-    def _on_reply(self, document):
+    def on_reply(self, document):
         """
         Handle the reply.
         :param document: The reply document.
@@ -239,7 +257,7 @@ class Synchronous(RequestMethod):
         else:
             raise RemoteException.instance(reply)
         
-    def _on_progress(self, document):
+    def on_progress(self, document):
         """
         Handle the progress report.
         :param document: The status document.
@@ -258,82 +276,19 @@ class Synchronous(RequestMethod):
         except Exception:
             log.error('progress callback failed', exc_info=1)
 
-    def __call__(self, route, request, **any):
+    def __call__(self, request):
         """
         Send the request then read the reply.
-        :param route: An AMQP route.
-        :type route: str
         :param request: A request to send.
         :type request: object
-        :keyword any: Any (extra) data.
-        :return: The result of the request.
         :rtype: object
         :raise Exception: returned by the peer.
         """
-        reply = Route(route)
-        reply.queue = Queue(str(uuid4()))
-        reply.queue.durable = False
-        reply.queue.auto_delete = True
-        reply.declare(self.url)
-        producer = Producer(self.url)
-        producer.authenticator = self.authenticator
-        producer.open()
-        try:
-            sn = producer.send(
-                route,
-                ttl=self.timeout,
-                replyto=str(reply),
-                request=request,
-                **any)
-        finally:
-            producer.close()
-        log.debug('sent (%s): %s', route, request)
-        reader = Reader(reply.queue, self.url)
-        reader.authenticator = self.authenticator
-        reader.open()
-        try:
-            self._get_accepted(sn, reader)
-            return self._get_reply(sn, reader)
-        finally:
-            reader.close()
-
-
-class Asynchronous(RequestMethod):
-    """
-    The asynchronous request method.
-    """
-
-    def __init__(self, url, options):
-        """
-        :param url: The agent URL.
-        :type url: str
-        :param options: Policy options.
-        :type options: gofer.messaging.model.Options
-        """
-        RequestMethod.__init__(self, url)
-        self.reply = options.reply
-        self.timeout = Timeout.seconds(options.timeout)
-        self.trigger = options.trigger
-        self.authenticator = options.authenticator
-
-    def __call__(self, route, request, **any):
-        """
-        Send the specified request and redirect the reply to the
-        queue for the specified reply *correlation* tag.
-        A trigger(1) specifies a *manual* trigger.
-        :param route: An AMQP route.
-        :type route: route
-        :param request: A request to send.
-        :type request: object
-        :keyword any: Any (extra) data.
-        :return: The request serial number.
-        :rtype: str
-        """
-        trigger = Trigger(self, route, request, any)
-        if self.trigger == 1:
+        trigger = Trigger(self, request)
+        if self.trigger == Trigger.MANUAL:
             return trigger
-        trigger()
-        return trigger.sn
+        else:
+            return trigger()
 
 
 class Trigger:
@@ -341,74 +296,148 @@ class Trigger:
     Asynchronous trigger.
     :ivar _pending: pending flag.
     :type _pending: bool
-    :ivar _sn: serial number
+    :ivar _sn: request serial number
     :type _sn: str
     :ivar _policy: The policy object.
-    :type _policy: Asynchronous
-    :ivar _route: An AMQP route.
-    :type _route: str
+    :type _policy: Policy
     :ivar _request: A request to send.
     :type _request: object
-    :ivar _any: Any (extra) data.
-    :type _any: dict
     """
 
-    def __init__(self, policy, route, request, any):
+    MANUAL = 1  # trigger
+    NOWAIT = 0  # wait (seconds)
+
+    def __init__(self, policy, request):
         """
         :param policy: The policy object.
-        :type policy: Asynchronous
-        :param route: An AMQP route.
-        :type route: str
+        :type policy: Policy
         :param request: A request to send.
         :type request: object
-        :keyword any: Any (extra) data.
         """
-        self._pending = True
         self._sn = str(uuid4())
         self._policy = policy
-        self._route = route
         self._request = request
-        self._any = any
+        self._pending = True
         
     @property
     def sn(self):
-        """
-        Get serial number.
-        :return: The request serial number.
-        :rtype: str
-        """
         return self._sn
-        
-    def _send(self):
+
+    @property
+    def url(self):
+        return self._policy.url
+
+    @property
+    def route(self):
+        return self._policy.route
+
+    @property
+    def reply(self):
+        return self._policy.reply
+
+    @property
+    def authenticator(self):
+        return self._policy.authenticator
+
+    @property
+    def timeout(self):
+        return self._policy.timeout
+
+    @property
+    def wait(self):
+        return self._policy.wait
+
+    @property
+    def secret(self):
+        return self._policy.secret
+
+    @property
+    def window(self):
+        return self._policy.window
+
+    @property
+    def pam(self):
+        return self._policy.pam
+
+    @property
+    def any(self):
+        return self._policy.any
+
+    @property
+    def exchange(self):
+        return self._policy.exchange
+
+    def _send(self, reply=None, queue=None):
         """
         Send the request using the specified policy
         object and generated serial number.
+        :param reply: The AMQP reply route.
+        :type reply: str
+        :param queue: The reply queue for synchronous calls.
+        :type queue: Queue
         """
-        policy = self._policy
-        route = self._route
-        request = self._request
-        any = self._any
-        producer = Producer(policy.url)
-        producer.authenticator = policy.authenticator
+        producer = Producer(self.url)
+        producer.authenticator = self.authenticator
         producer.open()
+
         try:
             producer.send(
-                route,
+                self.route,
+                self.timeout,
+                # body
                 sn=self._sn,
-                ttl=policy.timeout,
-                replyto=policy.reply,
-                request=request,
-                **any)
+                replyto=reply,
+                request=self._request,
+                window=self.window,
+                secret=self.secret,
+                pam=self.pam,
+                any=self.any)
         finally:
             producer.close()
-        log.debug('sent (%s): %s', route, request)
+
+        log.debug('sent (%s): %s', self.route, self._request)
+
+        if queue is None:
+            # no reply expected
+            return self.sn
+
+        reader = Reader(queue, self.url)
+        reader.authenticator = self.authenticator
+        reader.open()
+
+        try:
+            policy = self._policy
+            policy.get_accepted(self.sn, reader)
+            return policy.get_reply(self.sn, reader)
+        finally:
+            reader.close()
 
     def __call__(self):
-        if self._pending:
-            self._send()
-            self._pending = False
-        else:
+        if not self._pending:
             raise Exception('trigger already executed')
+        self._pending = False
+
+        # asynchronous
+        if self.reply:
+            return self._send(reply=self.reply)
+        if self.wait == Trigger.NOWAIT:
+            return self._send()
+
+        # synchronous
+        queue = Queue()
+        queue.durable = False
+        queue.declare(self.url)
+        reply = queue.name
+
+        if self.exchange:
+            exchange = Exchange(self.exchange)
+            exchange.bind(queue, self.url)
+            reply = '/'.join((self.exchange, queue.name))
+
+        try:
+            return self._send(reply=reply, queue=queue)
+        finally:
+            queue.delete(self.url)
 
     def __str__(self):
         return self._sn

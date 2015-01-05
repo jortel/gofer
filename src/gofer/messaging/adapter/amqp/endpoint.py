@@ -33,7 +33,7 @@ def reliable(fn):
         while True:
             try:
                 return fn(endpoint, *args, **kwargs)
-            except CONNECTION_EXCEPTIONS:
+            except CONNECTION_EXCEPTIONS, e:
                 sleep(3)
                 endpoint.close(hard=True)
                 endpoint.open()

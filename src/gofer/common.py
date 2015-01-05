@@ -18,6 +18,19 @@ import inspect
 from threading import RLock
 
 
+def nvl(thing, default):
+    """
+    None value defaulter.
+    :param thing: An object.
+    :param default: The value when thing is None.
+    :return: thing|default
+    """
+    if thing is None:
+        return default
+    else:
+        return thing
+
+
 class Singleton(type):
     """
     Singleton metaclass

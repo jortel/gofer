@@ -149,36 +149,6 @@ class _Domain(object):
         return len(self.content)
 
 
-# --- routing ----------------------------------------------------------------
-
-
-class Route(object):
-
-    @staticmethod
-    def parts(route):
-        parts = route.split('/')
-        if len(parts) > 1:
-            return parts[0], parts[1]
-        else:
-            return '', parts[0]
-
-    def __init__(self, route):
-        parts = Route.parts(route)
-        self.exchange = Exchange(parts[0])
-        self.queue = Queue(parts[1])
-
-    def declare(self, url=None):
-        self.queue.declare(url)
-        self.exchange.declare(url)
-        self.exchange.bind(self.queue, url)
-
-    def __str__(self):
-        if self.exchange.name:
-            return '/'.join((self.exchange.name, self.queue.name))
-        else:
-            return self.queue.name
-
-
 # --- node -------------------------------------------------------------------
 
 
@@ -236,7 +206,7 @@ class BaseExchange(Node):
     :type auto_delete: bool
     """
 
-    def __init__(self, name, policy=None):
+    def __init__(self, name, policy=DIRECT):
         """
         :param name: The exchange name.
         :type name: str
@@ -274,9 +244,7 @@ class BaseExchange(Node):
 
 class Exchange(BaseExchange):
 
-    RESERVED = ('', 'amq.direct', 'amq.topic')
-
-    def __init__(self, name, policy=None):
+    def __init__(self, name, policy=DIRECT):
         """
         :param name: The exchange name.
         :type name: str
@@ -293,11 +261,8 @@ class Exchange(BaseExchange):
         :type url: str
         :raise: ModelError
         """
-        if self.is_reserved():
-            # reserved
-            return
         adapter = Adapter.find(url)
-        impl = adapter.Exchange(self.name, policy=self.policy)
+        impl = adapter.Exchange(self.name, self.policy)
         impl.durable = self.durable
         impl.auto_delete = self.auto_delete
         impl.declare(url)
@@ -310,11 +275,8 @@ class Exchange(BaseExchange):
         :type url: str
         :raise: ModelError
         """
-        if self.is_reserved():
-            # reserved
-            return
         adapter = Adapter.find(url)
-        impl = adapter.Exchange(self.name)
+        impl = adapter.Exchange(self.name, self.policy)
         impl.delete(url)
 
     @model
@@ -328,7 +290,7 @@ class Exchange(BaseExchange):
             # anonymous
             return
         adapter = Adapter.find(url)
-        impl = adapter.Exchange(self.name)
+        impl = adapter.Exchange(self.name, self.policy)
         impl.bind(queue, url)
 
     @model
@@ -339,11 +301,8 @@ class Exchange(BaseExchange):
         :type queue: BaseQueue
         """
         adapter = Adapter.find(url)
-        impl = adapter.Exchange(self.name)
+        impl = adapter.Exchange(self.name, self.policy)
         impl.unbind(queue, url)
-
-    def is_reserved(self):
-        return self.name in Exchange.RESERVED
 
 
 class BaseQueue(Node):
@@ -380,12 +339,12 @@ class Queue(BaseQueue):
     An AMQP message queue.
     """
 
-    def __init__(self, name):
+    def __init__(self, name=None):
         """
         :param name: The queue name.
         :type name: str
         """
-        BaseQueue.__init__(self, name)
+        BaseQueue.__init__(self, name or str(uuid4()))
 
     @model
     def declare(self, url=None):

@@ -19,9 +19,8 @@ from mock import patch, Mock
 
 from gofer.messaging.model import Document, VERSION
 from gofer.messaging.adapter.url import URL
-from gofer.messaging.adapter.model import Destination
 from gofer.messaging.adapter.model import Model, _Domain, Node
-from gofer.messaging.adapter.model import BaseExchange, Exchange
+from gofer.messaging.adapter.model import BaseExchange, Exchange, DIRECT
 from gofer.messaging.adapter.model import BaseQueue, Queue
 from gofer.messaging.adapter.model import BaseEndpoint, Messenger
 from gofer.messaging.adapter.model import BaseReader, Reader
@@ -162,51 +161,6 @@ class TestDomain(TestCase):
         self.assertEqual(domain.content, {'Node::cat': cat})
 
 
-class TestDestination(TestCase):
-
-    def test_create(self):
-        d = {Destination.EXCHANGE: 1, Destination.ROUTING_KEY: 2}
-        destination = Destination.create(d)
-        self.assertEqual(destination.exchange, d[Destination.EXCHANGE])
-        self.assertEqual(destination.routing_key, d[Destination.ROUTING_KEY])
-
-    def test_init(self):
-        exchange = 'EX'
-        routing_key = 'RK'
-        # both
-        d = Destination(routing_key, exchange=exchange)
-        self.assertEqual(d.routing_key, routing_key)
-        self.assertEqual(d.exchange, exchange)
-        # routing_key
-        d = Destination(routing_key)
-        self.assertEqual(d.routing_key, routing_key)
-        self.assertEqual(d.exchange, '')
-
-    def test_dict(self):
-        exchange = 'EX'
-        routing_key = 'RK'
-        d = Destination(routing_key, exchange)
-        self.assertEqual(
-            d.dict(),
-            {Destination.EXCHANGE: exchange, Destination.ROUTING_KEY: routing_key})
-
-    def test_eq(self):
-        self.assertTrue(Destination('1', '2') == Destination('1', '2'))
-        self.assertFalse(Destination('1', '0') == Destination('1', '2'))
-
-    def test_neq(self):
-        self.assertTrue(Destination('1', '0') != Destination('1', '2'))
-        self.assertFalse(Destination('1', '2') != Destination('1', '2'))
-
-    def test_str(self):
-        d = Destination('1', '2')
-        self.assertEqual(str(d), str(d.__dict__))
-
-    def test_repr(self):
-        d = Destination('1', '2')
-        self.assertEqual(repr(d), repr(d.__dict__))
-
-
 class TestNode(TestCase):
 
     def test_init(self):
@@ -230,7 +184,7 @@ class TestBaseExchange(TestCase):
         name = 'test'
         exchange = BaseExchange(name)
         self.assertEqual(exchange.name, name)
-        self.assertEqual(exchange.policy, None)
+        self.assertEqual(exchange.policy, DIRECT)
         # with policy
         policy = 'direct'
         exchange = BaseExchange(name, policy=policy)
@@ -257,7 +211,7 @@ class TestExchange(TestCase):
         name = 'test'
         exchange = BaseExchange(name)
         self.assertEqual(exchange.name, name)
-        self.assertEqual(exchange.policy, None)
+        self.assertEqual(exchange.policy, DIRECT)
         # with policy
         policy = 'direct'
         exchange = BaseExchange(name, policy=policy)
@@ -276,7 +230,7 @@ class TestExchange(TestCase):
         exchange.declare(TEST_URL)
 
         # validation
-        plugin.Exchange.assert_called_with(exchange.name, policy=exchange.policy)
+        plugin.Exchange.assert_called_with(exchange.name, exchange.policy)
         impl = plugin.Exchange()
         impl.declare.assert_called_with(TEST_URL)
         self.assertEqual(impl.durable, exchange.durable)
@@ -292,7 +246,7 @@ class TestExchange(TestCase):
         exchange.delete(TEST_URL)
 
         # validation
-        plugin.Exchange.assert_called_with(exchange.name)
+        plugin.Exchange.assert_called_with(exchange.name, exchange.policy)
         impl = plugin.Exchange()
         impl.delete.assert_called_with(TEST_URL)
 
@@ -307,7 +261,7 @@ class TestExchange(TestCase):
         exchange.bind(queue, TEST_URL)
 
         # validation
-        plugin.Exchange.assert_called_with(exchange.name)
+        plugin.Exchange.assert_called_with(exchange.name, exchange.policy)
         impl = plugin.Exchange()
         impl.bind.assert_called_with(queue, TEST_URL)
 
@@ -322,7 +276,7 @@ class TestExchange(TestCase):
         exchange.unbind(queue, TEST_URL)
 
         # validation
-        plugin.Exchange.assert_called_with(exchange.name)
+        plugin.Exchange.assert_called_with(exchange.name, exchange.policy)
         impl = plugin.Exchange()
         impl.unbind.assert_called_with(queue, TEST_URL)
 
@@ -923,12 +877,12 @@ class TestSender(TestCase):
         plugin.Sender.return_value = _impl
         _find.return_value = plugin
         url = TEST_URL
-        destination = Mock()
+        route = Mock()
         content = '1234'
         ttl = 10
         sender = Sender(url)
-        sender.send(destination, content, ttl)
-        _impl.send.assert_called_once_with(destination, content, ttl)
+        sender.send(route, content, ttl)
+        _impl.send.assert_called_once_with(route, content, ttl)
 
 
 class TestProducer(TestCase):
@@ -1024,25 +978,25 @@ class TestProducer(TestCase):
         plugin.Sender.return_value = _impl
         _find.return_value = plugin
         uuid4.return_value = '<uuid>'
-        destination = Destination('')
+        route = 'amq.direct/bar'
         ttl = 234
         body = {'A': 1, 'B': 2}
 
         # test
         producer = Producer(TEST_URL)
         producer.authenticator = Mock()
-        sn = producer.send(destination, ttl=ttl, **body)
+        sn = producer.send(route, ttl=ttl, **body)
 
         # validation
         document.assert_called_once_with(
             sn=str(uuid4.return_value),
             version=VERSION,
-            routing=(None, destination.routing_key)
+            routing=(None, route)
         )
         unsigned = document.return_value
         auth.sign.assert_called_once_with(
             producer.authenticator, unsigned.__iadd__.return_value.dump.return_value)
-        _impl.send.assert_called_once_with(destination, auth.sign.return_value, ttl)
+        _impl.send.assert_called_once_with(route, auth.sign.return_value, ttl)
         self.assertEqual(sn, uuid4.return_value)
 
 
