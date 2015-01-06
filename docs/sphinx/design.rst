@@ -30,12 +30,6 @@ This gives application developers an easy to use abstraction and hides some of t
 exchange and dispatching. Especially in OO applications, invoking a method remotely on an agent
 without regard for message exchange and routing enhances reliability and productivity.
 
-Compatibility:
-
-- Uses new ​QPID Messaging API.
-- ​QPID 0.5+
-- ​MRG 3.1+
-
 Requirements Summary:
 
 - Key-based routing based on consumer ID.
@@ -48,7 +42,6 @@ Requirements Summary:
 - Easy to use.
 - Easy to extend classes/method exposed for RMI.
 - Support Maintenance Windows - messages have effective date & time.
-- Support fan out or multicast - sending messages to multiple consumers (system groups).
 - Events
 - Support multiple API versions.
 
@@ -79,6 +72,7 @@ The message format is json:
    - **(request|result|status|progress)** The payload.
        (request is type: Request, result is type: Result, status is type: string)
    - **timestamp** - An ISO-8601 reply timestamp (UTC).
+   - **data** - User defined data.
 - Request (RMI):
    - **class** - The target class name.
    - **cntr** - The (optional) remote class constructor arguments. format: ([],{}).

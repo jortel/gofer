@@ -212,7 +212,7 @@ def demo_window(exit=0):
     begin = later(seconds=10)
     window = Window(begin=begin, seconds=5)
     agent = Agent(reply=route)
-    dog = agent.Dog(window=window, any='demo')
+    dog = agent.Dog(window=window, data='demo')
     print dt.now()
     print dog.bark('hello, after 10 seconds')
     print dog.wag(3)
@@ -365,14 +365,14 @@ def demo_progress(exit=0):
     # synchronous
     def fn(report):
         pct = (float(report['completed'])/float(report['total']))*100
-        print 'Progress: sn=%s, any=%s, total=%s, complete=%s, pct:%d%% details=%s' % \
+        print 'Progress: sn=%s, data=%s, total=%s, complete=%s, pct:%d%% details=%s' % \
             (report['sn'],
-             report['any'],
+             report['data'],
              report['total'],
              report['completed'],
              int(pct),
              report['details'])
-    agent = Agent(progress=fn, any={4: 5})
+    agent = Agent(progress=fn, data={4: 5})
     p = agent.Progress()
     print p.send(4)
     if exit:
@@ -412,7 +412,7 @@ def main():
     print 'group 2'
     begin = later(seconds=20)
     window = Window(begin=begin, minutes=10)
-    agent = Agent(reply=route, window=window, any='group 2')
+    agent = Agent(reply=route, window=window, data='group 2')
     dog = agent.Dog()
     print dog.bark('hello')
     print dog.wag(3)
@@ -422,7 +422,7 @@ def main():
     print 'group 1'
     begin = later(seconds=10)
     window = Window(begin=begin, minutes=10)
-    agent = Agent(reply=route, window=window, any='group 1')
+    agent = Agent(reply=route, window=window, data='group 1')
     dog = agent.Dog()
     print dog.bark('hello')
     print dog.wag(3)
@@ -489,9 +489,9 @@ if __name__ == '__main__':
     reply_consumer = ReplyConsumer(queue, url=url, authenticator=authenticator)
     reply_consumer.start(on_reply)
 
-    # demo_progress(route, 1)
-    # demo_window(route, 1)
-    # test_performance(route)
+    # demo_progress(1)
+    # demo_window(1)
+    # test_performance()
 
     demo_authentication(yp)
     smoke_test()

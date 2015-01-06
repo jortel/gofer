@@ -129,7 +129,7 @@ class Task:
         :type request: Document
         """
         sn = request.sn
-        any = request.any
+        data = request.data
         route = request.replyto
         if not route:
             return
@@ -137,7 +137,7 @@ class Task:
             self.producer.send(
                 route,
                 sn=sn,
-                any=any,
+                data=data,
                 status='started',
                 timestamp=timestamp())
         except Exception:
@@ -152,7 +152,7 @@ class Task:
         :type result: object
         """
         sn = request.sn
-        any = request.any
+        data = request.data
         ts = request.ts
         now = time()
         duration = Timer(ts, now)
@@ -164,7 +164,7 @@ class Task:
             self.producer.send(
                 route,
                 sn=sn,
-                any=any,
+                data=data,
                 result=result,
                 timestamp=timestamp())
         except Exception:
@@ -301,7 +301,7 @@ class Progress:
         Send the progress report.
         """
         sn = self.task.request.sn
-        any = self.task.request.any
+        data = self.task.request.data
         route = self.task.request.replyto
         if not route:
             return
@@ -309,7 +309,7 @@ class Progress:
             self.producer.send(
                 route,
                 sn=sn,
-                any=any,
+                data=data,
                 status='progress',
                 total=self.total,
                 completed=self.completed,

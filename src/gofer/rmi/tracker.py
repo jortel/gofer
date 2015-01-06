@@ -23,7 +23,7 @@ class Tracker:
     Request tracker used to track information about
     active RMI requests.
     :ivar __all: All known requests by serial number.
-    :type __all: set
+    :type __all: dict
     :ivar __cancelled: Cancelled requests.
     :type __cancelled: set
     :ivar __mutex: The object mutex.

@@ -30,6 +30,8 @@ Summary
    A password, used for PAM authenticated access to remote methods.
  *authenticator*
    A subclass of pulp.messaging.auth.Authenticator that provides message authentication.
+ *data*
+   User defined data associated with the RMI request and is round-tripped.
    
 
 Details
@@ -230,3 +232,4 @@ Passed to Agent() and apply to all RMI calls.
  from gofer.proxy import Agent
 
  agent = Agent(url, uuid, user='root', password='xxx')
+

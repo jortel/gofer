@@ -52,6 +52,9 @@ class Container(object):
           (str) An AMQP reply route.
       - trigger
           (int) The trigger type (0=auto|1=manual).
+      - data
+          (object) User defined data that is round tripped.
+          Used for asynchronous reply correlation and cancel criteria.
 
     :ivar __id: The peer ID.
     :type __id: str

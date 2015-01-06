@@ -179,8 +179,8 @@ class Policy(object):
         return self.options.window or Window()
 
     @property
-    def any(self):
-        return self.options.any
+    def data(self):
+        return self.options.data
 
     @property
     def exchange(self):
@@ -269,7 +269,7 @@ class Policy(object):
             if callable(reporter):
                 report = dict(
                     sn=document.sn,
-                    any=document.any,
+                    data=document.data,
                     total=document.total,
                     completed=document.completed,
                     details=document.details)
@@ -348,7 +348,7 @@ class Trigger:
                 window=self._policy.window,
                 secret=self._policy.secret,
                 pam=self._policy.pam,
-                any=self._policy.any)
+                data=self._policy.data)
         finally:
             producer.close()
 

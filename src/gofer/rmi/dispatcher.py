@@ -603,11 +603,11 @@ class Dispatcher:
     def log(document):
         request = Options(document.request)
         log.info(
-            'call: %s.%s() sn=%s info=%s',
+            'call: %s.%s() sn=%s data=%s',
             request.classname,
             request.method,
             document.sn,
-            document.any)
+            document.data)
 
     def __init__(self, classes=None):
         """

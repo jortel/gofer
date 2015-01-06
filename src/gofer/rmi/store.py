@@ -227,7 +227,7 @@ class Pending(object):
         """
         request.ts = time()
         tracker = Tracker()
-        tracker.add(request.sn, request.any)
+        tracker.add(request.sn, request.data)
         self.journal[request.sn] = jnl_path
         self.queue.put(request)
 
