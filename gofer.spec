@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.0.0
+Version: 2.1.0
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -270,6 +270,18 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Thu Dec 18 2014 Jeff Ortel <jortel@redhat.com> 2.1.0-1
+- Fix plugin loading from python path. (jortel@redhat.com)
+- Improved adapter model. (jortel@redhat.com)
+- Improved builtin plugin. (jortel@redhat.com)
+- Get rid of broadcast policy. (jortel@redhat.com)
+- Domains added. (jortel@redhat.com)
+- The messaging section no longer supported in agent.conf. (jortel@redhat.com)
+- Update pmon to retry on notification exception. (jortel@redhat.com)
+- Get rid of adapter descriptors. (jortel@redhat.com)
+- ModelError raised for all model operations. (jortel@redhat.com)
+- Plugin class properties. (jortel@redhat.com)
+- Improved test coverage.
 * Mon Nov 24 2014 Jeff Ortel <jortel@redhat.com> 2.0.0-1
 - The transport concept has been revised and renamed to messaging adapters.
 - The transport parameter and configuation deprecated.

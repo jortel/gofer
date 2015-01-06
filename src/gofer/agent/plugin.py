@@ -452,8 +452,8 @@ class PluginLoader:
         try:
             path = descriptor.main.plugin
             if path:
-                plugin.impl = __import__(path, {}, {}, [path.split('.')[-1]])
                 Plugin.add(plugin, path)
+                plugin.impl = __import__(path, {}, {}, [path.split('.')[-1]])
             else:
                 path = PluginLoader.find_plugin(name)
                 plugin.impl = imp.load_source(name, path)
