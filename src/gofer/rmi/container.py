@@ -48,8 +48,6 @@ class Container(object):
           (str) A password used for authentication.
       - exchange
           (str) An optional AMQP exchange used for synchronous replies.
-      - route
-          (str) An AMQP route to the agent.  Eg: amq.direct/queue
       - reply
           (str) An AMQP reply route.
       - trigger
@@ -63,18 +61,17 @@ class Container(object):
     :type __options: Options
     """
 
-    def __init__(self, uuid, url, **options):
+    def __init__(self, url, route, **options):
         """
-        :param uuid: The peer ID.
-        :type uuid: str
         :param url: The agent URL.
-        :type url: str|None
+        :type url: str
+        :param route: The AMQP route to the agent.
+        :type route: str
         :param options: keyword options.  See documentation.
         :type options: dict
         """
-        self.__id = uuid
         self.__url = url
-        self.__route = options.pop('route', uuid)
+        self.__route = route
         self.__options = Options(options)
 
     def __getattr__(self, name):
@@ -99,7 +96,7 @@ class Container(object):
         return getattr(self, name)
 
     def __str__(self):
-        return '{%s} opt:%s' % (self.__id, str(self.__options))
+        return '{%s} options: %s' % (self.__route, str(self.__options))
     
     def __repr__(self):
         return str(self)

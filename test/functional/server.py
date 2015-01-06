@@ -39,12 +39,14 @@ log = getLogger(__name__)
 
 class Agent(object):
 
+    url = None
+    route = None
     base_options = {}
 
     def __new__(cls, *args, **options):
         all_options = dict(Agent.base_options)
         all_options.update(options)
-        return RealAgent(*args, **all_options)
+        return RealAgent(url, route, **all_options)
 
 
 class TestAuthenticator(Authenticator):
@@ -159,20 +161,20 @@ def later(**offset):
     return dt.utcnow()+delta(**offset)
 
 
-def threads(uuid, url, n=10):
+def threads(n=10):
     t = None
     for i in range(0, n):
         name = 'Test%d' % i
-        t = Thread(name=name, target=main, args=(uuid, url))
+        t = Thread(name=name, target=main)
         t.setDaemon(True)
         t.start()
         print 'thread: %s, started' % t.getName()
     return t
 
 
-def test_performance(uuid):
+def test_performance():
     N = 200
-    agent = Agent(uuid)
+    agent = Agent()
     dog = agent.Dog()
     t = Timer()
     t.start()
@@ -183,7 +185,7 @@ def test_performance(uuid):
     print 'total=%s, percall=%f (ms)' % (t, (t.duration()/N)*1000)
     #sys.exit(0)
     # ASYNCHRONOUS
-    agent = Agent(uuid, wait=0)
+    agent = Agent(wait=0)
     dog = agent.Dog()
     t = Timer()
     t.start()
@@ -195,8 +197,8 @@ def test_performance(uuid):
     sys.exit(0)
 
 
-def test_triggers(uuid):
-    agent = Agent(uuid, trigger=1)
+def test_triggers():
+    agent = Agent(trigger=1)
     dog = agent.Dog()
     t = dog.bark('delayed!')
     print t
@@ -204,12 +206,12 @@ def test_triggers(uuid):
     print 'Manual trigger, OK'
     
 
-def demo_window(uuid, exit=0):
-    route = uuid.upper()
+def demo_window(exit=0):
     print 'demo window, +10, +10min seconds'
+    route = Agent.route.split('/')[-1].upper()
     begin = later(seconds=10)
     window = Window(begin=begin, seconds=5)
-    agent = Agent(uuid, reply=route)
+    agent = Agent(reply=route)
     dog = agent.Dog(window=window, any='demo')
     print dt.now()
     print dog.bark('hello, after 10 seconds')
@@ -220,21 +222,21 @@ def demo_window(uuid, exit=0):
         sys.exit(0)
     
 
-def demo_pam_authentication(uuid, yp, exit=0):
+def demo_pam_authentication(yp, exit=0):
     # basic success
-    agent = Agent(uuid, user='jortel', password=yp['jortel'])
+    agent = Agent(user='jortel', password=yp['jortel'])
     dog = agent.Dog()
     print dog.testpam()
     # @user synonym
-    agent = Agent(uuid, user='root', password=yp['root'])
+    agent = Agent(user='root', password=yp['root'])
     dog = agent.Dog()
     print dog.testpam2()
     # the @pam with specified service
-    agent = Agent(uuid, user='jortel', password=yp['jortel'])
+    agent = Agent(user='jortel', password=yp['jortel'])
     dog = agent.Dog()
     print dog.testpam3()
     # no user
-    agent = Agent(uuid)
+    agent = Agent()
     try:
         dog = agent.Dog()
         dog.testpam()
@@ -242,7 +244,7 @@ def demo_pam_authentication(uuid, yp, exit=0):
     except UserRequired:
         print 'no user, OK'
     # no password
-    agent = Agent(uuid, user='jortel')
+    agent = Agent(user='jortel')
     try:
         dog = agent.Dog()
         dog.testpam()
@@ -250,7 +252,7 @@ def demo_pam_authentication(uuid, yp, exit=0):
     except PasswordRequired:
         print 'no password, OK'
     # wrong user
-    agent = Agent(uuid, user='xx', password='xx')
+    agent = Agent(user='xx', password='xx')
     try:
         dog = agent.Dog()
         dog.testpam()
@@ -258,7 +260,7 @@ def demo_pam_authentication(uuid, yp, exit=0):
     except UserNotAuthorized:
         print 'wrong user, OK'
     # PAM failed
-    agent = Agent(uuid, user='jortel', password='xx')
+    agent = Agent(user='jortel', password='xx')
     try:
         dog = agent.Dog()
         dog.testpam()
@@ -266,7 +268,7 @@ def demo_pam_authentication(uuid, yp, exit=0):
     except NotAuthenticated:
         print 'PAM not authenticated, OK'
     # PAM failed, invalid service
-    agent = Agent(uuid, user='jortel', password='xx')
+    agent = Agent(user='jortel', password='xx')
     try:
         dog = agent.Dog()
         dog.testpam4()
@@ -277,21 +279,21 @@ def demo_pam_authentication(uuid, yp, exit=0):
         sys.exit(0)
 
 
-def demo_layered_security(uuid, yp, exit=0):
+def demo_layered_security(yp, exit=0):
     user = 'jortel'
     # multi-user
     for user in ('jortel', 'root'):
-        agent = Agent(uuid, user=user, password=yp[user])
+        agent = Agent(user=user, password=yp[user])
         dog = agent.Dog()
         print dog.testLayered()
     # mixed user and secret
-    agent = Agent(uuid, user=user, password=yp[user], secret='elmer')
+    agent = Agent(user=user, password=yp[user], secret='elmer')
     dog = agent.Dog()
     print dog.testLayered2()
     dog = agent.Dog()
     print dog.testLayered2()
     try:
-        agent = Agent(uuid)
+        agent = Agent()
         dog = agent.Dog()
         print dog.testLayered2()
         raise Exception('Exception (UserRequired) expected')
@@ -301,13 +303,13 @@ def demo_layered_security(uuid, yp, exit=0):
         sys.exit(0)
 
         
-def demo_shared_secret(uuid, exit=0):
+def demo_shared_secret(exit=0):
     # success
-    agent = Agent(uuid, secret='garfield')
+    agent = Agent(secret='garfield')
     cat = agent.Cat()
     print cat.meow('secret, OK')
     # no secret
-    agent = Agent(uuid)
+    agent = Agent()
     try:
         cat = agent.Cat()
         cat.meow('secret, OK')
@@ -315,7 +317,7 @@ def demo_shared_secret(uuid, exit=0):
     except SecretRequired:
         print 'secret required, OK'
     # wrong secret
-    agent = Agent(uuid, secret='foo')
+    agent = Agent(secret='foo')
     try:
         cat = agent.Cat()
         cat.meow('secret, OK')
@@ -326,16 +328,16 @@ def demo_shared_secret(uuid, exit=0):
         sys.exit(0)
         
 
-def demo_authentication(uuid, yp, exit=0):
-    demo_shared_secret(uuid)
-    demo_pam_authentication(uuid, yp)
-    demo_layered_security(uuid, yp)
+def demo_authentication(yp, exit=0):
+    demo_shared_secret()
+    demo_pam_authentication(yp)
+    demo_layered_security(yp)
     if exit:
         sys.exit(0)
 
 
-def demo_constructors(uuid, exit=0):
-    agent = Agent(uuid)
+def demo_constructors(exit=0):
+    agent = Agent()
     for name, age in (('jeff', 10), ('bart', 45),):
         cowboy = agent.Cowboy(name, age=age)
         print cowboy.howdy()
@@ -351,15 +353,15 @@ def demo_constructors(uuid, exit=0):
         sys.exit(0)
         
         
-def demo_getitem(uuid, exit=0):
-    agent = Agent(uuid)
+def demo_getitem(exit=0):
+    agent = Agent()
     fn = agent['Dog']['bark']
     print fn('RUF')
     if exit:
         sys.exit(0)
         
 
-def demo_progress(uuid, exit=0):
+def demo_progress(exit=0):
     # synchronous
     def fn(report):
         pct = (float(report['completed'])/float(report['total']))*100
@@ -370,47 +372,47 @@ def demo_progress(uuid, exit=0):
              report['completed'],
              int(pct),
              report['details'])
-    agent = Agent(uuid, progress=fn, any={4: 5})
+    agent = Agent(progress=fn, any={4: 5})
     p = agent.Progress()
     print p.send(4)
     if exit:
         sys.exit(0)
     
 
-def main(uuid, url):
-    route = uuid.upper()
+def main():
+    route = Agent.route.split('/')[-1].upper()
 
     # test timeout (not expired)
-    agent = Agent(uuid, timeout=3)
+    agent = Agent(timeout=3)
     dog = agent.Dog()
     print dog.sleep(1)
 
     # TTL
-    agent = Agent(uuid, timeout=10)
+    agent = Agent(timeout=10)
     dog = agent.Dog()
     print dog.sleep(1)
 
     # synchronous
     print '(demo) synchronous'
-    agent = Agent(uuid)
+    agent = Agent()
     demo(agent)
 
     # asynchronous (fire and forget)
     print '(demo) asynchronous fire-and-forget'
-    agent = Agent(uuid, async=True, url=url)
+    agent = Agent(wait=0)
     demo(agent)
 
     # asynchronous
     print '(demo) asynchronous'
     window = Window(begin=dt.utcnow(), minutes=1)
-    agent = Agent(uuid, reply=route, window=window)
+    agent = Agent(reply=route, window=window)
     demo(agent)
 
     # group 2
     print 'group 2'
     begin = later(seconds=20)
     window = Window(begin=begin, minutes=10)
-    agent = Agent(uuid, reply=route, window=window, any='group 2')
+    agent = Agent(reply=route, window=window, any='group 2')
     dog = agent.Dog()
     print dog.bark('hello')
     print dog.wag(3)
@@ -420,16 +422,16 @@ def main(uuid, url):
     print 'group 1'
     begin = later(seconds=10)
     window = Window(begin=begin, minutes=10)
-    agent = Agent(uuid, reply=route, window=window, any='group 1')
+    agent = Agent(reply=route, window=window, any='group 1')
     dog = agent.Dog()
     print dog.bark('hello')
     print dog.wag(3)
     print dog.bark('hello again')
 
 
-def smoke_test(uuid, exit=0):
+def smoke_test(exit=0):
     print 'running smoke test ...'
-    agent = Agent(uuid)
+    agent = Agent()
     for T in range(0, 50):
         print 'test: %d' % T
         agent.testplugin.echo('have a nice day')
@@ -451,7 +453,7 @@ def smoke_test(uuid, exit=0):
 
 def get_options():
     parser = OptionParser(option_class=ListOption)
-    parser.add_option('-i', '--uuid', default='xyz', help='agent UUID')
+    parser.add_option('-r', '--route', default='xyz', help='route')
     parser.add_option('-u', '--url', help='broker URL')
     parser.add_option('-t', '--threads', default=0, help='number of threads')
     parser.add_option('-U', '--user', action='extend', help='list of userid:password')
@@ -463,58 +465,52 @@ def get_options():
 
 if __name__ == '__main__':
     options = get_options()
-    uuid = options.uuid
-    exchange = options.exchange
 
-    if exchange:
-        route = '/'.join((exchange, uuid))
-    else:
-        route = None
+    url = options.url
+    route = options.route
 
     yp = {}
     for user in options.user:
         u, p = user.split(':')
         yp[u] = p
 
-    url = options.url
-
     if options.auth:
         authenticator = TestAuthenticator()
     else:
         authenticator = None
 
-    Agent.base_options['url'] = url
+    Agent.url = url
+    Agent.route = route
     Agent.base_options['authenticator'] = authenticator
-    Agent.base_options['route'] = route
 
-    queue = Queue(uuid.upper())
+    queue = Queue(route.split('/')[-1].upper())
     queue.durable = False
     queue.declare(url)
     reply_consumer = ReplyConsumer(queue, url=url, authenticator=authenticator)
     reply_consumer.start(on_reply)
 
-    # demo_progress(uuid, 1)
-    # demo_window(uuid, 1)
-    # test_performance(uuid)
+    # demo_progress(route, 1)
+    # demo_window(route, 1)
+    # test_performance(route)
 
-    demo_authentication(uuid, yp)
-    smoke_test(uuid)
-    demo_constructors(uuid)
-    test_triggers(uuid)
-    demo_getitem(uuid)
+    demo_authentication(yp)
+    smoke_test()
+    demo_constructors()
+    test_triggers()
+    demo_getitem()
 
     n_threads = int(options.threads)
     if n_threads:
         print '======= RUNNING %d THREADS ============' % n_threads
         sleep(2)
-        last = threads(uuid, url, n_threads)
+        last = threads(n_threads)
         last.join()
         sys.exit(0)
     for i in range(0, 100):
         print '======= %d ========' % i
-        main(uuid, url)
+        main()
 
-    test_performance(uuid)
+    test_performance()
     print 'finished.'
 
 

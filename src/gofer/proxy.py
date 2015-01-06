@@ -21,22 +21,24 @@ class Agent(Container):
     A remote agent.
     """
 
-    def __init__(self, uuid, **options):
+    def __init__(self, url, route, **options):
         """
-        :param uuid: An agent ID.
-        :type uuid: str
-        :see: Container
+        :param url: The agent URL.
+        :type url: str
+        :param route: The AMQP route to the agent.
+        :type route: str
         """
-        url = options.pop('url', None)
-        super(Agent, self).__init__(uuid, url, **options)
+        super(Agent, self).__init__(url, route, **options)
 
 
-def agent(uuid, **options):
+def agent(url, route, **options):
     """
     Get a proxy for the remote Agent.
-    :param uuid: An agent ID.
-    :type uuid: str
+    :param url: The agent URL.
+    :type url: str
+    :param route: The AMQP route to the agent.
+    :type route: str
     :return: An agent (proxy).
     :rtype: Agent
     """
-    return Agent(uuid, **options)
+    return Agent(url, route, **options)
