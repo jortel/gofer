@@ -49,7 +49,7 @@ Passed to proxy.agent() and apply to all RMI calls.
 
  from gofer import proxy
 
- agent = proxy.agent(uuid, reply='foo')
+ agent = proxy.agent(url, uuid, reply='foo')
 
 
 Passed to Agent() and apply to all RMI calls.
@@ -58,7 +58,7 @@ Passed to Agent() and apply to all RMI calls.
 
  from gofer.proxy import Agent
 
- agent = Agent(uuid, reply='foo')
+ agent = Agent(url, uuid, reply='foo')
 
 
 trigger
@@ -132,7 +132,7 @@ Passed to Agent() and apply to all RMI calls.
  from gofer.proxy import Agent
  from gofer.rmi.window import Window
 
- agent = Agent(uuid, window=window)
+ agent = Agent(url, uuid, window=window)
 
 
 secret
@@ -158,7 +158,7 @@ Passed to Agent() and apply to all RMI calls.
 
  from gofer.proxy import Agent
 
- agent = Agent(uuid, secret='foobar')
+ agent = Agent(url, uuid, secret='foobar')
 
 
 timeout and wait
@@ -202,7 +202,7 @@ Passed to Agent() and apply to all RMI calls.
  from gofer.proxy import Agent
 
  # timeout 10 seconds
- agent = Agent(uuid,  timeout=10)
+ agent = Agent(url, uuid,  timeout=10)
 
 
 user/password
@@ -229,4 +229,4 @@ Passed to Agent() and apply to all RMI calls.
 
  from gofer.proxy import Agent
 
- agent = Agent(uuid, user='root', password='xxx')
+ agent = Agent(url, uuid, user='root', password='xxx')

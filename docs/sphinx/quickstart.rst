@@ -41,7 +41,9 @@ Python
    ::
 
      >>> from gofer.proxy import Agent
-     >>> agent = Agent('123')
+     >>>
+     >>> url = 'amqp://localhost'
+     >>> agent = Agent(url, '123')
      >>> admin = agent.Admin()
      >>> print admin.help()
          Plugins:
@@ -54,28 +56,6 @@ Python
           Shell.run()
         Functions:
           builtin.echo()
-
-Ruby
-----
-
-  ::
-
-    irb
-    irb(main):001:0> require 'gofer'
-    irb(main):001:0> agent = Gofer::Agent.new('123')
-    irb(main):001:0> admin = agent.Admin.new()
-    irb(main):001:0> puts admin.help()
-        Plugins:
-          builtin
-        Actions:
-          builtin.TestAction.hello() 0:10:00
-        Methods:
-         Admin.hello()
-         Admin.help()
-         Shell.run()
-       Functions:
-         builtin.echo()
-
 
 
 Writing A Plugin
@@ -179,8 +159,10 @@ agent (plugin).
  ...
  # your server code
  from gofer.proxy import Agent
+
+ url = 'amqp://localhost'
  uuid = '123'
- agent = Agent(uuid)
+ agent = Agent(url, uuid)
  myclass = agent.MyClass()
  myclass.hello()
 
@@ -193,8 +175,10 @@ is invoked directly using the plugin module's namespace:
  ...
  # your server code
  from gofer.proxy import Agent
+
+ url = 'amqp://localhost'
  uuid = '123'
- agent = Agent(uuid)
+ agent = Agent(url, uuid)
  agent.myplugin.hello()
 
 
@@ -225,8 +209,10 @@ new stuff as follows:
  [GCC 4.4.3 20100127 (Red Hat 4.4.3-4)] on linux2
  Type "help", "copyright", "credits" or "license" for more information.
  >>> from gofer.proxy import Agent
+ >>>
+ >>> url = 'amqp://localhost'
  >>> uuid = '123'
- >>> agent = Agent(uuid)
+ >>> agent = Agent(url, uuid)
  >>> myclass = agent.MyClass()
  >>> print myclass.hello()
  MyPlugin says, "hello".
@@ -241,8 +227,10 @@ Another useful tool, it invoke *Admin.help()* from within interactive python as 
  [GCC 4.4.3 20100127 (Red Hat 4.4.3-4)] on linux2
  Type "help", "copyright", "credits" or "license" for more information.
  >>> from gofer.proxy import Agent
+ >>>
+ >>> url = 'amqp://localhost'
  >>> uuid = '124'
- >>> agent = Agent(uuid)
+ >>> agent = Agent(url, uuid)
  >>> admin = agent.Admin()
  >>> print admin.help()
 
