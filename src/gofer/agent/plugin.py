@@ -223,15 +223,16 @@ class Plugin(object):
             consumer = RequestConsumer(queue, self.url)
             consumer.reader.authenticator = self.authenticator
             consumer.start()
-            log.info('plugin uuid="%s", attached', self.uuid)
             self.consumer = consumer
+            log.info('plugin uuid="%s", attached', self.uuid)
         else:
             log.error('plugin attach requires uuid and url')
 
-    def detach(self):
+    def detach(self, delete=False):
         """
         Detach (disconnect) from AMQP broker.
-        The queue is drained and deleted if the queue is managed.
+        :param delete: Drain and delete the queue.
+        :type delete: bool
         """
         if not self.consumer:
             # not attached
@@ -240,6 +241,10 @@ class Plugin(object):
         self.consumer.join()
         self.consumer = None
         log.info('plugin uuid="%s", detached', self.uuid)
+        if delete:
+            queue = Queue(self.queue)
+            queue.purge(self.url)
+            queue.delete(self.url)
 
     def dispatch(self, request):
         """
