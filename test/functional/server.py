@@ -456,6 +456,7 @@ def get_options():
     parser.add_option('-t', '--threads', default=0, help='number of threads')
     parser.add_option('-U', '--user', action='extend', help='list of userid:password')
     parser.add_option('-a', '--auth', default='', help='enable message auth')
+    parser.add_option('-e', '--exchange', default='', help='exchange')
     opts, args = parser.parse_args()
     return opts
 
@@ -463,6 +464,12 @@ def get_options():
 if __name__ == '__main__':
     options = get_options()
     uuid = options.uuid
+    exchange = options.exchange
+
+    if exchange:
+        route = '/'.join((exchange, uuid))
+    else:
+        route = None
 
     yp = {}
     for user in options.user:
@@ -478,6 +485,7 @@ if __name__ == '__main__':
 
     Agent.base_options['url'] = url
     Agent.base_options['authenticator'] = authenticator
+    Agent.base_options['route'] = route
 
     queue = Queue(uuid.upper())
     queue.durable = False
