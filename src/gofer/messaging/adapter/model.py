@@ -286,9 +286,6 @@ class Exchange(BaseExchange):
         :param queue: The queue to bind.
         :type queue: BaseQueue
         """
-        if not self.name:
-            # anonymous
-            return
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name, self.policy)
         impl.bind(queue, url)

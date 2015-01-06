@@ -24,6 +24,7 @@ from gofer.common import Options, nvl
 from gofer.messaging import Document, InvalidDocument
 from gofer.messaging import Producer, Reader, Queue, Exchange
 from gofer.rmi.dispatcher import Return, RemoteException
+from gofer.rmi.window import Window
 from gofer.metrics import Timer
 
 
@@ -160,7 +161,7 @@ class Policy(object):
 
     @property
     def trigger(self):
-        return self.options.trigger
+        return self.options.trigger or 0
 
     @property
     def pam(self):
@@ -175,7 +176,7 @@ class Policy(object):
 
     @property
     def window(self):
-        return self.options.window
+        return self.options.window or Window()
 
     @property
     def any(self):
@@ -318,54 +319,10 @@ class Trigger:
         self._policy = policy
         self._request = request
         self._pending = True
-        
+
     @property
     def sn(self):
         return self._sn
-
-    @property
-    def url(self):
-        return self._policy.url
-
-    @property
-    def route(self):
-        return self._policy.route
-
-    @property
-    def reply(self):
-        return self._policy.reply
-
-    @property
-    def authenticator(self):
-        return self._policy.authenticator
-
-    @property
-    def timeout(self):
-        return self._policy.timeout
-
-    @property
-    def wait(self):
-        return self._policy.wait
-
-    @property
-    def secret(self):
-        return self._policy.secret
-
-    @property
-    def window(self):
-        return self._policy.window
-
-    @property
-    def pam(self):
-        return self._policy.pam
-
-    @property
-    def any(self):
-        return self._policy.any
-
-    @property
-    def exchange(self):
-        return self._policy.exchange
 
     def _send(self, reply=None, queue=None):
         """
@@ -376,33 +333,33 @@ class Trigger:
         :param queue: The reply queue for synchronous calls.
         :type queue: Queue
         """
-        producer = Producer(self.url)
-        producer.authenticator = self.authenticator
+        producer = Producer(self._policy.url)
+        producer.authenticator = self._policy.authenticator
         producer.open()
 
         try:
             producer.send(
-                self.route,
-                self.timeout,
+                self._policy.route,
+                self._policy.timeout,
                 # body
-                sn=self._sn,
+                sn=self.sn,
                 replyto=reply,
                 request=self._request,
-                window=self.window,
-                secret=self.secret,
-                pam=self.pam,
-                any=self.any)
+                window=self._policy.window,
+                secret=self._policy.secret,
+                pam=self._policy.pam,
+                any=self._policy.any)
         finally:
             producer.close()
 
-        log.debug('sent (%s): %s', self.route, self._request)
+        log.debug('sent (%s): %s', self._policy.route, self._request)
 
         if queue is None:
             # no reply expected
-            return self.sn
+            return self._sn
 
-        reader = Reader(queue, self.url)
-        reader.authenticator = self.authenticator
+        reader = Reader(queue, self._policy.url)
+        reader.authenticator = self._policy.authenticator
         reader.open()
 
         try:
@@ -418,26 +375,26 @@ class Trigger:
         self._pending = False
 
         # asynchronous
-        if self.reply:
-            return self._send(reply=self.reply)
-        if self.wait == Trigger.NOWAIT:
+        if self._policy.reply:
+            return self._send(reply=self._policy.reply)
+        if self._policy.wait == Trigger.NOWAIT:
             return self._send()
 
         # synchronous
         queue = Queue()
         queue.durable = False
-        queue.declare(self.url)
+        queue.declare(self._policy.url)
         reply = queue.name
 
-        if self.exchange:
-            exchange = Exchange(self.exchange)
-            exchange.bind(queue, self.url)
-            reply = '/'.join((self.exchange, queue.name))
+        if self._policy.exchange:
+            exchange = Exchange(self._policy.exchange)
+            exchange.bind(queue, self._policy.url)
+            reply = '/'.join((self._policy.exchange, queue.name))
 
         try:
             return self._send(reply=reply, queue=queue)
         finally:
-            queue.delete(self.url)
+            queue.delete(self._policy.url)
 
     def __str__(self):
         return self._sn

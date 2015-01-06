@@ -21,7 +21,6 @@ from logging import getLogger
 
 from gofer.common import Options
 from gofer.rmi.stub import Builder
-from gofer.rmi.window import Window
 
 
 log = getLogger(__name__)
@@ -76,8 +75,7 @@ class Container(object):
         self.__id = uuid
         self.__url = url
         self.__route = options.pop('route', uuid)
-        self.__options = Options(window=Window())
-        self.__options += options
+        self.__options = Options(options)
 
     def __getattr__(self, name):
         """
