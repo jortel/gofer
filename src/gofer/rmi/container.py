@@ -51,7 +51,7 @@ class Container(object):
       - route
           (str) An AMQP route to the agent.  Eg: amq.direct/queue
       - reply
-          (str) An asynchronous reply route.
+          (str) An AMQP reply route.
       - trigger
           (int) The trigger type (0=auto|1=manual).
 

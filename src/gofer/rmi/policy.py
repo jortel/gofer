@@ -370,6 +370,10 @@ class Trigger:
             reader.close()
 
     def __call__(self):
+        """
+        Trigger pulled.
+        Execute the request.
+        """
         if not self._pending:
             raise Exception('trigger already executed')
         self._pending = False

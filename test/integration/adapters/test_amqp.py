@@ -26,7 +26,7 @@ if __name__ == '__main__':
     adapter = loader.catalog['amqp-0-9-1']
     test = Test(URL, adapter)
     test()
-    # amqplib
+    # amqp
     adapter = loader.catalog['amqp']
     test = Test(URL, adapter)
     test()
