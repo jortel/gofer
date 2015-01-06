@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.1.0
+Version: 2.3.0
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -270,6 +270,10 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Tue Jan 06 2015 Jeff Ortel <jortel@redhat.com> 2.3.0-1
+- QPID adapter using QMF. (jortel@redhat.com)
+- amqp adapter using epoll. (jortel@redhat.com)
+- Support custom exchanges. (jortel@redhat.com)
 * Thu Dec 18 2014 Jeff Ortel <jortel@redhat.com> 2.1.0-1
 - Fix plugin loading from python path. (jortel@redhat.com)
 - Improved adapter model. (jortel@redhat.com)
