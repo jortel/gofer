@@ -96,7 +96,9 @@ class Exchange(BaseExchange):
         """
         Bind the specified queue.
         :param queue: The queue to bind.
-        :type queue: Queue
+        :type queue: BaseQueue
+        :param url: The broker URL.
+        :type url: str
         """
         broker = Broker(url)
         try:
@@ -107,9 +109,11 @@ class Exchange(BaseExchange):
 
     def unbind(self, queue, url):
         """
-        Bind the specified queue.
+        Unbind the specified queue.
         :param queue: The queue to unbind.
         :type queue: BaseQueue
+        :param url: The broker URL.
+        :type url: str
         """
         broker = Broker(url)
         try:

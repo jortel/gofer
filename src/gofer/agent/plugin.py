@@ -190,12 +190,9 @@ class Plugin(object):
         return Broker(self.url)
 
     @property
-    def exchange(self):
-        return self.cfg.messaging.exchange
-
-    @property
     def queue(self):
-        return self.cfg.messaging.queue or self.uuid
+        model = BrokerModel(self)
+        return model.queue
 
     def refresh(self):
         """
@@ -213,25 +210,18 @@ class Plugin(object):
         Attach (connect) to AMQP broker using the specified uuid.
         """
         self.detach()
-        if self.uuid and self.url:
-            self.refresh()
-            queue = Queue(self.queue)
-            queue.declare(self.url)
-            if self.exchange:
-                exchange = Exchange(self.exchange)
-                exchange.bind(queue, self.url)
-            consumer = RequestConsumer(queue, self.url)
-            consumer.reader.authenticator = self.authenticator
-            consumer.start()
-            log.info('plugin uuid="%s", attached', self.uuid)
-            self.consumer = consumer
-        else:
-            log.error('plugin attach requires uuid and url')
+        self.refresh()
+        model = BrokerModel(self)
+        queue = model.setup()
+        consumer = RequestConsumer(queue, self.url)
+        consumer.reader.authenticator = self.authenticator
+        consumer.start()
+        self.consumer = consumer
+        log.info('plugin uuid="%s", attached', self.uuid)
 
     def detach(self):
         """
         Detach (disconnect) from AMQP broker.
-        The queue is drained and deleted if the queue is managed.
         """
         if not self.consumer:
             # not attached
@@ -240,6 +230,8 @@ class Plugin(object):
         self.consumer.join()
         self.consumer = None
         log.info('plugin uuid="%s", detached', self.uuid)
+        model = BrokerModel(self)
+        model.teardown()
 
     def dispatch(self, request):
         """
@@ -292,6 +284,62 @@ class Plugin(object):
             mod += other
             return self
         return self
+
+
+class BrokerModel(object):
+    """
+    Provides AMQP broker model management.
+    :ivar plugin: A gofer plugin.
+    :type plugin: Plugin
+    """
+
+    def __init__(self, plugin):
+        """
+        :param plugin: A gofer plugin.
+        :type plugin: Plugin
+        """
+        self.plugin = plugin
+
+    @property
+    def cfg(self):
+        return self.plugin.cfg.model
+
+    @property
+    def managed(self):
+        return int(self.cfg.managed)
+
+    @property
+    def queue(self):
+        return self.cfg.queue or self.plugin.uuid
+
+    @property
+    def exchange(self):
+        return self.cfg.exchange
+
+    def setup(self):
+        """
+        Setup the broker model.
+        """
+        queue = Queue(self.queue)
+        if self.managed:
+            url = self.plugin.url
+            queue = Queue(self.queue)
+            queue.declare(url)
+            if self.exchange:
+                exchange = Exchange(self.exchange)
+                exchange.bind(queue, url)
+        return queue
+
+    def teardown(self):
+        """
+        Teardown the broker model.
+        """
+        if self.managed < 2:
+            return
+        url = self.plugin.url
+        queue = Queue(self.queue)
+        queue.purge(url)
+        queue.delete(url)
 
 
 class PluginDescriptor(Graph):

@@ -17,7 +17,7 @@ from logging import getLogger
 
 from gofer import Options
 from gofer.rmi.store import Pending
-from gofer.messaging import Consumer, Producer, Document
+from gofer.messaging import Queue, Exchange, Consumer, Producer, Document
 from gofer.metrics import timestamp
 
 log = getLogger(__name__)

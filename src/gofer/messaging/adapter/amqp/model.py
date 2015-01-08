@@ -65,23 +65,27 @@ class Exchange(BaseExchange):
         Bind the specified queue.
         :param queue: The queue to bind.
         :type queue: BaseQueue
+        :param url: The broker URL.
+        :type url: str
         """
         @reliable
         def _fn(_endpoint):
+            key = queue.name
             channel = _endpoint.channel()
-            channel.queue_bind(queue.name, exchange=self.name, routing_key=queue.name)
+            channel.queue_bind(queue.name, exchange=self.name, routing_key=key)
         _fn(url)
 
     def unbind(self, queue, url):
         """
-        Bind the specified queue.
+        Unbind the specified queue.
         :param queue: The queue to unbind.
         :type queue: BaseQueue
         """
         @reliable
         def _fn(_endpoint):
+            key = queue.name
             channel = _endpoint.channel()
-            channel.queue_unbind(queue.name, exchange=self.name, routing_key=queue.name)
+            channel.queue_unbind(queue.name, exchange=self.name, routing_key=key)
         _fn(url)
 
 

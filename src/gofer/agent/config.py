@@ -40,12 +40,19 @@ PLUGIN_SCHEMA = (
     ),
     ('messaging', REQUIRED,
         (
-            ('uuid', OPTIONAL, ANY),
             ('url', OPTIONAL, ANY),
+            ('uuid', OPTIONAL, ANY),
             ('cacert', OPTIONAL, ANY),
             ('clientcert', OPTIONAL, ANY),
             ('host_validation', OPTIONAL, BOOL),
             ('threads', OPTIONAL, NUMBER),
+        )
+    ),
+    ('model', OPTIONAL,
+        (
+            ('managed', OPTIONAL, '(0|1|2)'),
+            ('queue', OPTIONAL, ANY),
+            ('exchange', OPTIONAL, ANY),
         )
     ),
 )
@@ -58,6 +65,9 @@ PLUGIN_DEFAULTS = {
     'messaging': {
         'threads': '1',
     },
+    'model': {
+        'managed': '2'
+    }
 }
 
 

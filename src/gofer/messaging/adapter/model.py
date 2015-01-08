@@ -223,6 +223,8 @@ class BaseExchange(Node):
         Bind the specified queue.
         :param queue: The queue to bind.
         :type queue: BaseQueue
+        :param url: The broker URL.
+        :type url: str
         """
         raise NotImplementedError()
 
@@ -231,6 +233,8 @@ class BaseExchange(Node):
         Unbind the specified queue.
         :param queue: The queue to unbind.
         :type queue: BaseQueue
+        :param url: The broker URL.
+        :type url: str
         """
         raise NotImplementedError()
 
@@ -285,6 +289,8 @@ class Exchange(BaseExchange):
         Bind the specified queue.
         :param queue: The queue to bind.
         :type queue: BaseQueue
+        :param url: The broker URL.
+        :type url: str
         """
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name, self.policy)
@@ -296,6 +302,8 @@ class Exchange(BaseExchange):
         Unbind the specified queue.
         :param queue: The queue to unbind.
         :type queue: BaseQueue
+        :param url: The broker URL.
+        :type url: str
         """
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name, self.policy)

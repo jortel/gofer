@@ -83,10 +83,8 @@ Defines basic plugin properties.
 [messaging]
 -----------
 
-- **uuid** - The agent identity. This value also specifies the queue name.
-- **queue** - An (optional) explicit queue name.  Supersedes the *uuid*.
-- **exchange** An (optional) AMQP exchange.
 - **'url** - The (optional) broker connection URL.
+- **uuid** - The agent identity. This value also specifies the queue name.
   No value indicates the plugin should **not** connect to broker.
   *format*: ``<adapter>+<protocol>://<user>:<password>@<host>:<port>/<virtual-host>``,
   protocol is one of:
@@ -110,6 +108,22 @@ Defines basic plugin properties.
 - **host_validation** - The (optional) flag indicates SSL host validation should be performed.
 - **threads** - The (optional) number of threads for the RMI dispatcher.
   Default to (1) when not specified.
+
+[model]
+-------
+
+- **managed** - The model is manged.  Default:2
+
+   - 0: Not managed.
+   - 1: The queue is declared on *attach* and bound the the exchange as needed.
+   - 2: The queue is declared on *attach* and bound the the exchange as needed and
+     drained and deleted on explicit *detach*.
+
+- **queue** - The queue name.  Overrides the [messaging] uuid.
+- **exchange** - The exchange name.  Default:''.
+
+Examples
+^^^^^^^^
 
 This example enables messaging and defines the uuid:
 
