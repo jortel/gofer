@@ -26,7 +26,7 @@ from gofer.messaging.adapter.model import BaseEndpoint, Messenger
 from gofer.messaging.adapter.model import BaseReader, Reader
 from gofer.messaging.adapter.model import BaseSender, Sender, Producer
 from gofer.messaging.adapter.model import Broker, SSL
-from gofer.messaging.adapter.model import BaseConnection, Connection, SharedConnection
+from gofer.messaging.adapter.model import BaseConnection, Connection, ThreadConnection
 from gofer.messaging.adapter.model import Message
 from gofer.messaging.adapter.model import ModelError
 from gofer.messaging.adapter.model import model, blocking, DELAY, DELAY_MULTIPLIER
@@ -41,7 +41,7 @@ class Local(object):
 
 class FakeConnection(object):
 
-    __metaclass__ = SharedConnection
+    __metaclass__ = ThreadConnection
 
     def __init__(self, url):
         self.url = url
@@ -1097,16 +1097,16 @@ class TestConnection(TestCase):
         _impl.close.assert_called_once_with(True)
 
 
-class TestSharedConnection(TestCase):
+class TestThreadConnection(TestCase):
 
     def test_connections(self):
-        connection = SharedConnection('fake', (), {})
+        connection = ThreadConnection('fake', (), {})
         # create (local.d)
         self.assertEqual(connection.connections, connection.local.d)
-        self.assertTrue(isinstance(connection, SharedConnection))
+        self.assertTrue(isinstance(connection, ThreadConnection))
         # already created
         self.assertEqual(connection.connections, connection.local.d)
-        self.assertTrue(isinstance(connection, SharedConnection))
+        self.assertTrue(isinstance(connection, ThreadConnection))
 
     def test_call(self):
         url = TEST_URL

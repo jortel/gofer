@@ -29,18 +29,6 @@ proton
 Coming soon.
 
 
-python-amqplib
-^^^^^^^^^^^^^^
-
-This adapter uses the ``amqplib.client_0_8`` library.
-
-- *AMQP* - 0-8
-- *package* - gofer.messaging.adapter.amqplib
-- *provides*:
-   - amqp-0-8
-   - rabbitmq
-
-
 python-amqp
 ^^^^^^^^^^^
 

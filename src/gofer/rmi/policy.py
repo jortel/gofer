@@ -398,6 +398,7 @@ class Trigger:
         try:
             return self._send(reply=reply, queue=queue)
         finally:
+            queue.purge(self._policy.url)
             queue.delete(self._policy.url)
 
     def __str__(self):

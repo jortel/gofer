@@ -1018,14 +1018,14 @@ class Connection(BaseConnection):
         self._impl.close(hard)
 
 
-class SharedConnection(type):
+class ThreadConnection(type):
     """
-    Thread local shared connection metaclass.
-    Usage: __metaclass__ = SharedConnection
+    Thread local connection metaclass.
+    Usage: __metaclass__ = ThreadConnection
     """
 
     def __init__(cls, what, bases, _dict):
-        super(SharedConnection, cls).__init__(what, bases, _dict)
+        super(ThreadConnection, cls).__init__(what, bases, _dict)
         cls.local = Local()
 
     @property
@@ -1041,7 +1041,7 @@ class SharedConnection(type):
         try:
             return cls.connections[url]
         except KeyError:
-            inst = super(SharedConnection, cls).__call__(url)
+            inst = super(ThreadConnection, cls).__call__(url)
             cls.connections[url] = inst
             return inst
 

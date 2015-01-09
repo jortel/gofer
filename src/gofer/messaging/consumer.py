@@ -50,7 +50,7 @@ class BaseConsumer(Thread):
             while self._run:
                 self._read()
         finally:
-            self.reader.close()
+            self._close()
 
     def _open(self):
         """
@@ -62,7 +62,16 @@ class BaseConsumer(Thread):
                 break
             except Exception:
                 log.exception(self.getName())
-                sleep(10)
+                sleep(60)
+
+    def _close(self):
+        """
+        Close the reader.
+        """
+        try:
+            self.reader.close()
+        except Exception:
+            log.exception(self.getName())
 
     def _read(self):
         """
@@ -79,7 +88,9 @@ class BaseConsumer(Thread):
             self._rejected(vf.code, vf.details, vf.document)
         except Exception:
             log.exception(self.getName())
-            sleep(10)
+            sleep(60)
+            self._close()
+            self._open()
 
     def _rejected(self, code, details, message):
         """

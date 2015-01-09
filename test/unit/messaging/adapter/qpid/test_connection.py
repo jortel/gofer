@@ -85,6 +85,7 @@ class TestConnection(TestCase):
             transport=broker.scheme,
             username=broker.userid,
             password=broker.password,
+            heartbeat=10,
             ssl_trustfile=broker.ssl.ca_certificate,
             ssl_keyfile=broker.ssl.client_key,
             ssl_certfile=broker.ssl.client_certificate,

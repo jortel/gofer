@@ -189,24 +189,6 @@ Provides the gofer amqp messaging adapter package.
 %{python_sitelib}/%{name}/messaging/adapter/amqp
 %doc LICENSE
 
-
-# --- python-amqplib messaging adapter ---------------------------------------
-
-%package -n python-%{name}-amqplib
-Summary: Gofer amqplib messaging adapter python package
-Group: Development/Languages
-BuildRequires: python
-Requires: python-%{name} >= %{version}
-Requires: python-amqplib >= 1.0.2
-
-%description -n python-%{name}-amqplib
-Provides the gofer amqplib messaging adapter package.
-
-%files -n python-%{name}-amqplib
-%{python_sitelib}/%{name}/messaging/adapter/amqplib
-%doc LICENSE
-
-
 # --- plugin: system ---------------------------------------------------------
 
 %package -n gofer-system

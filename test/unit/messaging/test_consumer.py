@@ -61,6 +61,27 @@ class TestBaseConsumer(TestCase):
         # validation
         reader.open.assert_called_once_with()
 
+    def test_close(self):
+        reader = Mock()
+        consumer = BaseConsumer(reader)
+
+        # test
+        consumer._close()
+
+        # validation
+        reader.close.assert_called_once_with()
+
+    def test_close_exception(self):
+        reader = Mock()
+        reader.close.side_effect = ValueError()
+        consumer = BaseConsumer(reader)
+
+        # test
+        consumer._close()
+
+        # validation
+        reader.close.assert_called_once_with()
+
     @patch('gofer.messaging.consumer.sleep')
     def test_open_exception(self, sleep):
         reader = Mock()
@@ -71,7 +92,7 @@ class TestBaseConsumer(TestCase):
         consumer._open()
 
         # validation
-        sleep.assert_called_once_with(10)
+        sleep.assert_called_once_with(60)
         self.assertEqual(reader.open.call_count, 2)
 
     def test_read(self):
@@ -141,7 +162,9 @@ class TestBaseConsumer(TestCase):
         consumer._read()
 
         # validation
-        sleep.assert_called_once_with(10)
+        reader.close.assert_called_once_with()
+        reader.open.assert_called_once_with()
+        sleep.assert_called_once_with(60)
 
     def test_rejected(self):
         reader = Mock()
