@@ -30,10 +30,10 @@ class Container(object):
     """
     The stub container
     Options:
+      - ttl
+          (int) Request TTL (time-to-live).
       - wait
           (int) Seconds to wait for a synchronous reply (default:90).
-      - timeout
-          (int) Request timeout TTL (default: 10).
       - window
           (Window) Request valid window.
       - authenticator

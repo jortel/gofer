@@ -140,8 +140,11 @@ class Policy(object):
         self.options = options
 
     @property
-    def timeout(self):
-        return Timeout.seconds(nvl(self.options.timeout, 10))
+    def ttl(self):
+        if self.options.ttl:
+            return Timeout.seconds(self.options.ttl)
+        else:
+            return None
 
     @property
     def wait(self):
@@ -198,9 +201,9 @@ class Policy(object):
         :return: The matched reply document.
         :rtype: Document
         """
-        document = reader.search(sn, self.timeout)
+        document = reader.search(sn, self.wait)
         if not document:
-            raise RequestTimeout(sn, self.timeout)
+            raise RequestTimeout(sn, self.wait)
         if document.status == 'rejected':
             raise InvalidDocument(
                 code=document.code,
@@ -340,7 +343,7 @@ class Trigger:
         try:
             producer.send(
                 self._policy.route,
-                self._policy.timeout,
+                self._policy.ttl,
                 # body
                 sn=self.sn,
                 replyto=reply,

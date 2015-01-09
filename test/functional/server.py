@@ -382,13 +382,13 @@ def demo_progress(exit=0):
 def main():
     route = Agent.route.split('/')[-1].upper()
 
-    # test timeout (not expired)
-    agent = Agent(timeout=3)
+    # test ttl (not expired)
+    agent = Agent(ttl=3)
     dog = agent.Dog()
     print dog.sleep(1)
 
     # TTL
-    agent = Agent(timeout=10)
+    agent = Agent(ttl=10)
     dog = agent.Dog()
     print dog.sleep(1)
 

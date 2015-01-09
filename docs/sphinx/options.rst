@@ -18,8 +18,8 @@ Summary
    RMI processing window
  *secret*
    The shared secret (security)
- *timeout*
-   The timeout (seconds) for the agent to accept the RMI request.
+ *ttl*
+   The TTL (seconds) for the agent to accept the RMI request.
  *wait*
    The time (seconds) to wait (block) for a result.
  *progress*
@@ -163,12 +163,12 @@ Passed to Agent() and apply to all RMI calls.
  agent = Agent(url, uuid, secret='foobar')
 
 
-timeout and wait
-----------------
+ttl and wait
+------------
 
-The **timeout** option is used to specify the RMI call timeout. The *timeout* is the time in seconds
-for the agent to *accept* the request.  The message TTL (time-to-live) is set to the *timeout* for both
-synchronous and asynchronous RMI call.  Additionally, for synchronous RMI, the caller is blocked for
+The **ttl** option is used to specify the RMI call lifespan. The *ttl* is the time in seconds
+for the agent to *accept* the request.  The message TTL (time-to-live) is set to the *ttl* for both
+synchronous and asynchronous RMI calls.  Additionally, for synchronous RMI, the caller is blocked for
 the number of seconds specified in the *wait* option.  The default *timeout* is 10 seconds and the
 default *wait* for synchronous RMI is 90 seconds. A *wait=0* indicates that the stub should not
 block and wait for a reply.
@@ -188,13 +188,13 @@ Passed to proxy.agent() and apply to all RMI calls.
  from gofer import proxy
 
  # 5 seconds
- agent = proxy.agent(uuid, timeout=5)
+ agent = proxy.agent(uuid, ttl=5)
 
  # timout 5 minutes
- agent = proxy.agent(uuid, timeout=5m)
+ agent = proxy.agent(uuid, ttl=5m)
 
  # timeout 30 seconds, wait for 5 seconds
- agent = proxy.agent(uuid, timeout=30, wait=5)
+ agent = proxy.agent(uuid, ttl=30, wait=5)
 
 
 Passed to Agent() and apply to all RMI calls.
@@ -204,7 +204,7 @@ Passed to Agent() and apply to all RMI calls.
  from gofer.proxy import Agent
 
  # timeout 10 seconds
- agent = Agent(url, uuid,  timeout=10)
+ agent = Agent(url, uuid,  ttl=10)
 
 
 user/password
