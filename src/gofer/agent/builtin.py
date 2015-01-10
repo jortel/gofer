@@ -92,7 +92,7 @@ class Admin:
         s = list()
         s.append('Plugins:')
         for p in Plugin.all():
-            if not p.enabled():
+            if not p.enabled:
                 continue
             # plugin
             s.append('')
