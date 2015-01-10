@@ -29,6 +29,8 @@ log = getLogger(__name__)
 class Worker(Thread):
     """
     Pool (worker) thread.
+    The *busy* marker is queued to ensure that the backlog
+    for busy workers is longer which supports better work distribution.
     :ivar queue: A thread pool worker.
     :type queue: Queue
     """
@@ -51,6 +53,9 @@ class Worker(Thread):
         """
         while True:
             call = self.queue.get()
+            if call == 1:
+                # # busy
+                continue
             if not call:
                 # termination requested
                 return
@@ -66,6 +71,7 @@ class Worker(Thread):
         :type call: Call
         """
         self.queue.put(call)
+        self.queue.put(1)  # busy
 
     def backlog(self):
         """
