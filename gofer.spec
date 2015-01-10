@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.3.0
+Version: 2.4.0
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -252,6 +252,15 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Fri Jan 09 2015 Jeff Ortel <jortel@redhat.com> 2.4.0-1
+- Better thread pool worker selection. (jortel@redhat.com)
+- Fix builtin.Admin.help(). (jortel@redhat.com)
+- Add description to InvalidDocument. (jortel@redhat.com)
+- Fix TTL. (jortel@redhat.com)
+- amqplib adapter removed; heartbeat enabled on qpid connection
+  (jortel@redhat.com)
+- support configurable broker model management. (jortel@redhat.com)
+
 * Tue Jan 06 2015 Jeff Ortel <jortel@redhat.com> 2.3.0-1
 - QPID adapter using QMF. (jortel@redhat.com)
 - amqp adapter using epoll. (jortel@redhat.com)
