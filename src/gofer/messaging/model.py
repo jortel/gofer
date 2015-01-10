@@ -46,13 +46,14 @@ class InvalidDocument(ModelError):
         """
         :param code: The validation code.
         :type code: str
-        :param document: The invalid document.
+        :param document: The invalid *json* document.
         :type document: str
         :param details: A detailed description of what failed.
         :type details: str
         """
         Exception.__init__(self, ' : '.join((description or code, details or '')))
         self.code = code
+        self.description = description
         self.document = document
         self.details = details
 
@@ -60,20 +61,23 @@ class InvalidDocument(ModelError):
 class InvalidVersion(InvalidDocument):
 
     CODE = 'model.version'
-    DESCRIPTION = 'MODEL: version not valid'
+    DESCRIPTION = 'MODEL: document version not matched'
 
-    def __init__(self, document, details):
+    def __init__(self, document, expected, found):
         """
-        :param document: The invalid document.
-        :type document: Document
-        :param details: A detailed description.
-        :type details: str
+        :param document: The invalid *json* document.
+        :type document: str
+        :param expected: The expected version.
+        :type expected: str
+        :param found: The version found in the document.
+        :type found: str
         """
+        details = 'expected:%s, found:%s' % (expected, found)
         InvalidDocument.__init__(
             self,
             code=self.CODE,
             description=self.DESCRIPTION,
-            document=document.dump(),
+            document=document,
             details=details)
 
 
@@ -88,9 +92,9 @@ def validate(document):
     :raises InvalidDocument: when invalid.
     """
     if document.version != VERSION:
-        reason = 'Version mismatch: expected=%s received=%s' % (VERSION, document.version)
-        log.warn(reason)
-        raise InvalidVersion(document, reason)
+        failed = InvalidVersion(document.dump(), VERSION, document.version)
+        log.warn(str(failed))
+        raise failed
 
 
 # --- model ------------------------------------------------------------------

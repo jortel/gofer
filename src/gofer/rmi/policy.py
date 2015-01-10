@@ -189,32 +189,6 @@ class Policy(object):
     def exchange(self):
         return self.options.exchange
 
-    def get_accepted(self, sn, reader):
-        """
-        Get the 'accepted' reply matched by serial number.
-        In the event the 'accepted' message got lost, the 'started'
-        status is also processed.
-        :param sn: The request serial number.
-        :type sn: str
-        :param reader: A reader.
-        :type reader: gofer.messaging.consumer.Reader
-        :return: The matched reply document.
-        :rtype: Document
-        """
-        document = reader.search(sn, self.wait)
-        if not document:
-            raise RequestTimeout(sn, self.wait)
-        if document.status == 'rejected':
-            raise InvalidDocument(
-                code=document.code,
-                document='N/A',
-                description='serial=%s' % sn,
-                details=document.details)
-        if document.status in ('accepted', 'started'):
-            log.debug('request (%s), %s', sn, document.status)
-        else:
-            self.on_reply(document)
-
     def get_reply(self, sn, reader):
         """
         Get the reply matched by serial number.
@@ -227,6 +201,7 @@ class Policy(object):
         """
         timer = Timer()
         timeout = float(self.wait)
+
         while True:
             timer.start()
             document = reader.search(sn, int(timeout))
@@ -236,16 +211,29 @@ class Policy(object):
                 raise RequestTimeout(sn, self.wait)
             else:
                 timeout -= elapsed
+
             if not document:
                 raise RequestTimeout(sn, self.wait)
+
+            # rejected
             if document.status == 'rejected':
-                raise InvalidDocument(document.code, sn, document.details)
+                raise InvalidDocument(
+                    document.code,
+                    document.description,
+                    document.document,
+                    document.details)
+
+            # accepted | started
             if document.status in ('accepted', 'started'):
                 continue
+
+            # progress reported
             if document.status == 'progress':
                 self.on_progress(document)
-            else:
-                return self.on_reply(document)
+                continue
+
+            # reply
+            return self.on_reply(document)
         
     def on_reply(self, document):
         """
@@ -367,7 +355,6 @@ class Trigger:
 
         try:
             policy = self._policy
-            policy.get_accepted(self.sn, reader)
             return policy.get_reply(self.sn, reader)
         finally:
             reader.close()

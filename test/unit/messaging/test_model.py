@@ -38,16 +38,19 @@ class TestExceptions(TestCase):
         self.assertTrue(isinstance(exception, ModelError))
 
     def test_invalid_version(self):
+        expected = '1.0'
+        found = '2.0'
         document = Document(version='1.0')
-        details = '4'
+        details = 'expected:1.0, found:2.0'
 
         # test
-        exception = InvalidVersion(document, details)
+        exception = InvalidVersion(document, expected, found)
 
         # validation
         self.assertEqual(exception.code, InvalidVersion.CODE)
-        self.assertEqual(exception.args, ('%s : 4' % InvalidVersion.DESCRIPTION,))
-        self.assertEqual(exception.document, document.dump())
+        self.assertEqual(exception.args, ('%s : %s' % (InvalidVersion.DESCRIPTION, details),))
+        self.assertEqual(exception.description, InvalidVersion.DESCRIPTION)
+        self.assertEqual(exception.document, document)
         self.assertEqual(exception.details, details)
         self.assertTrue(isinstance(exception, ModelError))
 

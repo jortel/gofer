@@ -124,8 +124,8 @@ class TestBaseConsumer(TestCase):
 
     def test_read_validation_failed(self):
         reader = Mock()
-        vf = ValidationFailed(details='test')
-        reader.next.side_effect = vf
+        failed = ValidationFailed(details='test')
+        reader.next.side_effect = failed
         consumer = BaseConsumer(reader)
         consumer._rejected = Mock()
 
@@ -133,7 +133,8 @@ class TestBaseConsumer(TestCase):
         consumer._read()
 
         # validate
-        consumer._rejected.assert_called_once_with(vf.code, vf.details, vf.document)
+        consumer._rejected.assert_called_once_with(
+            failed.code, failed.description, failed.document, failed.details)
 
     def test_read_invalid_document(self):
         reader = Mock()
@@ -150,7 +151,8 @@ class TestBaseConsumer(TestCase):
         consumer._read()
 
         # validate
-        consumer._rejected.assert_called_once_with(ir.code, ir.details, ir.document)
+        consumer._rejected.assert_called_once_with(
+            ir.code, ir.description, ir.document, ir.details)
 
     @patch('gofer.messaging.consumer.sleep')
     def test_read_exception(self, sleep):
@@ -169,7 +171,7 @@ class TestBaseConsumer(TestCase):
     def test_rejected(self):
         reader = Mock()
         consumer = BaseConsumer(reader)
-        consumer._rejected('1', '2', '3')
+        consumer._rejected('1', '2', '3', '4')
 
     def test_dispatch(self):
         reader = Mock()

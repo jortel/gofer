@@ -30,28 +30,35 @@ class RequestConsumer(Consumer):
     to local pending queue to be consumed by the scheduler.
     """
 
-    def _rejected(self, code, details, message):
+    def _rejected(self, code, description, document, details):
         """
-        Called to process the received (invalid) AMQP message.
+        Called to process the received (invalid) document.
         This method intended to be overridden by subclasses.
-        :param code: The validation code.
+        :param code: The rejection code.
         :type code: str
-        :param message: The received message/document.
-        :type message: str
+        :param description: rejection description
+        :type description: str
+        :param document: The received (json) document.
+        :type document: str
         :param details: The explanation.
         :type details: str
         """
+        details = dict(
+            code=code,
+            description=description,
+            details=details
+        )
         request = Document()
-        request.load(message)
-        self._send(request, 'rejected', code=code, details=details)
+        request.load(document)
+        self._send(request, 'rejected', **details)
 
     def _send(self, request, status, **details):
         """
         Send a status update.
+        :param request: The received (json) request.
+        :type request: Document
         :param status: The status to send ('accepted'|'rejected')
         :type status: str
-        :param request: The received request.
-        :type request: Document
         """
         route = request.replyto
         if not route:

@@ -84,33 +84,35 @@ class BaseConsumer(Thread):
             log.debug('{%s} read: %s', self.getName(), document)
             self.dispatch(document)
             message.ack()
-        except InvalidDocument, vf:
-            self._rejected(vf.code, vf.details, vf.document)
+        except InvalidDocument, invalid:
+            self._rejected(invalid.code, invalid.description, invalid.document, invalid.details)
         except Exception:
             log.exception(self.getName())
             sleep(60)
             self._close()
             self._open()
 
-    def _rejected(self, code, details, message):
+    def _rejected(self, code, description, document, details):
         """
-        Called to process the received (invalid) AMQP message.
+        Called to process the received (invalid) document.
         This method intended to be overridden by subclasses.
-        :param code: The validation code.
+        :param code: The rejection code.
         :type code: str
-        :param message: The received message/document.
-        :type message: str
+        :param description: rejection description
+        :type description: str
+        :param document: The received *json*  document.
+        :type document: str
         :param details: The explanation.
         :type details: str
         """
-        log.debug('%s, reason: %s %s', code, details, message)
+        log.debug('rejected: %s', document)
 
     def dispatch(self, document):
         """
         Called to process the received document.
         This method intended to be overridden by subclasses.
-        :param document: The received document.
-        :type document: Document
+        :param document: The received *json*  document.
+        :type document: str
         """
         log.debug('dispatched: %s', document)
 
