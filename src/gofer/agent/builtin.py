@@ -61,8 +61,8 @@ class Admin:
         :param sn: An RMI serial number.
         :type sn: str
         :param criteria: The criteria used to match the
-            *any* property on an RMI request.
-        :type criteria: str
+            *data* property on an RMI request.
+        :type criteria: dict
         :return: The list of cancelled serial numbers.
         :rtype: list
         :raise Exception, on (sn) not found.

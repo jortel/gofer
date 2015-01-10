@@ -49,11 +49,8 @@ class Plugin(object):
 
     def __init__(self, name, enabled, dispatcher):
         self.name = name
-        self._enabled = enabled
+        self.enabled = enabled
         self.dispatcher = dispatcher
-
-    def enabled(self):
-        return self._enabled
 
 
 class Action(object):
