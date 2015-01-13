@@ -197,6 +197,31 @@ class TestQueue(TestCase):
         broker.return_value.close.assert_called_once_with()
 
     @patch('gofer.messaging.adapter.qpid.model.Broker')
+    def test_declare_auto_delete(self, broker):
+        url = 'test-url'
+        name = 'test-queue'
+        broker.return_value.getQueue.return_value = None
+
+        # test
+        queue = Queue(name)
+        queue.durable = 0
+        queue.auto_delete = True
+        queue.expiration = 10
+        queue.exclusive = 3
+        queue.declare(url)
+
+        # validation
+        options = {
+            'durable': queue.durable,
+            'auto-delete': queue.auto_delete,
+            'qpid.auto_delete_timeout': queue.expiration,
+            'exclusive': queue.exclusive
+        }
+        broker.assert_called_once_with(url)
+        broker.return_value.addQueue.assert_called_once_with(queue.name, options)
+        broker.return_value.close.assert_called_once_with()
+
+    @patch('gofer.messaging.adapter.qpid.model.Broker')
     def test_declare_exists(self, broker):
         url = 'test-url'
         name = 'test-queue'

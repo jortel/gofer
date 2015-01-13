@@ -12,7 +12,6 @@
 from qpidtoollibs import BrokerAgent
 
 from gofer.messaging.adapter.model import BaseExchange, BaseQueue
-
 from gofer.messaging.adapter.qpid.connection import Connection
 
 
@@ -141,6 +140,8 @@ class Queue(BaseQueue):
                 'auto-delete': self.auto_delete,
                 'exclusive': self.exclusive
             }
+            if self.auto_delete and self.expiration:
+                options['qpid.auto_delete_timeout'] = self.expiration
             try:
                 broker.addQueue(self.name, options)
             except Exception, e:

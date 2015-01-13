@@ -29,9 +29,10 @@ from gofer.rmi.dispatcher import Dispatcher
 from gofer.rmi.threadpool import ThreadPool
 from gofer.rmi.consumer import RequestConsumer
 from gofer.rmi.decorators import Remote
+from gofer.common import nvl
+from gofer.config import Config, Graph, get_bool
 from gofer.agent.deplist import DepList
 from gofer.agent.config import PLUGIN_SCHEMA, PLUGIN_DEFAULTS
-from gofer.config import Config, Graph, get_bool
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
 from gofer.collator import Module
@@ -309,6 +310,10 @@ class BrokerModel(object):
         return int(self.cfg.managed)
 
     @property
+    def expiration(self):
+        return int(nvl(self.cfg.expiration, 0))
+
+    @property
     def queue(self):
         return self.cfg.queue or self.plugin.uuid
 
@@ -324,6 +329,8 @@ class BrokerModel(object):
         if self.managed:
             url = self.plugin.url
             queue = Queue(self.queue)
+            queue.auto_delete = self.expiration > 0
+            queue.expiration = self.expiration
             queue.declare(url)
             if self.exchange:
                 exchange = Exchange(self.exchange)

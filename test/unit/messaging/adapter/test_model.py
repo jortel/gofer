@@ -185,11 +185,13 @@ class TestBaseExchange(TestCase):
         exchange = BaseExchange(name)
         self.assertEqual(exchange.name, name)
         self.assertEqual(exchange.policy, DIRECT)
+        self.assertEqual(exchange.auto_delete, False)
         # with policy
         policy = 'direct'
         exchange = BaseExchange(name, policy=policy)
         self.assertEqual(exchange.name, name)
         self.assertEqual(exchange.policy, policy)
+        self.assertEqual(exchange.auto_delete, False)
 
     def test_abstract(self):
         exchange = BaseExchange('')
@@ -212,11 +214,13 @@ class TestExchange(TestCase):
         exchange = BaseExchange(name)
         self.assertEqual(exchange.name, name)
         self.assertEqual(exchange.policy, DIRECT)
+        self.assertEqual(exchange.auto_delete, False)
         # with policy
         policy = 'direct'
         exchange = BaseExchange(name, policy=policy)
         self.assertEqual(exchange.name, name)
         self.assertEqual(exchange.policy, policy)
+        self.assertEqual(exchange.auto_delete, False)
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_declare(self, _find):
@@ -287,6 +291,9 @@ class TestBaseQueue(TestCase):
         name = 'test'
         queue = BaseQueue(name)
         self.assertEqual(queue.name, name)
+        self.assertEqual(queue.exclusive, False)
+        self.assertEqual(queue.auto_delete, False)
+        self.assertEqual(queue.expiration, 0)
 
     def test_eq(self):
         self.assertTrue(BaseQueue('1') == BaseQueue('1'))
@@ -303,6 +310,9 @@ class TestQueue(TestCase):
         name = 'test'
         queue = Queue(name)
         self.assertEqual(queue.name, name)
+        self.assertEqual(queue.exclusive, False)
+        self.assertEqual(queue.auto_delete, False)
+        self.assertEqual(queue.expiration, 0)
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_declare(self, _find):
@@ -312,7 +322,8 @@ class TestQueue(TestCase):
         queue = Queue(name)
         queue.durable = 1
         queue.auto_delete = 2
-        queue.exclusive = 3
+        queue.expiration = 3
+        queue.exclusive = 4
 
         # test
         queue.declare(TEST_URL)
@@ -323,6 +334,7 @@ class TestQueue(TestCase):
         impl.declare.assert_called_with(TEST_URL)
         self.assertEqual(impl.durable, queue.durable)
         self.assertEqual(impl.auto_delete, queue.auto_delete)
+        self.assertEqual(impl.expiration, queue.expiration)
         self.assertEqual(impl.exclusive, queue.exclusive)
 
     @patch('gofer.messaging.adapter.model.Adapter.find')

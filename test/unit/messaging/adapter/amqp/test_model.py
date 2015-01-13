@@ -18,7 +18,6 @@ from gofer.devel import ipatch
 with ipatch('amqp'):
     from gofer.messaging.adapter.amqp.model import Exchange, BaseExchange
     from gofer.messaging.adapter.amqp.model import Queue, BaseQueue
-    from gofer.messaging.adapter.amqp.model import EXPIRES
 
 
 class TestExchange(TestCase):
@@ -34,6 +33,7 @@ class TestExchange(TestCase):
         self.assertTrue(isinstance(exchange, BaseExchange))
         self.assertEqual(exchange.name, name)
         self.assertEqual(exchange.policy, policy)
+        self.assertEqual(exchange.auto_delete, False)
 
     @patch('gofer.messaging.adapter.amqp.endpoint.Endpoint')
     def test_declare(self, endpoint):
@@ -51,28 +51,7 @@ class TestExchange(TestCase):
             exchange.name,
             exchange.policy,
             durable=exchange.durable,
-            auto_delete=exchange.auto_delete,
-            arguments=None)
-
-    @patch('gofer.messaging.adapter.amqp.endpoint.Endpoint')
-    def test_declare_auto_delete(self, endpoint):
-        url = 'test-url'
-        channel = Mock()
-        endpoint.return_value.channel.return_value = channel
-
-        # test
-        exchange = Exchange('test', policy='direct')
-        exchange.auto_delete = True
-        exchange.declare(url)
-
-        # validation
-        endpoint.channel.asssert_called_once_with()
-        channel.exchange_declare.assert_called_once_with(
-            exchange.name,
-            exchange.policy,
-            durable=exchange.durable,
-            auto_delete=exchange.auto_delete,
-            arguments=EXPIRES)
+            auto_delete=exchange.auto_delete)
 
     @patch('gofer.messaging.adapter.amqp.endpoint.Endpoint')
     def test_delete(self, endpoint):
@@ -132,6 +111,9 @@ class TestQueue(TestCase):
         queue = Queue(name)
         self.assertEqual(queue.name, name)
         self.assertTrue(isinstance(queue, BaseQueue))
+        self.assertEqual(queue.exclusive, False)
+        self.assertEqual(queue.auto_delete, False)
+        self.assertEqual(queue.expiration, 0)
 
     @patch('gofer.messaging.adapter.amqp.endpoint.Endpoint')
     def test_declare(self, endpoint):
@@ -161,6 +143,7 @@ class TestQueue(TestCase):
         # test
         queue = Queue('test')
         queue.auto_delete = True
+        queue.expiration = 10
         queue.declare(url)
 
         # validation
@@ -170,7 +153,7 @@ class TestQueue(TestCase):
             durable=queue.durable,
             exclusive=queue.exclusive,
             auto_delete=queue.auto_delete,
-            arguments=EXPIRES)
+            arguments={'x-expires': queue.expiration * 1000})
 
     @patch('gofer.messaging.adapter.amqp.endpoint.Endpoint')
     def test_delete(self, endpoint):

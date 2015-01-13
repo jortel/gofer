@@ -19,15 +19,6 @@ from gofer.messaging.adapter.model import BaseExchange, BaseQueue
 log = getLogger(__name__)
 
 
-# --- constants --------------------------------------------------------------
-
-
-EXPIRES = {'x-expires': 10000}
-
-
-# --- reconnect decorator ----------------------------------------------------
-
-
 def reliable(fn):
     return endpoint.endpoint(endpoint.reliable(fn))
 
@@ -40,17 +31,12 @@ class Exchange(BaseExchange):
     def declare(self, url):
         @reliable
         def _fn(_endpoint):
-            if self.auto_delete:
-                arguments = EXPIRES
-            else:
-                arguments = None
             channel = _endpoint.channel()
             channel.exchange_declare(
                 self.name,
                 self.policy,
                 durable=self.durable,
-                auto_delete=self.auto_delete,
-                arguments=arguments)
+                auto_delete=self.auto_delete)
         _fn(url)
 
     def delete(self, url):
@@ -95,8 +81,8 @@ class Queue(BaseQueue):
         @reliable
         def _fn(_endpoint):
             channel = _endpoint.channel()
-            if self.auto_delete:
-                arguments = EXPIRES
+            if self.auto_delete and self.expiration:
+                arguments = {'x-expires': self.expiration * 1000}
             else:
                 arguments = None
             channel.queue_declare(

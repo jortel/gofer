@@ -317,6 +317,8 @@ class BaseQueue(Node):
     :type durable: bool
     :ivar auto_delete: The queue is auto deleted.
     :type auto_delete: bool
+    :ivar expiration: The auto delete expiration (seconds).
+    :type expiration: int
     :ivar exclusive: Indicates the queue can only have one consumer.
     :type exclusive: bool
     """
@@ -330,6 +332,7 @@ class BaseQueue(Node):
         self.durable = True
         self.auto_delete = False
         self.exclusive = False
+        self.expiration = 0
 
     def __eq__(self, other):
         return isinstance(other, BaseQueue) and \
@@ -363,6 +366,7 @@ class Queue(BaseQueue):
         impl = adapter.Queue(self.name)
         impl.durable = self.durable
         impl.auto_delete = self.auto_delete
+        impl.expiration = self.expiration
         impl.exclusive = self.exclusive
         impl.declare(url)
 

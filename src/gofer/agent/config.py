@@ -53,6 +53,7 @@ PLUGIN_SCHEMA = (
             ('managed', OPTIONAL, '(0|1|2)'),
             ('queue', OPTIONAL, ANY),
             ('exchange', OPTIONAL, ANY),
+            ('expiration', OPTIONAL, NUMBER)
         )
     ),
 )
