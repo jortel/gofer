@@ -13,6 +13,7 @@ Contents:
 
    notes
    main
+   installation
    quickstart
    design
    adapter
