@@ -50,12 +50,12 @@ class URL:
         host, port = \
             URL.split_host_port(host_port, URL._port(scheme))
         return adapter, \
-               scheme, \
-               host, \
-               port, \
-               userid, \
-               password, \
-               path
+            scheme, \
+            host, \
+            port, \
+            userid, \
+            password, \
+            path
 
     @staticmethod
     def split_url(s):
@@ -186,5 +186,5 @@ class URL:
         return self.simple() == other.simple()
 
     def __str__(self):
-        return self._input
+        return self._input.split('+')[-1]
 

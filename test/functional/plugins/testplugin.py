@@ -42,6 +42,11 @@ def init_plugin():
     print 'Initialized!'
 
 
+@started
+def start_plugin():
+    print 'Started!'
+
+
 class TestAuthenticator(Authenticator):
 
     def sign(self, message):

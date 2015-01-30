@@ -12,18 +12,18 @@
 from uuid import uuid4
 from logging import getLogger
 
-from qpid.messaging import Message
+from proton import Message
 
 from gofer.messaging.adapter.model import BaseExchange, BaseQueue
-from gofer.messaging.adapter.qpid.connection import Connection
+from gofer.messaging.adapter.proton.connection import Connection
+from gofer.messaging.adapter.proton.reliability import reliable
 
 
 log = getLogger(__name__)
 
 
 SUBJECT = 'broker'
-ADDRESS = 'qmf.default.direct/broker'
-REPLY_TO = 'qmf.default.direct/%s;{node:{type:topic},link:{x-declare:{auto-delete:True,exclusive:True}}}'
+ADDRESS = 'qmf.default.direct'
 
 EEXIST = 7
 
@@ -62,8 +62,10 @@ class Method(object):
     :type arguments: dict
     """
 
-    def __init__(self, name, arguments):
+    def __init__(self, url, name, arguments):
         """
+        :param url: The broker url.
+        :type url: str
         :param name: The method name.
         :type name: str
         :param arguments: The method arguments.
@@ -71,9 +73,13 @@ class Method(object):
         """
         self.name = name
         self.arguments = arguments
+        self.url = url
+        self.connection = None
+        self.sender = None
+        self.receiver = None
 
     @property
-    def content(self):
+    def body(self):
         return {
             '_object_id': OBJECT_ID,
             '_method_name': self.name,
@@ -95,11 +101,11 @@ class Method(object):
         :type reply: Message
         :raise: Error on failures.
         """
+        body = dict(reply.body)
         opcode = reply.properties['qmf.opcode']
         if opcode != '_exception':
             # succeeded
             return
-        body = reply.content
         values = body['_values']
         code = values['error_code']
         description = values['error_text']
@@ -107,44 +113,63 @@ class Method(object):
             return
         raise Error(description, code)
 
-    def __call__(self, url):
+    def is_open(self):
+        """
+        Get whether the method is open.
+        :return: True if open.
+        :rtype: bool
+        """
+        return self.sender is not None
+
+    def open(self):
+        """
+        Open a connection and get a sender and receiver.
+        """
+        if self.is_open():
+            # already open
+            return
+        self.connection = Connection(self.url)
+        self.connection.open()
+        self.receiver = self.connection.receiver(dynamic=True)
+        self.sender = self.connection.sender(ADDRESS)
+
+    def close(self):
+        """
+        Close the sender and receiver.
+        """
+        sender = self.sender
+        self.sender = None
+        receiver = self.receiver
+        self.receiver = None
+        try:
+            sender.close()
+        except Exception:
+            pass
+        try:
+            receiver.close()
+        except Exception:
+            pass
+
+    @reliable
+    def __call__(self):
         """
         Invoke the method.
-        :param url: The broker url.
-        :type url: str
         :raise: Error on failure.
         """
-        reply_to = REPLY_TO % uuid4()
-        connection = Connection(url)
-        connection.open()
-        session = connection.session()
-        sender = session.sender(ADDRESS)
-        receiver = session.receiver(reply_to)
-
+        self.open()
         try:
+            reply_to = self.receiver.remote_source.address
             request = Message(
-                content=self.content,
+                body=self.body,
                 reply_to=reply_to,
                 properties=self.properties,
                 correlation_id=str(uuid4()),
                 subject=SUBJECT)
-            sender.send(request)
-            reply = receiver.fetch()
-            session.acknowledge()
+            self.sender.send(request)
+            reply = self.receiver.receive()
             self.on_reply(reply)
         finally:
-            try:
-                receiver.close()
-            except Exception:
-                pass
-            try:
-                sender.close()
-            except Exception:
-                pass
-            try:
-                session.close()
-            except Exception:
-                pass
+            self.close()
 
 
 class Exchange(BaseExchange):
@@ -166,8 +191,8 @@ class Exchange(BaseExchange):
                 'durable': self.durable
             }
         }
-        method = Method(CREATE, arguments)
-        method(url)
+        method = Method(url, CREATE, arguments)
+        method()
 
     def delete(self, url):
         """
@@ -182,8 +207,8 @@ class Exchange(BaseExchange):
             'type': 'exchange',
             'properties': {}
         }
-        method = Method(DELETE, arguments)
-        method(url)
+        method = Method(url, DELETE, arguments)
+        method()
 
     def bind(self, queue, url):
         """
@@ -200,8 +225,8 @@ class Exchange(BaseExchange):
             'type': 'binding',
             'properties': {}
         }
-        method = Method(CREATE, arguments)
-        method(url)
+        method = Method(url, CREATE, arguments)
+        method()
 
     def unbind(self, queue, url):
         """
@@ -216,8 +241,8 @@ class Exchange(BaseExchange):
             'type': 'binding',
             'properties': {}
         }
-        method = Method(DELETE, arguments)
-        method(url)
+        method = Method(url, DELETE, arguments)
+        method()
 
 
 class Queue(BaseQueue):
@@ -239,8 +264,8 @@ class Queue(BaseQueue):
                 'durable': self.durable
             }
         }
-        method = Method(CREATE, arguments)
-        method(url)
+        method = Method(url, CREATE, arguments)
+        method()
 
     def delete(self, url):
         """
@@ -255,5 +280,5 @@ class Queue(BaseQueue):
             'type': 'queue',
             'properties': {}
         }
-        method = Method(DELETE, arguments)
-        method(url)
+        method = Method(url, DELETE, arguments)
+        method()

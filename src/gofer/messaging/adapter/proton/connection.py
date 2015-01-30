@@ -9,26 +9,20 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-import ssl
-
 from time import sleep
+from uuid import uuid4
 from logging import getLogger
-from socket import error as SocketError
 
-from amqp import Connection as RealConnection
-from amqp import ConnectionError
+from proton import ConnectionException, LinkException
+from proton import SSLDomain, SSLException
+from proton.utils import BlockingConnection
 
 from gofer.common import ThreadSingleton
-from gofer.messaging.adapter.model import Domain, BaseConnection
+from gofer.messaging.adapter.model import Domain, BaseConnection, NotFound
 
 
 log = getLogger(__name__)
 
-VIRTUAL_HOST = '/'
-USERID = 'guest'
-PASSWORD = 'guest'
-
-CONNECTION_EXCEPTIONS = (IOError, SocketError, ConnectionError, AttributeError)
 
 DELAY = 10
 MAX_DELAY = 90
@@ -39,38 +33,41 @@ DELAY_MULTIPLIER = 1.2
 
 class Connection(BaseConnection):
     """
-    An AMQP broker connection.
+    Proton connection.
     """
 
     __metaclass__ = ThreadSingleton
 
     @staticmethod
-    def _ssl(broker):
+    def ssl_domain(broker):
         """
-        Get SSL properties
-        :param broker: A broker object.
+        Get the ssl domain using the broker settings.
+        :param broker: A broker.
         :type broker: gofer.messaging.adapter.model.Broker
-        :return: The SSL properties
-        :rtype: dict
+        :return: The populated domain.
+        :rtype: SSLDomain
+        :raise: SSLException
         """
-        if not broker.ssl:
-            return
-        if broker.ssl.ca_certificate:
-            required = ssl.CERT_REQUIRED
-        else:
-            required = ssl.CERT_NONE
-        return dict(
-            cert_reqs=required,
-            ca_certs=broker.ssl.ca_certificate,
-            keyfile=broker.ssl.client_key,
-            certfile=broker.ssl.client_certificate)
+        domain = None
+        if broker.ssl:
+            domain = SSLDomain(SSLDomain.MODE_CLIENT)
+            domain.set_trusted_ca_db(broker.ssl.ca_certificate)
+            domain.set_credentials(
+                broker.ssl.client_certificate,
+                broker.ssl.client_key or broker.ssl.client_certificate, None)
+            if broker.ssl.host_validation:
+                mode = SSLDomain.VERIFY_PEER_NAME
+            else:
+                mode = SSLDomain.VERIFY_PEER
+            domain.set_peer_authentication(mode)
+        return domain
 
     def __init__(self, url):
         """
         :param url: The broker url.
         :type url: str
         """
-        BaseConnection.__init__(self, url)
+        super(Connection, self).__init__(url)
         self._impl = None
 
     def is_open(self):
@@ -94,24 +91,16 @@ class Connection(BaseConnection):
             return
         delay = float(delay)
         broker = Domain.broker.find(self.url)
-        host = ':'.join((broker.host, str(broker.port)))
-        virtual_host = broker.virtual_host or VIRTUAL_HOST
-        ssl = self._ssl(broker)
-        userid = broker.userid or USERID
-        password = broker.password or PASSWORD
+        url = str(broker.url)
         while True:
             try:
                 log.info('connecting: %s', broker)
-                self._impl = RealConnection(
-                    host=host,
-                    virtual_host=virtual_host,
-                    ssl=ssl,
-                    userid=userid,
-                    password=password)
+                domain = self.ssl_domain(broker)
+                self._impl = BlockingConnection(url, ssl_domain=domain)
                 log.info('connected: %s', broker.url)
                 break
-            except CONNECTION_EXCEPTIONS:
-                log.exception(str(self.url))
+            except (ConnectionException, SSLException):
+                log.exception(url)
                 if retries > 0:
                     log.info('retry in %d seconds', delay)
                     sleep(delay)
@@ -121,12 +110,35 @@ class Connection(BaseConnection):
                 else:
                     raise
 
-    def channel(self):
+    def sender(self, route):
         """
-        Open a channel.
-        :return The *real* channel.
+        Get a message sender for the specified route.
+        :param route: An AMQP route.
+        :type route: str
+        :return: A sender.
+        :rtype: proton.utils.BlockingSender
+        :raise: NotFound
         """
-        return self._impl.channel()
+        try:
+            name = str(uuid4())
+            return self._impl.create_sender(route, name=name)
+        except LinkException, le:
+            raise NotFound(*le.args)
+
+    def receiver(self, route=None, dynamic=False):
+        """
+        Get a message receiver for the specified route.
+        :param route: An AMQP route.
+        :type route: str
+        :return: A receiver.
+        :rtype: proton.utils.BlockingReceiver
+        :raise: NotFound
+        """
+        try:
+            name = str(uuid4())
+            return self._impl.create_receiver(route, dynamic=dynamic, name=name)
+        except LinkException, le:
+            raise NotFound(*le.args)
 
     def close(self):
         """

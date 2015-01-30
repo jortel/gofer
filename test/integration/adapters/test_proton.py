@@ -9,15 +9,26 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+from logging import basicConfig
 
-from gofer.messaging.adapter.amqp.model import Exchange, Queue
-from gofer.messaging.adapter.amqp.connection import Connection
-from gofer.messaging.adapter.amqp.consumer import Reader
-from gofer.messaging.adapter.amqp.producer import Sender
+from base import Test
+from gofer.messaging.adapter.factory import Loader
 
 
-PROVIDES = [
-    'amqp-0-9-1',
-    'rabbitmq',
-    'rabbit',
-]
+basicConfig()
+
+URL = 'amqp://localhost'
+
+if __name__ == '__main__':
+    loader = Loader()
+    loader.load()
+    # amqp-1-0
+    adapter = loader.catalog['amqp-1-0']
+    test = Test(URL, adapter)
+    test.test_crud()
+    test.test_no_exchange()
+    # proton
+    adapter = loader.catalog['proton']
+    test = Test(URL, adapter)
+    test.test_crud()
+    test.test_no_exchange()

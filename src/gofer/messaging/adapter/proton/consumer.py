@@ -13,19 +13,17 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-
 """
 Provides AMQP message consumer classes.
 """
 
-from time import sleep
 from logging import getLogger
 
-from qpid.messaging import Empty, NotFound as _NotFound
-from qpid.messaging import Disposition, RELEASED, REJECTED
+from proton import Timeout
 
 from gofer.messaging.adapter.model import BaseReader, Message, NotFound
-from gofer.messaging.adapter.qpid.connection import Connection
+from gofer.messaging.adapter.proton.connection import Connection, LinkException
+from gofer.messaging.adapter.proton.reliability import reliable
 
 
 log = getLogger(__name__)
@@ -35,10 +33,11 @@ NO_DELAY = 0.010
 
 
 def opener(fn):
+    @reliable
     def _fn(*args):
         try:
             return fn(*args)
-        except _NotFound, e:
+        except LinkException, e:
             raise NotFound(*e.args)
     return _fn
 
@@ -46,8 +45,10 @@ def opener(fn):
 class Reader(BaseReader):
     """
     An AMQP message reader.
+    :ivar connection: A proton connection
+    :type connection: Connection
     :ivar receiver: An AMQP receiver to read.
-    :type receiver: qpid.messaging.Receiver
+    :type receiver: proton.utils.BlockingReceiver
     """
 
     def __init__(self, queue, url=None):
@@ -60,7 +61,6 @@ class Reader(BaseReader):
         """
         BaseReader.__init__(self, queue, url)
         self.connection = Connection(url)
-        self.session = None
         self.receiver = None
 
     def is_open(self):
@@ -75,18 +75,17 @@ class Reader(BaseReader):
     def open(self):
         """
         Open the reader.
-        :raise: NotFound
         """
         if self.is_open():
             # already open
             return
         self.connection.open()
-        self.session = self.connection.session()
-        self.receiver = self.session.receiver(self.queue.name)
-    
+        self.receiver = self.connection.receiver(self.queue.name)
+
     def close(self):
         """
         Close the reader.
+        :raise: NotFound
         """
         receiver = self.receiver
         self.receiver = None
@@ -96,14 +95,7 @@ class Reader(BaseReader):
         except Exception:
             pass
 
-        session = self.session
-        self.session = None
-
-        try:
-            session.close()
-        except Exception:
-            pass
-
+    @reliable
     def get(self, timeout=None):
         """
         Get the next message from the queue.
@@ -113,32 +105,30 @@ class Reader(BaseReader):
         :rtype: Message
         """
         try:
-            impl = self.receiver.fetch(timeout or NO_DELAY)
-            return Message(self, impl, impl.content)
-        except Empty:
+            impl = self.receiver.receive(timeout or NO_DELAY)
+            return Message(self, impl, impl.body)
+        except Timeout:
             pass
-        except Exception, e:
-            log.error(str(e))
-            sleep(60)
 
+    @reliable
     def ack(self, message):
         """
         Acknowledge all messages received on the session.
         :param message: The message to acknowledge.
-        :type message: qpid.messaging.Message
+        :type message: proton.Message
         """
-        self.session.acknowledge(message=message)
+        self.receiver.accept()
 
+    @reliable
     def reject(self, message, requeue=True):
         """
         Reject the specified message.
         :param message: The message to reject.
-        :type message: qpid.messaging.Message
+        :type message: proton.Message
         :param requeue: Requeue the message or discard it.
         :type requeue: bool
         """
         if requeue:
-            disposition = Disposition(RELEASED)
+            self.receiver.release()
         else:
-            disposition = Disposition(REJECTED)
-        self.session.acknowledge(message=message, disposition=disposition)
+            self.receiver.reject()

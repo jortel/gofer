@@ -8,16 +8,21 @@
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+# Jeff Ortel (jortel@redhat.com)
+
+from time import sleep
+
+from gofer.messaging.adapter.proton.connection import ConnectionException
 
 
-from gofer.messaging.adapter.amqp.model import Exchange, Queue
-from gofer.messaging.adapter.amqp.connection import Connection
-from gofer.messaging.adapter.amqp.consumer import Reader
-from gofer.messaging.adapter.amqp.producer import Sender
-
-
-PROVIDES = [
-    'amqp-0-9-1',
-    'rabbitmq',
-    'rabbit',
-]
+def reliable(fn):
+    def _fn(thing, *args, **kwargs):
+        while True:
+            try:
+                return fn(thing, *args, **kwargs)
+            except ConnectionException:
+                sleep(3)
+                thing.close()
+                thing.connection.close()
+                thing.open()
+    return _fn

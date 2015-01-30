@@ -169,5 +169,5 @@ class TestURL(TestCase):
         ]
         for _url in urls:
             url = URL(_url)
-            self.assertEqual(str(url), _url)
+            self.assertEqual(str(url), _url.split('+')[-1])
 

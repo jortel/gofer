@@ -10,14 +10,14 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 
-from gofer.messaging.adapter.amqp.model import Exchange, Queue
-from gofer.messaging.adapter.amqp.connection import Connection
-from gofer.messaging.adapter.amqp.consumer import Reader
-from gofer.messaging.adapter.amqp.producer import Sender
+from gofer.messaging.adapter.proton.model import Exchange, Queue
+from gofer.messaging.adapter.proton.connection import Connection
+from gofer.messaging.adapter.proton.consumer import Reader
+from gofer.messaging.adapter.proton.producer import Sender
 
 
 PROVIDES = [
-    'amqp-0-9-1',
-    'rabbitmq',
-    'rabbit',
+    'amqp-1-0',
+    'proton',
+    'qpid',
 ]

@@ -6,8 +6,8 @@
 %endif
 
 Name: gofer
-Version: 2.4.0
-Release: 1%{?dist}
+Version: 2.5.0
+Release: 0.1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
 License: LGPLv2
@@ -158,12 +158,8 @@ Provides gofer python lib modules.
 Summary: Gofer Qpid messaging adapter python package
 Group: Development/Languages
 BuildRequires: python
-Requires: python-%{name} >= %{version}
-Requires: python-qpid >= 0.21
-Requires: python-qpid-qmf >= 0.21
-%if 0%{?rhel} && 0%{?rhel} < 6
-Requires: python-ssl
-%endif
+Requires: python-%{name} = %{version}
+Requires: python-qpid >= 0.18
 
 %description -n python-%{name}-qpid
 Provides the gofer qpid messaging adapter package.
@@ -173,13 +169,30 @@ Provides the gofer qpid messaging adapter package.
 %doc LICENSE
 
 
+# --- python-qpid-proton messaging adapter -----------------------------------
+
+%package -n python-%{name}-proton
+Summary: Gofer Qpid proton messaging adapter python package
+Group: Development/Languages
+BuildRequires: python
+Requires: python-%{name} = %{version}
+Requires: python-qpid-proton >= 0.9
+
+%description -n python-%{name}-proton
+Provides the gofer qpid proton messaging adapter package.
+
+%files -n python-%{name}-proton
+%{python_sitelib}/%{name}/messaging/adapter/proton
+%doc LICENSE
+
+
 # --- python-amqp messaging adapter ------------------------------------------
 
 %package -n python-%{name}-amqp
 Summary: Gofer amqp messaging adapter python package
 Group: Development/Languages
 BuildRequires: python
-Requires: python-%{name} >= %{version}
+Requires: python-%{name} = %{version}
 Requires: python-amqp >= 1.4.5
 
 %description -n python-%{name}-amqp

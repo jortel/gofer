@@ -25,10 +25,10 @@ from gofer.messaging.adapter.model import \
     SSL, \
     Broker, \
     Domain, \
-    Connection, \
     Exchange, \
     Queue, \
     Reader, \
     Sender, \
-    Producer
+    Producer, \
+    NotFound
 

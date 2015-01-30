@@ -15,14 +15,30 @@ from Queue import Empty
 from Queue import Queue as Inbox
 from logging import getLogger
 
-from gofer.messaging.adapter.model import BaseReader, Message
-from gofer.messaging.adapter.amqp.endpoint import Endpoint, reliable
+from amqp import ChannelError
+
+from gofer.messaging.adapter.model import BaseReader, Message, NotFound
+from gofer.messaging.adapter.amqp.connection import Connection
+from gofer.messaging.adapter.amqp.reliability import reliable
 
 
 log = getLogger(__name__)
 
 
 NO_DELAY = 0
+DELIVERY_TAG = 'delivery_tag'
+
+
+def opener(fn):
+    def _fn(*args):
+        try:
+            return fn(*args)
+        except ChannelError, e:
+            if e.code == 404:
+                raise NotFound(*e.args)
+            else:
+                raise
+    return _fn
 
 
 class Reader(BaseReader):
@@ -41,39 +57,52 @@ class Reader(BaseReader):
         :see: gofer.messaging.adapter.url.URL
         """
         BaseReader.__init__(self, queue, url)
-        self._endpoint = Endpoint(url)
-        self._receiver = None
+        self.connection = Connection(url)
+        self.channel = None
+        self.receiver = None
 
+    def is_open(self):
+        """
+        Get whether the messenger has been opened.
+        :return: True if open.
+        :rtype bool
+        """
+        return self.receiver is not None
+
+    @opener
     def open(self):
         """
         Open the reader.
+        :raise: NotFound
         """
         if self.is_open():
-            # open
+            # already opened
             return
-        BaseReader.open(self)
-        self._receiver = Receiver(self)
-        self._receiver.open()
+        self.connection.open()
+        self.channel = self.connection.channel()
+        receiver = Receiver(self)
+        self.receiver = receiver.open()
 
-    def close(self, hard=False):
+    def close(self):
         """
         Close the reader.
-        :param hard: Force the connection closed.
-        :type hard: bool
         """
-        if not self.is_open():
-            # closed
-            return
-        self._receiver.close()
-        BaseReader.close(self, hard)
+        receiver = self.receiver
+        self.receiver = None
 
-    def endpoint(self):
-        """
-        Get a concrete object.
-        :return: A concrete object.
-        :rtype: BaseEndpoint
-        """
-        return self._endpoint
+        try:
+            receiver.close()
+        except Exception:
+            pass
+
+        channel = self.channel
+        self.channel = None
+
+        try:
+            channel.close()
+        except Exception:
+            pass
+
 
     @reliable
     def get(self, timeout=None):
@@ -85,10 +114,30 @@ class Reader(BaseReader):
         :rtype: Message
         """
         try:
-            impl = self._receiver.fetch(timeout or NO_DELAY)
+            impl = self.receiver.fetch(timeout or NO_DELAY)
             return Message(self, impl, impl.body)
         except Empty:
             pass
+
+    @reliable
+    def ack(self, message):
+        """
+        Ack the specified message.
+        :param message: The message to acknowledge.
+        :type message: amqp.Message
+        """
+        self.channel.basic_ack(message.delivery_info[DELIVERY_TAG])
+
+    @reliable
+    def reject(self, message, requeue=True):
+        """
+        Reject the specified message.
+        :param message: The message to reject.
+        :type message: amqp.Message
+        :param requeue: Requeue the message or discard it.
+        :type requeue: bool
+        """
+        self.channel.basic_reject(message.delivery_info[DELIVERY_TAG], requeue)
 
 
 class Receiver(object):
@@ -111,6 +160,9 @@ class Receiver(object):
         :param timeout: The read timeout in seconds.
         :type timeout: int
         """
+        if len(channel.method_queue):
+            channel.wait()
+            return
         epoll = select.epoll()
         epoll.register(fd, select.EPOLLIN)
         try:
@@ -134,16 +186,19 @@ class Receiver(object):
         :return: The channel.
         :rtype: amqp.channel.Channel
         """
-        return self.reader.channel()
+        return self.reader.channel
 
     def open(self):
         """
         Open the receiver.
+        :return: self
+        :rtype: Receiver
         """
         fn = self.inbox.put
         channel = self.channel()
         name = self.reader.queue.name
         self.tag = channel.basic_consume(name, callback=fn)
+        return self
 
     def close(self):
         """
@@ -152,7 +207,6 @@ class Receiver(object):
         try:
             channel = self.channel()
             channel.basic_cancel(self.tag)
-            self.tag = None
         except Exception, e:
             log.debug(str(e))
 

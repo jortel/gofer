@@ -25,6 +25,6 @@
 #   ~/.<NAME>/agent.conf
 NAME = __name__
 
-from common import Singleton
+from common import Singleton, ThreadSingleton
 from common import synchronized, conditional
 from common import Options

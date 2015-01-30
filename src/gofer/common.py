@@ -15,7 +15,7 @@
 
 import inspect
 
-from threading import RLock
+from threading import local as Local
 
 
 def nvl(thing, default):
@@ -37,57 +37,59 @@ class Singleton(type):
     usage: __metaclass__ = Singleton
     """
 
-    __inst = {}
-    __mutex = RLock()
+    _inst = {}
 
     @staticmethod
-    def reset():
-        Singleton.__inst = {}
-
-    @staticmethod
-    def key(t, d):
+    def key(args, keywords):
         key = []
-        for x in t:
-            if isinstance(x, (basestring, int, float, bool)):
-                key.append(x)
-        for k in sorted(d.keys()):
-            v = d[k]
+        for thing in args:
+            if isinstance(thing, (basestring, int, float, bool)):
+                key.append(thing)
+        for k in sorted(keywords.keys()):
+            v = keywords[k]
             if isinstance(v, (basestring, int, float, bool)):
                 key.append((k, v))
         return repr(key)
 
+    def __call__(cls, *args, **kwargs):
+        key = (id(cls), Singleton.key(args, kwargs))
+        inst = Singleton._inst.get(key)
+        if inst is None:
+            inst = type.__call__(cls, *args, **kwargs)
+            Singleton._inst[key] = inst
+        return inst
+
+
+class ThreadSingleton(type):
+    """
+    Thread Singleton metaclass
+    usage: __metaclass__ = ThreadSingleton
+    """
+
+    _inst = Local()
+
     @staticmethod
     def all():
-        Singleton.__lock()
         try:
-            return Singleton.__inst.values()
-        finally:
-            Singleton.__unlock()
+            return ThreadSingleton._inst.d
+        except AttributeError:
+            d = {}
+            ThreadSingleton._inst.d = d
+            return d
 
     def __call__(cls, *args, **kwargs):
-        cls.__lock()
-        try:
-            key = (id(cls), cls.key(args, kwargs))
-            inst = cls.__inst.get(key)
-            if inst is None:
-                inst = type.__call__(cls, *args, **kwargs)
-                cls.__inst[key] = inst
-            return inst
-        finally:
-            cls.__unlock()
-
-    @staticmethod
-    def __lock():
-        Singleton.__mutex.acquire()
-
-    @staticmethod
-    def __unlock():
-        Singleton.__mutex.release()
+        _all = ThreadSingleton.all()
+        key = (id(cls), Singleton.key(args, kwargs))
+        inst = _all.get(key)
+        if inst is None:
+            inst = type.__call__(cls, *args, **kwargs)
+            _all[key] = inst
+        return inst
 
 
 def synchronized(fn):
     """
-    Decorator that provides reentrant method invocation
+    Decorator that provides re-entrant method invocation
     using the object's mutex.  The object must have a private
     RLock attribute named __mutex.  Intended only for instance
     methods that have a method body that can be safely mutexed

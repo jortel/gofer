@@ -17,6 +17,7 @@ from unittest import TestCase
 from mock import patch, Mock
 
 from gofer.devel import ipatch
+from gofer.common import ThreadSingleton
 
 with ipatch('amqp'):
     from gofer.messaging.adapter.model import Broker
@@ -29,10 +30,10 @@ TEST_URL = 'amqp+amqps://elmer:fudd@redhat.com:1234/test-virtual-host'
 class TestConnection(TestCase):
 
     def setUp(self):
-        Connection.local.d = {}
+        ThreadSingleton.all().clear()
 
     def tearDown(self):
-        Connection.local.d = {}
+        ThreadSingleton.all().clear()
 
     def test_init(self):
         url = TEST_URL
@@ -117,35 +118,11 @@ class TestConnection(TestCase):
     def test_close(self):
         url = TEST_URL
         c = Connection(url)
-        # soft
         impl = Mock()
         c._impl = impl
         c.close()
-        self.assertFalse(impl.close.called)
-        # hard
-        impl = Mock()
-        c._impl = impl
-        c.close(True)
         impl.close.assert_called_once_with()
         self.assertEqual(c._impl, None)
-        # not open
-        c._impl = None
-        c.close()
-
-    def test_disconnect(self):
-        url = TEST_URL
-        c = Connection(url)
-        c._impl = Mock()
-        c._disconnect()
-        c._impl.close.assert_called_with()
-
-    def test_disconnect_exception(self):
-        url = TEST_URL
-        c = Connection(url)
-        c._impl = Mock()
-        c._impl.close.side_effect = CONNECTION_EXCEPTIONS[0]
-        c._disconnect()
-        c._impl.close.assert_called_with()
 
     def test_ssl(self):
         url = TEST_URL
@@ -156,8 +133,6 @@ class TestConnection(TestCase):
         b.ssl.client_key = 'test-key'
         b.ssl.client_certificate = 'test-crt'
         ssl = Connection._ssl(b)
-
-        self.assertEqual(str(b.url), url)
 
         # validation
         self.assertEqual(
@@ -176,17 +151,8 @@ class TestConnection(TestCase):
         b = Broker(url)
         ssl = Connection._ssl(b)
 
-        self.assertEqual(str(b.url), url)
-
         # validation
-        self.assertEqual(
-            ssl,
-            {
-                'ca_certs': b.ssl.ca_certificate,
-                'cert_reqs': 0,
-                'certfile': b.ssl.client_certificate,
-                'keyfile': b.ssl.client_key
-            })
+        self.assertEqual(ssl, None)
 
     def test_ssl_not_ssl(self):
         url = 'amqp://elmer:fudd@redhat.com:1234'

@@ -9,11 +9,15 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+from Queue import Queue
+from threading import Thread
+
 from unittest import TestCase
 
 from mock import Mock
 
-from gofer.common import Singleton, Options, synchronized, conditional, nvl
+from gofer.common import Singleton, ThreadSingleton, Options
+from gofer.common import synchronized, conditional, nvl
 
 
 class Thing(object):
@@ -31,6 +35,29 @@ class Thing(object):
 class Thing2(object):
 
     __metaclass__ = Singleton
+
+    def __init__(self, n1, n2, a=0, b=0):
+        self.n1 = n1
+        self.n2 = n2
+        self.a = a
+        self.b = b
+
+
+class ThingT(object):
+
+    __metaclass__ = ThreadSingleton
+
+    def __init__(self, n1, n2, a=0, b=0):
+        self.__mutex = Mock()
+        self.n1 = n1
+        self.n2 = n2
+        self.a = a
+        self.b = b
+
+
+class ThingT2(object):
+
+    __metaclass__ = ThreadSingleton
 
     def __init__(self, n1, n2, a=0, b=0):
         self.n1 = n1
@@ -63,30 +90,13 @@ class TestNVL(TestCase):
 
 class TestSingleton(TestCase):
 
-    def test_reset(self):
-        Singleton._Singleton__inst = {'A': 1}
-
-        # test
-        Singleton.reset()
-
-        # validation
-        self.assertEqual(Singleton._Singleton__inst, {})
-
-    def test_all(self):
-        Singleton._Singleton__inst = {'A': 1}
-
-        # test
-        _all = Singleton.all()
-
-        # validation
-        self.assertEqual(_all, Singleton._Singleton__inst.values())
-
     def test_call(self):
         args = (1, 2)
         kwargs = {'a': 1, 'b': 2}
+        Singleton._inst.clear()
 
         try:
-            Singleton.reset()
+
             # 1st
             thing = Thing(*args, **kwargs)
             self.assertTrue(isinstance(thing, Thing))
@@ -104,17 +114,17 @@ class TestSingleton(TestCase):
             thing2 = Thing2(*args, **kwargs)
             self.assertNotEqual(id(thing), id(thing2))
         finally:
-            Singleton.reset()
+            Singleton._inst.clear()
 
     def test_key(self):
-        t = [
+        args = [
             'A',
             1,
             1.0,
             True,
             Thing
         ]
-        d = {
+        keywords = {
             'string': '',
             'int': 1,
             'float': 1.0,
@@ -123,13 +133,61 @@ class TestSingleton(TestCase):
         }
 
         # test
-        key = Singleton.key(t, d)
+        key = Singleton.key(args, keywords)
 
         # validation
         self.assertEqual(
             key,
             "['A', 1, 1.0, True, ('bool', True), ('float', 1.0), ('int', 1), ('string', '')]")
 
+
+class TestThreadSingleton(TestCase):
+
+    def test_call(self):
+        args = (1, 2)
+        kwargs = {'a': 1, 'b': 2}
+        ThreadSingleton.all().clear()
+
+        try:
+            # 1st
+            thing = ThingT(*args, **kwargs)
+            self.assertTrue(isinstance(thing, ThingT))
+            self.assertEqual(thing.n1, args[0])
+            self.assertEqual(thing.n2, args[1])
+            self.assertEqual(thing.a, kwargs['a'])
+            self.assertEqual(thing.b, kwargs['b'])
+            # same
+            thing2 = ThingT(*args, **kwargs)
+            self.assertEqual(id(thing), id(thing2))
+            # different arguments
+            thing2 = ThingT(3, 4, a=3, b=4)
+            self.assertNotEqual(id(thing), id(thing2))
+            # different class
+            thing2 = ThingT2(*args, **kwargs)
+            self.assertNotEqual(id(thing), id(thing2))
+        finally:
+            ThreadSingleton.all().clear()
+
+    def test_call_different_thread(self):
+        args = (1, 2)
+        kwargs = {'a': 1, 'b': 2}
+        ThreadSingleton.all().clear()
+
+        try:
+            thing = ThingT(*args, **kwargs)
+            queue = Queue()
+
+            def test():
+                thing2 = ThingT(*args, **kwargs)
+                queue.put(id(thing2))
+
+            thread = Thread(target=test)
+            thread.start()
+            thread.join()
+
+            self.assertNotEqual(id(thing), queue.get())
+        finally:
+            ThreadSingleton.all().clear()
 
 class TestDecorators(TestCase):
 

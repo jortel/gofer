@@ -22,9 +22,10 @@ import imp
 import errno
 import inspect
 
+from threading import Thread, RLock
 from logging import getLogger
 
-from gofer import NAME
+from gofer import NAME, synchronized
 from gofer.rmi.dispatcher import Dispatcher
 from gofer.rmi.threadpool import ThreadPool
 from gofer.rmi.consumer import RequestConsumer
@@ -85,6 +86,54 @@ def initializer(fn):
     :rtype: function
     """
     Initializer.add(fn)
+    return fn
+
+
+class Started(object):
+    """
+    Plugin started collection.
+    :cvar started: List of started functions.
+    :type started: list
+    """
+
+    started = []
+
+    @staticmethod
+    def add(function):
+        """
+        Add an started.
+        :param function: The function to add.
+        :type function: function
+        """
+        Started.started.append(function)
+
+    @staticmethod
+    def clear():
+        """
+        Clear the started list.
+        """
+        Started.started = []
+
+    @staticmethod
+    def run():
+        """
+        Run started functions.
+        """
+        for function in Started.started:
+            thread = Thread(target=function)
+            thread.setDaemon(True)
+            thread.start()
+
+
+def started(fn):
+    """
+    Plugin @started decorator.
+    :param fn: A plugin started function.
+    :type fn: function
+    :return: fn
+    :rtype: function
+    """
+    Started.add(fn)
     return fn
 
 
@@ -159,6 +208,7 @@ class Plugin(object):
         :param descriptor: The plugin descriptor.
         :type descriptor: PluginDescriptor
         """
+        self.__mutex = RLock()
         self.name = name
         self.descriptor = descriptor
         self.pool = ThreadPool(int(descriptor.messaging.threads or 1))
@@ -206,6 +256,7 @@ class Plugin(object):
         broker.ssl.host_validation = messaging.host_validation
         Domain.broker.add(broker)
 
+    @synchronized
     def attach(self):
         """
         Attach (connect) to AMQP broker using the specified uuid.
@@ -215,11 +266,12 @@ class Plugin(object):
         model = BrokerModel(self)
         queue = model.setup()
         consumer = RequestConsumer(queue, self.url)
-        consumer.reader.authenticator = self.authenticator
+        consumer.authenticator = self.authenticator
         consumer.start()
         self.consumer = consumer
         log.info('plugin uuid="%s", attached', self.uuid)
 
+    @synchronized
     def detach(self):
         """
         Detach (disconnect) from AMQP broker.
@@ -238,7 +290,7 @@ class Plugin(object):
         """
         Dispatch (invoke) the specified RMI request.
         :param request: An RMI request
-        :type request: Document
+        :type request: gofer.Document
         :return: The RMI returned.
         """
         return self.dispatcher.dispatch(request)

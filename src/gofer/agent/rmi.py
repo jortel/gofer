@@ -71,10 +71,13 @@ class Task:
         self.plugin = plugin
         self.request = request
         self.commit = commit
-        self.window = request.window
-        self.producer = self._producer(plugin)
+        self.producer = None
         self.ts = time()
-        
+
+    @property
+    def window(self):
+        return self.request.window
+
     def __call__(self):
         """
         Dispatch received request.
@@ -83,6 +86,7 @@ class Task:
         self.context.sn = request.sn
         self.context.progress = Progress(self)
         self.context.cancelled = Cancelled(request.sn)
+        self.producer = self._producer(self.plugin)
         self.producer.open()
         try:
             self.__call()

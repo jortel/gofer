@@ -26,7 +26,14 @@ This adapter uses the ``qpid.messaging`` library.
 proton
 ^^^^^^
 
-Coming soon.
+This adapter uses the ``proton`` library.
+
+- *AMQP* - 1.0
+- *package* - gofer.messaging.adapter.proton
+- *provides*:
+   - amqp-1-0
+   - proton
+   - qpid
 
 
 python-amqp
@@ -39,3 +46,4 @@ This adapter uses the ``amqp`` library.
 - *provides*:
    - amqp-0-9-1
    - rabbitmq
+   - rabbit

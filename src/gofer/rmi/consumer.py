@@ -65,15 +65,18 @@ class RequestConsumer(Consumer):
             return
         try:
             producer = Producer(self.url)
-            producer.authenticator = self.reader.authenticator
-            producer.link(self.reader)
-            producer.send(
-                route,
-                sn=request.sn,
-                data=request.data,
-                status=status,
-                timestamp=timestamp(),
-                **details)
+            producer.authenticator = self.authenticator
+            producer.open()
+            try:
+                producer.send(
+                    route,
+                    sn=request.sn,
+                    data=request.data,
+                    status=status,
+                    timestamp=timestamp(),
+                    **details)
+            finally:
+                producer.close()
         except Exception:
             log.exception('send (%s), failed', status)
 

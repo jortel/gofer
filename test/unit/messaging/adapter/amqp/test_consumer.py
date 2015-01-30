@@ -20,14 +20,48 @@ from gofer.devel import ipatch
 from gofer.messaging.adapter.model import Message
 
 with ipatch('amqp'):
+    from gofer.messaging.adapter.amqp.consumer import NotFound, opener
     from gofer.messaging.adapter.amqp.consumer import Receiver, Inbox, Empty
     from gofer.messaging.adapter.amqp.consumer import Reader, BaseReader
+    from gofer.messaging.adapter.amqp.consumer import DELIVERY_TAG
+
+
+class Queue(object):
+
+    def __init__(self, name):
+        self.name = name
+
+
+class Thing(object):
+
+    @opener
+    def open(self, exception=None):
+        if exception:
+            raise exception
+
+
+class ChannelError(Exception):
+
+    def __init__(self, code):
+        self.code = code
+
+
+class TestOpener(TestCase):
+
+    @patch('gofer.messaging.adapter.amqp.consumer.ChannelError', ChannelError)
+    def test_call(self):
+        t = Thing()
+        t.open()
+        # 404
+        self.assertRaises(NotFound, t.open, ChannelError(404))
+        # other
+        self.assertRaises(ChannelError, t.open, ChannelError(500))
 
 
 class TestReader(TestCase):
 
-    @patch('gofer.messaging.adapter.amqp.consumer.Endpoint')
-    def test_init(self, endpoint):
+    @patch('gofer.messaging.adapter.amqp.consumer.Connection')
+    def test_init(self, connection):
         queue = Mock()
         url = 'test-url'
 
@@ -35,52 +69,75 @@ class TestReader(TestCase):
         reader = Reader(queue, url=url)
 
         # validation
-        endpoint.assert_called_once_with(url)
+        connection.assert_called_once_with(url)
         self.assertTrue(isinstance(reader, BaseReader))
         self.assertEqual(reader.url, url)
+        self.assertEqual(reader.connection, connection.return_value)
         self.assertEqual(reader.queue, queue)
-        self.assertEqual(reader._receiver, None)
-        self.assertEqual(reader._endpoint, endpoint.return_value)
+        self.assertEqual(reader.channel, None)
+        self.assertEqual(reader.receiver, None)
 
-    @patch('gofer.messaging.adapter.amqp.consumer.Endpoint', Mock())
-    def test_endpoint(self):
-        reader = Reader(None)
-        returned = reader.endpoint()
-        self.assertEqual(returned, reader._endpoint)
+    @patch('gofer.messaging.adapter.amqp.consumer.Connection', Mock())
+    def test_is_open(self):
+        url = 'test-url'
+        reader = Reader(Mock(), url=url)
+        # closed
+        self.assertFalse(reader.is_open())
+        # open
+        reader.receiver = Mock()
+        self.assertTrue(reader.is_open())
 
-    @patch('gofer.messaging.adapter.amqp.consumer.Endpoint', Mock())
+    @patch('gofer.messaging.adapter.amqp.consumer.Connection')
     @patch('gofer.messaging.adapter.amqp.consumer.Receiver')
-    @patch('gofer.messaging.adapter.amqp.consumer.BaseReader.open')
-    def test_open(self, _open, receiver):
-        queue = Mock(name='test-queue')
-        channel = Mock()
+    def test_open(self, receiver, connection):
+        url = 'test-url'
+        queue = Queue('test-queue')
+        receiver.return_value.open.return_value = receiver.return_value
 
         # test
-        reader = Reader(queue)
-        reader.channel = Mock(return_value=channel)
+        reader = Reader(queue, url)
         reader.is_open = Mock(return_value=False)
         reader.open()
 
         # validation
-        _open.assert_called_once_with(reader)
+        connection.return_value.open.assert_called_once_with()
+        connection.return_value.channel.assert_called_once_with()
         receiver.assert_called_once_with(reader)
-        self.assertEqual(reader._receiver, receiver.return_value)
+        self.assertEqual(reader.channel, connection.return_value.channel.return_value)
+        self.assertEqual(reader.receiver, receiver.return_value)
 
-    @patch('gofer.messaging.adapter.amqp.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.amqp.consumer.BaseReader.open')
-    def test_open_already(self, _open):
+    @patch('gofer.messaging.adapter.amqp.consumer.Connection', Mock())
+    @patch('gofer.messaging.adapter.amqp.consumer.Receiver')
+    def test_open_already(self, receiver):
+        url = 'test-url'
         queue = Mock(name='test-queue')
-        channel = Mock()
 
         # test
-        reader = Reader(queue)
-        reader.channel = Mock(return_value=channel)
+        reader = Reader(queue, url)
         reader.is_open = Mock(return_value=True)
         reader.open()
 
         # validation
-        self.assertFalse(_open.called)
-        self.assertFalse(channel.receiver.called)
+        self.assertFalse(reader.connection.open.called)
+        self.assertFalse(receiver.called)
+
+    def test_close(self):
+        connection = Mock()
+        channel = Mock()
+        receiver = Mock()
+
+        # test
+        reader = Reader(None)
+        reader.connection = connection
+        reader.channel = channel
+        reader.receiver = receiver
+        reader.is_open = Mock(return_value=True)
+        reader.close()
+
+        # validation
+        receiver.close.assert_called_once_with()
+        channel.close.assert_called_once_with()
+        self.assertFalse(connection.close.called)
 
     def test_get(self):
         queue = Mock(name='test-queue')
@@ -89,16 +146,86 @@ class TestReader(TestCase):
 
         # test
         reader = Reader(queue, url=url)
-        reader._receiver = Mock()
-        reader._receiver.fetch.return_value = received
+        reader.receiver = Mock()
+        reader.receiver.fetch.return_value = received
         message = reader.get(10)
 
         # validation
-        reader._receiver.fetch.assert_called_once_with(10)
+        reader.receiver.fetch.assert_called_once_with(10)
         self.assertTrue(isinstance(message, Message))
         self.assertEqual(message._reader, reader)
         self.assertEqual(message._impl, received)
         self.assertEqual(message._body, received.body)
+
+    def test_ack(self):
+        url = 'test-url'
+        tag = '1234'
+        queue = Mock()
+        message = Mock(delivery_info={DELIVERY_TAG: tag})
+
+        # test
+        reader = Reader(queue, url=url)
+        reader.channel = Mock()
+        reader.ack(message)
+
+        # validation
+        reader.channel.basic_ack.assert_called_once_with(tag)
+
+    def test_ack_exception(self):
+        url = 'test-url'
+        tag = '1234'
+        queue = Mock()
+        message = Mock(delivery_info={DELIVERY_TAG: tag})
+
+        # test
+        reader = Reader(queue, url=url)
+        reader.channel = Mock()
+        reader.channel.basic_ack.side_effect = ValueError
+
+        # validation
+        self.assertRaises(ValueError, reader.ack, message)
+
+    def test_reject_requeue(self):
+        url = 'test-url'
+        tag = '1234'
+        queue = Mock()
+        message = Mock(delivery_info={DELIVERY_TAG: tag})
+
+        # test
+        reader = Reader(queue, url=url)
+        reader.channel = Mock()
+        reader.reject(message, True)
+
+        # validation
+        reader.channel.basic_reject.assert_called_once_with(tag, True)
+
+    def test_reject_exception(self):
+        url = 'test-url'
+        tag = '1234'
+        queue = Mock()
+        message = Mock(delivery_info={DELIVERY_TAG: tag})
+
+        # test
+        reader = Reader(queue, url=url)
+        reader.channel = Mock()
+        reader.channel.basic_reject.side_effect = ValueError
+
+        # validation
+        self.assertRaises(ValueError, reader.reject, message)
+
+    def test_reject_discarded(self):
+        url = 'test-url'
+        tag = '1234'
+        queue = Mock()
+        message = Mock(delivery_info={DELIVERY_TAG: tag})
+
+        # test
+        reader = Reader(queue, url=url)
+        reader.channel = Mock()
+        reader.reject(message, False)
+
+        # validation
+        reader.channel.basic_reject.assert_called_once_with(tag, False)
 
     @patch('gofer.messaging.adapter.amqp.consumer.Empty', Empty)
     def test_get_empty(self):
@@ -107,43 +234,13 @@ class TestReader(TestCase):
 
         # test
         reader = Reader(queue, url=url)
-        reader._receiver = Mock()
-        reader._receiver.fetch.side_effect = Empty
+        reader.receiver = Mock()
+        reader.receiver.fetch.side_effect = Empty
         message = reader.get(10)
 
         # validation
-        reader._receiver.fetch.assert_called_once_with(10)
+        reader.receiver.fetch.assert_called_once_with(10)
         self.assertEqual(message, None)
-
-    @patch('gofer.messaging.adapter.amqp.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.amqp.consumer.BaseReader.close')
-    def test_close(self, close):
-        receiver = Mock()
-
-        # test
-        reader = Reader(None)
-        reader._receiver = receiver
-        reader.is_open = Mock(return_value=True)
-        reader.close()
-
-        # validation
-        receiver.close.assert_called_once_with()
-        close.assert_called_once_with(reader, False)
-
-    @patch('gofer.messaging.adapter.amqp.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.amqp.consumer.BaseReader.close')
-    def test_close_not_open(self, close):
-        receiver = Mock()
-
-        # test
-        reader = Reader(None)
-        reader._receiver = receiver
-        reader.is_open = Mock(return_value=False)
-        reader.close()
-
-        # validation
-        self.assertFalse(receiver.close.called)
-        self.assertFalse(close.called)
 
 
 class TestReceiver(TestCase):
@@ -151,7 +248,7 @@ class TestReceiver(TestCase):
     @patch('select.epoll')
     def test_wait(self, epoll):
         fd = 0
-        channel = Mock()
+        channel = Mock(method_queue=[])
         timeout = 10
 
         epoll.return_value.poll.return_value = [fd]
@@ -166,9 +263,24 @@ class TestReceiver(TestCase):
         channel.wait.assert_called_once_with()
 
     @patch('select.epoll')
+    def test_wait(self, epoll):
+        fd = 0
+        channel = Mock(method_queue=[Mock()])
+        timeout = 10
+
+        epoll.return_value.poll.return_value = [fd]
+
+        # test
+        Receiver._wait(fd, channel, timeout)
+
+        # validation
+        self.assertFalse(epoll.called)
+        channel.wait.assert_called_once_with()
+
+    @patch('select.epoll')
     def test_wait_nothing(self, epoll):
         fd = 0
-        channel = Mock()
+        channel = Mock(method_queue=[])
         timeout = 10
 
         epoll.return_value.poll.return_value = []
@@ -190,29 +302,25 @@ class TestReceiver(TestCase):
         self.assertTrue(isinstance(r.inbox, Inbox))
 
     def test_channel(self):
-        reader = Mock()
+        reader = Mock(channel=Mock())
         r = Receiver(reader)
         channel = r.channel()
-        self.assertEqual(channel, reader.channel.return_value)
+        self.assertEqual(channel, reader.channel)
 
     def test_open(self):
         queue = Mock()
-        channel = Mock()
-        reader = Mock(queue=queue)
-        reader.channel.return_value = channel
+        reader = Mock(queue=queue, channel=Mock())
 
         # test
         r = Receiver(reader)
-        r.open()
+        r = r.open()
 
         # validation
-        channel.basic_consume.assert_called_once_with(queue.name, callback=r.inbox.put)
-        self.assertEqual(r.tag, channel.basic_consume.return_value)
+        reader.channel.basic_consume.assert_called_once_with(queue.name, callback=r.inbox.put)
+        self.assertEqual(r.tag, reader.channel.basic_consume.return_value)
 
     def test_close(self):
-        channel = Mock()
-        reader = Mock()
-        reader.channel.return_value = channel
+        reader = Mock(channel=Mock())
         tag = 1234
 
         # test
@@ -221,13 +329,25 @@ class TestReceiver(TestCase):
         r.close()
 
         # validation
-        channel.basic_cancel.assert_called_once_with(tag)
+        reader.channel.basic_cancel.assert_called_once_with(tag)
+
+    def test_close_exception(self):
+        reader = Mock()
+        reader.channel.basic_cancel.side_effect = ValueError
+        tag = 1234
+
+        # test
+        r = Receiver(reader)
+        r.tag = tag
+        r.close()
+
+        # validation
+        reader.channel.basic_cancel.assert_called_once_with(tag)
 
     def test_fetch(self):
         timeout = 10
         channel = Mock()
-        reader = Mock()
-        reader.channel.return_value = channel
+        reader = Mock(channel=channel)
         received = 33
 
         # test
@@ -245,8 +365,7 @@ class TestReceiver(TestCase):
 
     def test_fetch_empty(self):
         channel = Mock()
-        reader = Mock()
-        reader.channel.return_value = channel
+        reader = Mock(channel=channel)
 
         # test
         r = Receiver(reader)

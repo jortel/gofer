@@ -9,13 +9,15 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+from time import sleep
 from logging import getLogger
 
-from amqp import Message
+from proton import Message
+from proton.utils import SendException
 
 from gofer.messaging.adapter.model import BaseSender
-from gofer.messaging.adapter.amqp.connection import Connection
-from gofer.messaging.adapter.amqp.reliability import reliable
+from gofer.messaging.adapter.proton.connection import Connection
+from gofer.messaging.adapter.proton.reliability import reliable
 
 
 log = getLogger(__name__)
@@ -31,15 +33,27 @@ def build_message(body, ttl):
     :rtype: Message
     """
     if ttl:
-        ms = ttl * 1000  # milliseconds
-        return Message(body, delivery_mode=2, expiration=str(ms))
+        return Message(body=body, durable=True, ttl=ttl)
     else:
-        return Message(body, delivery_mode=2)
+        return Message(body=body, durable=True)
+
+
+def sender(fn):
+    @reliable
+    def _fn(*args, **keywords):
+        while True:
+            try:
+                return fn(*args, **keywords)
+            except SendException:
+                sleep(10)
+    return _fn
 
 
 class Sender(BaseSender):
     """
     An AMQP message sender.
+    :ivar connection: A proton connection.
+    :type connection: Connection
     """
 
     def __init__(self, url=None):
@@ -49,16 +63,16 @@ class Sender(BaseSender):
         """
         BaseSender.__init__(self, url)
         self.connection = Connection(url)
-        self.channel = None
 
     def is_open(self):
         """
-        Get whether the sender has been opened.
+        Get whether the messenger has been opened.
         :return: True if open.
         :rtype bool
         """
-        return self.channel is not None
+        return self.connection.is_open()
 
+    @reliable
     def open(self):
         """
         Open the reader.
@@ -67,21 +81,14 @@ class Sender(BaseSender):
             # already opened
             return
         self.connection.open()
-        self.channel = self.connection.channel()
 
     def close(self):
         """
         Close the reader.
         """
-        channel = self.channel
-        self.channel = None
+        pass
 
-        try:
-            channel.close()
-        except Exception:
-            pass
-
-    @reliable
+    @sender
     def send(self, route, content, ttl=None):
         """
         Send a message.
@@ -92,12 +99,10 @@ class Sender(BaseSender):
         :param ttl: Time to Live (seconds)
         :type ttl: float
         """
-        parts = route.split('/')
-        if len(parts) > 1:
-            exchange = parts[0]
-        else:
-            exchange = ''
-        key = parts[-1]
-        message = build_message(content, ttl)
-        self.channel.basic_publish(message, mandatory=True, exchange=exchange, routing_key=key)
-        log.debug('sent (%s)', route)
+        sender = self.connection.sender(route)
+        try:
+            message = build_message(content, ttl)
+            sender.send(message)
+            log.debug('sent (%s)', route)
+        finally:
+            sender.close()

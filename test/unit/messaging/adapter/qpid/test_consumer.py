@@ -18,26 +18,48 @@ from gofer.devel import ipatch
 from gofer.messaging.adapter.model import Message
 
 with ipatch('qpid'):
-    from gofer.messaging.adapter.qpid.consumer import subject
+    from gofer.messaging.adapter.qpid.consumer import NotFound, opener
     from gofer.messaging.adapter.qpid.consumer import Reader, BaseReader
-
-
-class TestSubject(TestCase):
-
-    def test_subject(self):
-        hello = 'hello'
-        message = Mock(properties={'qpid.subject': hello})
-        self.assertEqual(subject(message), hello)
 
 
 class Empty(Exception):
     pass
 
 
+class Queue(object):
+
+    def __init__(self, name):
+        self.name = name
+
+
+class Thing(object):
+
+    @opener
+    def open(self, exception=None):
+        if exception:
+            raise exception
+
+
+class _NotFound(Exception):
+    pass
+
+
+class TestOpener(TestCase):
+
+    @patch('gofer.messaging.adapter.qpid.consumer._NotFound', _NotFound)
+    def test_call(self):
+        t = Thing()
+        t.open()
+        # 404
+        self.assertRaises(NotFound, t.open, _NotFound)
+        # other
+        self.assertRaises(ValueError, t.open, ValueError)
+
+
 class TestReader(TestCase):
 
-    @patch('gofer.messaging.adapter.qpid.consumer.Endpoint')
-    def test_init(self, endpoint):
+    @patch('gofer.messaging.adapter.qpid.consumer.Connection')
+    def test_init(self, connection):
         queue = Mock()
         url = 'test-url'
 
@@ -45,65 +67,148 @@ class TestReader(TestCase):
         reader = Reader(queue, url=url)
 
         # validation
-        endpoint.assert_called_once_with(url)
+        connection.assert_called_once_with(url)
         self.assertTrue(isinstance(reader, BaseReader))
         self.assertEqual(reader.url, url)
+        self.assertEqual(reader.connection, connection.return_value)
         self.assertEqual(reader.queue, queue)
-        self.assertEqual(reader._receiver, None)
-        self.assertEqual(reader._endpoint, endpoint.return_value)
+        self.assertEqual(reader.session, None)
+        self.assertEqual(reader.receiver, None)
 
-    @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    def test_endpoint(self):
-        reader = Reader(None)
-        returned = reader.endpoint()
-        self.assertEqual(returned, reader._endpoint)
+    @patch('gofer.messaging.adapter.qpid.consumer.Connection', Mock())
+    def test_is_open(self):
+        url = 'test-url'
+        reader = Reader(Mock(), url=url)
+        # closed
+        self.assertFalse(reader.is_open())
+        # open
+        reader.receiver = Mock()
+        self.assertTrue(reader.is_open())
 
-    @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.qpid.consumer.BaseReader.open')
-    def test_open(self, open):
-        queue = Mock(name='test-queue')
-        channel = Mock()
+    @patch('gofer.messaging.adapter.qpid.consumer.Connection')
+    def test_open(self, connection):
+        url = 'test-url'
+        queue = Queue('test-queue')
 
         # test
-        reader = Reader(queue)
-        reader.channel = Mock(return_value=channel)
+        reader = Reader(queue, url)
         reader.is_open = Mock(return_value=False)
         reader.open()
 
         # validation
-        open.assert_called_once_with(reader)
-        channel.receiver.assert_called_once_with(queue.name)
-        self.assertEqual(reader._receiver, channel.receiver.return_value)
-        
-    @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.qpid.consumer.BaseReader.open')
-    def test_open_already(self, open):
-        queue = Mock(name='test-queue')
-        channel = Mock()
+        connection.return_value.open.assert_called_once_with()
+        connection.return_value.session.assert_called_once_with()
+        connection.return_value.session.return_value.receiver.assert_called_once_with(queue.name)
+        self.assertEqual(reader.session, connection.return_value.session.return_value)
+        self.assertEqual(reader.receiver, reader.session.receiver.return_value)
+
+    @patch('gofer.messaging.adapter.qpid.consumer.Connection', Mock())
+    def test_open_already(self):
+        url = 'test-url'
+        queue = Queue('test-queue')
 
         # test
-        reader = Reader(queue)
-        reader.channel = Mock(return_value=channel)
+        reader = Reader(queue, url)
         reader.is_open = Mock(return_value=True)
         reader.open()
 
         # validation
-        self.assertFalse(open.called)
-        self.assertFalse(channel.receiver.called)
+        self.assertFalse(reader.connection.open.called)
+
+    def test_close(self):
+        connection = Mock()
+        session = Mock()
+        receiver = Mock()
+
+        # test
+        reader = Reader(None)
+        reader.connection = connection
+        reader.session = session
+        reader.receiver = receiver
+        reader.is_open = Mock(return_value=True)
+        reader.close()
+
+        # validation
+        receiver.close.assert_called_once_with()
+        session.close.assert_called_once_with()
+        self.assertFalse(connection.close.called)
+        
+    def test_ack(self):
+        message = Mock()
+
+        # test
+        reader = Reader(None)
+        reader.session = Mock()
+        reader.ack(message)
+
+        # validation
+        reader.session.acknowledge.assert_called_once_with(message=message)
+
+    def test_ack_exception(self):
+        message = Mock()
+        session = Mock()
+        session.acknowledge.side_effect = ValueError
+
+        # test
+        reader = Reader(None)
+        reader.session = session
+        self.assertRaises(ValueError, reader.ack, message)
+
+    @patch('gofer.messaging.adapter.qpid.consumer.RELEASED')
+    @patch('gofer.messaging.adapter.qpid.consumer.Disposition')
+    def test_reject_released(self, disposition, released):
+        message = Mock()
+
+        # test
+        reader = Reader(None)
+        reader.session = Mock()
+        reader.reject(message)
+
+        # validation
+        disposition.assert_called_once_with(released)
+        reader.session.acknowledge.assert_called_once_with(
+            message=message, disposition=disposition.return_value)
+
+    @patch('gofer.messaging.adapter.qpid.consumer.Disposition')
+    def test_reject_exception(self, disposition):
+        message = Mock()
+        session = Mock()
+        session.acknowledge.side_effect = ValueError
+
+        # test
+        reader = Reader(None)
+        reader.session = session
+        self.assertRaises(ValueError, reader.reject, message)
+
+
+    @patch('gofer.messaging.adapter.qpid.consumer.REJECTED')
+    @patch('gofer.messaging.adapter.qpid.consumer.Disposition')
+    def test_reject_rejected(self, disposition, rejected):
+        message = Mock()
+
+        # test
+        reader = Reader(None)
+        reader.session = Mock()
+        reader.reject(message, False)
+
+        # validation
+        disposition.assert_called_once_with(rejected)
+        reader.session.acknowledge.assert_called_once_with(
+            message=message, disposition=disposition.return_value)
 
     def test_get(self):
-        queue = Mock(name='test-queue')
+        queue = Queue('test-queue')
         received = Mock(content='<body/>')
         url = 'test-url'
 
         # test
         reader = Reader(queue, url=url)
-        reader._receiver = Mock()
-        reader._receiver.fetch.return_value = received
+        reader.receiver = Mock()
+        reader.receiver.fetch.return_value = received
         message = reader.get(10)
 
         # validation
-        reader._receiver.fetch.assert_called_once_with(10)
+        reader.receiver.fetch.assert_called_once_with(10)
         self.assertTrue(isinstance(message, Message))
         self.assertEqual(message._reader, reader)
         self.assertEqual(message._impl, received)
@@ -116,12 +221,12 @@ class TestReader(TestCase):
 
         # test
         reader = Reader(queue, url=url)
-        reader._receiver = Mock()
-        reader._receiver.fetch.side_effect = Empty
+        reader.receiver = Mock()
+        reader.receiver.fetch.side_effect = Empty
         message = reader.get(10)
 
         # validation
-        reader._receiver.fetch.assert_called_once_with(10)
+        reader.receiver.fetch.assert_called_once_with(10)
         self.assertEqual(message, None)
 
     @patch('gofer.messaging.adapter.qpid.consumer.sleep')
@@ -132,41 +237,11 @@ class TestReader(TestCase):
 
         # test
         reader = Reader(queue, url=url)
-        reader._receiver = Mock()
-        reader._receiver.fetch.side_effect = ValueError
+        reader.receiver = Mock()
+        reader.receiver.fetch.side_effect = ValueError
         message = reader.get(10)
 
         # validation
-        reader._receiver.fetch.assert_called_once_with(10)
+        reader.receiver.fetch.assert_called_once_with(10)
         sleep.assert_called_once_with(60)
         self.assertEqual(message, None)
-
-    @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.qpid.consumer.BaseReader.close')
-    def test_close(self, close):
-        receiver = Mock()
-
-        # test
-        reader = Reader(None)
-        reader._receiver = receiver
-        reader.is_open = Mock(return_value=True)
-        reader.close()
-
-        # validation
-        receiver.close.assert_called_once_with()
-        close.assert_called_once_with(reader, False)
-
-    @patch('gofer.messaging.adapter.qpid.consumer.Endpoint', Mock())
-    @patch('gofer.messaging.adapter.qpid.consumer.BaseReader.close')
-    def test_close_not_open(self, close):
-        receiver = Mock()
-
-        # test
-        reader = Reader(None)
-        reader._receiver = receiver
-        reader.is_open = Mock(return_value=False)
-        reader.close()
-
-        # validation
-        self.assertFalse(receiver.close.called)
-        self.assertFalse(close.called)

@@ -17,6 +17,7 @@ from unittest import TestCase
 from mock import patch, Mock
 
 from gofer.devel import ipatch
+from gofer.common import ThreadSingleton
 
 with ipatch('qpid'):
     from gofer.messaging.adapter.model import Broker
@@ -33,10 +34,10 @@ class Local(object):
 class TestConnection(TestCase):
 
     def setUp(self):
-        Connection.local.d = {}
+        ThreadSingleton.all().clear()
 
     def tearDown(self):
-        Connection.local.d = {}
+        ThreadSingleton.all().clear()
 
     def test_init(self):
         url = TEST_URL
@@ -101,42 +102,18 @@ class TestConnection(TestCase):
         c.open()
         self.assertFalse(c._impl.open.called)
 
-    def test_channel(self):
+    def test_session(self):
         url = TEST_URL
         c = Connection(url)
         c._impl = Mock()
-        ch = c.channel()
-        self.assertEqual(ch, c._impl.session.return_value)
+        session = c.session()
+        self.assertEqual(session, c._impl.session.return_value)
 
     def test_close(self):
         url = TEST_URL
         c = Connection(url)
-        # soft
         impl = Mock()
         c._impl = impl
         c.close()
-        self.assertFalse(impl.close.called)
-        # hard
-        impl = Mock()
-        c._impl = impl
-        c.close(True)
         impl.close.assert_called_once_with()
         self.assertEqual(c._impl, None)
-        # not open
-        c._impl = None
-        c.close()
-
-    def test_disconnect(self):
-        url = TEST_URL
-        c = Connection(url)
-        c._impl = Mock()
-        c._disconnect()
-        c._impl.close.assert_called_with()
-
-    def test_disconnect_exception(self):
-        url = TEST_URL
-        c = Connection(url)
-        c._impl = Mock()
-        c._impl.close.side_effect = ValueError
-        c._disconnect()
-        c._impl.close.assert_called_with()

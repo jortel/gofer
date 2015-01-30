@@ -35,4 +35,5 @@ from gofer.messaging.adapter import \
     Queue, \
     Reader, \
     Sender, \
-    Producer
+    Producer, \
+    NotFound

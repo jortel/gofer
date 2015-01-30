@@ -46,7 +46,7 @@ class ReplyConsumer(Consumer):
         :type authenticator: gofer.messaging.auth.Authenticator
         """
         Consumer.__init__(self, queue, url)
-        self.reader.authenticator = authenticator
+        self.authenticator = authenticator
         self.listener = None
         self.blacklist = set()
 

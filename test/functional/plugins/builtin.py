@@ -1,5 +1,3 @@
-from uuid import uuid4
-
 from gofer.decorators import *
 from gofer.agent.plugin import Plugin
 
@@ -14,7 +12,7 @@ class TestAction:
     @action(hours=36)
     def hello(self):
         plugin = Plugin.find(__name__)
-        log.info('Hello:\n%s', plugin.cfg())
+        log.info('Hello:\n%s', plugin.cfg)
 
 
 class TestAdmin:

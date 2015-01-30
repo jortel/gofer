@@ -13,7 +13,6 @@ from gofer.messaging.adapter.qpid.model import Exchange, Queue
 from gofer.messaging.adapter.qpid.connection import Connection
 from gofer.messaging.adapter.qpid.consumer import Reader
 from gofer.messaging.adapter.qpid.producer import Sender
-from gofer.messaging.adapter.qpid.endpoint import Endpoint
 
 
 PROVIDES = [

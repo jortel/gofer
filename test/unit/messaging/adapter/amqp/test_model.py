@@ -35,70 +35,58 @@ class TestExchange(TestCase):
         self.assertEqual(exchange.policy, policy)
         self.assertEqual(exchange.auto_delete, False)
 
-    @patch('gofer.messaging.adapter.amqp.endpoint.Endpoint')
-    def test_declare(self, endpoint):
+    @patch('gofer.messaging.adapter.amqp.reliability.Connection.channel')
+    def test_declare(self, channel):
         url = 'test-url'
-        channel = Mock()
-        endpoint.return_value.channel.return_value = channel
 
         # test
         exchange = Exchange('test', policy='direct')
         exchange.declare(url)
 
         # validation
-        endpoint.channel.asssert_called_once_with()
-        channel.exchange_declare.assert_called_once_with(
+        channel.return_value.exchange_declare.assert_called_once_with(
             exchange.name,
             exchange.policy,
             durable=exchange.durable,
             auto_delete=exchange.auto_delete)
 
-    @patch('gofer.messaging.adapter.amqp.endpoint.Endpoint')
-    def test_delete(self, endpoint):
+    @patch('gofer.messaging.adapter.amqp.reliability.Connection.channel')
+    def test_delete(self, channel):
         url = 'test-url'
-        channel = Mock()
-        endpoint.return_value.channel.return_value = channel
 
         # test
         exchange = Exchange('test')
         exchange.delete(url)
 
         # validation
-        endpoint.channel.asssert_called_once_with()
-        channel.exchange_delete.assert_called_once_with(exchange.name, nowait=True)
+        channel.return_value.exchange_delete.assert_called_once_with(exchange.name, nowait=True)
 
-    @patch('gofer.messaging.adapter.amqp.endpoint.Endpoint')
-    def test_bind(self, endpoint):
+    @patch('gofer.messaging.adapter.amqp.reliability.Connection.channel')
+    def test_bind(self, channel):
         url = 'test-url'
-        channel = Mock()
         queue = BaseQueue('test-queue')
-        endpoint.return_value.channel.return_value = channel
 
         # test
         exchange = Exchange('test-exchange')
         exchange.bind(queue, url)
 
         # validation
-        endpoint.channel.asssert_called_once_with()
-        channel.queue_bind.assert_called_once_with(
+        channel.return_value.queue_bind.assert_called_once_with(
             queue.name,
             exchange=exchange.name,
             routing_key=queue.name)
 
-    @patch('gofer.messaging.adapter.amqp.endpoint.Endpoint')
-    def test_unbind(self, endpoint):
+    @patch('gofer.messaging.adapter.amqp.reliability.Connection.channel')
+    def test_unbind(self, channel):
         url = 'test-url'
-        channel = Mock()
         queue = BaseQueue('test-queue')
-        endpoint.return_value.channel.return_value = channel
 
         # test
         exchange = Exchange('test-exchange')
         exchange.unbind(queue, url)
 
         # validation
-        endpoint.channel.asssert_called_once_with()
-        channel.queue_unbind.assert_called_once_with(
+        channel.return_value.queue_unbind.assert_called_once_with(
             queue.name,
             exchange=exchange.name,
             routing_key=queue.name)
@@ -115,30 +103,25 @@ class TestQueue(TestCase):
         self.assertEqual(queue.auto_delete, False)
         self.assertEqual(queue.expiration, 0)
 
-    @patch('gofer.messaging.adapter.amqp.endpoint.Endpoint')
-    def test_declare(self, endpoint):
+    @patch('gofer.messaging.adapter.amqp.reliability.Connection.channel')
+    def test_declare(self, channel):
         url = 'test-url'
-        channel = Mock()
-        endpoint.return_value.channel.return_value = channel
 
         # test
         queue = Queue('test')
         queue.declare(url)
 
         # validation
-        endpoint.channel.asssert_called_once_with()
-        channel.queue_declare.assert_called_once_with(
+        channel.return_value.queue_declare.assert_called_once_with(
             queue.name,
             durable=queue.durable,
             exclusive=queue.exclusive,
             auto_delete=queue.auto_delete,
             arguments=None)
 
-    @patch('gofer.messaging.adapter.amqp.endpoint.Endpoint')
-    def test_declare_auto_delete(self, endpoint):
+    @patch('gofer.messaging.adapter.amqp.reliability.Connection.channel')
+    def test_declare_auto_delete(self, channel):
         url = 'test-url'
-        channel = Mock()
-        endpoint.return_value.channel.return_value = channel
 
         # test
         queue = Queue('test')
@@ -147,24 +130,20 @@ class TestQueue(TestCase):
         queue.declare(url)
 
         # validation
-        endpoint.channel.asssert_called_once_with()
-        channel.queue_declare.assert_called_once_with(
+        channel.return_value.queue_declare.assert_called_once_with(
             queue.name,
             durable=queue.durable,
             exclusive=queue.exclusive,
             auto_delete=queue.auto_delete,
             arguments={'x-expires': queue.expiration * 1000})
 
-    @patch('gofer.messaging.adapter.amqp.endpoint.Endpoint')
-    def test_delete(self, endpoint):
+    @patch('gofer.messaging.adapter.amqp.reliability.Connection.channel')
+    def test_delete(self, channel):
         url = 'test-url'
-        channel = Mock()
-        endpoint.return_value.channel.return_value = channel
 
         # test
         queue = Queue('test')
         queue.delete(url)
 
         # validation
-        endpoint.channel.asssert_called_once_with()
-        channel.queue_delete.assert_called_once_with(queue.name, nowait=True)
+        channel.return_value.queue_delete.assert_called_once_with(queue.name, nowait=True)

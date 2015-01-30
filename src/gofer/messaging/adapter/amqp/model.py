@@ -11,7 +11,7 @@
 
 from logging import getLogger
 
-from gofer.messaging.adapter.amqp import endpoint
+from gofer.messaging.adapter.amqp import reliability
 
 from gofer.messaging.adapter.model import BaseExchange, BaseQueue
 
@@ -20,7 +20,7 @@ log = getLogger(__name__)
 
 
 def reliable(fn):
-    return endpoint.endpoint(endpoint.reliable(fn))
+    return reliability.endpoint(reliability.reliable(fn))
 
 
 # --- model ------------------------------------------------------------------
@@ -31,7 +31,7 @@ class Exchange(BaseExchange):
     def declare(self, url):
         @reliable
         def _fn(_endpoint):
-            channel = _endpoint.channel()
+            channel = _endpoint.channel
             channel.exchange_declare(
                 self.name,
                 self.policy,
@@ -42,7 +42,7 @@ class Exchange(BaseExchange):
     def delete(self, url):
         @reliable
         def _fn(_endpoint):
-            channel = _endpoint.channel()
+            channel = _endpoint.channel
             channel.exchange_delete(self.name, nowait=True)
         _fn(url)
 
@@ -57,7 +57,7 @@ class Exchange(BaseExchange):
         @reliable
         def _fn(_endpoint):
             key = queue.name
-            channel = _endpoint.channel()
+            channel = _endpoint.channel
             channel.queue_bind(queue.name, exchange=self.name, routing_key=key)
         _fn(url)
 
@@ -70,7 +70,7 @@ class Exchange(BaseExchange):
         @reliable
         def _fn(_endpoint):
             key = queue.name
-            channel = _endpoint.channel()
+            channel = _endpoint.channel
             channel.queue_unbind(queue.name, exchange=self.name, routing_key=key)
         _fn(url)
 
@@ -80,7 +80,7 @@ class Queue(BaseQueue):
     def declare(self, url):
         @reliable
         def _fn(_endpoint):
-            channel = _endpoint.channel()
+            channel = _endpoint.channel
             if self.auto_delete and self.expiration:
                 arguments = {'x-expires': self.expiration * 1000}
             else:
@@ -96,6 +96,6 @@ class Queue(BaseQueue):
     def delete(self, url):
         @reliable
         def _fn(_endpoint):
-            channel = _endpoint.channel()
+            channel = _endpoint.channel
             channel.queue_delete(self.name, nowait=True)
         _fn(url)

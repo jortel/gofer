@@ -22,7 +22,7 @@ URL = 'amqp://localhost:5673'
 if __name__ == '__main__':
     loader = Loader()
     loader.load()
-    # AMQP-0-8
+    # AMQP-0-9-1
     adapter = loader.catalog['amqp-0-9-1']
     test = Test(URL, adapter)
     test()

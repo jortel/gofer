@@ -22,7 +22,8 @@ from logging import getLogger
 from qpid.messaging import Connection as RealConnection
 from qpid.messaging.transports import TRANSPORTS
 
-from gofer.messaging.adapter.model import Domain, BaseConnection, ThreadConnection
+from gofer.common import ThreadSingleton
+from gofer.messaging.adapter.model import Domain, BaseConnection
 
 
 log = getLogger(__name__)
@@ -33,7 +34,7 @@ class Connection(BaseConnection):
     Represents a Qpid connection.
     """
 
-    __metaclass__ = ThreadConnection
+    __metaclass__ = ThreadSingleton
 
     @staticmethod
     def add_transports():
@@ -74,7 +75,7 @@ class Connection(BaseConnection):
         ssl = broker.ssl
         Connection.add_transports()
         log.info('connecting: %s', broker)
-        self._impl = RealConnection(
+        impl = RealConnection(
             host=broker.host,
             port=broker.port,
             tcp_nodelay=True,
@@ -87,7 +88,8 @@ class Connection(BaseConnection):
             ssl_keyfile=ssl.client_key,
             ssl_certfile=ssl.client_certificate,
             ssl_skip_hostname_check=(not ssl.host_validation))
-        self._impl.attach()
+        impl.attach()
+        self._impl = impl
         log.info('connected: %s', broker.url)
 
     @property
@@ -99,37 +101,22 @@ class Connection(BaseConnection):
         """
         return self._impl
 
-    def channel(self):
+    def session(self):
         """
-        Open a channel.
+        Open a session.
         :return The *real* channel.
         :rtype qpid.session.Session
         """
         return self._impl.session()
 
-    def close(self, hard=False):
+    def close(self):
         """
         Close the connection.
-        A *soft* close is essentially a non-operation and provides
-        for connection caching.  A *hard* close actually closes the
-        connection to the broker.
-        :param hard: Force the connection closed.
-        :type hard: bool
         """
-        if not self.is_open():
-            # not open
-            return
-        if not hard:
-            # soft
-            return
-        self._disconnect()
+        connection = self._impl
         self._impl = None
 
-    def _disconnect(self):
-        """
-        Safely close the *real* connection.
-        """
         try:
-            self._impl.close()
-        except Exception, e:
-            log.debug(str(e))
+            connection.close()
+        except Exception:
+            pass

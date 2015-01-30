@@ -31,8 +31,6 @@ PACKAGE = '.'.join(__name__.split('.')[:-1])
 # symbols required to be supported by all adapters
 REQUIRED = [
     'PROVIDES',
-    'Connection',
-    'Endpoint',
     'Exchange',
     'Queue',
     'Reader',

@@ -27,7 +27,7 @@ LogHandler.install()
 
 from gofer import NAME
 from gofer import pam
-from gofer.agent.plugin import PluginLoader
+from gofer.agent.plugin import PluginLoader, Started
 from gofer.agent.lock import Lock, LockFailed
 from gofer.agent.config import AgentConfig
 from gofer.agent.rmi import Scheduler
@@ -72,7 +72,7 @@ class Agent:
     WAIT = None
 
     @staticmethod
-    def __start_actions(plugins):
+    def _start_actions(plugins):
         """
         Start actions on enabled plugins.
         :param plugins: A list of loaded plugins.
@@ -88,7 +88,7 @@ class Agent:
         return action_thread
 
     @staticmethod
-    def __start_scheduler(plugins):
+    def _start_scheduler(plugins):
         """
         Start the RMI scheduler.
         :param plugins: A list of loaded plugins.
@@ -101,10 +101,11 @@ class Agent:
         return scheduler
 
     @staticmethod
-    def __start_plugins(plugins):
+    def _start_plugins(plugins):
         """
         Start the plugins.
-        Create and start a plugin monitor thread for each plugin.
+          - Attach each plugin as appropriate.
+          - Call started.
         :param plugins: A list of loaded plugins.
         :type plugins: list
         """
@@ -114,6 +115,7 @@ class Agent:
                     plugin.attach()
                 except Exception:
                     log.exception(plugin.uuid)
+        Started.run()
 
     def __init__(self, plugins):
         """
@@ -128,9 +130,9 @@ class Agent:
         Start the agent.
         """
         plugins = self.plugins
-        action_thread = self.__start_actions(plugins)
-        self.__start_scheduler(plugins)
-        self.__start_plugins(plugins)
+        action_thread = self._start_actions(plugins)
+        self._start_scheduler(plugins)
+        self._start_plugins(plugins)
         log.info('agent started.')
         if block:
             action_thread.join(self.WAIT)

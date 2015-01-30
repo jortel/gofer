@@ -22,7 +22,7 @@ from logging import getLogger
 from qpid.messaging import Message
 
 from gofer.messaging.adapter.model import BaseSender
-from gofer.messaging.adapter.qpid.endpoint import Endpoint
+from gofer.messaging.adapter.qpid.connection import Connection
 
 
 log = getLogger(__name__)
@@ -39,30 +39,38 @@ class Sender(BaseSender):
         :type url: str
         """
         BaseSender.__init__(self, url)
-        self._endpoint = Endpoint(url)
-        self._link = None
+        self.connection = Connection(url)
+        self.session = None
 
-    def endpoint(self):
+    def is_open(self):
         """
-        Get a concrete object.
-        :return: A concrete object.
-        :rtype: BaseEndpoint
+        Get whether the sender has been opened.
+        :return: True if open.
+        :rtype bool
         """
-        return self._link or self._endpoint
+        return self.session is not None
 
-    def link(self, messenger):
+    def open(self):
         """
-        Link to another messenger.
-        :param messenger: A messenger to link with.
-        :type messenger: gofer.messaging.adapter.model.Messenger
+        Open the reader.
         """
-        self._link = messenger.endpoint()
+        if self.is_open():
+            # already opened
+            return
+        self.connection.open()
+        self.session = self.connection.session()
 
-    def unlink(self):
+    def close(self):
         """
-        Unlink with another messenger.
+        Close the reader.
         """
-        self._link = None
+        session = self.session
+        self.session = None
+
+        try:
+            session.close()
+        except Exception:
+            pass
 
     def send(self, route, content, ttl=None):
         """
@@ -74,9 +82,10 @@ class Sender(BaseSender):
         :param ttl: Time to Live (seconds)
         :type ttl: float
         """
-        message = Message(content=content, durable=True, ttl=ttl)
-        channel = self.channel()
-        sender = channel.sender(route)
-        sender.send(message)
-        sender.close()
-        log.debug('sent (%s)', route)
+        sender = self.session.sender(route)
+        try:
+            message = Message(content=content, durable=True, ttl=ttl)
+            sender.send(message)
+            log.debug('sent (%s)', route)
+        finally:
+            sender.close()

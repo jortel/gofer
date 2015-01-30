@@ -20,18 +20,23 @@ from gofer.messaging.adapter.model import Reader
 log = getLogger(__name__)
 
 
-class BaseConsumer(Thread):
+class ConsumerThread(Thread):
     """
     An AMQP (abstract) consumer.
     """
 
-    def __init__(self, reader):
+    def __init__(self, queue, url):
         """
-        :param reader: An AMQP queue reader.
-        :type reader: gofer.messaging.adapter.model.Reader
+        :param queue: An AMQP queue.
+        :type queue: gofer.messaging.adapter.model.Queue
+        :param url: The broker URL.
+        :type url: str
         """
-        Thread.__init__(self, name=reader.queue.name)
-        self.reader = reader
+        Thread.__init__(self, name=queue.name)
+        self.url = url
+        self.queue = queue
+        self.authenticator = None
+        self._reader = None
         self._run = True
         self.setDaemon(True)
 
@@ -45,6 +50,8 @@ class BaseConsumer(Thread):
         """
         Main consumer loop.
         """
+        self._reader = Reader(self.queue, self.url)
+        self._reader.authenticator = self.authenticator
         self._open()
         try:
             while self._run:
@@ -58,7 +65,7 @@ class BaseConsumer(Thread):
         """
         while self._run:
             try:
-                self.reader.open()
+                self._reader.open()
                 break
             except Exception:
                 log.exception(self.getName())
@@ -69,7 +76,7 @@ class BaseConsumer(Thread):
         Close the reader.
         """
         try:
-            self.reader.close()
+            self._reader.close()
         except Exception:
             log.exception(self.getName())
 
@@ -78,7 +85,7 @@ class BaseConsumer(Thread):
         Read and process incoming documents.
         """
         try:
-            message, document = self.reader.next(10)
+            message, document = self._reader.next(10)
             if message is None:
                 return
             log.debug('{%s} read: %s', self.getName(), document)
@@ -117,7 +124,7 @@ class BaseConsumer(Thread):
         log.debug('dispatched: %s', document)
 
 
-class Consumer(BaseConsumer):
+class Consumer(ConsumerThread):
     """
     An AMQP consumer.
     Thread used to consumer messages from the specified queue.
@@ -128,10 +135,10 @@ class Consumer(BaseConsumer):
     def __init__(self, queue, url=None):
         """
         :param queue: The AMQP node.
-        :type queue: gofer.messaging.adapter.model.BaseQueue
+        :type queue: gofer.messaging.adapter.model.Queue
         :param url: The broker URL.
         :type url: str
         """
-        BaseConsumer.__init__(self, Reader(queue, url))
+        super(Consumer, self).__init__(queue, url)
         self.url = url
         self.queue = queue

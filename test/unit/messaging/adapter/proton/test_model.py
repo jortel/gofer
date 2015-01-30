@@ -15,11 +15,11 @@ from mock import patch, Mock
 
 from gofer.devel import ipatch
 
-with ipatch('qpid'):
-    from gofer.messaging.adapter.qpid import model
-    from gofer.messaging.adapter.qpid.model import Error, Method
-    from gofer.messaging.adapter.qpid.model import Exchange, BaseExchange
-    from gofer.messaging.adapter.qpid.model import Queue, BaseQueue
+with ipatch('proton'):
+    from gofer.messaging.adapter.proton import model
+    from gofer.messaging.adapter.proton.model import Error, Method
+    from gofer.messaging.adapter.proton.model import Exchange, BaseExchange
+    from gofer.messaging.adapter.proton.model import Queue, BaseQueue
 
 
 class TestError(TestCase):
@@ -35,18 +35,20 @@ class TestError(TestCase):
 class TestMethod(TestCase):
 
     def test_init(self):
+        url = 'test-url'
         name = model.CREATE
         arguments = {'a': 1}
-        method = Method(name, arguments)
+        method = Method(url, name, arguments)
+        self.assertEqual(method.url, url)
         self.assertEqual(method.name, name)
         self.assertEqual(method.arguments, arguments)
 
-    def test_content(self):
+    def test_body(self):
         name = model.CREATE
         arguments = {'a': 1}
-        method = Method(name, arguments)
+        method = Method('', name, arguments)
         self.assertEqual(
-            method.content,
+            method.body,
             {
                 '_object_id': model.OBJECT_ID,
                 '_method_name': name,
@@ -54,7 +56,7 @@ class TestMethod(TestCase):
             })
 
     def test_properties(self):
-        method = Method(model.CREATE, {})
+        method = Method('', model.CREATE, {})
         self.assertEqual(
             method.properties,
             {
@@ -64,12 +66,12 @@ class TestMethod(TestCase):
             })
 
     def test_reply_succeeded(self):
-        content = ''
+        body = ''
         properties = {
             'qmf.opcode': ''
         }
-        reply = Mock(content=content, properties=properties)
-        method = Method('', {})
+        reply = Mock(body=body, properties=properties)
+        method = Method('', '', {})
         method.on_reply(reply)
 
     def test_reply_failed(self):
@@ -77,12 +79,12 @@ class TestMethod(TestCase):
             'error_code': 18,
             'error_text': 'just failed'
         }
-        content = {'_values': values}
+        body = {'_values': values}
         properties = {
             'qmf.opcode': '_exception'
         }
-        reply = Mock(content=content, properties=properties)
-        method = Method('', {})
+        reply = Mock(body=body, properties=properties)
+        method = Method('', '', {})
         self.assertRaises(Error, method.on_reply, reply)
 
     def test_reply_already_exists(self):
@@ -90,62 +92,98 @@ class TestMethod(TestCase):
             'error_code': model.EEXIST,
             'error_text': 'just failed'
         }
-        content = {'_values': values}
+        body = {'_values': values}
         properties = {
             'qmf.opcode': '_exception'
         }
-        reply = Mock(content=content, properties=properties)
-        method = Method('', {})
+        reply = Mock(body=body, properties=properties)
+        method = Method('', '', {})
         method.on_reply(reply)
 
-    @patch('gofer.messaging.adapter.qpid.model.uuid4')
-    @patch('gofer.messaging.adapter.qpid.model.Message')
-    @patch('gofer.messaging.adapter.qpid.model.Connection')
+    @patch('gofer.messaging.adapter.proton.model.uuid4')
+    @patch('gofer.messaging.adapter.proton.model.Connection')
+    def test_open(self, _connection, uuid):
+        url = 'url-test'
+        uuid.return_value = '5138'
+        connection = Mock()
+        _connection.return_value = connection
+        sender = Mock()
+        sender.close.side_effect = ValueError
+        receiver = Mock()
+        receiver.close.side_effect = ValueError
+        connection.receiver.return_value = receiver
+        connection.sender.return_value = sender
+
+        # test
+        method = Method(url, '', {})
+        method.open()
+
+        # validation
+        _connection.assert_called_once_with(url)
+        connection.open.assert_called_once_with()
+        connection.sender.assert_called_once_with(model.ADDRESS)
+        connection.receiver.assert_called_once_with(dynamic=True)
+        self.assertEqual(method.connection, connection)
+        self.assertEqual(method.sender, sender)
+        self.assertEqual(method.receiver, receiver)
+
+    def test_close(self):
+        connection = Mock()
+        sender = Mock()
+        receiver = Mock()
+        method = Method('', '', {})
+        method.connection = connection
+        method.sender = sender
+        method.receiver = receiver
+
+        # test
+        method.close()
+
+        # validation
+        receiver.close.assert_called_once_with()
+        sender.close.assert_called_once_with()
+
+    @patch('gofer.messaging.adapter.proton.model.uuid4')
+    @patch('gofer.messaging.adapter.proton.model.Message')
+    @patch('gofer.messaging.adapter.proton.model.Connection')
     def test_call(self, _connection, message, uuid):
         url = 'url-test'
         name = model.CREATE
         arguments = {'a': 1}
         uuid.return_value = '5138'
-        reply_to = model.REPLY_TO % uuid.return_value
         connection = Mock()
         _connection.return_value = connection
-        session = Mock()
-        session.close.side_effect = ValueError
         sender = Mock()
         sender.close.side_effect = ValueError
         receiver = Mock()
         receiver.close.side_effect = ValueError
-        session.receiver.return_value = receiver
-        session.sender.return_value = sender
-        connection.session.return_value = session
+        connection.receiver.return_value = receiver
+        connection.sender.return_value = sender
 
         # test
-        method = Method(name, arguments)
+        method = Method(url, name, arguments)
         method.on_reply = Mock()
-        method(url)
+        method()
 
         # validation
         _connection.assert_called_once_with(url)
         connection.open.assert_called_once_with()
-        connection.session.assert_called_once_with()
 
-        session.sender.assert_called_once_with(model.ADDRESS)
-        session.receiver.assert_called_once_with(reply_to)
+        connection.sender.assert_called_once_with(model.ADDRESS)
+        connection.receiver.assert_called_once_with(dynamic=True)
 
         message.assert_called_once_with(
-            content=method.content,
-            reply_to=reply_to,
+            body=method.body,
+            reply_to=receiver.remote_source.address,
             properties=method.properties,
             correlation_id=str(uuid.return_value),
             subject=model.SUBJECT
         )
 
-        session.acknowledge.assert_called_once_with()
         sender.send.assert_called_once_with(message.return_value)
-        method.on_reply.assert_called_once_with(receiver.fetch.return_value)
+        method.on_reply.assert_called_once_with(receiver.receive.return_value)
         sender.close.assert_called_once_with()
         receiver.close.assert_called_once_with()
-        session.close.assert_called_once_with()
 
 
 class TestExchange(TestCase):
@@ -162,7 +200,7 @@ class TestExchange(TestCase):
         self.assertEqual(exchange.name, name)
         self.assertEqual(exchange.policy, policy)
 
-    @patch('gofer.messaging.adapter.qpid.model.Method')
+    @patch('gofer.messaging.adapter.proton.model.Method')
     def test_declare(self, method):
         url = 'test-url'
 
@@ -183,10 +221,10 @@ class TestExchange(TestCase):
                 'durable': exchange.durable
             }
         }
-        method.assert_called_once_with(model.CREATE, arguments)
-        method.return_value.assert_called_once_with(url)
+        method.assert_called_once_with(url, model.CREATE, arguments)
+        method.return_value.assert_called_once_with()
 
-    @patch('gofer.messaging.adapter.qpid.model.Method')
+    @patch('gofer.messaging.adapter.proton.model.Method')
     def test_delete(self, method):
         url = 'test-url'
 
@@ -201,10 +239,10 @@ class TestExchange(TestCase):
             'type': 'exchange',
             'properties': {}
         }
-        method.assert_called_once_with(model.DELETE, arguments)
-        method.return_value.assert_called_once_with(url)
+        method.assert_called_once_with(url, model.DELETE, arguments)
+        method.return_value.assert_called_once_with()
 
-    @patch('gofer.messaging.adapter.qpid.model.Method')
+    @patch('gofer.messaging.adapter.proton.model.Method')
     def test_bind(self, method):
         url = 'test-url'
         queue = Queue('test-queue')
@@ -220,10 +258,10 @@ class TestExchange(TestCase):
             'type': 'binding',
             'properties': {}
         }
-        method.assert_called_once_with(model.CREATE, arguments)
-        method.return_value.assert_called_once_with(url)
+        method.assert_called_once_with(url, model.CREATE, arguments)
+        method.return_value.assert_called_once_with()
 
-    @patch('gofer.messaging.adapter.qpid.model.Method')
+    @patch('gofer.messaging.adapter.proton.model.Method')
     def test_unbind(self, method):
         url = 'test-url'
         queue = Queue('test-queue')
@@ -239,8 +277,8 @@ class TestExchange(TestCase):
             'type': 'binding',
             'properties': {}
         }
-        method.assert_called_once_with(model.DELETE, arguments)
-        method.return_value.assert_called_once_with(url)
+        method.assert_called_once_with(url, model.DELETE, arguments)
+        method.return_value.assert_called_once_with()
 
 
 class TestQueue(TestCase):
@@ -255,7 +293,7 @@ class TestQueue(TestCase):
         self.assertTrue(isinstance(queue, BaseQueue))
         self.assertEqual(queue.name, name)
 
-    @patch('gofer.messaging.adapter.qpid.model.Method')
+    @patch('gofer.messaging.adapter.proton.model.Method')
     def test_declare(self, method):
         url = 'test-url'
 
@@ -278,10 +316,10 @@ class TestQueue(TestCase):
                 'durable': queue.durable
             }
         }
-        method.assert_called_once_with(model.CREATE, arguments)
-        method.return_value.assert_called_once_with(url)
+        method.assert_called_once_with(url, model.CREATE, arguments)
+        method.return_value.assert_called_once_with()
 
-    @patch('gofer.messaging.adapter.qpid.model.Method')
+    @patch('gofer.messaging.adapter.proton.model.Method')
     def test_delete(self, method):
         url = 'test-url'
 
@@ -296,5 +334,5 @@ class TestQueue(TestCase):
             'type': 'queue',
             'properties': {}
         }
-        method.assert_called_once_with(model.DELETE, arguments)
-        method.return_value.assert_called_once_with(url)
+        method.assert_called_once_with(url, model.DELETE, arguments)
+        method.return_value.assert_called_once_with()

@@ -15,7 +15,6 @@
 
 from time import sleep
 from logging import getLogger
-from threading import local as Local
 
 from uuid import uuid4
 
@@ -45,7 +44,7 @@ def model(fn):
             raise
         except Exception, e:
             log.exception(str(e))
-            raise ModelError(e)
+            raise ModelError(*e.args)
     return _fn
 
 
@@ -67,7 +66,13 @@ def blocking(fn):
     return _fn
 
 
-# --- domain -----------------------------------------------------------------
+# --- model ------------------------------------------------------------------
+
+
+class NotFound(ModelError):
+    """
+    Model object not found.
+    """
 
 
 class Model(object):
@@ -115,7 +120,6 @@ class _Domain(object):
         :param key: The object key.
         :type key: str
         :return: The requested object.
-        :rtype: object
         """
         try:
             return self.content[key]
@@ -260,7 +264,7 @@ class Exchange(BaseExchange):
     @model
     def declare(self, url=None):
         """
-        Declare the node.
+        Declare the exchange.
         :param url: The broker URL.
         :type url: str
         :raise: ModelError
@@ -274,7 +278,7 @@ class Exchange(BaseExchange):
     @model
     def delete(self, url=None):
         """
-        Delete the node.
+        Delete the exchange.
         :param url: The broker URL.
         :type url: str
         :raise: ModelError
@@ -357,7 +361,7 @@ class Queue(BaseQueue):
     @model
     def declare(self, url=None):
         """
-        Declare the node.
+        Declare the queue.
         :param url: The broker URL.
         :type url: str
         :raise: ModelError
@@ -373,7 +377,7 @@ class Queue(BaseQueue):
     @model
     def delete(self, url=None):
         """
-        Delete the node.
+        Delete the queue.
         :param url: The broker URL.
         :type url: str
         :raise: ModelError
@@ -402,14 +406,12 @@ class Queue(BaseQueue):
             reader.close()
 
 
-# --- endpoint ---------------------------------------------------------------
+# --- messenger --------------------------------------------------------------
 
 
-class BaseEndpoint(Model):
+class Messenger(Model):
     """
-    Base class for an AMQP endpoint.
-    :ivar url: The broker URL.
-    :type url: str
+    Provides AMQP messaging.
     """
 
     def __init__(self, url):
@@ -421,46 +423,22 @@ class BaseEndpoint(Model):
 
     def is_open(self):
         """
-        Get whether the endpoint has been opened.
+        Get whether the messenger has been opened.
         :return: True if open.
         :rtype bool
         """
         raise NotImplementedError()
 
-    def channel(self):
-        """
-        Get a channel for the open connection.
-        :return: An open channel.
-        """
-        raise NotImplementedError()
-
     def open(self):
         """
-        Open and configure the endpoint.
+        Open and configure the messenger.
+        :raise: NotFound
         """
         raise NotImplementedError()
 
-    def ack(self, message):
+    def close(self):
         """
-        Ack the specified message.
-        :param message: The message to acknowledge.
-        """
-        raise NotImplementedError()
-
-    def reject(self, message, requeue=True):
-        """
-        Reject the specified message.
-        :param message: The message to reject.
-        :param requeue: Requeue the message or discard it.
-        :type requeue: bool
-        """
-        raise NotImplementedError()
-
-    def close(self, hard=False):
-        """
-        Close the endpoint.
-        :param hard: Force the connection closed.
-        :type hard: bool
+        Close the messenger.
         """
         raise NotImplementedError()
 
@@ -470,66 +448,6 @@ class BaseEndpoint(Model):
 
     def __exit__(self, *unused):
         self.close()
-
-
-# --- messenger --------------------------------------------------------------
-
-
-class Messenger(BaseEndpoint):
-    """
-    Provides AMQP messaging.
-    """
-
-    def endpoint(self):
-        """
-        Get the messenger endpoint.
-        :return: An endpoint object.
-        :rtype: BaseEndpoint
-        """
-        raise NotImplementedError()
-
-    def link(self, messenger):
-        """
-        Link to another messenger.
-        :param messenger: A messenger to link with.
-        :type messenger: Messenger
-        """
-        raise NotImplementedError()
-
-    def unlink(self):
-        """
-        Unlink with another messenger.
-        """
-        raise NotImplementedError()
-
-    def is_open(self):
-        """
-        Get whether the messenger has been opened.
-        :return: True if open.
-        :rtype bool
-        """
-        return self.endpoint().is_open()
-
-    def channel(self):
-        """
-        Get a channel for the open connection.
-        :return: An open channel.
-        """
-        return self.endpoint().channel()
-
-    def open(self):
-        """
-        Open and configure the endpoint.
-        """
-        self.endpoint().open()
-
-    def close(self, hard=False):
-        """
-        Close the messenger.
-        :param hard: Force the connection closed.
-        :type hard: bool
-        """
-        self.endpoint().close(hard)
 
 
 # --- reader -----------------------------------------------------------------
@@ -618,7 +536,7 @@ class BaseReader(Messenger):
         Ack the specified message.
         :param message: The message to acknowledge.
         """
-        self.endpoint().ack(message)
+        raise NotImplementedError()
 
     def reject(self, message, requeue=True):
         """
@@ -627,7 +545,7 @@ class BaseReader(Messenger):
         :param requeue: Requeue the message or discard it.
         :type requeue: bool
         """
-        self.endpoint().reject(message, requeue)
+        raise NotImplementedError()
 
 
 class Reader(BaseReader):
@@ -639,7 +557,7 @@ class Reader(BaseReader):
 
     def __init__(self, queue, url=None):
         """
-        :param queue: The queue to consumer.
+        :param queue: The queue to read.
         :type queue: gofer.messaging.adapter.model.BaseQueue
         :param url: The broker url.
         :type url: str
@@ -650,31 +568,30 @@ class Reader(BaseReader):
         self._impl = adapter.Reader(queue, url)
         self.authenticator = None
 
-    def endpoint(self):
+    @model
+    def is_open(self):
         """
-        Get the messenger endpoint.
-        :return: An endpoint object.
-        :rtype: BaseEndpoint
+        Get whether the reader has been opened.
+        :return: True if open.
+        :rtype bool
         """
-        return self._impl.endpoint()
+        return self._impl.is_open()
 
     @model
     def open(self):
         """
         Open the reader.
-        :raise: ModelError
+        :raise: NotFound
         """
         self._impl.open()
 
     @model
-    def close(self, hard=False):
+    def close(self):
         """
         Close the reader.
-        :param hard: Force the connection closed.
-        :type hard: bool
         :raise: ModelError
         """
-        self._impl.close(hard)
+        self._impl.close()
 
     @model
     def get(self, timeout=None):
@@ -785,48 +702,33 @@ class Sender(BaseSender):
         adapter = Adapter.find(url)
         self._impl = adapter.Sender(url)
 
-    def endpoint(self):
+    @model
+    def is_open(self):
         """
-        Get the messenger endpoint.
-        :return: An endpoint object.
-        :rtype: BaseEndpoint
+        Get whether the sender has been opened.
+        :return: True if open.
+        :rtype bool
         """
-        return self._impl.endpoint()
-
-    def link(self, messenger):
-        """
-        Link to another messenger.
-        :param messenger: A messenger to link with.
-        :type messenger: Messenger
-        """
-        self._impl.link(messenger)
-
-    def unlink(self):
-        """
-        Unlink with another messenger.
-        """
-        self._impl.unlink()
+        return self._impl.is_open()
 
     @model
     def open(self):
         """
-        Open the reader.
+        Open the sender.
         :raise: ModelError
         """
         self._impl.open()
 
     @model
-    def close(self, hard=False):
+    def close(self):
         """
-        Close the reader.
-        :param hard: Force the connection closed.
-        :type hard: bool
+        Close the sender.
         :raise: ModelError
         """
-        self._impl.close(hard)
+        self._impl.close()
 
     @model
-    def send(self, route, content, ttl):
+    def send(self, route, content, ttl=None):
         """
         Send a message with content.
         :param route: An AMQP route.
@@ -855,45 +757,30 @@ class Producer(Messenger):
         self._impl = adapter.Sender(url)
         self.authenticator = None
 
-    def endpoint(self):
+    @model
+    def is_open(self):
         """
-        Get the messenger endpoint.
-        :return: An endpoint object.
-        :rtype: BaseEndpoint
+        Get whether the producer has been opened.
+        :return: True if open.
+        :rtype bool
         """
-        return self._impl.endpoint()
-
-    def link(self, messenger):
-        """
-        Link to another messenger.
-        :param messenger: A messenger to link with.
-        :type messenger: Messenger
-        """
-        self._impl.link(messenger)
-
-    def unlink(self):
-        """
-        Unlink with another messenger.
-        """
-        self._impl.unlink()
+        return self._impl.is_open()
 
     @model
     def open(self):
         """
-        Open the reader.
+        Open the producer.
         :raise: ModelError
         """
         self._impl.open()
 
     @model
-    def close(self, hard=False):
+    def close(self):
         """
-        Close the reader.
-        :param hard: Force the connection closed.
-        :type hard: bool
+        Close the producer.
         :raise: ModelError
         """
-        self._impl.close(hard)
+        self._impl.close()
 
     @model
     def send(self, route, ttl=None, **body):
@@ -950,18 +837,9 @@ class BaseConnection(Model):
         """
         raise NotImplementedError()
 
-    def channel(self):
-        """
-        Open a channel.
-        :return: The open channel.
-        """
-        raise NotImplementedError()
-
-    def close(self, hard=False):
+    def close(self):
         """
         Close the connection.
-        :param hard: Force the connection closed.
-        :type hard: bool
         """
         raise NotImplementedError()
 
@@ -1003,51 +881,12 @@ class Connection(BaseConnection):
         self._impl.open()
 
     @model
-    def channel(self):
-        """
-        Open a channel.
-        :return The *real* channel.
-        :raise: ModelError
-        """
-        return self._impl.channel()
-
-    @model
-    def close(self, hard=False):
+    def close(self):
         """
         Close the connection.
-        :param hard: Force the connection closed.
-        :type hard: bool
         :raise: ModelError
         """
-        self._impl.close(hard)
-
-
-class ThreadConnection(type):
-    """
-    Thread local connection metaclass.
-    Usage: __metaclass__ = ThreadConnection
-    """
-
-    def __init__(cls, what, bases, _dict):
-        super(ThreadConnection, cls).__init__(what, bases, _dict)
-        cls.local = Local()
-
-    @property
-    def connections(self):
-        try:
-            return self.local.d
-        except AttributeError:
-            d = {}
-            self.local.d = d
-            return d
-
-    def __call__(cls, url):
-        try:
-            return cls.connections[url]
-        except KeyError:
-            inst = super(ThreadConnection, cls).__call__(url)
-            cls.connections[url] = inst
-            return inst
+        self._impl.close()
 
 
 # --- broker -----------------------------------------------------------------
@@ -1071,6 +910,11 @@ class SSL(Model):
         self.client_key = None
         self.client_certificate = None
         self.host_validation = False
+
+    def __nonzero__(self):
+        return (self.ca_certificate or
+                self.client_certificate or
+                self.client_key) is not None
 
     def __str__(self):
         s = list()

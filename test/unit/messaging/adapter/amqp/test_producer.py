@@ -50,72 +50,95 @@ class TestBuildMessage(TestCase):
 
 class TestSender(TestCase):
 
-    @patch('gofer.messaging.adapter.amqp.producer.Endpoint')
-    def test_init(self, endpoint):
-        url = 'http://host'
+    @patch('gofer.messaging.adapter.amqp.producer.Connection')
+    def test_init(self, connection):
+        url = 'test-url'
 
         # test
         sender = Sender(url)
 
         # validation
-        endpoint.assert_called_once_with(url)
-        self.assertEqual(sender.url, url)
-        self.assertEqual(sender._endpoint, endpoint.return_value)
-        self.assertEqual(sender._link, None)
+        connection.assert_called_once_with(url)
         self.assertTrue(isinstance(sender, BaseSender))
+        self.assertEqual(sender.url, url)
+        self.assertEqual(sender.connection, connection.return_value)
+        self.assertEqual(sender.channel, None)
 
-    @patch('gofer.messaging.adapter.amqp.producer.Endpoint', Mock())
-    def test_endpoint(self):
-        sender = Sender('')
-        # unlinked
-        self.assertEqual(sender.endpoint(), sender._endpoint)
-        # linked
-        sender._link = Mock()
-        self.assertEqual(sender.endpoint(), sender._link)
+    @patch('gofer.messaging.adapter.amqp.producer.Connection', Mock())
+    def test_is_open(self):
+        url = 'test-url'
+        sender = Sender(url)
+        # closed
+        self.assertFalse(sender.is_open())
+        # open
+        sender.channel = Mock()
+        self.assertTrue(sender.is_open())
 
-    @patch('gofer.messaging.adapter.amqp.producer.Endpoint', Mock())
-    def test_link(self):
-        other = Mock()
-        sender = Sender('')
-        self.assertEqual(sender._link, None)
-        sender.link(other)
-        self.assertEqual(sender._link, other.endpoint.return_value)
+    @patch('gofer.messaging.adapter.amqp.producer.Connection')
+    def test_open(self, connection):
+        url = 'test-url'
 
-    @patch('gofer.messaging.adapter.amqp.producer.Endpoint', Mock())
-    def test_unlink(self):
-        sender = Sender('')
-        sender._link = Mock()
-        sender.unlink()
-        self.assertEqual(sender._link, None)
+        # test
+        sender = Sender(url)
+        sender.is_open = Mock(return_value=False)
+        sender.open()
+
+        # validation
+        connection.return_value.open.assert_called_once_with()
+        connection.return_value.channel.assert_called_once_with()
+        self.assertEqual(sender.channel, connection.return_value.channel.return_value)
+
+    @patch('gofer.messaging.adapter.amqp.producer.Connection', Mock())
+    def test_open_already(self):
+        url = 'test-url'
+
+        # test
+        sender = Sender(url)
+        sender.is_open = Mock(return_value=True)
+        sender.open()
+
+        # validation
+        self.assertFalse(sender.connection.open.called)
+
+    def test_close(self):
+        connection = Mock()
+        channel = Mock()
+        # test
+        sender = Sender(None)
+        sender.connection = connection
+        sender.channel = channel
+        sender.is_open = Mock(return_value=True)
+        sender.close()
+
+        # validation
+        channel.close.assert_called_once_with()
+        self.assertFalse(connection.close.called)
 
     @patch('gofer.messaging.adapter.amqp.producer.build_message')
-    @patch('gofer.messaging.adapter.amqp.producer.Endpoint')
-    def test_send(self, endpoint, build):
+    @patch('gofer.messaging.adapter.amqp.producer.Connection', Mock())
+    def test_send(self, build):
         ttl = 10
-        channel = Mock()
-        endpoint.return_value.channel.return_value = channel
         route = 'jeff'
         content = 'hello'
 
         # test
         sender = Sender('')
+        sender.channel = Mock()
         sender.send(route, content, ttl=ttl)
 
         # validation
         build.assert_called_once_with(content, ttl)
-        endpoint.return_value.channel.assert_called_once_with()
-        channel.basic_publish.assert_called_once_with(
+        sender.channel.basic_publish.assert_called_once_with(
             build.return_value,
             mandatory=True,
             exchange='',
             routing_key='jeff')
 
+
     @patch('gofer.messaging.adapter.amqp.producer.build_message')
-    @patch('gofer.messaging.adapter.amqp.producer.Endpoint')
-    def test_send_exchange(self, endpoint, build):
+    @patch('gofer.messaging.adapter.amqp.producer.Connection', Mock())
+    def test_send_exchange(self, build):
         ttl = 10
-        channel = Mock()
-        endpoint.return_value.channel.return_value = channel
         exchange = 'amq.direct'
         key = 'bar'
         route = '/'.join((exchange, key))
@@ -123,12 +146,12 @@ class TestSender(TestCase):
 
         # test
         sender = Sender('')
+        sender.channel = Mock()
         sender.send(route, content, ttl=ttl)
 
         # validation
         build.assert_called_once_with(content, ttl)
-        endpoint.return_value.channel.assert_called_once_with()
-        channel.basic_publish.assert_called_once_with(
+        sender.channel.basic_publish.assert_called_once_with(
             build.return_value,
             mandatory=True,
             exchange=exchange,
