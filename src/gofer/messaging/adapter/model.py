@@ -13,7 +13,6 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-from time import sleep
 from logging import getLogger
 
 from uuid import uuid4
@@ -29,9 +28,6 @@ ROUTE_ALL = '#'
 DIRECT = 'direct'
 TOPIC = 'topic'
 DEFAULT_URL = 'amqp://localhost'
-DELAY = 0.0010
-MAX_DELAY = 2.0
-DELAY_MULTIPLIER = 1.2
 
 log = getLogger(__name__)
 
@@ -45,24 +41,6 @@ def model(fn):
         except Exception, e:
             log.exception(str(e))
             raise ModelError(*e.args)
-    return _fn
-
-
-def blocking(fn):
-    def _fn(reader, timeout=None):
-        delay = DELAY
-        timer = float(timeout or 0)
-        while True:
-            message = fn(reader, timer)
-            if message:
-                return message
-            if timer > 0:
-                sleep(delay)
-                timer -= delay
-                if delay < MAX_DELAY:
-                    delay *= DELAY_MULTIPLIER
-            else:
-                break
     return _fn
 
 

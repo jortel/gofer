@@ -18,6 +18,7 @@ from proton import SSLDomain, SSLException
 from proton.utils import BlockingConnection
 
 from gofer.common import ThreadSingleton
+from gofer.messaging.adapter.reliability import YEAR
 from gofer.messaging.adapter.model import Domain, BaseConnection, NotFound
 
 
@@ -26,7 +27,6 @@ log = getLogger(__name__)
 
 DELAY = 10
 MAX_DELAY = 90
-YEAR = 0x1E13380
 RETRIES = YEAR / MAX_DELAY
 DELAY_MULTIPLIER = 1.2
 

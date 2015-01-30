@@ -30,7 +30,7 @@ from gofer.messaging.adapter.model import Broker, SSL
 from gofer.messaging.adapter.model import BaseConnection, Connection
 from gofer.messaging.adapter.model import Message
 from gofer.messaging.adapter.model import ModelError
-from gofer.messaging.adapter.model import model, blocking, DELAY, DELAY_MULTIPLIER
+from gofer.messaging.adapter.model import model
 from gofer.messaging.adapter.model import NotFound
 
 
@@ -80,58 +80,6 @@ class TestModelDecorator(TestCase):
             _fn()
         except ModelError, e:
             self.assertEqual(e.args, (1, 2, 3))
-
-
-class TestBlockingDecorator(TestCase):
-
-    def test_call(self):
-        fn = Mock()
-        _fn = blocking(fn)
-        reader = Mock()
-        timeout = 10
-        message = _fn(reader, timeout)
-        fn.assert_called_once_with(reader, timeout)
-        self.assertEqual(message, fn.return_value)
-
-    @patch('gofer.messaging.adapter.model.sleep')
-    def test_delay(self, sleep):
-        received = [
-            None,
-            None,
-            Mock()]
-        fn = Mock(side_effect=received)
-        _fn = blocking(fn)
-        reader = Mock()
-        timeout = 10
-        message = _fn(reader, timeout)
-        self.assertEqual(
-            fn.call_args_list,
-            [
-                ((reader, float(timeout)), {}),
-                ((reader, float(timeout - DELAY)), {}),
-                ((reader, float(timeout - (DELAY + (DELAY * DELAY_MULTIPLIER)))), {})
-            ])
-        self.assertEqual(
-            sleep.call_args_list,
-            [
-                ((DELAY,), {}),
-                ((DELAY * DELAY_MULTIPLIER,), {})
-            ])
-        self.assertEqual(message, received[-1])
-
-    @patch('gofer.messaging.adapter.model.sleep')
-    def test_call_blocking(self, sleep):
-        fn = Mock(return_value=None)
-        _fn = blocking(fn)
-        reader = Mock()
-        timeout = 10
-        message = _fn(reader, timeout)
-        self.assertEqual(message, None)
-        total = 0.0
-        for call in sleep.call_args_list:
-            total += call[0][0]
-        self.assertEqual(int(total), timeout)
-        self.assertEqual(fn.call_count, 43)
 
 
 class TestModel(TestCase):

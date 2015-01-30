@@ -19,6 +19,7 @@ from amqp import Connection as RealConnection
 from amqp import ConnectionError
 
 from gofer.common import ThreadSingleton
+from gofer.messaging.adapter.reliability import YEAR
 from gofer.messaging.adapter.model import Domain, BaseConnection
 
 
@@ -32,7 +33,6 @@ CONNECTION_EXCEPTIONS = (IOError, SocketError, ConnectionError, AttributeError)
 
 DELAY = 10
 MAX_DELAY = 90
-YEAR = 0x1E13380
 RETRIES = YEAR / MAX_DELAY
 DELAY_MULTIPLIER = 1.2
 

@@ -16,6 +16,7 @@ from proton import Message
 from proton.utils import SendException, Delivery
 
 from gofer.messaging.adapter.model import BaseSender
+from gofer.messaging.adapter.reliability import DAY
 from gofer.messaging.adapter.proton.connection import Connection
 from gofer.messaging.adapter.proton.reliability import reliable
 
@@ -24,6 +25,7 @@ log = getLogger(__name__)
 
 
 DELAY = 10  # seconds
+MAX_RESEND = DAY / DELAY
 
 
 def build_message(body, ttl):
@@ -44,13 +46,14 @@ def build_message(body, ttl):
 def sender(fn):
     @reliable
     def _fn(*args, **keywords):
-        while True:
+        resend = 0
+        while resend < MAX_RESEND:
             try:
                 return fn(*args, **keywords)
             except SendException, e:
                 if e.state == Delivery.RELEASED:
-                    #  retry
                     sleep(DELAY)
+                    resend += 1
                 else:
                     raise
     return _fn
