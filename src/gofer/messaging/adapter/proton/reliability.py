@@ -12,17 +12,26 @@
 
 from time import sleep
 
-from gofer.messaging.adapter.proton.connection import ConnectionException
+from gofer.messaging.adapter.proton.connection import ConnectionException, LinkException
+
+
+DELAY = 3  # seconds
 
 
 def reliable(fn):
     def _fn(thing, *args, **kwargs):
+        repair = lambda: None
         while True:
             try:
+                repair()
                 return fn(thing, *args, **kwargs)
+            except LinkException:
+                sleep(DELAY)
+                thing.close()
+                repair = thing.open
             except ConnectionException:
-                sleep(3)
+                sleep(DELAY)
                 thing.close()
                 thing.connection.close()
-                thing.open()
+                repair = thing.open
     return _fn

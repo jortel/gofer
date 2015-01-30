@@ -19,7 +19,11 @@ from mock import Mock, patch
 from gofer.devel import ipatch
 
 with ipatch('proton'):
-    from gofer.messaging.adapter.proton.reliability import reliable
+    from gofer.messaging.adapter.proton.reliability import reliable, DELAY
+
+
+class LinkException(Exception):
+    pass
 
 
 class ConnectionException(Exception):
@@ -43,9 +47,9 @@ class TestReliable(TestCase):
 
     @patch('gofer.messaging.adapter.proton.reliability.ConnectionException', ConnectionException)
     @patch('gofer.messaging.adapter.proton.reliability.sleep')
-    def test_reliable_with_errors(self, sleep):
+    def test_reliable_connection_exception(self, sleep):
         url = 'test-url'
-        fn = Mock(side_effect=[ConnectionException, 'okay'])
+        fn = Mock(side_effect=[ConnectionException, None])
         thing = Mock(url=url, connection=Mock())
         args = (thing, 2, 3)
         kwargs = {'A': 1}
@@ -57,8 +61,33 @@ class TestReliable(TestCase):
         # validation
         thing.close.assert_called_once_with()
         thing.connection.close.assert_called_once_with()
-        sleep.assert_called_once_with(3)
+        sleep.assert_called_once_with(DELAY)
         thing.open.assert_called_once_with()
+        self.assertEqual(
+            fn.call_args_list,
+            [
+                (args, kwargs),
+                (args, kwargs),
+            ])
+
+    @patch('gofer.messaging.adapter.proton.reliability.LinkException', LinkException)
+    @patch('gofer.messaging.adapter.proton.reliability.sleep')
+    def test_reliable_link_exception(self, sleep):
+        url = 'test-url'
+        fn = Mock(side_effect=[LinkException, None])
+        thing = Mock(url=url, connection=Mock())
+        args = (thing, 2, 3)
+        kwargs = {'A': 1}
+
+        # test
+        wrapped = reliable(fn)
+        wrapped(*args, **kwargs)
+
+        # validation
+        thing.close.assert_called_once_with()
+        sleep.assert_called_once_with(DELAY)
+        thing.open.assert_called_once_with()
+        self.assertFalse(thing.connection.close.called)
         self.assertEqual(
             fn.call_args_list,
             [

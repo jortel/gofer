@@ -19,8 +19,16 @@ from mock import Mock, patch
 from gofer.devel import ipatch
 
 with ipatch('amqp'):
-    from gofer.messaging.adapter.amqp.reliability import reliable, CONNECTION_EXCEPTIONS
+    from gofer.messaging.adapter.amqp.reliability import reliable, DELAY
     from gofer.messaging.adapter.amqp.reliability import Endpoint, endpoint
+
+
+class ConnectionException(Exception):
+    pass
+
+
+class ChannelError(Exception):
+    pass
 
 
 class TestReliable(TestCase):
@@ -38,10 +46,11 @@ class TestReliable(TestCase):
         # validation
         fn.assert_called_once_with(*args, **kwargs)
 
+    @patch('gofer.messaging.adapter.amqp.reliability.CONNECTION_EXCEPTIONS', ConnectionException)
     @patch('gofer.messaging.adapter.amqp.reliability.sleep')
-    def test_reliable_with_errors(self, sleep):
+    def test_reliable_connection_exception(self, sleep):
         url = 'test-url'
-        fn = Mock(side_effect=[CONNECTION_EXCEPTIONS[0], 'okay'])
+        fn = Mock(side_effect=[ConnectionException, None])
         thing = Mock(url=url, connection=Mock())
         args = (thing, 2, 3)
         kwargs = {'A': 1}
@@ -53,8 +62,33 @@ class TestReliable(TestCase):
         # validation
         thing.close.assert_called_once_with()
         thing.connection.close.assert_called_once_with()
-        sleep.assert_called_once_with(3)
+        sleep.assert_called_once_with(DELAY)
         thing.open.assert_called_once_with()
+        self.assertEqual(
+            fn.call_args_list,
+            [
+                (args, kwargs),
+                (args, kwargs),
+            ])
+
+    @patch('gofer.messaging.adapter.amqp.reliability.ChannelError', ChannelError)
+    @patch('gofer.messaging.adapter.amqp.reliability.sleep')
+    def test_reliable_channel_exception(self, sleep):
+        url = 'test-url'
+        fn = Mock(side_effect=[ChannelError, None])
+        thing = Mock(url=url, connection=Mock())
+        args = (thing, 2, 3)
+        kwargs = {'A': 1}
+
+        # test
+        wrapped = reliable(fn)
+        wrapped(*args, **kwargs)
+
+        # validation
+        thing.close.assert_called_once_with()
+        sleep.assert_called_once_with(DELAY)
+        thing.open.assert_called_once_with()
+        self.assertFalse(thing.connection.close.called)
         self.assertEqual(
             fn.call_args_list,
             [
@@ -103,5 +137,15 @@ class TestEndpoint(TestCase):
         thing = Endpoint(url)
         thing.connection = Mock()
         thing.channel = Mock()
+        thing.close()
+        thing.channel.close.assert_called_once_with()
+
+    @patch('gofer.messaging.adapter.amqp.reliability.Connection', Mock())
+    def test_close_failed(self):
+        url = Mock()
+        thing = Endpoint(url)
+        thing.connection = Mock()
+        thing.channel = Mock()
+        thing.channel.close.side_effect = ValueError
         thing.close()
         thing.channel.close.assert_called_once_with()

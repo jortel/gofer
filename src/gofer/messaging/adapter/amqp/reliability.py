@@ -12,19 +12,30 @@
 
 from time import sleep
 
+from amqp import ChannelError
+
 from gofer.messaging.adapter.amqp.connection import Connection, CONNECTION_EXCEPTIONS
+
+
+DELAY = 3  # seconds
 
 
 def reliable(fn):
     def _fn(thing, *args, **kwargs):
+        repair = lambda: None
         while True:
             try:
+                repair()
                 return fn(thing, *args, **kwargs)
+            except ChannelError:
+                sleep(DELAY)
+                thing.close()
+                repair = thing.open
             except CONNECTION_EXCEPTIONS:
-                sleep(3)
+                sleep(DELAY)
                 thing.close()
                 thing.connection.close()
-                thing.open()
+                repair = thing.open
     return _fn
 
 
