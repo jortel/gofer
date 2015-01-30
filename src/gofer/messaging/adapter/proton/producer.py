@@ -13,7 +13,7 @@ from time import sleep
 from logging import getLogger
 
 from proton import Message
-from proton.utils import SendException
+from proton.utils import SendException, Delivery
 
 from gofer.messaging.adapter.model import BaseSender
 from gofer.messaging.adapter.proton.connection import Connection
@@ -21,6 +21,9 @@ from gofer.messaging.adapter.proton.reliability import reliable
 
 
 log = getLogger(__name__)
+
+
+DELAY = 10  # seconds
 
 
 def build_message(body, ttl):
@@ -44,8 +47,12 @@ def sender(fn):
         while True:
             try:
                 return fn(*args, **keywords)
-            except SendException:
-                sleep(10)
+            except SendException, e:
+                if e.state == Delivery.RELEASED:
+                    #  retry
+                    sleep(DELAY)
+                else:
+                    raise
     return _fn
 
 
