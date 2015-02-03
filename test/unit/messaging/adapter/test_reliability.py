@@ -18,7 +18,7 @@ from unittest import TestCase
 from mock import patch, Mock
 
 from gofer.messaging.adapter.reliability import blocking, DELAY, DELAY_MULTIPLIER
-from gofer.messaging.adapter.reliability import MINUTE, DAY, MONTH, YEAR
+from gofer.messaging.adapter.reliability import MINUTE, DAY, MONTH, WEEK, YEAR
 
 
 class TestConstants(TestCase):
@@ -26,6 +26,7 @@ class TestConstants(TestCase):
     def test(self):
         self.assertEqual(MINUTE, 60)
         self.assertEqual(DAY, 86400)
+        self.assertEqual(WEEK, 604800)
         self.assertEqual(MONTH, 0x278D00)
         self.assertEqual(YEAR, 0x1E13380)
 

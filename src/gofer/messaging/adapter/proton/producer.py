@@ -16,7 +16,7 @@ from proton import Message
 from proton.utils import SendException, Delivery
 
 from gofer.messaging.adapter.model import BaseSender
-from gofer.messaging.adapter.reliability import DAY
+from gofer.messaging.adapter.reliability import MONTH
 from gofer.messaging.adapter.proton.connection import Connection
 from gofer.messaging.adapter.proton.reliability import reliable
 
@@ -25,7 +25,7 @@ log = getLogger(__name__)
 
 
 DELAY = 10  # seconds
-MAX_RESEND = DAY / DELAY
+MAX_RESEND = MONTH / DELAY
 
 
 def build_message(body, ttl):
