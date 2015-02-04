@@ -230,14 +230,17 @@ class BaseExchange(Node):
 
 class Exchange(BaseExchange):
 
-    def __init__(self, name, policy=DIRECT):
+    def __init__(self, name, policy=DIRECT, url=None):
         """
         :param name: The exchange name.
         :type name: str
         :param policy: The routing policy (direct|topic|..).
         :type policy: str
+        :param url: The (optional) broker URL.
+        :type url: str
         """
         BaseExchange.__init__(self, name, policy)
+        self.url = url
 
     @model
     def declare(self, url=None):
@@ -247,6 +250,7 @@ class Exchange(BaseExchange):
         :type url: str
         :raise: ModelError
         """
+        url = url or self.url
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name, self.policy)
         impl.durable = self.durable
@@ -261,6 +265,7 @@ class Exchange(BaseExchange):
         :type url: str
         :raise: ModelError
         """
+        url = url or self.url
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name, self.policy)
         impl.delete(url)
@@ -274,6 +279,7 @@ class Exchange(BaseExchange):
         :param url: The broker URL.
         :type url: str
         """
+        url = url or self.url
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name, self.policy)
         impl.bind(queue, url)
@@ -287,6 +293,7 @@ class Exchange(BaseExchange):
         :param url: The broker URL.
         :type url: str
         """
+        url = url or self.url
         adapter = Adapter.find(url)
         impl = adapter.Exchange(self.name, self.policy)
         impl.unbind(queue, url)
@@ -329,12 +336,15 @@ class Queue(BaseQueue):
     An AMQP message queue.
     """
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, url=None):
         """
         :param name: The queue name.
         :type name: str
+        :param url: The (optional) broker URL.
+        :type url: str
         """
         BaseQueue.__init__(self, name or str(uuid4()))
+        self.url = url
 
     @model
     def declare(self, url=None):
@@ -344,6 +354,7 @@ class Queue(BaseQueue):
         :type url: str
         :raise: ModelError
         """
+        url = url or self.url
         adapter = Adapter.find(url)
         impl = adapter.Queue(self.name)
         impl.durable = self.durable
@@ -360,6 +371,7 @@ class Queue(BaseQueue):
         :type url: str
         :raise: ModelError
         """
+        url = url or self.url
         adapter = Adapter.find(url)
         impl = adapter.Queue(self.name)
         impl.delete(url)
@@ -371,6 +383,7 @@ class Queue(BaseQueue):
         :param url: The broker URL.
         :type url: str
         """
+        url = url or self.url
         reader = Reader(self, url=url)
         reader.open()
         try:
