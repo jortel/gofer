@@ -82,17 +82,17 @@ class Sender(BaseSender):
             pass
 
     @reliable
-    def send(self, route, content, ttl=None):
+    def send(self, address, content, ttl=None):
         """
         Send a message.
-        :param route: An AMQP route.
-        :type route: str
+        :param address: An AMQP address.
+        :type address: str
         :param content: The message content
         :type content: buf
         :param ttl: Time to Live (seconds)
         :type ttl: float
         """
-        parts = route.split('/')
+        parts = address.split('/')
         if len(parts) > 1:
             exchange = parts[0]
         else:
@@ -100,4 +100,4 @@ class Sender(BaseSender):
         key = parts[-1]
         message = build_message(content, ttl)
         self.channel.basic_publish(message, mandatory=True, exchange=exchange, routing_key=key)
-        log.debug('sent (%s)', route)
+        log.debug('sent (%s)', address)

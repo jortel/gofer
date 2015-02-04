@@ -11,7 +11,7 @@ Summary
 ^^^^^^^
 
  *reply*
-   The asynchronous RMI reply route.  Eg: amq.direct/test-queue
+   The asynchronous RMI reply address.  Eg: amq.direct/test-queue
  *trigger*
    Specifies trigger used for RMI calls. (0=auto <default>, 1=manual)
  *winndow*
@@ -40,8 +40,8 @@ Details
 reply
 -----
 
-The **reply** option specifies the reply route.  When specified, it implies all requests
-are asynchronous and that all replies are sent to the AMQP route.
+The **reply** option specifies the reply address.  When specified, it implies all requests
+are asynchronous and that all replies are sent to the AMQP address.
 
 Example: Assume a reply listener on the topic or queue named: "foo":
 

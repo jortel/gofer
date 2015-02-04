@@ -198,7 +198,7 @@ the caller to further correlate request & response.
  from gofer.proxy import Agent
  from gofer.messaging.async import ReplyConsumer
 
- # specify a reply route to be used for asynchronous responses.
+ # specify a reply address to be used for asynchronous responses.
 
  reply_to = 'tasks'
 
@@ -244,7 +244,7 @@ the caller to further correlate request & response.
  reader.start(Listener())
 
  # create an agent where consumer ID = "jortel" and
- # setup for asynchronous invocation with my reply route.
+ # setup for asynchronous invocation with my reply address.
 
  agent = Agent('jortel', reply=reply_to)
 
@@ -261,7 +261,7 @@ method on reply.
 
 ::
 
- # specify a reply route to be used for responses.
+ # specify a reply address to be used for responses.
 
  reply_to = 'tasks'
 
@@ -280,7 +280,7 @@ method on reply.
         # handle general exception
         pass
 
- # create my reply consumer using the reply route and my callback
+ # create my reply consumer using the reply address and my callback
 
  reader = ReplyConsumer(reply_to)
  reader.start(callback)

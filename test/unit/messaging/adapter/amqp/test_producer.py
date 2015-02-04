@@ -118,13 +118,13 @@ class TestSender(TestCase):
     @patch('gofer.messaging.adapter.amqp.producer.Connection', Mock())
     def test_send(self, build):
         ttl = 10
-        route = 'jeff'
+        address = 'jeff'
         content = 'hello'
 
         # test
         sender = Sender('')
         sender.channel = Mock()
-        sender.send(route, content, ttl=ttl)
+        sender.send(address, content, ttl=ttl)
 
         # validation
         build.assert_called_once_with(content, ttl)
@@ -141,13 +141,13 @@ class TestSender(TestCase):
         ttl = 10
         exchange = 'amq.direct'
         key = 'bar'
-        route = '/'.join((exchange, key))
+        address = '/'.join((exchange, key))
         content = 'hello'
 
         # test
         sender = Sender('')
         sender.channel = Mock()
-        sender.send(route, content, ttl=ttl)
+        sender.send(address, content, ttl=ttl)
 
         # validation
         build.assert_called_once_with(content, ttl)

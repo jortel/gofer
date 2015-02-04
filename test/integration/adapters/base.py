@@ -16,11 +16,11 @@ from gofer.messaging import Queue, NotFound
 N = 10
 
 
-class Route(object):
+class Address(object):
 
-    def __init__(self, route):
-        self.route = route
-        self.parts = route.split('/')
+    def __init__(self, address):
+        self.address = address
+        self.parts = address.split('/')
 
     @property
     def exchange(self):
@@ -34,7 +34,7 @@ class Route(object):
         return self.parts[-1]
 
     def __str__(self):
-        return self.route
+        return self.address
 
 
 class Test(object):
@@ -43,14 +43,14 @@ class Test(object):
         self.url = url
         self.adapter = adapter
 
-    def producer_reader(self, route):
+    def producer_reader(self, address):
         print 'using producer/reader'
         with self.adapter.Sender(url=self.url) as p:
             for x in range(0, N):
-                print '#%d - sent: %s' % (x, route)
-                p.send(str(route), 'hello')
+                print '#%d - sent: %s' % (x, address)
+                p.send(str(address), 'hello')
         received = 0
-        queue = Queue(route.queue)
+        queue = Queue(address.queue)
         with self.adapter.Reader(queue, url=self.url) as r:
             while received < N:
                 m = r.get(1)
@@ -64,14 +64,14 @@ class Test(object):
 
     def test_not_found(self):
         print 'test not-found'
-        route = Route(str(uuid4()))
+        address = Address(str(uuid4()))
         sender = None
         reader = None
         # sender
         try:
             sender = self.adapter.Sender(self.url)
             sender.open()
-            sender.send(str(route), 'hello')
+            sender.send(str(address), 'hello')
             raise Exception('NotFound not raised.')
         except NotFound:
             pass
@@ -79,7 +79,7 @@ class Test(object):
             sender.close()
         # reader
         try:
-            queue = self.adapter.Queue(route.queue)
+            queue = self.adapter.Queue(address.queue)
             reader = self.adapter.Reader(queue, self.url)
             reader.open()
             reader.get()
@@ -91,51 +91,51 @@ class Test(object):
     
     def test_no_exchange(self):
         print 'test builtin (direct) exchange'
-        route = Route('test_1')
-        queue = self.adapter.Queue(route.queue)
+        address = Address('test_1')
+        queue = self.adapter.Queue(address.queue)
         queue.durable = False
         queue.auto_delete = True
         queue.declare(self.url)
-        self.producer_reader(route)
+        self.producer_reader(address)
 
     def test_direct_exchange(self):
         print 'test explicit (direct) exchange'
-        route = Route('amq.direct/test_2')
-        exchange = self.adapter.Exchange(route.exchange, 'direct')
-        queue = self.adapter.Queue(route.queue)
+        address = Address('amq.direct/test_2')
+        exchange = self.adapter.Exchange(address.exchange, 'direct')
+        queue = self.adapter.Queue(address.queue)
         queue.durable = False
         queue.auto_delete = True
         queue.declare(self.url)
         exchange.bind(queue, self.url)
-        self.producer_reader(route)
+        self.producer_reader(address)
 
     def test_custom_direct_exchange(self):
         print 'test custom (direct) exchange'
-        route = Route('test_3.direct/test_3')
-        exchange = self.adapter.Exchange(route.exchange, 'direct')
+        address = Address('test_3.direct/test_3')
+        exchange = self.adapter.Exchange(address.exchange, 'direct')
         exchange.durable = False
         exchange.auto_delete = True
         exchange.declare(self.url)
-        queue = self.adapter.Queue(route.queue)
+        queue = self.adapter.Queue(address.queue)
         queue.durable = False
         queue.auto_delete = True
         queue.declare(self.url)
         exchange.bind(queue, self.url)
-        self.producer_reader(route)
+        self.producer_reader(address)
 
     def test_custom_topic_exchange(self):
         print 'test custom (topic) exchange'
-        route = Route('test_4.topic/test_4')
-        exchange = self.adapter.Exchange(route.exchange, 'topic')
+        address = Address('test_4.topic/test_4')
+        exchange = self.adapter.Exchange(address.exchange, 'topic')
         exchange.durable = False
         exchange.auto_delete = True
         exchange.declare(self.url)
-        queue = self.adapter.Queue(route.queue)
+        queue = self.adapter.Queue(address.queue)
         queue.durable = False
         queue.auto_delete = True
         queue.declare(self.url)
         exchange.bind(queue, self.url)
-        self.producer_reader(route)
+        self.producer_reader(address)
 
     def test_crud(self):
         print 'test CRUD'

@@ -110,33 +110,33 @@ class Connection(BaseConnection):
                 else:
                     raise
 
-    def sender(self, route):
+    def sender(self, address):
         """
-        Get a message sender for the specified route.
-        :param route: An AMQP route.
-        :type route: str
+        Get a message sender for the specified address.
+        :param address: An AMQP address.
+        :type address: str
         :return: A sender.
         :rtype: proton.utils.BlockingSender
         :raise: NotFound
         """
         try:
             name = str(uuid4())
-            return self._impl.create_sender(route, name=name)
+            return self._impl.create_sender(address, name=name)
         except LinkException, le:
             raise NotFound(*le.args)
 
-    def receiver(self, route=None, dynamic=False):
+    def receiver(self, address=None, dynamic=False):
         """
-        Get a message receiver for the specified route.
-        :param route: An AMQP route.
-        :type route: str
+        Get a message receiver for the specified address.
+        :param address: An AMQP address.
+        :type address: str
         :return: A receiver.
         :rtype: proton.utils.BlockingReceiver
         :raise: NotFound
         """
         try:
             name = str(uuid4())
-            return self._impl.create_receiver(route, dynamic=dynamic, name=name)
+            return self._impl.create_receiver(address, dynamic=dynamic, name=name)
         except LinkException, le:
             raise NotFound(*le.args)
 

@@ -120,23 +120,23 @@ class Policy(object):
     The method invocation policy.
     :ivar url: The broker URL.
     :type url: str
-    :ivar route: The AMQP route.
-    :type route: str
+    :ivar address: The AMQP address.
+    :type address: str
     :ivar options: The RMI options.
     :type options: gofer.Options
     """
 
-    def __init__(self, url, route, options):
+    def __init__(self, url, address, options):
         """
         :param url: The broker URL.
         :type url: str
-        :param route: The AMQP route.
-        :type route: str
+        :param address: The AMQP address.
+        :type address: str
         :param options: The RMI options.
         :type options: gofer.Options
         """
         self.url = url
-        self.route = route
+        self.address = address
         self.options = options
 
     @property
@@ -319,7 +319,7 @@ class Trigger:
         """
         Send the request using the specified policy
         object and generated serial number.
-        :param reply: The AMQP reply route.
+        :param reply: The AMQP reply address.
         :type reply: str
         :param queue: The reply queue for synchronous calls.
         :type queue: Queue
@@ -330,7 +330,7 @@ class Trigger:
 
         try:
             producer.send(
-                self._policy.route,
+                self._policy.address,
                 self._policy.ttl,
                 # body
                 sn=self.sn,
@@ -343,7 +343,7 @@ class Trigger:
         finally:
             producer.close()
 
-        log.debug('sent (%s): %s', self._policy.route, self._request)
+        log.debug('sent (%s): %s', self._policy.address, self._request)
 
         if queue is None:
             # no reply expected

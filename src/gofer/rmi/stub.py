@@ -32,22 +32,22 @@ class Builder(object):
     Stub builder.
     """
 
-    def __call__(self, name, url, route, options):
+    def __call__(self, name, url, address, options):
         """
         Factory method.
         :param name: The stub class (or module) name.
         :type name: str
         :param url: The agent URL.
         :type url: str
-        :param route: The AMQP route
-        :type route: str
+        :param address: The AMQP address
+        :type address: str
         :param options: A dict of gofer options
         :param options: Options
         :return: A stub instance.
         :rtype: Stub
         """
         stub = classobj(name, (Stub,), {})
-        inst = stub(url, route, options)
+        inst = stub(url, address, options)
         return inst
 
 
@@ -97,8 +97,8 @@ class Stub:
     All methods mangled because as to not shadow method on the remote.
     :ivar __url: The agent URL.
     :type __url: str
-    :ivar __route: The AMQP route
-    :type __route: str
+    :ivar __address: The AMQP address
+    :type __address: str
     :ivar __mutex: The mutex prevents concurrent calls.
     :type __mutex: RLock
     :ivar __policy: The invocation policy.
@@ -107,19 +107,19 @@ class Stub:
     :type __cntr: tuple
     """
 
-    def __init__(self, url, route, options):
+    def __init__(self, url, address, options):
         """
         :param url: The agent URL.
         :type url: str
-        :param route: The AMQP route
-        :type route: str
+        :param address: The AMQP address
+        :type address: str
         :param options: Stub options.
         :type options: Options
         """
         self.__url = url
-        self.__route = route
+        self.__address = address
         self.__mutex = RLock()
-        self.__policy = Policy(url, route, options)
+        self.__policy = Policy(url, address, options)
         self.__cntr = None
 
     @synchronized

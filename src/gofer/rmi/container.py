@@ -49,7 +49,7 @@ class Container(object):
       - exchange
           (str) An optional AMQP exchange used for synchronous replies.
       - reply
-          (str) An AMQP reply route.
+          (str) An AMQP reply address.
       - trigger
           (int) The trigger type (0=auto|1=manual).
       - data
@@ -64,17 +64,17 @@ class Container(object):
     :type __options: Options
     """
 
-    def __init__(self, url, route, **options):
+    def __init__(self, url, address, **options):
         """
         :param url: The agent URL.
         :type url: str
-        :param route: The AMQP route to the agent.
-        :type route: str
+        :param address: The AMQP address to the agent.
+        :type address: str
         :param options: keyword options.  See documentation.
         :type options: dict
         """
         self.__url = url
-        self.__route = route
+        self.__address = address
         self.__options = Options(options)
 
     def __getattr__(self, name):
@@ -86,7 +86,7 @@ class Container(object):
         :rtype: Stub
         """
         builder = Builder()
-        return builder(name, self.__url, self.__route, self.__options)
+        return builder(name, self.__url, self.__address, self.__options)
         
     def __getitem__(self, name):
         """
@@ -99,7 +99,7 @@ class Container(object):
         return getattr(self, name)
 
     def __str__(self):
-        return '{%s} options: %s' % (self.__route, str(self.__options))
+        return '{%s} options: %s' % (self.__address, str(self.__options))
     
     def __repr__(self):
         return str(self)

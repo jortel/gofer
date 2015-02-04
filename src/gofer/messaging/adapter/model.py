@@ -655,11 +655,11 @@ class Reader(BaseReader):
 
 class BaseSender(Messenger):
 
-    def send(self, route, content, ttl):
+    def send(self, address, content, ttl):
         """
         Send a message with content.
-        :param route: An AMQP route.
-        :type route: str
+        :param address: An AMQP address.
+        :type address: str
         :param content: The message content
         :param ttl: Time to Live (seconds)
         :type ttl: float
@@ -706,16 +706,16 @@ class Sender(BaseSender):
         self._impl.close()
 
     @model
-    def send(self, route, content, ttl=None):
+    def send(self, address, content, ttl=None):
         """
         Send a message with content.
-        :param route: An AMQP route.
-        :type route: str
+        :param address: An AMQP address.
+        :type address: str
         :param content: The message content
         :param ttl: Time to Live (seconds)
         :type ttl: float
         """
-        self._impl.send(route, content, ttl)
+        self._impl.send(address, content, ttl)
 
 
 class Producer(Messenger):
@@ -761,11 +761,11 @@ class Producer(Messenger):
         self._impl.close()
 
     @model
-    def send(self, route, ttl=None, **body):
+    def send(self, address, ttl=None, **body):
         """
         Send a message.
-        :param route: An AMQP route.
-        :type route: str
+        :param address: An AMQP address.
+        :type address: str
         :param ttl: Time to Live (seconds)
         :type ttl: float
         :keyword body: document body.
@@ -774,12 +774,12 @@ class Producer(Messenger):
         :raise: ModelError
         """
         sn = str(uuid4())
-        routing = (None, route)
+        routing = (None, address)
         document = Document(sn=sn, version=VERSION, routing=routing)
         document += body
         unsigned = document.dump()
         signed = auth.sign(self.authenticator, unsigned)
-        self._impl.send(route, signed, ttl)
+        self._impl.send(address, signed, ttl)
         return sn
 
 

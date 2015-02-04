@@ -259,9 +259,9 @@ class Heartbeat:
     @remote
     def send(self):
         delay = int(HEARTBEAT)
-        route = 'amq.topic/heartbeat'
+        address = 'amq.topic/heartbeat'
         if plugin.uuid:
             with Producer(plugin.url) as p:
                 body = dict(uuid=plugin.uuid, next=delay)
-                p.send(route, ttl=delay, heartbeat=body)
+                p.send(address, ttl=delay, heartbeat=body)
         return plugin.uuid

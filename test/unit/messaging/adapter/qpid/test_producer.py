@@ -90,17 +90,17 @@ class TestSender(TestCase):
     @patch('gofer.messaging.adapter.qpid.producer.Connection', Mock())
     def test_send(self, message):
         ttl = 10
-        route = 'q1'
+        address = 'q1'
         content = 'hello'
 
         # test
         sender = Sender('')
         sender.session = Mock()
-        sender.send(route, content, ttl=ttl)
+        sender.send(address, content, ttl=ttl)
 
         # validation
         message.assert_called_once_with(content=content, durable=True, ttl=ttl)
-        sender.session.sender.assert_called_once_with(route)
+        sender.session.sender.assert_called_once_with(address)
         _sender = sender.session.sender.return_value
         _sender.send.assert_called_once_with(message.return_value)
         _sender.close.assert_called_once_with()

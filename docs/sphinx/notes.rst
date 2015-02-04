@@ -42,7 +42,7 @@ Concept changes
 
 - The agent *uuid* is being phased out. RMI calls are routed to the agent based on the
   queue on which it was received. This term is being replaced by more AMQP related
-  terms and concepts. A route has the format of: *exchange*/*queue* or *queue*.
+  terms and concepts. An address has the format of: *exchange*/*queue* or *queue*.
 
 - Support for agent broadcast was removed. This feature was deemed as not useful since
   most applications do not track requests using the serial number. Also, this can be
@@ -55,7 +55,7 @@ There are API changes that affect both RMI calling (proxy) and the Plugin object
 to agent plugins. Proxy changes pertain to the options passed to the *Agent* class and the
 *Stubs* created.
 
-The *Agent* constructor changed from: Agent(uuid, **options) to: Agent(url, route, **options).
+The *Agent* constructor changed from: Agent(uuid, **options) to: Agent(url, address, **options).
 
 Example (adapter = qpid)::
 
@@ -69,7 +69,7 @@ Option changes:
 - *timeout* - Replaced by *ttl*.
 - *ttl* - Added and replaces *timeout*. Strictly applies to request (and message) TTL.
 - *ctag* - Replaced by *reply*.
-- *reply* - Replaces *ctag* and is an AMQP route that specifies where RMI replies are sent.
+- *reply* - Replaces *ctag* and is an AMQP address that specifies where RMI replies are sent.
 - *any* - Removed and replaced by *data*.
 - *data* - User defined data that is round-tripped back to the caller. Replaces *any*.
 - *transport* - Replaced with rich protocol handlers supported by the URL.
@@ -129,7 +129,7 @@ Notes:
  - The *amqp* adapter (python-amqp) updated to use EPOLL and basic_consume() instead of
    using dynamic polling and basic_get().
 
- - By default, the proxy (caller) will no longer declare the agent queue. Since the *route*
+ - By default, the proxy (caller) will no longer declare the agent queue. Since the *address*
    really specifies AMQP routing (exchange/queue), gofer cannot assume the queue name
    or properties. The agent declaration and binding is the responsibility of the agent
    or the (caller) application.

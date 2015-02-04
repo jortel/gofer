@@ -751,12 +751,12 @@ class TestSender(TestCase):
         plugin.Sender.return_value = _impl
         _find.return_value = plugin
         url = TEST_URL
-        route = Mock()
+        address = Mock()
         content = '1234'
         ttl = 10
         sender = Sender(url)
-        sender.send(route, content, ttl)
-        _impl.send.assert_called_once_with(route, content, ttl)
+        sender.send(address, content, ttl)
+        _impl.send.assert_called_once_with(address, content, ttl)
 
 
 class TestProducer(TestCase):
@@ -821,25 +821,25 @@ class TestProducer(TestCase):
         plugin.Sender.return_value = _impl
         _find.return_value = plugin
         uuid4.return_value = '<uuid>'
-        route = 'amq.direct/bar'
+        address = 'amq.direct/bar'
         ttl = 234
         body = {'A': 1, 'B': 2}
 
         # test
         producer = Producer(TEST_URL)
         producer.authenticator = Mock()
-        sn = producer.send(route, ttl=ttl, **body)
+        sn = producer.send(address, ttl=ttl, **body)
 
         # validation
         document.assert_called_once_with(
             sn=str(uuid4.return_value),
             version=VERSION,
-            routing=(None, route)
+            routing=(None, address)
         )
         unsigned = document.return_value
         auth.sign.assert_called_once_with(
             producer.authenticator, unsigned.__iadd__.return_value.dump.return_value)
-        _impl.send.assert_called_once_with(route, auth.sign.return_value, ttl)
+        _impl.send.assert_called_once_with(address, auth.sign.return_value, ttl)
         self.assertEqual(sn, uuid4.return_value)
 
 

@@ -134,12 +134,12 @@ class Task:
         """
         sn = request.sn
         data = request.data
-        route = request.replyto
-        if not route:
+        address = request.replyto
+        if not address:
             return
         try:
             self.producer.send(
-                route,
+                address,
                 sn=sn,
                 data=data,
                 status='started',
@@ -160,13 +160,13 @@ class Task:
         ts = request.ts
         now = time()
         duration = Timer(ts, now)
-        route = request.replyto
+        address = request.replyto
         log.info('sn=%s processed in: %s', sn, duration)
-        if not route:
+        if not address:
             return
         try:
             self.producer.send(
-                route,
+                address,
                 sn=sn,
                 data=data,
                 result=result,
@@ -306,12 +306,12 @@ class Progress:
         """
         sn = self.task.request.sn
         data = self.task.request.data
-        route = self.task.request.replyto
-        if not route:
+        address = self.task.request.replyto
+        if not address:
             return
         try:
             self.producer.send(
-                route,
+                address,
                 sn=sn,
                 data=data,
                 status='progress',

@@ -22,20 +22,20 @@ class TestProxy(TestCase):
 
     def test_init(self):
         url = 'qpid+amqp://host'
-        route = 'xyz'
+        address = 'xyz'
         options = {'A': 1, 'B': 2}
-        _agent = Agent(url, route, **options)
+        _agent = Agent(url, address, **options)
         _options = Options(options)
         self.assertTrue(_agent, Container)
         self.assertEqual(_agent._Container__url, url)
-        self.assertEqual(_agent._Container__route, route)
+        self.assertEqual(_agent._Container__address, address)
         self.assertEqual(_agent._Container__options.__dict__, _options.__dict__)
 
     @patch('gofer.proxy.Agent')
     def test_agent(self, _agent):
         url = 'qpid+amqp://host'
-        route = 'xyz'
+        address = 'xyz'
         options = {'A': 1, 'B': 2}
-        proxy = agent(url, route, **options)
-        _agent.assert_called_with(url, route, **options)
+        proxy = agent(url, address, **options)
+        _agent.assert_called_with(url, address, **options)
         self.assertEqual(proxy, _agent.return_value)

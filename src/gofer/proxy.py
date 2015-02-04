@@ -21,24 +21,24 @@ class Agent(Container):
     A remote agent.
     """
 
-    def __init__(self, url, route, **options):
+    def __init__(self, url, address, **options):
         """
         :param url: The agent URL.
         :type url: str
-        :param route: The AMQP route to the agent.
-        :type route: str
+        :param address: The AMQP address to the agent.
+        :type address: str
         """
-        super(Agent, self).__init__(url, route, **options)
+        super(Agent, self).__init__(url, address, **options)
 
 
-def agent(url, route, **options):
+def agent(url, address, **options):
     """
     Get a proxy for the remote Agent.
     :param url: The agent URL.
     :type url: str
-    :param route: The AMQP route to the agent.
-    :type route: str
+    :param address: The AMQP address to the agent.
+    :type address: str
     :return: An agent (proxy).
     :rtype: Agent
     """
-    return Agent(url, route, **options)
+    return Agent(url, address, **options)

@@ -108,17 +108,17 @@ class TestSender(TestCase):
     @patch('gofer.messaging.adapter.proton.producer.Connection', Mock())
     def test_send(self, builder):
         ttl = 10
-        route = 'q1'
+        address = 'q1'
         content = 'hello'
 
         # test
         sender = Sender('')
         sender.connection = Mock()
-        sender.send(route, content, ttl=ttl)
+        sender.send(address, content, ttl=ttl)
 
         # validation
         builder.assert_called_once_with(content, ttl)
-        sender.connection.sender.assert_called_once_with(route)
+        sender.connection.sender.assert_called_once_with(address)
         _sender = sender.connection.sender.return_value
         _sender.send.assert_called_once_with(builder.return_value)
         _sender.close.assert_called_once_with()

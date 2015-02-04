@@ -60,8 +60,8 @@ class RequestConsumer(Consumer):
         :param status: The status to send ('accepted'|'rejected')
         :type status: str
         """
-        route = request.replyto
-        if not route:
+        address = request.replyto
+        if not address:
             return
         try:
             producer = Producer(self.url)
@@ -69,7 +69,7 @@ class RequestConsumer(Consumer):
             producer.open()
             try:
                 producer.send(
-                    route,
+                    address,
                     sn=request.sn,
                     data=request.data,
                     status=status,

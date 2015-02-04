@@ -74,20 +74,20 @@ class Sender(BaseSender):
             pass
 
     @reliable
-    def send(self, route, content, ttl=None):
+    def send(self, address, content, ttl=None):
         """
         Send a message.
-        :param route: An AMQP route.
-        :type route: str
+        :param address: An AMQP address.
+        :type address: str
         :param content: The message content
         :type content: buf
         :param ttl: Time to Live (seconds)
         :type ttl: float
         """
-        sender = self.session.sender(route)
+        sender = self.session.sender(address)
         try:
             message = Message(content=content, durable=True, ttl=ttl)
             sender.send(message)
-            log.debug('sent (%s)', route)
+            log.debug('sent (%s)', address)
         finally:
             sender.close()

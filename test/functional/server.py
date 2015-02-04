@@ -40,13 +40,13 @@ log = getLogger(__name__)
 class Agent(object):
 
     url = None
-    route = None
+    address = None
     base_options = {}
 
     def __new__(cls, *args, **options):
         all_options = dict(Agent.base_options)
         all_options.update(options)
-        return RealAgent(url, route, **all_options)
+        return RealAgent(url, address, **all_options)
 
 
 class TestAuthenticator(Authenticator):
@@ -208,10 +208,10 @@ def test_triggers():
 
 def demo_window(exit=0):
     print 'demo window, +10, +10min seconds'
-    route = Agent.route.split('/')[-1].upper()
+    address = Agent.address.split('/')[-1].upper()
     begin = later(seconds=10)
     window = Window(begin=begin, seconds=5)
-    agent = Agent(reply=route)
+    agent = Agent(reply=address)
     dog = agent.Dog(window=window, data='demo')
     print dt.now()
     print dog.bark('hello, after 10 seconds')
@@ -380,7 +380,7 @@ def demo_progress(exit=0):
     
 
 def main():
-    route = Agent.route.split('/')[-1].upper()
+    address = Agent.address.split('/')[-1].upper()
 
     # test ttl (not expired)
     agent = Agent(ttl=3)
@@ -405,14 +405,14 @@ def main():
     # asynchronous
     print '(demo) asynchronous'
     window = Window(begin=dt.utcnow(), minutes=1)
-    agent = Agent(reply=route, window=window)
+    agent = Agent(reply=address, window=window)
     demo(agent)
 
     # group 2
     print 'group 2'
     begin = later(seconds=20)
     window = Window(begin=begin, minutes=10)
-    agent = Agent(reply=route, window=window, data='group 2')
+    agent = Agent(reply=address, window=window, data='group 2')
     dog = agent.Dog()
     print dog.bark('hello')
     print dog.wag(3)
@@ -422,7 +422,7 @@ def main():
     print 'group 1'
     begin = later(seconds=10)
     window = Window(begin=begin, minutes=10)
-    agent = Agent(reply=route, window=window, data='group 1')
+    agent = Agent(reply=address, window=window, data='group 1')
     dog = agent.Dog()
     print dog.bark('hello')
     print dog.wag(3)
@@ -453,7 +453,7 @@ def smoke_test(exit=0):
 
 def get_options():
     parser = OptionParser(option_class=ListOption)
-    parser.add_option('-r', '--route', default='xyz', help='route')
+    parser.add_option('-r', '--address', default='xyz', help='address')
     parser.add_option('-u', '--url', help='broker URL')
     parser.add_option('-t', '--threads', default=0, help='number of threads')
     parser.add_option('-U', '--user', action='extend', help='list of userid:password')
@@ -467,7 +467,7 @@ if __name__ == '__main__':
     options = get_options()
 
     url = options.url
-    route = options.route
+    address = options.address
 
     yp = {}
     for user in options.user:
@@ -480,10 +480,10 @@ if __name__ == '__main__':
         authenticator = None
 
     Agent.url = url
-    Agent.route = route
+    Agent.address = address
     Agent.base_options['authenticator'] = authenticator
 
-    queue = Queue(route.split('/')[-1].upper())
+    queue = Queue(address.split('/')[-1].upper())
     queue.durable = False
     queue.declare(url)
     reply_consumer = ReplyConsumer(queue, url=url, authenticator=authenticator)
