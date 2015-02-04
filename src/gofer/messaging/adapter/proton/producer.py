@@ -9,23 +9,16 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from time import sleep
 from logging import getLogger
 
 from proton import Message
-from proton.utils import SendException, Delivery
 
 from gofer.messaging.adapter.model import BaseSender
-from gofer.messaging.adapter.reliability import MONTH
 from gofer.messaging.adapter.proton.connection import Connection
-from gofer.messaging.adapter.proton.reliability import reliable
+from gofer.messaging.adapter.proton.reliability import reliable, resend
 
 
 log = getLogger(__name__)
-
-
-DELAY = 10  # seconds
-MAX_RESEND = MONTH / DELAY
 
 
 def build_message(body, ttl):
@@ -41,22 +34,6 @@ def build_message(body, ttl):
         return Message(body=body, durable=True, ttl=ttl)
     else:
         return Message(body=body, durable=True)
-
-
-def sender(fn):
-    @reliable
-    def _fn(*args, **keywords):
-        resend = 0
-        while resend < MAX_RESEND:
-            try:
-                return fn(*args, **keywords)
-            except SendException, e:
-                if e.state == Delivery.RELEASED:
-                    sleep(DELAY)
-                    resend += 1
-                else:
-                    raise
-    return _fn
 
 
 class Sender(BaseSender):
@@ -98,7 +75,7 @@ class Sender(BaseSender):
         """
         pass
 
-    @sender
+    @resend
     def send(self, route, content, ttl=None):
         """
         Send a message.

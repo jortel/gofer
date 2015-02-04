@@ -16,7 +16,7 @@ from proton import Message
 
 from gofer.messaging.adapter.model import BaseExchange, BaseQueue
 from gofer.messaging.adapter.proton.connection import Connection
-from gofer.messaging.adapter.proton.reliability import reliable
+from gofer.messaging.adapter.proton.reliability import reliable, resend
 
 
 log = getLogger(__name__)
@@ -93,6 +93,14 @@ class Method(object):
             'x-amqp-0-10.app-id': 'qmf2',
             'method': 'request'
         }
+
+    @resend
+    def send(self, request):
+        """
+        Send the request.
+        :param request: A QMF request.
+        """
+        self.sender.send(request)
 
     def on_reply(self, reply):
         """

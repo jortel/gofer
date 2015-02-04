@@ -31,7 +31,7 @@ class TestConstants(TestCase):
         self.assertEqual(YEAR, 0x1E13380)
 
 
-class TestBlockingDecorator(TestCase):
+class TestBlocking(TestCase):
 
     def test_call(self):
         fn = Mock()

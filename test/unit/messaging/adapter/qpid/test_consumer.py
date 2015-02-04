@@ -18,7 +18,6 @@ from gofer.devel import ipatch
 from gofer.messaging.adapter.model import Message
 
 with ipatch('qpid'):
-    from gofer.messaging.adapter.qpid.consumer import NotFound, opener
     from gofer.messaging.adapter.qpid.consumer import Reader, BaseReader
 
 
@@ -30,30 +29,6 @@ class Queue(object):
 
     def __init__(self, name):
         self.name = name
-
-
-class Thing(object):
-
-    @opener
-    def open(self, exception=None):
-        if exception:
-            raise exception
-
-
-class _NotFound(Exception):
-    pass
-
-
-class TestOpener(TestCase):
-
-    @patch('gofer.messaging.adapter.qpid.consumer._NotFound', _NotFound)
-    def test_call(self):
-        t = Thing()
-        t.open()
-        # 404
-        self.assertRaises(NotFound, t.open, _NotFound)
-        # other
-        self.assertRaises(ValueError, t.open, ValueError)
 
 
 class TestReader(TestCase):

@@ -9,18 +9,15 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from logging import basicConfig
-
-basicConfig()
-
-from base import Test
-
-URL = 'amqp+amqp://localhost:5673'
+import test_amqp
+import test_proton
+import test_qpid
 
 
 def run():
-    test = Test(URL)
-    test()
+    test_amqp.run()
+    test_proton.run()
+    test_qpid.run()
 
 if __name__ == '__main__':
     run()

@@ -17,8 +17,12 @@ from base import Test
 
 URL = 'proton+amqp://localhost'
 
-if __name__ == '__main__':
+
+def run():
     test = Test(URL)
     test.test_crud()
     test.test_no_exchange()
+
+if __name__ == '__main__':
+    run()
 

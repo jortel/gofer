@@ -12,10 +12,16 @@
 
 from time import sleep
 
-from gofer.messaging.adapter.proton.connection import ConnectionException, LinkException
+from proton import ConnectionException, LinkException, Delivery
+from proton.utils import SendException
+
+from gofer.messaging.adapter.reliability import MINUTE
 
 
-DELAY = 3  # seconds
+DELAY = 3   # seconds
+
+RESEND_DELAY = 10  # seconds
+MAX_RESEND = (MINUTE * 10) / RESEND_DELAY
 
 
 def reliable(fn):
@@ -34,4 +40,21 @@ def reliable(fn):
                 thing.close()
                 thing.connection.close()
                 repair = thing.open
+    return _fn
+
+
+def resend(fn):
+    @reliable
+    def _fn(thing, *args, **kwargs):
+        retry = MAX_RESEND
+        delay = RESEND_DELAY
+        while retry > 0:
+            try:
+                return fn(thing, *args, **kwargs)
+            except SendException, le:
+                if le.state == Delivery.RELEASED:
+                    sleep(delay)
+                    retry -= 1
+                else:
+                    raise
     return _fn

@@ -9,9 +9,11 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-N = 10
+from uuid import uuid4
 
-from gofer.messaging import Queue
+from gofer.messaging import Queue, NotFound
+
+N = 10
 
 
 class Route(object):
@@ -59,6 +61,33 @@ class Test(object):
                 received += 1
         assert received == N
         print 'end'
+
+    def test_not_found(self):
+        print 'test not-found'
+        route = Route(str(uuid4()))
+        sender = None
+        reader = None
+        # sender
+        try:
+            sender = self.adapter.Sender(self.url)
+            sender.open()
+            sender.send(str(route), 'hello')
+            raise Exception('NotFound not raised.')
+        except NotFound:
+            pass
+        finally:
+            sender.close()
+        # reader
+        try:
+            queue = self.adapter.Queue(route.queue)
+            reader = self.adapter.Reader(queue, self.url)
+            reader.open()
+            reader.get()
+            raise Exception('NotFound not raised.')
+        except NotFound:
+            pass
+        finally:
+            reader.close()
     
     def test_no_exchange(self):
         print 'test builtin (direct) exchange'

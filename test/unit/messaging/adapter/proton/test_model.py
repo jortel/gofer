@@ -65,6 +65,13 @@ class TestMethod(TestCase):
                 'method': 'request'
             })
 
+    def test_send(self):
+        request = Mock()
+        method = Method('', '', {})
+        method.sender = Mock()
+        method.send(request)
+        method.sender.send.assert_called_with(request)
+
     def test_reply_succeeded(self):
         body = ''
         properties = {

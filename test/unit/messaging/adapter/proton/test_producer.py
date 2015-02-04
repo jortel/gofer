@@ -18,61 +18,6 @@ from gofer.devel import ipatch
 
 with ipatch('proton'):
     from gofer.messaging.adapter.proton.producer import BaseSender, Sender, build_message
-    from gofer.messaging.adapter.proton.producer import sender, DELAY
-
-
-class Thing(object):
-
-    def __init__(self, *exceptions):
-        self.exceptions = iter(exceptions)
-
-    @sender
-    def send(self):
-        try:
-            exception = self.exceptions.next()
-            if callable(exception):
-                exception = exception()
-            raise exception
-        except StopIteration:
-            pass
-
-
-class SendException(Exception):
-
-    def __init__(self, state=None):
-        self.state = state
-
-
-class TestSenderDecorator(TestCase):
-
-    @patch('gofer.messaging.adapter.proton.producer.sleep')
-    @patch('gofer.messaging.adapter.proton.producer.SendException', SendException)
-    def test_call(self, sleep):
-        t = Thing()
-        t.send()
-        self.assertFalse(sleep.called)
-
-    @patch('gofer.messaging.adapter.proton.producer.sleep')
-    @patch('gofer.messaging.adapter.proton.producer.Delivery')
-    @patch('gofer.messaging.adapter.proton.producer.SendException', SendException)
-    def test_call_message_released(self, delivery, sleep):
-        delivery.RELEASED = 0x01
-        delivery.REJECTED = 0x02
-        t = Thing(SendException(delivery.RELEASED))
-
-        t.send()
-        sleep.assert_called_once_with(DELAY)
-
-    @patch('gofer.messaging.adapter.proton.producer.sleep')
-    @patch('gofer.messaging.adapter.proton.producer.Delivery')
-    @patch('gofer.messaging.adapter.proton.producer.SendException', SendException)
-    def test_call_message_rejected(self, delivery, sleep):
-        delivery.RELEASED = 0x01
-        delivery.REJECTED = 0x02
-        t = Thing(SendException(delivery.REJECTED))
-
-        self.assertRaises(SendException, t.send)
-        self.assertFalse(sleep.called)
 
 
 class TestBuilder(TestCase):

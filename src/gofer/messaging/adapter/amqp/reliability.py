@@ -14,6 +14,7 @@ from time import sleep
 
 from amqp import ChannelError
 
+from gofer.messaging.adapter.model import NotFound
 from gofer.messaging.adapter.amqp.connection import Connection, CONNECTION_EXCEPTIONS
 
 
@@ -27,10 +28,13 @@ def reliable(fn):
             try:
                 repair()
                 return fn(thing, *args, **kwargs)
-            except ChannelError:
-                sleep(DELAY)
-                thing.close()
-                repair = thing.open
+            except ChannelError, e:
+                if e.code != 404:
+                    sleep(DELAY)
+                    thing.close()
+                    repair = thing.open
+                else:
+                    raise NotFound(*e.args)
             except CONNECTION_EXCEPTIONS:
                 sleep(DELAY)
                 thing.close()

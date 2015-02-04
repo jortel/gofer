@@ -21,10 +21,11 @@ Provides AMQP message consumer classes.
 from time import sleep
 from logging import getLogger
 
-from qpid.messaging import Empty, NotFound as _NotFound
+from qpid.messaging import Empty
 from qpid.messaging import Disposition, RELEASED, REJECTED
 
-from gofer.messaging.adapter.model import BaseReader, Message, NotFound
+from gofer.messaging.adapter.model import BaseReader, Message
+from gofer.messaging.adapter.qpid.reliability import reliable
 from gofer.messaging.adapter.qpid.connection import Connection
 
 
@@ -32,15 +33,6 @@ log = getLogger(__name__)
 
 
 NO_DELAY = 0.010
-
-
-def opener(fn):
-    def _fn(*args):
-        try:
-            return fn(*args)
-        except _NotFound, e:
-            raise NotFound(*e.args)
-    return _fn
 
 
 class Reader(BaseReader):
@@ -71,7 +63,7 @@ class Reader(BaseReader):
         """
         return self.receiver is not None
 
-    @opener
+    @reliable
     def open(self):
         """
         Open the reader.

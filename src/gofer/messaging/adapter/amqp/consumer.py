@@ -15,9 +15,7 @@ from Queue import Empty
 from Queue import Queue as Inbox
 from logging import getLogger
 
-from amqp import ChannelError
-
-from gofer.messaging.adapter.model import BaseReader, Message, NotFound
+from gofer.messaging.adapter.model import BaseReader, Message
 from gofer.messaging.adapter.amqp.connection import Connection
 from gofer.messaging.adapter.amqp.reliability import reliable
 
@@ -27,18 +25,6 @@ log = getLogger(__name__)
 
 NO_DELAY = 0
 DELIVERY_TAG = 'delivery_tag'
-
-
-def opener(fn):
-    def _fn(*args):
-        try:
-            return fn(*args)
-        except ChannelError, e:
-            if e.code == 404:
-                raise NotFound(*e.args)
-            else:
-                raise
-    return _fn
 
 
 class Reader(BaseReader):
@@ -69,7 +55,7 @@ class Reader(BaseReader):
         """
         return self.receiver is not None
 
-    @opener
+    @reliable
     def open(self):
         """
         Open the reader.

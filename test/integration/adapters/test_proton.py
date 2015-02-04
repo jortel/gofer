@@ -19,7 +19,8 @@ basicConfig()
 
 URL = 'amqp://localhost'
 
-if __name__ == '__main__':
+
+def run():
     loader = Loader()
     loader.load()
     # amqp-1-0
@@ -32,3 +33,6 @@ if __name__ == '__main__':
     test = Test(URL, adapter)
     test.test_crud()
     test.test_no_exchange()
+
+if __name__ == '__main__':
+    run()

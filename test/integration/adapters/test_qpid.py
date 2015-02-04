@@ -19,7 +19,8 @@ basicConfig()
 
 URL = 'amqp://localhost'
 
-if __name__ == '__main__':
+
+def run():
     # AMQP-0-10
     loader = Loader()
     loader.load()
@@ -34,3 +35,6 @@ if __name__ == '__main__':
     adapter = loader.catalog['qpid.messaging']
     test = Test(URL, adapter)
     test()
+
+if __name__ == '__main__':
+    run()

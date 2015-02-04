@@ -21,8 +21,8 @@ from logging import getLogger
 
 from proton import Timeout
 
-from gofer.messaging.adapter.model import BaseReader, Message, NotFound
-from gofer.messaging.adapter.proton.connection import Connection, LinkException
+from gofer.messaging.adapter.model import BaseReader, Message
+from gofer.messaging.adapter.proton.connection import Connection
 from gofer.messaging.adapter.proton.reliability import reliable
 
 
@@ -30,16 +30,6 @@ log = getLogger(__name__)
 
 
 NO_DELAY = 0.010
-
-
-def opener(fn):
-    @reliable
-    def _fn(*args):
-        try:
-            return fn(*args)
-        except LinkException, e:
-            raise NotFound(*e.args)
-    return _fn
 
 
 class Reader(BaseReader):
@@ -71,7 +61,7 @@ class Reader(BaseReader):
         """
         return self.receiver is not None
 
-    @opener
+    @reliable
     def open(self):
         """
         Open the reader.

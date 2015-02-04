@@ -18,6 +18,8 @@ from mock import Mock, patch
 
 from gofer.devel import ipatch
 
+from gofer.messaging.adapter.model import NotFound
+
 with ipatch('amqp'):
     from gofer.messaging.adapter.amqp.reliability import reliable, DELAY
     from gofer.messaging.adapter.amqp.reliability import Endpoint, endpoint
@@ -28,7 +30,9 @@ class ConnectionException(Exception):
 
 
 class ChannelError(Exception):
-    pass
+
+    def __init__(self, code=0):
+        self.code = code
 
 
 class TestReliable(TestCase):
@@ -95,6 +99,22 @@ class TestReliable(TestCase):
                 (args, kwargs),
                 (args, kwargs),
             ])
+
+    @patch('gofer.messaging.adapter.amqp.reliability.ChannelError', ChannelError)
+    @patch('gofer.messaging.adapter.amqp.reliability.sleep')
+    def test_reliable_channel_exception_not_found(self, sleep):
+        url = 'test-url'
+        fn = Mock(side_effect=[ChannelError(404), None])
+        thing = Mock(url=url, connection=Mock())
+        args = (thing, 2, 3)
+        kwargs = {'A': 1}
+
+        # test
+        wrapped = reliable(fn)
+
+        # validation
+        self.assertRaises(NotFound, wrapped, *args, **kwargs)
+        self.assertFalse(sleep.called)
 
     @patch('gofer.messaging.adapter.amqp.reliability.Endpoint')
     def test_endpoint(self, thing):

@@ -64,7 +64,8 @@ class TestConnection(TestCase):
             virtual_host=broker.virtual_host,
             userid=broker.userid,
             password=broker.password,
-            ssl=_ssl.return_value)
+            ssl=_ssl.return_value,
+            confirm_publish=True)
 
         self.assertEqual(c._impl, connection.return_value)
 
@@ -116,9 +117,10 @@ class TestConnection(TestCase):
         self.assertEqual(ch, c._impl.channel.return_value)
 
     def test_close(self):
-        url = TEST_URL
+        url = 'test-url'
         c = Connection(url)
         impl = Mock()
+        impl.close.side_effect = ValueError
         c._impl = impl
         c.close()
         impl.close.assert_called_once_with()

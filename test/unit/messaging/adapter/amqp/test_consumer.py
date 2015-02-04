@@ -20,7 +20,6 @@ from gofer.devel import ipatch
 from gofer.messaging.adapter.model import Message
 
 with ipatch('amqp'):
-    from gofer.messaging.adapter.amqp.consumer import NotFound, opener
     from gofer.messaging.adapter.amqp.consumer import Receiver, Inbox, Empty
     from gofer.messaging.adapter.amqp.consumer import Reader, BaseReader
     from gofer.messaging.adapter.amqp.consumer import DELIVERY_TAG
@@ -32,30 +31,10 @@ class Queue(object):
         self.name = name
 
 
-class Thing(object):
-
-    @opener
-    def open(self, exception=None):
-        if exception:
-            raise exception
-
-
 class ChannelError(Exception):
 
     def __init__(self, code):
         self.code = code
-
-
-class TestOpener(TestCase):
-
-    @patch('gofer.messaging.adapter.amqp.consumer.ChannelError', ChannelError)
-    def test_call(self):
-        t = Thing()
-        t.open()
-        # 404
-        self.assertRaises(NotFound, t.open, ChannelError(404))
-        # other
-        self.assertRaises(ChannelError, t.open, ChannelError(500))
 
 
 class TestReader(TestCase):

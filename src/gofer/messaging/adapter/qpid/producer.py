@@ -22,6 +22,7 @@ from logging import getLogger
 from qpid.messaging import Message
 
 from gofer.messaging.adapter.model import BaseSender
+from gofer.messaging.adapter.qpid.reliability import reliable
 from gofer.messaging.adapter.qpid.connection import Connection
 
 
@@ -72,6 +73,7 @@ class Sender(BaseSender):
         except Exception:
             pass
 
+    @reliable
     def send(self, route, content, ttl=None):
         """
         Send a message.

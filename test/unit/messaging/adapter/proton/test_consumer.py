@@ -19,7 +19,6 @@ from gofer.messaging.adapter.model import Message
 
 with ipatch('proton'):
     from gofer.messaging.adapter.proton.consumer import Reader, BaseReader
-    from gofer.messaging.adapter.proton.consumer import NotFound, opener
 
 
 class Timeout(Exception):
@@ -32,28 +31,8 @@ class Queue(object):
         self.name = name
 
 
-class Thing(object):
-
-    @opener
-    def open(self, exception=None):
-        if exception:
-            raise exception
-
-
 class LinkException(Exception):
     pass
-
-
-class TestOpener(TestCase):
-
-    @patch('gofer.messaging.adapter.proton.consumer.LinkException', LinkException)
-    def test_call(self):
-        t = Thing()
-        t.open()
-        # 404
-        self.assertRaises(NotFound, t.open, LinkException())
-        # other
-        self.assertRaises(ValueError, t.open, ValueError)
 
 
 class TestReader(TestCase):

@@ -1,4 +1,4 @@
-# Copyright (c) 2013 Red Hat, Inc.
+# Copyright (c) 2015 Red Hat, Inc.
 #
 # This software is licensed to you under the GNU General Public
 # License as published by the Free Software Foundation; either version
@@ -8,19 +8,18 @@
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+#
+# Jeff Ortel (jortel@redhat.com)
 
-from logging import basicConfig
+from qpid.messaging import NotFound as _NotFound
 
-basicConfig()
-
-from base import Test
-
-URL = 'amqp+amqp://localhost:5673'
+from gofer.messaging.adapter.model import NotFound
 
 
-def run():
-    test = Test(URL)
-    test()
-
-if __name__ == '__main__':
-    run()
+def reliable(fn):
+    def _fn(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except _NotFound, e:
+            raise NotFound(*e.args)
+    return _fn

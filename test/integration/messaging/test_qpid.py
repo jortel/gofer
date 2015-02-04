@@ -17,6 +17,10 @@ from base import Test
 
 URL = 'qpid+amqp://localhost'
 
-if __name__ == '__main__':
+
+def run():
     test = Test(URL)
     test()
+
+if __name__ == '__main__':
+    run()

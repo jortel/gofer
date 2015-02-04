@@ -107,7 +107,8 @@ class Connection(BaseConnection):
                     virtual_host=virtual_host,
                     ssl=ssl,
                     userid=userid,
-                    password=password)
+                    password=password,
+                    confirm_publish=True)
                 log.info('connected: %s', broker.url)
                 break
             except CONNECTION_EXCEPTIONS:
