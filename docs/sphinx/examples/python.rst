@@ -10,16 +10,9 @@ Sample server-side code:
 
  from gofer.proxy import Agent
 
- agent = Agent('jortel')
-
-
-Sample server-side code using the proxy module API:
-
-::
-
- from gofer import proxy
-
- agent = proxy.agent('jortel')
+ url = 'amqp://localhost'
+ address = 'test'
+ agent = Agent(url, address)
 
 
 Define Agent-side
@@ -36,8 +29,8 @@ Plugin descriptor: ``/etc/gofer/plugins/plugin.conf``
  enabled=1
 
  [messaging]
- url=
- uuid=jortel
+ url=amqp://localhost
+ uuid=test
 
 
 Code:   ``/var/lib/gofer/plugins/plugin.py``
@@ -51,9 +44,9 @@ Code:   ``/var/lib/gofer/plugins/plugin.py``
  # which you can use to define custom sections/properties
 
  plugin = Plugin.find(__name__)
- cfg = plugin.cfg()
 
  class Dog:
+
     @remote
     def bark(self, words):
         woof = cfg.dog.bark_noise
@@ -77,7 +70,7 @@ descriptor as follows:
  plugin=application.agent.plugin.py
 
  [messaging]
- url=
+ url=amqp://localhost
  uuid=zoo
 
 
@@ -91,22 +84,24 @@ behaviour and the timeout is 90 seconds by default.
 
  from gofer.proxy import Agent
 
- agent = Agent('jortel')
+ agent = Agent('amqp://localhost', 'test')
 
  # invoke methods on the agent (remotely)
+
  dog = agent.Dog()
  print dog.bark('hello')
  print dog.wag(3)
  print dog.bark('hello')
 
  # methods that raise exceptions
+
  try:
     print dog.sit()
  except Exception, e:
     print repr(e)
 
  try:
-    print dog.notpermitted()
+    print dog.not_permitted()
  except Exception, e:
     print repr(e)
 
@@ -121,35 +116,14 @@ timeout of 180 seconds.
 
  from gofer.proxy import Agent
 
- agent = Agent('jortel', timeout=180)  # specify timeout
+ amqp://localhost
+ agent = Agent('amqp://localhost', 'test', timeout=180)  # specify timeout
 
  # invoke methods on the agent (remotely)
  dog = agent.Dog()
  dog.bark('hello')
  dog.wag(3)
  dog.bark('hello')
-
-
-The timeout can also be a tuple: (<started>, <execute>) where the timeout specifies:
-
-- Timeout for starting the operation
-- Timeout for completing the operation.
-
-In this example, we specify that the operation must be started by the agent within 3 seconds
-and it must be completed within 180 seconds.
-
-::
-
- from gofer.proxy import Agent
-
- agent = Agent('jortel', timeout=(3,180))  # specify timeout
-
- # invoke methods on the agent (remotely)
- dog = agent.Dog()
- dog.bark('hello')
- dog.wag(3)
- dog.bark('hello')
-
 
 
 Asynchronous (fire & forget) Invocation
@@ -163,8 +137,8 @@ number of the request.
 
  from gofer.proxy import Agent
 
- #create an agent where consumerid = "jortel"
- agent = Agent('jortel', wait=0)
+ # create an agent where user data = 'task_id'
+ agent = Agent('amqp://localhost', 'test', wait=0)
 
  # invoke methods on the agent (remotely)
  dog = agent.Dog()
@@ -180,7 +154,7 @@ number of the request.
     print repr(e)
 
  try:
-    print dog.notpermitted()
+    print dog.not_permitted()
  except Exception, e:
     print repr(e)
 
@@ -206,47 +180,67 @@ the caller to further correlate request & response.
 
  class Listener:
     """
-    Succeeded notification.
-    reply:
-        sn - request serial number.
-        origin - the reply sender.
-        retval - request returned value.
-        any - user defined data (round tripped)
+    An asynchronous operation callback listener.
     """
+
     def succeeded(self, reply):
+        """
+        Async request succeeded.
+        :param reply: The reply data.
+        :type reply: Succeeded.
+        """
         pass
 
     def failed(self, reply):
         """
-        Failed (exception raised) notification.
-        reply:
-            sn - request serial number.
-            origin - the reply sender.
-            exval - the raised exception.
-            any - user defined data (round tripped)
+        Async request failed (raised an exception).
+        :param reply: The reply data.
+        :type reply: Failed.
         """
         pass
 
-    def status(self, reply):
+    def accepted(self, reply):
         """
-        Request status changed notification.
-        reply:
-            sn - request serial number.
-            origin - the reply sender.
-            status - the new request status.
-            any - user defined data (round tripped)
+        Async request has been accepted.
+        :param reply: The request.
+        :type reply: Accepted.
         """
         pass
+
+    def rejected(self, reply):
+        """
+        Async request has been rejected.
+        :param reply: The request.
+        :type reply: Accepted.
+        """
+        pass
+
+    def started(self, reply):
+        """
+        Async request has started.
+        :param reply: The request.
+        :type reply: Started.
+        """
+        pass
+
+    def progress(self, reply):
+        """
+        Async progress report.
+        :param reply: The request.
+        :type reply: Progress.
+        """
+        pass
+
 
  # create my reply consumer using the reply to and my listener
 
  reader = ReplyConsumer(reply_to)
  reader.start(Listener())
 
- # create an agent where consumer ID = "jortel" and
+ # create an agent where user data is {'task_id': 1234} and
  # setup for asynchronous invocation with my reply address.
 
- agent = Agent('jortel', reply=reply_to)
+ agent = Agent('amqp://localhost', 'test', reply=reply_to)
 
  # invoke methods on the agent (remotely)
  dog = agent.Dog()
@@ -286,30 +280,6 @@ method on reply.
  reader.start(callback)
  ...
 
-
-
-Asynchronous (group) Invocation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Invoking operations on multiple agents is asynchronous by nature.  This can be done by simply creating
-an agent (proxy) with a collection (list|tuple) of ids instead of just one.  Basically, it's the same
-as the asynchronous examples above except that when more then (1) id is specified, method invocations
-return a list of tuples (id, serial number) instead of just the serial number.
-
-Eg:
-
-::
-
- from gofer.proxy import Agent
-
- #create an agent with a list of consumer ids.
- group = ('a', 'b', 'c',)
- agent = Agent(group, reply='tasks')
- dog = agent.Dog()
- print dog.wag(10) # request sent to (a,b,c) and asynchronous replies sent to 'tasks' queue.
-   [('a', 'e688f50b-3108-43dd-9a57-813f434749a8'), ('b', 'e4e60889-edac-42f1-8b64-443dbe693566'), ('c', '95960889-edac-42f1-8b64-443dbe693f23')]
-
-
 Maintenance Windows
 ^^^^^^^^^^^^^^^^^^^
 
@@ -332,15 +302,14 @@ Eg:
  from gofer.proxy import Agent
  from gofer.messaging.window import Window
 
- #create an agent with a list of consumer ids.
  # window is on July 26th between 10am - 11am.
- group = ('a', 'b', 'c',)
+
  start = datetime(2010, 7, 26, 10)
- maint = Window(begin=start, hours=1)
- agent = Agent(group, reply='tasks', window=maint)
+ window = Window(begin=start, hours=1)
+ agent = Agent('amqp://localhost', 'test', reply='tasks', wait=0, window=window)
  dog = agent.Dog()
  print dog.wag(10) # request sent to (a,b,c) and asynchronous replies sent to 'tasks' queue.
-   [('a', 'e688f50b-3108-43dd-9a57-813f434749a8'), ('b', 'e4e60889-edac-42f1-8b64-443dbe693566'), ('c', '95960889-edac-42f1-8b64-443dbe693f23')]
+   'e688f50b-3108-43dd-9a57-813f434749a8'
 
 
 Class Constructor Arguments
@@ -416,25 +385,9 @@ Example:
  from gofer.proxy import Agent
  from gofer.messaging.dispatcher import NotAuthorized
 
- agent = Agent('jortel', secret='mycathas9lives')
+ agent = Agent('amqp://localhost', 'test', secret='mycathas9lives')
  # invoke methods on the agent (remotely)
  dog = agent.Dog()
- try:
-    dog.bark('secure hello')
- except NotAuthorized:
-    log.error('wrong secret')
-
-
-Or,
-
-::
-
- from gofer.proxy import Agent
- from gofer.messaging.dispatcher import NotAuthorized
-
- agent = Agent('jortel')
- # invoke methods on the agent (remotely)
- dog = agent.Dog(secret='mycathas9lives')
  try:
     dog.bark('secure hello')
  except NotAuthorized:
@@ -467,7 +420,7 @@ Examples:
  def progress_reported(report)
   pass
 
- agent = Agent()
+ agent = Agent('amqp://localhost', 'test')
  dog = agent.Dog(progress=progress_reported)
  dog.bark('howdy')
 
@@ -551,7 +504,7 @@ You can test your new stuff as follows:
  Type "help", "copyright", "credits" or "license" for more information.
  >>> from gofer.proxy import Agent
  >>> uuid = <your consumer ID>
- >>> agent = Agent(uuid)
+ >>> agent = Agent('amqp://localhost', uuid)
  >>> foo = agent.Foo()
  >>> print foo.bar()
 
@@ -566,7 +519,7 @@ Or, using the proxy module API:
  Type "help", "copyright", "credits" or "license" for more information.
  >>> from gofer import proxy
  >>> uuid = <your consumer ID>
- >>> agent = proxy.agent(uuid)
+ >>> agent = proxy.agent('amqp://localhost', uuid)
  >>> foo = agent.Foo()
  >>> print foo.bar()
 
@@ -583,7 +536,7 @@ Another useful tool, it invoke *Admin.help()* from within interactive python as 
  Type "help", "copyright", "credits" or "license" for more information.
  >>> from pulp.server.agent import Agent
  >>> uuid = <your consumer ID>
- >>> agent = Agent(uuid)
+ >>> agent = Agent('amqp://localhost', uuid)
  >>> admin = agent.Admin()
  >>> print admin.help()
 
@@ -687,7 +640,7 @@ In some cases, it's useful to have a stub method raise an exception.  Here's how
  mock.install()
  from gofer.proxy import Agent
 
- agent = Agent('xyz')
+ agent = Agent('amqp://localhost', 'xyz')
 
  # define mock impl for testing
  class Dog:

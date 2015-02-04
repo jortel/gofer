@@ -45,15 +45,6 @@ are asynchronous and that all replies are sent to the AMQP address.
 
 Example: Assume a reply listener on the topic or queue named: "foo":
 
-Passed to proxy.agent() and apply to all RMI calls.
-
-::
-
- from gofer import proxy
-
- agent = proxy.agent(url, uuid, reply='foo')
-
-
 Passed to Agent() and apply to all RMI calls.
 
 ::
@@ -77,26 +68,17 @@ Trigger values:
 - **0** = Automatic *(default)*
 - **1** = Manual
 
-Passed to proxy.agent() and apply to all RMI calls.
+Passed to Agent() and apply to all RMI calls.
 
 ::
 
- from gofer import proxy
+ from gofer.proxy import Agent
 
- # single shot
- agent = proxy.agent(uuid, trigger=1)
+ agent = Agent(uuid, trigger=1)
  dog = agent.Dog()
  trigger = dog.bark('delayed!')
  print trigger.sn      # do something with serial number
  trigger()             # pull the trigger
-
- # broadcast
- agent = proxy.agent([uuid,], trigger=1)
- dog = agent.Dog()
- for trigger in dog.bark('delayed!'):
-     print trigger.sn  # do something with serial number
-     trigger()         # pull the trigger
-
 
 window
 ------
@@ -117,16 +99,6 @@ Assume the following window is created as between 10 and 20 seconds from now.
  begin = later(seconds=10)
  window = Window(begin=begin, minutes=10)
 
-
-Passed to proxy.agent() and apply to all RMI calls.
-
-::
-
- from gofer import proxy
-
- agent = proxy.agent(uuid, window=window)
-
-
 Passed to Agent() and apply to all RMI calls.
 
 ::
@@ -144,15 +116,6 @@ The **secret** option is used to provide *shared secret* credentials to each RMI
 only used for agent plugin RMI methods where a *secret* is specified as required.
 
 Examples: Assume the agent has a plugin with methods decorated with a secret='foobar'
-
-Passed to proxy.agent() and apply to all RMI calls.
-
-::
-
- from gofer import proxy
-
- agent = proxy.agent(uuid, secret='foobar')
-
 
 Passed to Agent() and apply to all RMI calls.
 
@@ -181,30 +144,20 @@ The supported units are as follows:
 - **h** : hours
 - **d** : days
 
-Passed to proxy.agent() and apply to all RMI calls.
-
-::
-
- from gofer import proxy
-
- # 5 seconds
- agent = proxy.agent(uuid, ttl=5)
-
- # timout 5 minutes
- agent = proxy.agent(uuid, ttl=5m)
-
- # timeout 30 seconds, wait for 5 seconds
- agent = proxy.agent(uuid, ttl=30, wait=5)
-
-
 Passed to Agent() and apply to all RMI calls.
 
 ::
 
  from gofer.proxy import Agent
 
- # timeout 10 seconds
- agent = Agent(url, uuid,  ttl=10)
+ # TTL 5 seconds
+ agent = Agent(url, uuid, ttl=5)
+
+ # TTL 5 minutes
+ agent = Agent(url, uuid, ttl=5m)
+
+ # TTL 30 seconds, wait for 5 seconds
+ agent = Agent(url, uuid, ttl=30, wait=5)
 
 
 user/password
@@ -215,15 +168,6 @@ This option is only used for agent plugin RMI methods decorated with @pam or @us
 This is really just a short-hand for the **pam** option.
 
 Examples: Assume the agent has a plugin with methods decorated with @pam(user='root')
-
-Passed to proxy.agent() and apply to all RMI calls.
-
-::
-
- from gofer import proxy
-
- agent = proxy.agent(uuid, user='root', password='xxx')
-
 
 Passed to Agent() and apply to all RMI calls.
 
