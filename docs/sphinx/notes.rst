@@ -141,3 +141,22 @@ Added ``[model]`` section with the following properties:
 - *managed* - Defines level of broker model management.
 - *queue* - The name of the request queue.
 - *exchange* - An (optional) exchange. The exchange is not declared/deleted.
+
+
+gofer 2.5
+^^^^^^^^^
+
+Notes:
+
+ - Added the python-gofer-proton messaging adapter. The adapter supports AMQP 1.0
+   and use the Apache Qpid ``proton`` library.
+
+ - The gofer.messaging.Exchange and gofer.messaging.Queue now support an additional
+   ``url`` parameter which is used when ``url`` is not passed to specific method.
+
+ - NotFound raised when an AMQP node (queue) does not exist.  See messaging.adapter.model
+   for details on affected methods.
+
+Deprecated:
+
+ - Using gofer.proxy.agent() has been deprecated.
