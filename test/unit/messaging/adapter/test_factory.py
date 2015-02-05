@@ -176,8 +176,7 @@ class AdapterTest(TestCase):
             'A': _list[2]
         }
         _load.return_value = _list, catalog
-        p = Adapter.find(url)
-        self.assertEqual(p, _list[0])
+        self.assertRaises(AdapterNotFound, Adapter.find, url)
 
     @patch('gofer.messaging.adapter.factory.Adapter.bindings', {})
     @patch('gofer.messaging.adapter.factory.Loader.load')

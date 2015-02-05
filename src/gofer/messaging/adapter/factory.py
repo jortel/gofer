@@ -157,6 +157,7 @@ class Adapter(object):
         :type url: str
         :return: The requested adapter or the adapter with the
             highest *priority*.
+        :raise: AdapterNotFound
         """
         _list, catalog = Adapter.loader.load()
         if not _list:
@@ -170,5 +171,5 @@ class Adapter(object):
             else:
                 return Adapter.bindings[url.simple()]
         except KeyError:
-            return _list[0]
+            raise AdapterNotFound(url.adapter)
 
