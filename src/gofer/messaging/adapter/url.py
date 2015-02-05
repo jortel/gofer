@@ -17,156 +17,81 @@
 Defined URL objects.
 """
 
+# port mapping by scheme
+PORT = {
+    'tcp': 5672,
+    'amqp': 5672,
+    'ssl': 5671,
+    'amqps': 5671,
+}
 
-class URL:
+
+class Part(object):
+    """
+    Basic URL component.
+    :ivar parts: component parts.
+    :type parts: list
+    """
+
+    def __init__(self, fragment, delimiter):
+        """
+        :param fragment: A URL fragment.
+        :type fragment: str
+        :param delimiter: A delimiter used to split the fragment.
+        :type delimiter: str
+        """
+        if fragment:
+            self.parts = fragment.split(delimiter, 1)
+        else:
+            self.parts = []
+
+
+class URL(Part):
     """
     Represents a broker URL.
     Format: <adapter>+<scheme>://<user>:<password>@<host>:<port></>.
-    :ivar adapter: A URL adapter.
+    :ivar adapter: The messaging adapter.
     :type adapter: str
-    :ivar host: The host.
+    :ivar scheme: The URL scheme.
+    :type scheme: str
+    :ivar host: The host name or IP.
     :type host: str
     :ivar port: The tcp port.
     :type port: int
+    :ivar userid: A user name (auth).
+    :type userid: str
+    :ivar password: A user password (auth).
+    :type password: str
+    :ivar path: The path component.
+    :type path: str
     """
-
-    TCP = ('amqp', 'tcp')
-    SSL = ('amqps', 'ssl')
-
-    @staticmethod
-    def split(s):
-        """
-        Split the url string.
-        :type s: str
-        :return: The url parts: (adapter, scheme, host, port, userid, password, path)
-        :rtype: tuple
-        """
-        adapter, scheme, netloc, path = \
-            URL.split_url(s)
-        userid_password, host_port = \
-            URL.split_location(netloc)
-        userid, password = \
-            URL.split_userid_password(userid_password)
-        host, port = \
-            URL.split_host_port(host_port, URL._port(scheme))
-        return adapter, \
-            scheme, \
-            host, \
-            port, \
-            userid, \
-            password, \
-            path
-
-    @staticmethod
-    def split_url(s):
-        """
-        Split the adapter and url parts.
-        :param s: A url.
-        :type s: str
-        :return: (adapter, network-location, path)
-        :rtype: tuple
-        """
-        # adapter
-        part = s.split('://', 1)
-        if len(part) > 1:
-            adapter, host_port = (part[0], part[1])
-        else:
-            adapter, host_port = (URL.TCP[0], part[0])
-        part = host_port.split('/', 1)
-        # path
-        if len(part) > 1:
-            location, path = (part[0], part[1])
-        else:
-            location, path = (host_port, None)
-        adapter, scheme = URL.split_adapter(adapter)
-        return adapter, scheme, location, path
-
-    @staticmethod
-    def split_adapter(s):
-        """
-        Split the adapter into gofer-adapter and the scheme.
-        :param s: <adapter>+<scheme>
-        :return:
-        """
-        part = s.split('+', 1)
-        if len(part) > 1:
-            return part[0], part[1]
-        else:
-            return None, part[0]
-
-    @staticmethod
-    def split_location(s):
-        """
-        Split network location into (userid_password, host_port)
-        :param s: A url component: <user>:<password>@<host>:<port>
-        :type s: str
-        :return: (userid_password, host_port)
-        :rtype: tuple
-        """
-        part = s.split('@', 1)
-        if len(part) > 1:
-            return part[0], part[1]
-        else:
-            return '', part[0]
-
-    @staticmethod
-    def split_userid_password(s):
-        """
-        Split the userid and password into (userid, password).
-        :param s: A url component: <userid>:<password>.
-        :type s: str
-        :return: (userid, password)
-        :rtype: tuple
-        """
-        part = s.split(':', 1)
-        if len(part) > 1:
-            return part[0], part[1]
-        else:
-            return None, None
-
-    @staticmethod
-    def split_host_port(s, default):
-        """
-        Split the host and port.
-        :param s: A url component: <host>:<port>.
-        :type s: str
-        :return: (host, port)
-        :rtype: tuple
-        """
-        part = s.split(':')
-        if len(part) > 1:
-            return part[0], int(part[1])
-        else:
-            return part[0], default
-
-    @staticmethod
-    def _port(adapter):
-        """
-        Get the port based on the adapter.
-        :param adapter: The URL adapter or scheme.
-        :type adapter: str
-        :return: port
-        :rtype: int
-        """
-        if adapter.lower() in URL.SSL:
-            return 5671
-        else:
-            return 5672
 
     def __init__(self, url):
         """
         :param url: A url string format:
-            <adapter>://<host>:<port>userid:password@<adapter>://<host>:<port>.
+            <adapter>+<scheme>://<userid>:<password>@<host>:<port>/<path>
         :type url: str
         """
+        super(URL, self).__init__(url, '://')
+        if len(self.parts) == 0:
+            self.parts = [url]
+        if len(self.parts) > 1:
+            scheme = Scheme(self.parts[0])
+            path = Path(self.parts[1])
+        else:
+            scheme = Scheme('')
+            path = Path(self.parts[0])
+        location = path.location
+        auth = location.auth
+        host = location.host
         self._input = url
-        self.adapter, \
-            self.scheme,\
-            self.host, \
-            self.port, \
-            self.userid, \
-            self.password,\
-            self.path = self.split(url)
+        self.adapter = scheme.adapter
+        self.scheme = scheme.name
+        self.host = host.name
+        self.port = host.port or PORT[scheme.name]
+        self.userid = auth.userid
+        self.password = auth.password
+        self.path = path.path
 
     def simple(self):
         """
@@ -176,8 +101,19 @@ class URL:
         """
         return '%s:%d' % (self.host, self.port)
 
-    def is_ssl(self):
-        return self.scheme.lower() in self.SSL
+    def standard(self):
+        """
+        Get the *standard* string representation.
+        :return: "<scheme>://<userid>:<password>@<host>:<port>/path"
+        :rtype: str
+        """
+        url = '%s://' % self.scheme
+        if self.userid:
+            url += '%(u)s:%(p)s@' % {'u': self.userid, 'p': self.password}
+        url += self.host
+        if self.port not in PORT.values():
+            url += ':%d' % self.port
+        return url
 
     def __hash__(self):
         return hash(self.simple())
@@ -186,5 +122,136 @@ class URL:
         return self.simple() == other.simple()
 
     def __str__(self):
-        return self._input.split('+')[-1]
+        return self.standard()
 
+
+class Scheme(Part):
+    """
+    The *scheme* component of a URL.
+    ...<adapter>+<scheme>...
+    """
+
+    @staticmethod
+    def validated(name):
+        supported = PORT.keys()
+        if name not in supported:
+            raise ValueError('must be: ' % supported)
+        return name.lower()
+
+    def __init__(self, fragment):
+        super(Scheme, self).__init__(fragment, '+')
+
+    @property
+    def adapter(self):
+        if len(self.parts) > 1:
+            return self.parts[0]
+        else:
+            return None
+
+    @property
+    def name(self):
+        if len(self.parts) > 1:
+            name = self.parts[1]
+            return self.validated(name)
+        if len(self.parts):
+            name = self.parts[0]
+            return self.validated(name)
+        return 'amqp'
+
+
+class Auth(Part):
+    """
+    The *authentication* component of a URL.
+    ...<user>:<password>...
+    """
+
+    def __init__(self, fragment):
+        super(Auth, self).__init__(fragment, ':')
+
+    @property
+    def userid(self):
+        if len(self.parts):
+            return self.parts[0]
+        else:
+            return None
+
+    @property
+    def password(self):
+        if len(self.parts) > 1:
+            return self.parts[1]
+        else:
+            return None
+
+
+class Location(Part):
+    """
+    The *network location* component of the URL.
+    ...<user>:<password>@<host>:<port>...
+    """
+
+    def __init__(self, fragment):
+        super(Location, self).__init__(fragment, '@')
+
+    @property
+    def auth(self):
+        if len(self.parts) > 1:
+            fragment = self.parts[0]
+        else:
+            fragment = ''
+        return Auth(fragment)
+
+    @property
+    def host(self):
+        if len(self.parts) > 1:
+            return Host(self.parts[1])
+        if len(self.parts):
+            return Host(self.parts[0])
+        return Host('')
+
+
+class Path(Part):
+    """
+    The *path* part of the URL.
+    .../<path>
+    """
+
+    def __init__(self, fragment):
+        super(Path, self).__init__(fragment, '/')
+
+    @property
+    def location(self):
+        if len(self.parts):
+            return Location(self.parts[0])
+        else:
+            return Location('')
+
+    @property
+    def path(self):
+        if len(self.parts) > 1:
+            return self.parts[1]
+        else:
+            return None
+
+
+class Host(Part):
+    """
+    The *host/port* component of the URL.
+    ...<host>:<port>...
+    """
+
+    def __init__(self, fragment):
+        super(Host, self).__init__(fragment, ':')
+
+    @property
+    def name(self):
+        if len(self.parts):
+            return self.parts[0]
+        else:
+            return None
+
+    @property
+    def port(self):
+        if len(self.parts) > 1:
+            return int(self.parts[1])
+        else:
+            return None

@@ -91,7 +91,7 @@ class Connection(BaseConnection):
             return
         delay = float(delay)
         broker = Domain.broker.find(self.url)
-        url = str(broker.url)
+        url = broker.url.standard()
         while True:
             try:
                 log.info('connecting: %s', broker)
