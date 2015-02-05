@@ -14,193 +14,111 @@ from unittest import TestCase
 from gofer.messaging.adapter.url import URL
 
 
+class Test(object):
+
+    def __init__(self,
+                 url,
+                 adapter=None,
+                 scheme=None,
+                 host=None,
+                 port=None,
+                 userid=None,
+                 password=None,
+                 path=None):
+        self.url = url
+        self.adapter = adapter
+        self.scheme = scheme
+        self.host = host
+        self.port = port
+        self.userid = userid
+        self.password = password
+        self.path = path
+
+    def __call__(self, test):
+        url = URL(self.url)
+        test.assertEqual(url.adapter, self.adapter)
+        test.assertEqual(url.scheme, self.scheme)
+        test.assertEqual(url.host, self.host)
+        test.assertEqual(url.port, self.port)
+        test.assertEqual(url.userid, self.userid)
+        test.assertEqual(url.password, self.password)
+        test.assertEqual(url.path, self.path)
+
+
+TESTS = [
+    Test('qpid+amqp://elmer:fudd@blue:5000/all',
+         adapter='qpid',
+         scheme='amqp',
+         host='blue',
+         port=5000,
+         userid='elmer',
+         password='fudd',
+         path='all'),
+    Test('amqp://elmer:fudd@yellow:1234//',
+         scheme='amqp',
+         host='yellow',
+         port=1234,
+         userid='elmer',
+         password='fudd',
+         path='/'),
+    Test('amqp://green:5678/all/good',
+         scheme='amqp',
+         host='green',
+         port=5678,
+         path='all/good'),
+    Test('amqp://red:2323',
+         scheme='amqp',
+         host='red',
+         port=2323),
+    Test('amqp://black',
+         scheme='amqp',
+         host='black',
+         port=5672),
+    Test('amqps://purple',
+         scheme='amqps',
+         host='purple',
+         port=5671),
+    Test('orange:6545',
+         scheme='amqp',
+         host='orange',
+         port=6545),
+    Test('localhost',
+         scheme='amqp',
+         host='localhost',
+         port=5672),
+    Test('',
+         scheme='amqp',
+         port=5672),
+]
+
+
 class TestURL(TestCase):
 
-    def test_url(self):
-        adapter = 'qpid'
-        scheme = 'amqp'
-        host = 'redhat'
-        port = 1234
-        path = '/'
-
-        # test
-        url = URL('%s+%s://%s:%d%s/' % (adapter, scheme, host, port, path))
-
-        # validation
-        self.assertEqual(url.adapter, adapter)
-        self.assertEqual(url.scheme, scheme)
-        self.assertEqual(url.host, host)
-        self.assertEqual(url.port, port)
-        self.assertEqual(url.userid, None)
-        self.assertEqual(url.password, None)
-        self.assertEqual(url.path, path)
-
-    def test_url_long_path(self):
-        scheme = 'amqp'
-        host = 'redhat'
-        port = 1234
-        path = 'a/b/c/'
-
-        # test
-        url = URL('%s://%s:%d/%s' % (scheme, host, port, path))
-
-        # validation
-        self.assertEqual(url.adapter, None)
-        self.assertEqual(url.scheme, scheme)
-        self.assertEqual(url.host, host)
-        self.assertEqual(url.port, port)
-        self.assertEqual(url.userid, None)
-        self.assertEqual(url.password, None)
-        self.assertEqual(url.path, path)
-
-    def test_url_empty_path(self):
-        scheme = 'amqp'
-        host = 'redhat'
-        port = 1234
-
-        # test
-        url = URL('%s://%s:%d/' % (scheme, host, port))
-
-        # validation
-        self.assertEqual(url.scheme, scheme)
-        self.assertEqual(url.host, host)
-        self.assertEqual(url.port, port)
-        self.assertEqual(url.userid, None)
-        self.assertEqual(url.password, None)
-        self.assertEqual(url.path, '')
-
-    def test_url_no_path(self):
-        scheme = 'amqp'
-        host = 'redhat'
-        port = 1234
-
-        # test
-        url = URL('%s://%s:%d' % (scheme, host, port))
-
-        # validation
-        self.assertEqual(url.scheme, scheme)
-        self.assertEqual(url.host, host)
-        self.assertEqual(url.port, port)
-        self.assertEqual(url.userid, None)
-        self.assertEqual(url.password, None)
-        self.assertEqual(url.path, None)
-
-    def test_url_host_only(self):
-        scheme = 'amqp'
-        host = 'redhat'
-
-        # test
-        url = URL('%s://%s' % (scheme, host))
-
-        # validation
-        self.assertEqual(url.scheme, scheme)
-        self.assertEqual(url.host, host)
-        self.assertEqual(url.port, 5672)
-        self.assertEqual(url.userid, None)
-        self.assertEqual(url.password, None)
-        self.assertEqual(url.path, None)
-
-    def test_url_smallest(self):
-        host = 'redhat'
-
-        # test
-        url = URL(host)
-
-        # validation
-        self.assertEqual(url.scheme, 'amqp')
-        self.assertEqual(url.host, host)
-        self.assertEqual(url.port, 5672)
-        self.assertEqual(url.userid, None)
-        self.assertEqual(url.password, None)
-        self.assertEqual(url.path, None)
-
-    def test_empty_url(self):
-
-        # test
-        url = URL('')
-
-        # validation
-        self.assertEqual(url.scheme, 'amqp')
-        self.assertEqual(url.host, None)
-        self.assertEqual(url.port, 5672)
-        self.assertEqual(url.userid, None)
-        self.assertEqual(url.password, None)
-        self.assertEqual(url.path, None)
-
-    def test_url_host_only_ssl(self):
-        scheme = 'amqps'
-        host = 'redhat'
-
-        # test
-        url = URL('%s://%s' % (scheme, host))
-
-        # validation
-        self.assertEqual(url.scheme, scheme)
-        self.assertEqual(url.host, host)
-        self.assertEqual(url.port, 5671)
-        self.assertEqual(url.userid, None)
-        self.assertEqual(url.password, None)
-        self.assertEqual(url.path, None)
-
-    def test_url_no_scheme(self):
-        host = 'redhat'
-
-        # test
-        url = URL(host)
-
-        # validation
-        self.assertEqual(url.scheme, 'amqp')
-        self.assertEqual(url.host, host)
-        self.assertEqual(url.port, 5672)
-        self.assertEqual(url.userid, None)
-        self.assertEqual(url.password, None)
-        self.assertEqual(url.path, None)
-
-    def test_userid_and_password(self):
-        scheme = 'amqp'
-        host = 'redhat'
-        port = 1234
-        userid = 'elmer'
-        password = 'fudd'
-
-        # test
-        url = URL('%s://%s:%s@%s:%d' % (scheme, userid, password, host, port))
-
-        # validation
-        self.assertEqual(url.scheme, scheme)
-        self.assertEqual(url.host, host)
-        self.assertEqual(url.port, port)
-        self.assertEqual(url.userid, userid)
-        self.assertEqual(url.password, password)
-        self.assertEqual(url.path, None)
+    def test_parsing(self):
+        for test in TESTS:
+            test(self)
 
     def test_simple(self):
         urls = [
-            'qpid+amqp://elmer:fudd@redhat.com:5000/all',
-            'amqp://elmer:fudd@redhat.com:5000/all',
-            'amqp://redhat.com:5000/all',
-            'amqp://redhat.com:5000',
-            'amqp://redhat.com',
+            'qpid+amqp://elmer:fudd@test-host:5000/all',
+            'amqp://elmer:fudd@test-host:5000/all',
+            'amqp://test-host:5000/all',
+            'amqp://test-host:5000'
         ]
-        for _url in urls[:-1]:
+        for _url in urls:
             url = URL(_url)
-            self.assertEqual(url.simple(), 'redhat.com:5000')
-        url = URL(urls[-1])
-        self.assertEqual(url.simple(), 'redhat.com:5672')
+            self.assertEqual(url.simple(), 'test-host:5000')
 
     def test_standard(self):
         urls = [
-            'qpid+amqp://elmer:fudd@redhat.com:5000/all',
-            'amqp://elmer:fudd@redhat.com:5000/all',
-            'amqp://redhat.com:5000/all',
-            'amqp://redhat.com:5000',
-            'amqp://redhat.com',
+            'qpid+amqp://elmer:fudd@test-host:5000/all',
+            'amqp://elmer:fudd@test-host:5000/all',
+            'amqp://test-host:5000/all',
+            'amqp://test-host:5000'
         ]
-        for _url in urls[:-1]:
+        for _url in urls:
             url = URL(_url)
             self.assertEqual(url.standard(), _url.split('+')[-1].rsplit('/all')[0])
-        url = URL(urls[-1])
-        self.assertEqual(url.standard(), 'amqp://redhat.com')
 
     def test_hash(self):
         url = URL('test')
@@ -208,11 +126,11 @@ class TestURL(TestCase):
 
     def test_str(self):
         urls = [
-            'qpid+amqp://elmer:fudd@redhat.com:5000/all',
-            'amqp://elmer:fudd@redhat.com:5000/all',
-            'amqp://redhat.com:5000/all',
-            'amqp://redhat.com:5000',
-            'amqp://redhat.com',
+            'qpid+amqp://elmer:fudd@test-host:5000/all',
+            'amqp://elmer:fudd@test-host:5000/all',
+            'amqp://test-host:5000/all',
+            'amqp://test-host:5000',
+            'amqp://test-host',
         ]
         for _url in urls:
             url = URL(_url)

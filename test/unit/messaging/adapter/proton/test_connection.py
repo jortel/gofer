@@ -102,6 +102,7 @@ class TestConnection(TestCase):
         connection.open()
 
         # validation
+        url = 'amqp://%s' % url
         blocking.assert_called_once_with(url, ssl_domain=ssl_domain.return_value)
 
     @patch('gofer.messaging.adapter.proton.connection.sleep')

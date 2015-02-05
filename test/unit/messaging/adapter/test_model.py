@@ -979,7 +979,7 @@ class TestBroker(TestCase):
         b.ssl.client_certificate = 'test-cert'
         self.assertEqual(
             str(b),
-            'URL: amqp://elmer:fudd@test.com/test|SSL: ca: test-ca|'
+            'URL: amqp://elmer:fudd@test.com|SSL: ca: test-ca|'
             'key: test-key|certificate: test-cert|host-validation: False')
 
     def test_domain_id(self):

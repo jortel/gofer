@@ -7,15 +7,15 @@
 # including the implied warranties of MERCHANTABILITY,
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
-# http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+# amqp://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 import os
 
 from unittest import TestCase
 
-from mock import patch, call, Mock
+from mock import patch, Mock
 
-from gofer.messaging.adapter.factory import Loader, REQUIRED, PACKAGE
+from gofer.messaging.adapter.factory import Loader, PACKAGE
 from gofer.messaging.adapter.factory import Adapter
 from gofer.messaging.adapter.factory import AdapterError, AdapterNotFound, NoAdaptersLoaded
 from gofer.messaging.adapter.url import URL
@@ -142,7 +142,7 @@ class AdapterTest(TestCase):
     @patch('gofer.messaging.adapter.factory.Loader.load')
     def test_find(self, _load):
         name = 'A'
-        url = '%s+http://redhat.com' % name
+        url = '%s+amqp://redhat.com' % name
         adapter = Mock()
         _load.return_value = [adapter], {name: adapter}
 
@@ -155,7 +155,7 @@ class AdapterTest(TestCase):
     @patch('gofer.messaging.adapter.factory.Loader.load')
     def test_find_with_binding(self, _load):
         name = 'A'
-        url = 'http://redhat.com'
+        url = 'amqp://redhat.com'
         adapter = Mock()
         _load.return_value = [adapter], {name: adapter}
 
@@ -168,7 +168,7 @@ class AdapterTest(TestCase):
     @patch('gofer.messaging.adapter.factory.Adapter.bindings', {})
     @patch('gofer.messaging.adapter.factory.Loader.load')
     def test_find_not_matched(self, _load):
-        url = 'http://redhat.com'
+        url = 'amqp://redhat.com'
         _list = [1, 2, 3]
         catalog = {
             'C': _list[0],
