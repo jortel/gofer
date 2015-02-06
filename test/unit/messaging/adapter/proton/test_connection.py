@@ -175,8 +175,9 @@ class TestConnection(TestCase):
         # test
         self.assertRaises(NotFound, connection.sender, address)
 
+    @patch('gofer.messaging.adapter.proton.connection.DynamicNodeProperties')
     @patch('gofer.messaging.adapter.proton.connection.uuid4')
-    def test_receiver(self, uuid):
+    def test_receiver(self, uuid, properties):
         url = 'test-url'
         address = 'test'
         uuid.return_value = '1234'
@@ -184,11 +185,30 @@ class TestConnection(TestCase):
         connection._impl = Mock()
 
         # test
-        receiver = connection.receiver(address, dynamic=123)
+        receiver = connection.receiver(address)
 
         # validation
         connection._impl.create_receiver.assert_called_once_with(
-            address, dynamic=123, name=uuid.return_value)
+            address, dynamic=False, name=uuid.return_value, options=None)
+        self.assertEqual(receiver, connection._impl.create_receiver.return_value)
+        self.assertFalse(properties.called)
+
+    @patch('gofer.messaging.adapter.proton.connection.DynamicNodeProperties')
+    @patch('gofer.messaging.adapter.proton.connection.uuid4')
+    def test_dynamic_receiver(self, uuid, properties):
+        url = 'test-url'
+        address = 'test'
+        uuid.return_value = '1234'
+        connection = Connection(url)
+        connection._impl = Mock()
+
+        # test
+        receiver = connection.receiver(address, dynamic=True)
+
+        # validation
+        properties.assert_called_once_with({'x-opt-qd.address': address})
+        connection._impl.create_receiver.assert_called_once_with(
+            None, dynamic=True, name=uuid.return_value, options=properties.return_value)
         self.assertEqual(receiver, connection._impl.create_receiver.return_value)
 
     @patch('gofer.messaging.adapter.proton.connection.uuid4')

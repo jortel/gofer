@@ -138,7 +138,7 @@ class Method(object):
             return
         self.connection = Connection(self.url)
         self.connection.open()
-        self.receiver = self.connection.receiver(dynamic=True)
+        self.receiver = self.connection.receiver(ADDRESS, dynamic=True)
         self.sender = self.connection.sender(ADDRESS)
 
     def close(self):

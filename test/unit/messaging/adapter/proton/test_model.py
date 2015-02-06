@@ -129,7 +129,7 @@ class TestMethod(TestCase):
         _connection.assert_called_once_with(url)
         connection.open.assert_called_once_with()
         connection.sender.assert_called_once_with(model.ADDRESS)
-        connection.receiver.assert_called_once_with(dynamic=True)
+        connection.receiver.assert_called_once_with(model.ADDRESS, dynamic=True)
         self.assertEqual(method.connection, connection)
         self.assertEqual(method.sender, sender)
         self.assertEqual(method.receiver, receiver)
@@ -177,7 +177,7 @@ class TestMethod(TestCase):
         connection.open.assert_called_once_with()
 
         connection.sender.assert_called_once_with(model.ADDRESS)
-        connection.receiver.assert_called_once_with(dynamic=True)
+        connection.receiver.assert_called_once_with(model.ADDRESS, dynamic=True)
 
         message.assert_called_once_with(
             body=method.body,

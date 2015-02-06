@@ -16,6 +16,7 @@ from logging import getLogger
 from proton import ConnectionException, LinkException
 from proton import SSLDomain, SSLException
 from proton.utils import BlockingConnection
+from proton.reactors import DynamicNodeProperties
 
 from gofer.common import ThreadSingleton
 from gofer.messaging.adapter.reliability import YEAR
@@ -130,13 +131,20 @@ class Connection(BaseConnection):
         Get a message receiver for the specified address.
         :param address: An AMQP address.
         :type address: str
+        :param dynamic: Indicates link address is dynamically assigned.
+        :type dynamic: bool
         :return: A receiver.
         :rtype: proton.utils.BlockingReceiver
         :raise: NotFound
         """
         try:
+            options = None
             name = str(uuid4())
-            return self._impl.create_receiver(address, dynamic=dynamic, name=name)
+            if dynamic:
+                # needed by dispatch router
+                options = DynamicNodeProperties({'x-opt-qd.address': address})
+                address = None
+            return self._impl.create_receiver(address, name=name, dynamic=dynamic, options=options)
         except LinkException, le:
             raise NotFound(*le.args)
 
