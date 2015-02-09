@@ -15,13 +15,15 @@ from time import sleep
 from proton import ConnectionException, LinkException, Delivery
 from proton.utils import SendException
 
-from gofer.messaging.adapter.reliability import MINUTE
+from gofer.messaging.adapter.reliability import DAY
 
 
+# reliable settings
 DELAY = 3   # seconds
 
+# resend settings
 RESEND_DELAY = 10  # seconds
-MAX_RESEND = (MINUTE * 10) / RESEND_DELAY
+MAX_RESEND = DAY / RESEND_DELAY
 
 
 def reliable(fn):
