@@ -142,7 +142,7 @@ class Connection(BaseConnection):
             name = str(uuid4())
             if dynamic:
                 # needed by dispatch router
-                options = DynamicNodeProperties({'x-opt-qd.address': address})
+                options = DynamicNodeProperties({'x-opt-qd.address': unicode(address)})
                 address = None
             return self._impl.create_receiver(address, name=name, dynamic=dynamic, options=options)
         except LinkException, le:

@@ -173,7 +173,7 @@ class Method(object):
                 properties=self.properties,
                 correlation_id=str(uuid4()),
                 subject=SUBJECT)
-            self.sender.send(request)
+            self.send(request)
             reply = self.receiver.receive()
             self.on_reply(reply)
         finally:

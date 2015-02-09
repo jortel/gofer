@@ -169,6 +169,7 @@ class TestMethod(TestCase):
 
         # test
         method = Method(url, name, arguments)
+        method.send = Mock()
         method.on_reply = Mock()
         method()
 
@@ -187,7 +188,7 @@ class TestMethod(TestCase):
             subject=model.SUBJECT
         )
 
-        sender.send.assert_called_once_with(message.return_value)
+        method.send.assert_called_once_with(message.return_value)
         method.on_reply.assert_called_once_with(receiver.receive.return_value)
         sender.close.assert_called_once_with()
         receiver.close.assert_called_once_with()
