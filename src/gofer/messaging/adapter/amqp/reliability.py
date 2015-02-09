@@ -18,7 +18,7 @@ from gofer.messaging.adapter.model import NotFound
 from gofer.messaging.adapter.amqp.connection import Connection, CONNECTION_EXCEPTIONS
 
 
-DELAY = 3  # seconds
+DELAY = 10  # seconds
 
 
 def reliable(fn):

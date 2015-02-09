@@ -11,6 +11,7 @@
 # Jeff Ortel (jortel@redhat.com)
 
 from time import sleep
+from logging import getLogger
 
 from proton import ConnectionException, LinkException, Delivery
 from proton.utils import SendException
@@ -18,8 +19,11 @@ from proton.utils import SendException
 from gofer.messaging.adapter.reliability import DAY
 
 
+log = getLogger(__name__)
+
+
 # reliable settings
-DELAY = 3   # seconds
+DELAY = 10   # seconds
 
 # resend settings
 RESEND_DELAY = 10  # seconds
