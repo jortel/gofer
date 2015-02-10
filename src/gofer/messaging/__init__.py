@@ -31,6 +31,7 @@ from gofer.messaging.adapter import \
     AdapterError, \
     AdapterNotFound, \
     NoAdaptersLoaded, \
+    Connection, \
     Exchange, \
     Queue, \
     Reader, \
