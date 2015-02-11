@@ -97,7 +97,7 @@ class TestReader(TestCase):
         receiver.close.side_effect = KeyError
 
         # test
-        reader = Reader(None)
+        reader = Reader(None, '')
         reader.connection = connection
         reader.receiver = receiver
         reader.is_open = Mock(return_value=True)

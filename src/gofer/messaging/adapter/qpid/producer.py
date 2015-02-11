@@ -34,7 +34,7 @@ class Sender(BaseSender):
     An AMQP message sender.
     """
 
-    def __init__(self, url=None):
+    def __init__(self, url):
         """
         :param url: The broker url.
         :type url: str
@@ -86,7 +86,7 @@ class Sender(BaseSender):
         """
         sender = self.session.sender(address)
         try:
-            message = Message(content=content, durable=True, ttl=ttl)
+            message = Message(content=content, durable=self.durable, ttl=ttl)
             sender.send(message)
             log.debug('sent (%s)', address)
         finally:

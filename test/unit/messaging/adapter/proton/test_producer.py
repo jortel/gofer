@@ -26,16 +26,18 @@ class TestBuilder(TestCase):
     def test_build(self, message):
         content = Mock()
         ttl = None
-        m = build_message(content, ttl)
-        message.assert_called_once_with(body=content, durable=True)
+        durable = 18
+        m = build_message(content, ttl, durable)
+        message.assert_called_once_with(body=content, durable=durable)
         self.assertEqual(m, message.return_value)
 
     @patch('gofer.messaging.adapter.proton.producer.Message')
     def test_build_ttl(self, message):
         content = Mock()
         ttl = 10
-        m = build_message(content, ttl)
-        message.assert_called_once_with(body=content, durable=True, ttl=ttl)
+        durable = 18
+        m = build_message(content, ttl, durable)
+        message.assert_called_once_with(body=content, durable=durable, ttl=ttl)
         self.assertEqual(m, message.return_value)
 
 
@@ -113,11 +115,12 @@ class TestSender(TestCase):
 
         # test
         sender = Sender('')
+        sender.durable = 18
         sender.connection = Mock()
         sender.send(address, content, ttl=ttl)
 
         # validation
-        builder.assert_called_once_with(content, ttl)
+        builder.assert_called_once_with(content, ttl, sender.durable)
         sender.connection.sender.assert_called_once_with(address)
         _sender = sender.connection.sender.return_value
         _sender.send.assert_called_once_with(builder.return_value)

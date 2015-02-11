@@ -106,7 +106,7 @@ class TestReader(TestCase):
         receiver = Mock()
 
         # test
-        reader = Reader(None)
+        reader = Reader(None, '')
         reader.connection = connection
         reader.channel = channel
         reader.receiver = receiver

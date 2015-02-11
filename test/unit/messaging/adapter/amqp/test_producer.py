@@ -26,10 +26,24 @@ class TestBuildMessage(TestCase):
     @patch('gofer.messaging.adapter.amqp.producer.Message')
     def test_call(self, message):
         ttl = 10
+        durable = False
         body = 'test-body'
 
         # test
-        m = build_message(body, ttl)
+        m = build_message(body, ttl, durable)
+
+        # validation
+        message.assert_called_once_with(body, delivery_mode=1, expiration=str(ttl * 1000))
+        self.assertEqual(m, message.return_value)
+
+    @patch('gofer.messaging.adapter.amqp.producer.Message')
+    def test_call_durable(self, message):
+        ttl = 10
+        durable = True
+        body = 'test-body'
+
+        # test
+        m = build_message(body, ttl, durable)
 
         # validation
         message.assert_called_once_with(body, delivery_mode=2, expiration=str(ttl * 1000))
@@ -39,9 +53,10 @@ class TestBuildMessage(TestCase):
     def test_call_no_ttl(self, message):
         ttl = 0
         body = 'test-body'
+        durable = True
 
         # test
-        m = build_message(body, ttl)
+        m = build_message(body, ttl, durable)
 
         # validation
         message.assert_called_once_with(body, delivery_mode=2)
@@ -123,11 +138,12 @@ class TestSender(TestCase):
 
         # test
         sender = Sender('')
+        sender.durable = 18
         sender.channel = Mock()
         sender.send(address, content, ttl=ttl)
 
         # validation
-        build.assert_called_once_with(content, ttl)
+        build.assert_called_once_with(content, ttl, sender.durable)
         sender.channel.basic_publish.assert_called_once_with(
             build.return_value,
             mandatory=True,
@@ -146,11 +162,12 @@ class TestSender(TestCase):
 
         # test
         sender = Sender('')
+        sender.durable = False
         sender.channel = Mock()
         sender.send(address, content, ttl=ttl)
 
         # validation
-        build.assert_called_once_with(content, ttl)
+        build.assert_called_once_with(content, ttl, sender.durable)
         sender.channel.basic_publish.assert_called_once_with(
             build.return_value,
             mandatory=True,

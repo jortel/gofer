@@ -21,20 +21,29 @@ from gofer.messaging.adapter.amqp.reliability import reliable
 log = getLogger(__name__)
 
 
-def build_message(body, ttl):
+def build_message(body, ttl, durable):
     """
     Construct a message object.
     :param body: The message body.
     :param ttl: Time to Live (seconds)
     :type ttl: float
+    :param durable: The message is durable.
+    :type durable: bool
     :return: The message.
     :rtype: Message
     """
+    properties = {}
+
     if ttl:
         ms = ttl * 1000  # milliseconds
-        return Message(body, delivery_mode=2, expiration=str(ms))
+        properties.update(expiration=str(ms))
+
+    if durable:
+        properties.update(delivery_mode=2)
     else:
-        return Message(body, delivery_mode=2)
+        properties.update(delivery_mode=1)
+
+    return Message(body, **properties)
 
 
 class Sender(BaseSender):
@@ -42,7 +51,7 @@ class Sender(BaseSender):
     An AMQP message sender.
     """
 
-    def __init__(self, url=None):
+    def __init__(self, url):
         """
         :param url: The broker url.
         :type url: str
@@ -98,6 +107,6 @@ class Sender(BaseSender):
         else:
             exchange = ''
         key = parts[-1]
-        message = build_message(content, ttl)
+        message = build_message(content, ttl, self.durable)
         self.channel.basic_publish(message, mandatory=True, exchange=exchange, routing_key=key)
         log.debug('sent (%s)', address)

@@ -667,6 +667,18 @@ class Reader(BaseReader):
 
 
 class BaseSender(Messenger):
+    """
+    :ivar durable: Messages sent are marked as durable.
+    :type durable: bool
+    """
+
+    def __init__(self, url=None):
+        """
+        :param url: The broker url.
+        :type url: str
+        """
+        Messenger.__init__(self, url)
+        self.durable = True
 
     def send(self, address, content, ttl):
         """
@@ -689,7 +701,7 @@ class Sender(BaseSender):
         :param url: The broker url.
         :type url: str
         """
-        Messenger.__init__(self, url)
+        BaseSender.__init__(self, url)
         adapter = Adapter.find(url)
         self._impl = adapter.Sender(url)
 
@@ -728,6 +740,7 @@ class Sender(BaseSender):
         :param ttl: Time to Live (seconds)
         :type ttl: float
         """
+        self._impl.durable = self.durable
         self._impl.send(address, content, ttl)
 
 

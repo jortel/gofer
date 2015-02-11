@@ -755,8 +755,10 @@ class TestSender(TestCase):
         content = '1234'
         ttl = 10
         sender = Sender(url)
+        sender.durable = 18
         sender.send(address, content, ttl)
         _impl.send.assert_called_once_with(address, content, ttl)
+        self.assertEqual(sender.durable, _impl.durable)
 
 
 class TestProducer(TestCase):

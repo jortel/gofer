@@ -41,7 +41,7 @@ class Reader(BaseReader):
     :type receiver: proton.utils.BlockingReceiver
     """
 
-    def __init__(self, queue, url=None):
+    def __init__(self, queue, url):
         """
         :param queue: The queue to consumer.
         :type queue: gofer.messaging.adapter.model.BaseQueue

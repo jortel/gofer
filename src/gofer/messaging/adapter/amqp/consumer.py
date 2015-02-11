@@ -34,7 +34,7 @@ class Reader(BaseReader):
     :type queue: gofer.messaging.adapter.model.Queue
     """
 
-    def __init__(self, queue, url=None):
+    def __init__(self, queue, url):
         """
         :param queue: The queue to consumer.
         :type queue: gofer.messaging.adapter.model.BaseQueue

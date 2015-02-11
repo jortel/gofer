@@ -95,11 +95,12 @@ class TestSender(TestCase):
 
         # test
         sender = Sender('')
+        sender.durable = 18
         sender.session = Mock()
         sender.send(address, content, ttl=ttl)
 
         # validation
-        message.assert_called_once_with(content=content, durable=True, ttl=ttl)
+        message.assert_called_once_with(content=content, durable=sender.durable, ttl=ttl)
         sender.session.sender.assert_called_once_with(address)
         _sender = sender.session.sender.return_value
         _sender.send.assert_called_once_with(message.return_value)

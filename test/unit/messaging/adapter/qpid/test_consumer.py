@@ -96,7 +96,7 @@ class TestReader(TestCase):
         receiver = Mock()
 
         # test
-        reader = Reader(None)
+        reader = Reader(None, '')
         reader.connection = connection
         reader.session = session
         reader.receiver = receiver
@@ -112,7 +112,7 @@ class TestReader(TestCase):
         message = Mock()
 
         # test
-        reader = Reader(None)
+        reader = Reader(None, '')
         reader.session = Mock()
         reader.ack(message)
 
@@ -125,7 +125,7 @@ class TestReader(TestCase):
         session.acknowledge.side_effect = ValueError
 
         # test
-        reader = Reader(None)
+        reader = Reader(None, '')
         reader.session = session
         self.assertRaises(ValueError, reader.ack, message)
 
@@ -135,7 +135,7 @@ class TestReader(TestCase):
         message = Mock()
 
         # test
-        reader = Reader(None)
+        reader = Reader(None, '')
         reader.session = Mock()
         reader.reject(message)
 
@@ -151,7 +151,7 @@ class TestReader(TestCase):
         session.acknowledge.side_effect = ValueError
 
         # test
-        reader = Reader(None)
+        reader = Reader(None, '')
         reader.session = session
         self.assertRaises(ValueError, reader.reject, message)
 
@@ -162,7 +162,7 @@ class TestReader(TestCase):
         message = Mock()
 
         # test
-        reader = Reader(None)
+        reader = Reader(None, '')
         reader.session = Mock()
         reader.reject(message, False)
 

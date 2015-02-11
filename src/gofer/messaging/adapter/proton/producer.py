@@ -21,19 +21,21 @@ from gofer.messaging.adapter.proton.reliability import reliable, resend
 log = getLogger(__name__)
 
 
-def build_message(body, ttl):
+def build_message(body, ttl, durable):
     """
     Construct a message object.
     :param body: The message body.
     :param ttl: Time to Live (seconds)
     :type ttl: float
+    :param durable: The message is durable.
+    :type durable: bool
     :return: The message.
     :rtype: Message
     """
     if ttl:
-        return Message(body=body, durable=True, ttl=ttl)
+        return Message(body=body, durable=durable, ttl=ttl)
     else:
-        return Message(body=body, durable=True)
+        return Message(body=body, durable=durable)
 
 
 class Sender(BaseSender):
@@ -43,7 +45,7 @@ class Sender(BaseSender):
     :type connection: Connection
     """
 
-    def __init__(self, url=None):
+    def __init__(self, url):
         """
         :param url: The broker url.
         :type url: str
@@ -88,7 +90,7 @@ class Sender(BaseSender):
         """
         sender = self.connection.sender(address)
         try:
-            message = build_message(content, ttl)
+            message = build_message(content, ttl, self.durable)
             sender.send(message)
             log.debug('sent (%s)', address)
         finally:
