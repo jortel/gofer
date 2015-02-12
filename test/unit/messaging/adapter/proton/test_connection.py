@@ -15,7 +15,7 @@ from mock import patch, Mock
 
 from gofer.devel import ipatch
 from gofer import ThreadSingleton
-from gofer.messaging.adapter.model import Broker, NotFound
+from gofer.messaging.adapter.model import URL, Broker, NotFound
 
 with ipatch('proton'):
     from gofer.messaging.adapter.proton.connection import Connection
@@ -92,18 +92,21 @@ class TestConnection(TestCase):
         connection._impl = Mock()
         self.assertTrue(connection.is_open())
 
+    @patch('gofer.messaging.adapter.proton.connection.Broker.find')
     @patch('gofer.messaging.adapter.proton.connection.BlockingConnection')
     @patch('gofer.messaging.adapter.proton.connection.Connection.ssl_domain')
-    def test_open(self, ssl_domain, blocking):
-        url = 'test-url'
-        connection = Connection(url)
+    def test_open(self, ssl_domain, blocking, find):
+        url = 'proton+amqps://localhost'
+        find.return_value = Mock(url=URL(url))
 
         # test
+        connection = Connection(url)
         connection.open()
 
         # validation
-        url = 'amqp://%s' % url
-        blocking.assert_called_once_with(url, ssl_domain=ssl_domain.return_value)
+        standard_url = URL(url).standard()
+        find.assert_called_once_with(url)
+        blocking.assert_called_once_with(standard_url, ssl_domain=ssl_domain.return_value)
 
     @patch('gofer.messaging.adapter.proton.connection.sleep')
     @patch('gofer.messaging.adapter.proton.connection.BlockingConnection')

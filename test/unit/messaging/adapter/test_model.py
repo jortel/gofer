@@ -973,6 +973,31 @@ class TestBroker(TestCase):
         self.assertEqual(b.ssl.client_certificate, None)
         self.assertFalse(b.ssl.host_validation)
 
+    @patch('gofer.messaging.adapter.model.Domain.broker.add')
+    def test_add(self, add):
+        broker = Broker('amqp://localhost')
+        broker.add()
+        add.assert_called_once_with(broker)
+
+    @patch('gofer.messaging.adapter.model.Domain.broker.find')
+    def test_find(self, find):
+        url = 'amqp://localhost'
+        found = Broker.find(url)
+        find.assert_called_once_with(URL(url).domain_id)
+        self.assertEqual(found, find.return_value)
+
+    def test_use_ssl(self):
+        # False
+        broker = Broker('amqp://localhost')
+        self.assertFalse(broker.use_ssl())
+        # True by port
+        broker = Broker('amqps://localhost')
+        self.assertTrue(broker.use_ssl())
+        # True by ssl properties
+        broker = Broker('amqp://localhost')
+        broker.ssl.ca_certificate = '/tmp'
+        self.assertTrue(broker.use_ssl())
+
     def test_str(self):
         url = TEST_URL
         b = Broker(url)
@@ -987,7 +1012,7 @@ class TestBroker(TestCase):
     def test_domain_id(self):
         url = 'amqp://localhost'
         b = Broker(url)
-        self.assertEqual(b.domain_id, url)
+        self.assertEqual(b.domain_id, 'localhost:5672')
 
 
 class TestMessage(TestCase):

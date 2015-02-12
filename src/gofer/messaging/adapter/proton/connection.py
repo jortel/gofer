@@ -20,7 +20,7 @@ from proton.reactors import DynamicNodeProperties
 
 from gofer.common import ThreadSingleton
 from gofer.messaging.adapter.reliability import YEAR
-from gofer.messaging.adapter.model import Domain, BaseConnection, NotFound
+from gofer.messaging.adapter.model import Broker, BaseConnection, NotFound
 
 
 log = getLogger(__name__)
@@ -50,7 +50,7 @@ class Connection(BaseConnection):
         :raise: SSLException
         """
         domain = None
-        if broker.ssl:
+        if broker.use_ssl():
             domain = SSLDomain(SSLDomain.MODE_CLIENT)
             domain.set_trusted_ca_db(broker.ssl.ca_certificate)
             domain.set_credentials(
@@ -91,7 +91,7 @@ class Connection(BaseConnection):
             # already open
             return
         delay = float(delay)
-        broker = Domain.broker.find(self.url)
+        broker = Broker.find(self.url)
         url = broker.url.standard()
         while True:
             try:

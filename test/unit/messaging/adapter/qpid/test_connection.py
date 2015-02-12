@@ -45,11 +45,6 @@ class TestConnection(TestCase):
         self.assertTrue(isinstance(c, BaseConnection))
         self.assertEqual(c.url, url)
 
-    def test_impl(self):
-        c = Connection(TEST_URL)
-        c._impl = 10
-        self.assertEqual(c.impl, c._impl)
-
     def test_add_transports(self):
         transports = {
             'tcp': Mock(),
@@ -61,7 +56,7 @@ class TestConnection(TestCase):
             self.assertEqual(transports['amqps'], transports['ssl'])
 
     @patch('gofer.messaging.adapter.qpid.connection.Connection.add_transports')
-    @patch('gofer.messaging.adapter.qpid.connection.Domain.broker.find')
+    @patch('gofer.messaging.adapter.qpid.connection.Broker.find')
     @patch('gofer.messaging.adapter.qpid.connection.RealConnection')
     def test_open(self, connection, find, add_transports):
         url = TEST_URL

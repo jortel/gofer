@@ -20,7 +20,7 @@ from amqp import ConnectionError
 
 from gofer.common import ThreadSingleton
 from gofer.messaging.adapter.reliability import YEAR
-from gofer.messaging.adapter.model import Domain, BaseConnection
+from gofer.messaging.adapter.model import Broker, BaseConnection
 
 
 log = getLogger(__name__)
@@ -45,7 +45,7 @@ class Connection(BaseConnection):
     __metaclass__ = ThreadSingleton
 
     @staticmethod
-    def _ssl(broker):
+    def ssl_domain(broker):
         """
         Get SSL properties
         :param broker: A broker object.
@@ -53,17 +53,19 @@ class Connection(BaseConnection):
         :return: The SSL properties
         :rtype: dict
         """
-        if not broker.ssl:
-            return
-        if broker.ssl.ca_certificate:
-            required = ssl.CERT_REQUIRED
-        else:
-            required = ssl.CERT_NONE
-        return dict(
-            cert_reqs=required,
-            ca_certs=broker.ssl.ca_certificate,
-            keyfile=broker.ssl.client_key,
-            certfile=broker.ssl.client_certificate)
+        domain = None
+        if broker.use_ssl():
+            domain = {}
+            if broker.ssl.ca_certificate:
+                required = ssl.CERT_REQUIRED
+            else:
+                required = ssl.CERT_NONE
+            domain.update(
+                cert_reqs=required,
+                ca_certs=broker.ssl.ca_certificate,
+                keyfile=broker.ssl.client_key,
+                certfile=broker.ssl.client_certificate)
+        return domain
 
     def __init__(self, url):
         """
@@ -93,10 +95,10 @@ class Connection(BaseConnection):
             # already open
             return
         delay = float(delay)
-        broker = Domain.broker.find(self.url)
+        broker = Broker.find(self.url)
         host = ':'.join((broker.host, str(broker.port)))
         virtual_host = broker.virtual_host or VIRTUAL_HOST
-        ssl = self._ssl(broker)
+        domain = self.ssl_domain(broker)
         userid = broker.userid or USERID
         password = broker.password or PASSWORD
         while True:
@@ -105,7 +107,7 @@ class Connection(BaseConnection):
                 self._impl = RealConnection(
                     host=host,
                     virtual_host=virtual_host,
-                    ssl=ssl,
+                    ssl=domain,
                     userid=userid,
                     password=password,
                     confirm_publish=True)

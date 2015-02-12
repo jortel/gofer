@@ -82,29 +82,29 @@ class _Domain(object):
         self.content = {}
         self.builder = builder
 
-    def add(self, thing):
+    def add(self, model):
         """
-        Add the object.
-        :param thing: An object to be added.
-        :type thing: Model
+        Add the domain object.
+        :param model: A model object to be added.
+        :type model: Model
         """
-        self.content[thing.domain_id] = thing
+        self.content[model.domain_id] = model
 
-    def find(self, key):
+    def find(self, domain_id):
         """
-        Find the domain object by key.
+        Find an object by domain_id.
         Returns the found object or the object created by the
-        optional builder called as: builder(key).
-        :param key: The object key.
-        :type key: str
+        optional builder called as: builder(domain_id).
+        :param domain_id: The domain ID.
+        :type domain_id: str
         :return: The requested object.
         """
         try:
-            return self.content[key]
+            return self.content[domain_id]
         except KeyError:
             pass
         if self.builder:
-            return self.builder(key)
+            return self.builder(domain_id)
 
     def delete(self, thing):
         """
@@ -938,6 +938,18 @@ class Broker(Model):
     :type ssl: SSL
     """
 
+    @staticmethod
+    def find(url):
+        """
+        Find a broker by URL.
+        :param url: A broker URL.
+        :type url: str
+        :return: The broker.
+        :rtype: Broker
+        """
+        url = URL(url)
+        return Domain.broker.find(url.domain_id)
+
     def __init__(self, url=None):
         """
         :param url: The broker url:
@@ -954,7 +966,7 @@ class Broker(Model):
         :return: The domain id.
         :rtype: str
         """
-        return str(self.url)
+        return self.url.domain_id
 
     @property
     def adapter(self):
@@ -1018,6 +1030,20 @@ class Broker(Model):
         :rtype: str
         """
         return self.url.path
+
+    def add(self):
+        """
+        Add this broker to the domain.
+        """
+        Domain.broker.add(self)
+
+    def use_ssl(self):
+        """
+        Get whether SSL should be used.
+        :return: True if SSL should be used.
+        :rtype: bool
+        """
+        return self.url.is_ssl() or self.ssl
 
     def __str__(self):
         s = list()

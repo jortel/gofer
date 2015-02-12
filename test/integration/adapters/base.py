@@ -91,7 +91,7 @@ class Test(object):
     
     def test_no_exchange(self):
         print 'test builtin (direct) exchange'
-        address = Address('test_1')
+        address = Address('test.1')
         queue = self.adapter.Queue(address.queue)
         queue.durable = False
         queue.auto_delete = True
@@ -100,7 +100,7 @@ class Test(object):
 
     def test_direct_exchange(self):
         print 'test explicit (direct) exchange'
-        address = Address('amq.direct/test_2')
+        address = Address('amq.direct/test.2')
         exchange = self.adapter.Exchange(address.exchange, 'direct')
         queue = self.adapter.Queue(address.queue)
         queue.durable = False
@@ -111,7 +111,7 @@ class Test(object):
 
     def test_custom_direct_exchange(self):
         print 'test custom (direct) exchange'
-        address = Address('test_3.direct/test_3')
+        address = Address('test_3.direct/test.3')
         exchange = self.adapter.Exchange(address.exchange, 'direct')
         exchange.durable = False
         exchange.auto_delete = True
@@ -125,7 +125,7 @@ class Test(object):
 
     def test_custom_topic_exchange(self):
         print 'test custom (topic) exchange'
-        address = Address('test_4.topic/test_4')
+        address = Address('test_4.topic/test.4')
         exchange = self.adapter.Exchange(address.exchange, 'topic')
         exchange.durable = False
         exchange.auto_delete = True
@@ -139,7 +139,7 @@ class Test(object):
 
     def test_crud(self):
         print 'test CRUD'
-        queue = self.adapter.Queue('test_crud_5')
+        queue = self.adapter.Queue('test.5')
         queue.durable = False
         queue.declare(self.url)
         exchange = self.adapter.Exchange('test_crud_5.direct', 'direct')

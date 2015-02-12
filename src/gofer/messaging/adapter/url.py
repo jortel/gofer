@@ -17,12 +17,16 @@
 Defined URL objects.
 """
 
+# well-known ports
+AMQP = 5672
+AMQPS = 5671
+
 # port mapping by scheme
 PORT = {
-    'tcp': 5672,
-    'amqp': 5672,
-    'ssl': 5671,
-    'amqps': 5671,
+    'tcp': AMQP,
+    'amqp': AMQP,
+    'ssl': AMQPS,
+    'amqps': AMQPS,
 }
 
 
@@ -93,12 +97,8 @@ class URL(Part):
         self.password = auth.password
         self.path = path.path
 
-    def simple(self):
-        """
-        Get the *simple* string representation: <host>:<port>
-        :return: "<host>:<port>"
-        :rtype: str
-        """
+    @property
+    def domain_id(self):
         return '%s:%d' % (self.host, self.port)
 
     def standard(self):
@@ -115,11 +115,14 @@ class URL(Part):
             url += ':%d' % self.port
         return url
 
+    def is_ssl(self):
+        return self.port == AMQPS
+
     def __hash__(self):
-        return hash(self.simple())
+        return hash(self.domain_id)
 
     def __eq__(self, other):
-        return self.simple() == other.simple()
+        return self.domain_id == other.domain_id
 
     def __str__(self):
         return self.standard()

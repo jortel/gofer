@@ -23,10 +23,16 @@ from qpid.messaging import Connection as RealConnection
 from qpid.messaging.transports import TRANSPORTS
 
 from gofer.common import ThreadSingleton
-from gofer.messaging.adapter.model import Domain, BaseConnection
+from gofer.messaging.adapter.model import Broker, BaseConnection
 
 
 log = getLogger(__name__)
+
+# qpid transports
+AMQP = 'amqp'
+AMQPS = 'amqps'
+TCP = 'tcp'
+SSL = 'ssl'
 
 
 class Connection(BaseConnection):
@@ -41,12 +47,12 @@ class Connection(BaseConnection):
         """
         Ensure that well-known AMQP services are mapped.
         """
-        key = 'amqp'
+        key = AMQP
         if key not in TRANSPORTS:
-            TRANSPORTS[key] = TRANSPORTS['tcp']
-        key = 'amqps'
+            TRANSPORTS[key] = TRANSPORTS[TCP]
+        key = AMQPS
         if key not in TRANSPORTS:
-            TRANSPORTS[key] = TRANSPORTS['ssl']
+            TRANSPORTS[key] = TRANSPORTS[SSL]
 
     def __init__(self, url):
         """
@@ -71,16 +77,20 @@ class Connection(BaseConnection):
         if self.is_open():
             # already open
             return
-        broker = Domain.broker.find(self.url)
+        broker = Broker.find(self.url)
         ssl = broker.ssl
         Connection.add_transports()
+        if broker.use_ssl():
+            transport = AMQPS
+        else:
+            transport = AMQP
         log.info('connecting: %s', broker)
         impl = RealConnection(
             host=broker.host,
             port=broker.port,
             tcp_nodelay=True,
             reconnect=True,
-            transport=broker.scheme,
+            transport=transport,
             username=broker.userid,
             password=broker.password,
             heartbeat=10,
@@ -91,15 +101,6 @@ class Connection(BaseConnection):
         impl.attach()
         self._impl = impl
         log.info('connected: %s', broker.url)
-
-    @property
-    def impl(self):
-        """
-        Get the *real* connection.
-        :return: The real connection.
-        :rtype: qpid.messaging.Connection
-        """
-        return self._impl
 
     def session(self):
         """

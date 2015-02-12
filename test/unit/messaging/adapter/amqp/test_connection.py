@@ -41,10 +41,10 @@ class TestConnection(TestCase):
         self.assertTrue(isinstance(c, BaseConnection))
         self.assertEqual(c.url, url)
 
-    @patch('gofer.messaging.adapter.amqp.connection.Domain.broker.find')
-    @patch('gofer.messaging.adapter.amqp.connection.Connection._ssl')
+    @patch('gofer.messaging.adapter.amqp.connection.Broker.find')
+    @patch('gofer.messaging.adapter.amqp.connection.Connection.ssl_domain')
     @patch('gofer.messaging.adapter.amqp.connection.RealConnection')
-    def test_open(self, connection, _ssl, find):
+    def test_open(self, connection, domain, find):
         url = TEST_URL
         broker = Broker(url)
         broker.ssl.ca_certificate = 'test-ca'
@@ -58,13 +58,13 @@ class TestConnection(TestCase):
         c.open()
 
         # validation
-        _ssl.assert_called_once_with(broker)
+        domain.assert_called_once_with(broker)
         connection.assert_called_once_with(
             host=':'.join((broker.host, str(broker.port))),
             virtual_host=broker.virtual_host,
             userid=broker.userid,
             password=broker.password,
-            ssl=_ssl.return_value,
+            ssl=domain.return_value,
             confirm_publish=True)
 
         self.assertEqual(c._impl, connection.return_value)
@@ -126,7 +126,7 @@ class TestConnection(TestCase):
         impl.close.assert_called_once_with()
         self.assertEqual(c._impl, None)
 
-    def test_ssl(self):
+    def test_ssl_domain(self):
         url = TEST_URL
 
         # test
@@ -134,7 +134,7 @@ class TestConnection(TestCase):
         b.ssl.ca_certificate = 'test-ca'
         b.ssl.client_key = 'test-key'
         b.ssl.client_certificate = 'test-crt'
-        ssl = Connection._ssl(b)
+        ssl = Connection.ssl_domain(b)
 
         # validation
         self.assertEqual(
@@ -151,7 +151,7 @@ class TestConnection(TestCase):
 
         # test
         b = Broker(url)
-        ssl = Connection._ssl(b)
+        ssl = Connection.ssl_domain(b)
 
         # validation
         self.assertEqual(ssl, None)
@@ -161,7 +161,7 @@ class TestConnection(TestCase):
 
         # test
         b = Broker(url)
-        ssl = Connection._ssl(b)
+        ssl = Connection.ssl_domain(b)
 
         self.assertEqual(str(b.url), url)
 

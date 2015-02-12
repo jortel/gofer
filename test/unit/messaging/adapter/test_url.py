@@ -98,7 +98,7 @@ class TestURL(TestCase):
         for test in TESTS:
             test(self)
 
-    def test_simple(self):
+    def test_domain_id(self):
         urls = [
             'qpid+amqp://elmer:fudd@test-host:5000/all',
             'amqp://elmer:fudd@test-host:5000/all',
@@ -107,7 +107,7 @@ class TestURL(TestCase):
         ]
         for _url in urls:
             url = URL(_url)
-            self.assertEqual(url.simple(), 'test-host:5000')
+            self.assertEqual(url.domain_id, 'test-host:5000')
 
     def test_standard(self):
         urls = [
@@ -120,9 +120,20 @@ class TestURL(TestCase):
             url = URL(_url)
             self.assertEqual(url.standard(), _url.split('+')[-1].rsplit('/all')[0])
 
+    def test_is_ssl(self):
+        # false
+        url = URL('amqp://localhost')
+        self.assertFalse(url.is_ssl())
+        # true
+        url = URL('amqps://localhost')
+        self.assertTrue(url.is_ssl())
+        # true w/ explict port
+        url = URL('amqp://localhost:5671')
+        self.assertTrue(url.is_ssl())
+
     def test_hash(self):
         url = URL('test')
-        self.assertEqual(hash(url), hash(url.simple()))
+        self.assertEqual(hash(url), hash(url.domain_id))
 
     def test_str(self):
         urls = [

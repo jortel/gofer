@@ -89,7 +89,7 @@ class Test(object):
 
     def test_no_exchange(self):
         print 'test builtin (direct) exchange'
-        address = Address('test_10')
+        address = Address('test.10')
         queue = Queue(address.queue)
         queue.durable = False
         queue.auto_delete = True
@@ -98,7 +98,7 @@ class Test(object):
 
     def test_custom_direct_exchange(self):
         print 'test custom (direct) exchange'
-        address = Address('test_11.direct/test_11')
+        address = Address('test_11.direct/test.11')
         exchange = Exchange(address.exchange, policy='direct')
         exchange.durable = False
         exchange.auto_delete = True
@@ -112,7 +112,7 @@ class Test(object):
 
     def test_custom_topic_exchange(self):
         print 'test custom (topic) exchange'
-        address = Address('test_12.topic/test_12')
+        address = Address('test_12.topic/test.12')
         exchange = Exchange(address.exchange, policy='topic')
         exchange.durable = False
         exchange.auto_delete = True
@@ -126,7 +126,7 @@ class Test(object):
 
     def test_crud(self):
         print 'test CRUD'
-        queue = Queue('test_crud_13')
+        queue = Queue('test.13')
         queue.durable = False
         queue.declare(self.url)
         exchange = Exchange('test_crud_13.direct')
