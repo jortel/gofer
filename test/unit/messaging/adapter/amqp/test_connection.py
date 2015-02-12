@@ -154,7 +154,14 @@ class TestConnection(TestCase):
         ssl = Connection.ssl_domain(b)
 
         # validation
-        self.assertEqual(ssl, None)
+        self.assertEqual(
+            ssl,
+            {
+                'ca_certs': None,
+                'certfile': None,
+                'keyfile': None,
+                'cert_reqs': 0
+            })
 
     def test_ssl_not_ssl(self):
         url = 'amqp://elmer:fudd@redhat.com:1234'

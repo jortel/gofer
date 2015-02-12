@@ -993,10 +993,6 @@ class TestBroker(TestCase):
         # True by port
         broker = Broker('amqps://localhost')
         self.assertTrue(broker.use_ssl())
-        # True by ssl properties
-        broker = Broker('amqp://localhost')
-        broker.ssl.ca_certificate = '/tmp'
-        self.assertTrue(broker.use_ssl())
 
     def test_str(self):
         url = TEST_URL

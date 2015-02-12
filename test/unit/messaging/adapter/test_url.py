@@ -116,9 +116,6 @@ class TestURL(TestCase):
         # true
         url = URL('amqps://localhost')
         self.assertTrue(url.is_ssl())
-        # true w/ explict port
-        url = URL('amqp://localhost:5671')
-        self.assertTrue(url.is_ssl())
 
     def test_hash(self):
         url = URL('test')

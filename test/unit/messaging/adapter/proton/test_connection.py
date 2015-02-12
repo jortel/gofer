@@ -38,7 +38,7 @@ class TestConnection(TestCase):
         ssl_domain.MODE_CLIENT = 0x01
         ssl_domain.VERIFY_PEER = 0x02
         ssl_domain.VERIFY_PEER_NAME = 0x03
-        broker = Broker()
+        broker = Broker('amqps://localhost')
         broker.ssl.ca_certificate = 'ca'
         broker.ssl.client_certificate = 'client'
         broker.ssl.client_key = 'key'
@@ -59,7 +59,7 @@ class TestConnection(TestCase):
         ssl_domain.MODE_CLIENT = 0x01
         ssl_domain.VERIFY_PEER = 0x02
         ssl_domain.VERIFY_PEER_NAME = 0x03
-        broker = Broker()
+        broker = Broker('amqps://localhost')
         broker.ssl.ca_certificate = 'ca'
         broker.ssl.client_certificate = 'client'
         broker.ssl.client_key = 'key'

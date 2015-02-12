@@ -17,17 +17,19 @@
 Defined URL objects.
 """
 
-# well-known ports
-AMQP = 5672
-AMQPS = 5671
-
-# port mapping by scheme
-PORT = {
-    'tcp': AMQP,
-    'amqp': AMQP,
-    'ssl': AMQPS,
-    'amqps': AMQPS,
+AMQP = {
+    'tcp':  5672,
+    'amqp': 5672,
 }
+
+AMQPS = {
+    'ssl':   5671,
+    'amqps': 5671,
+}
+
+PORT = {}
+PORT.update(AMQP)
+PORT.update(AMQPS)
 
 
 class Part(object):
@@ -113,7 +115,7 @@ class URL(Part):
         return url
 
     def is_ssl(self):
-        return self.port == AMQPS
+        return self.scheme in AMQPS
 
     def __hash__(self):
         return hash(self.canonical)

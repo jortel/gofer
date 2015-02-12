@@ -1044,7 +1044,7 @@ class Broker(Model):
         :return: True if SSL should be used.
         :rtype: bool
         """
-        return self.url.is_ssl() or self.ssl
+        return self.url.is_ssl()
 
     def __str__(self):
         s = list()

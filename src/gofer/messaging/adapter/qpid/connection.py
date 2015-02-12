@@ -80,17 +80,13 @@ class Connection(BaseConnection):
         broker = Broker.find(self.url)
         ssl = broker.ssl
         Connection.add_transports()
-        if broker.use_ssl():
-            transport = AMQPS
-        else:
-            transport = AMQP
         log.info('connecting: %s', broker)
         impl = RealConnection(
             host=broker.host,
             port=broker.port,
             tcp_nodelay=True,
             reconnect=True,
-            transport=transport,
+            transport=broker.url.scheme,
             username=broker.userid,
             password=broker.password,
             heartbeat=10,
