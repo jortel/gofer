@@ -73,14 +73,8 @@ class _Domain(object):
     Base domain container.
     """
 
-    def __init__(self, builder=None):
-        """
-        :param builder: A factory method.
-        :type builder: callable
-        :return:
-        """
+    def __init__(self):
         self.content = {}
-        self.builder = builder
 
     def add(self, model):
         """
@@ -93,18 +87,15 @@ class _Domain(object):
     def find(self, domain_id):
         """
         Find an object by domain_id.
-        Returns the found object or the object created by the
-        optional builder called as: builder(domain_id).
         :param domain_id: The domain ID.
         :type domain_id: str
         :return: The requested object.
+        :raise: NotFound
         """
         try:
             return self.content[domain_id]
         except KeyError:
-            pass
-        if self.builder:
-            return self.builder(domain_id)
+            raise NotFound(domain_id)
 
     def delete(self, thing):
         """
@@ -947,9 +938,11 @@ class Broker(Model):
         :return: The broker.
         :rtype: Broker
         """
-        url = URL(url)
-        domain_id = url.canonical
-        return Domain.broker.find(domain_id)
+        domain_id = URL(url).canonical
+        try:
+            return Domain.broker.find(domain_id)
+        except NotFound:
+            return Broker(url)
 
     def __init__(self, url=None):
         """
@@ -1062,5 +1055,5 @@ class Domain(object):
     :cvar broker: Collection of brokers.
     :type broker: _Domain
     """
-    broker = _Domain(Broker)
+    broker = _Domain()
 

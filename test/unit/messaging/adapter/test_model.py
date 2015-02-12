@@ -93,15 +93,13 @@ class TestDomain(TestCase):
 
     def test_init(self):
         builder = Mock()
-        domain = _Domain(builder)
-        self.assertEqual(domain.builder, builder)
+        domain = _Domain()
         self.assertEqual(domain.content, {})
 
     def test_all(self):
         cat = Node('cat')
         dog = Queue('dog')
-        builder = Mock()
-        domain = _Domain(builder)
+        domain = _Domain()
         domain.add(cat)
         # add
         domain.add(dog)
@@ -112,9 +110,8 @@ class TestDomain(TestCase):
         self.assertTrue(dog in domain)
         # find
         self.assertEqual(domain.find(dog.domain_id), dog)
-        # find (with builder)
-        self.assertEqual(domain.find('123'), builder.return_value)
-        builder.assert_called_once_with('123')
+        # not found
+        self.assertRaises(NotFound, domain.find, '123')
         # len
         self.assertEqual(len(domain), 2)
         # delete
