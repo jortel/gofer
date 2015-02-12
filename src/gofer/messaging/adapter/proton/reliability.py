@@ -13,9 +13,10 @@
 from time import sleep
 from logging import getLogger
 
-from proton import ConnectionException, LinkException, Delivery
-from proton.utils import SendException
+from proton import ConnectionException, Delivery
+from proton.utils import SendException, LinkDetached
 
+from gofer.messaging.adapter.model import NotFound
 from gofer.messaging.adapter.reliability import DAY
 
 
@@ -29,6 +30,9 @@ DELAY = 10   # seconds
 RESEND_DELAY = 10  # seconds
 MAX_RESEND = DAY / RESEND_DELAY
 
+# amqp conditions
+NOT_FOUND = 'amqp:not-found'
+
 
 def reliable(fn):
     def _fn(thing, *args, **kwargs):
@@ -37,10 +41,13 @@ def reliable(fn):
             try:
                 repair()
                 return fn(thing, *args, **kwargs)
-            except LinkException:
-                sleep(DELAY)
-                thing.close()
-                repair = thing.open
+            except LinkDetached, le:
+                if le.condition != NOT_FOUND:
+                    sleep(DELAY)
+                    thing.close()
+                    repair = thing.open
+                else:
+                    raise NotFound(*le.args)
             except ConnectionException:
                 sleep(DELAY)
                 thing.close()

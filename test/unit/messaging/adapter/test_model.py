@@ -983,7 +983,7 @@ class TestBroker(TestCase):
     def test_find(self, find):
         url = 'amqp://localhost'
         found = Broker.find(url)
-        find.assert_called_once_with(URL(url).domain_id)
+        find.assert_called_once_with(URL(url).canonical)
         self.assertEqual(found, find.return_value)
 
     def test_use_ssl(self):
@@ -1010,9 +1010,9 @@ class TestBroker(TestCase):
             'key: test-key|certificate: test-cert|host-validation: False')
 
     def test_domain_id(self):
-        url = 'amqp://localhost'
+        url = 'adapter+amqp://localhost'
         b = Broker(url)
-        self.assertEqual(b.domain_id, 'localhost:5672')
+        self.assertEqual(b.domain_id, 'amqp://localhost')
 
 
 class TestMessage(TestCase):

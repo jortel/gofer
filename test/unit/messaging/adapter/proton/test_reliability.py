@@ -18,13 +18,17 @@ from mock import Mock, patch
 
 from gofer.devel import ipatch
 
+from gofer.messaging.adapter.model import NotFound
+
 with ipatch('proton'):
     from gofer.messaging.adapter.proton.reliability import reliable, resend
-    from gofer.messaging.adapter.proton.reliability import DELAY, RESEND_DELAY, MAX_RESEND
+    from gofer.messaging.adapter.proton.reliability import DELAY, RESEND_DELAY
 
 
-class LinkException(Exception):
-    pass
+class LinkDetached(Exception):
+
+    def __init__(self, condition=None):
+        self.condition = condition
 
 
 class SendException(Exception):
@@ -77,11 +81,11 @@ class TestReliable(TestCase):
                 (args, kwargs),
             ])
 
-    @patch('gofer.messaging.adapter.proton.reliability.LinkException', LinkException)
+    @patch('gofer.messaging.adapter.proton.reliability.LinkDetached', LinkDetached)
     @patch('gofer.messaging.adapter.proton.reliability.sleep')
-    def test_reliable_link_exception(self, sleep):
+    def test_reliable_link_detached(self, sleep):
         url = 'test-url'
-        fn = Mock(side_effect=[LinkException, None])
+        fn = Mock(side_effect=[LinkDetached, None])
         thing = Mock(url=url, connection=Mock())
         args = (thing, 2, 3)
         kwargs = {'A': 1}
@@ -101,6 +105,18 @@ class TestReliable(TestCase):
                 (args, kwargs),
                 (args, kwargs),
             ])
+
+    @patch('gofer.messaging.adapter.proton.reliability.LinkDetached', LinkDetached)
+    @patch('gofer.messaging.adapter.proton.reliability.sleep')
+    def test_reliable_link_not_found(self, sleep):
+        url = 'test-url'
+        condition = 'amqp:not-found'
+        fn = Mock(side_effect=LinkDetached(condition))
+
+        # test
+        wrapped = reliable(fn)
+        self.assertRaises(NotFound, wrapped, None)
+        self.assertFalse(sleep.called)
 
 
 class TestResend(TestCase):

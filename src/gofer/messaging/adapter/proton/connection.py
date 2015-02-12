@@ -13,14 +13,14 @@ from time import sleep
 from uuid import uuid4
 from logging import getLogger
 
-from proton import ConnectionException, LinkException
+from proton import ConnectionException
 from proton import SSLDomain, SSLException
 from proton.utils import BlockingConnection
 from proton.reactors import DynamicNodeProperties
 
 from gofer.common import ThreadSingleton
 from gofer.messaging.adapter.reliability import YEAR
-from gofer.messaging.adapter.model import Broker, BaseConnection, NotFound
+from gofer.messaging.adapter.model import Broker, BaseConnection
 
 
 log = getLogger(__name__)
@@ -92,7 +92,7 @@ class Connection(BaseConnection):
             return
         delay = float(delay)
         broker = Broker.find(self.url)
-        url = broker.url.standard()
+        url = broker.url.canonical
         while True:
             try:
                 log.info('connecting: %s', broker)
@@ -118,13 +118,9 @@ class Connection(BaseConnection):
         :type address: str
         :return: A sender.
         :rtype: proton.utils.BlockingSender
-        :raise: NotFound
         """
-        try:
-            name = str(uuid4())
-            return self._impl.create_sender(address, name=name)
-        except LinkException, le:
-            raise NotFound(*le.args)
+        name = str(uuid4())
+        return self._impl.create_sender(address, name=name)
 
     def receiver(self, address=None, dynamic=False):
         """
@@ -135,18 +131,14 @@ class Connection(BaseConnection):
         :type dynamic: bool
         :return: A receiver.
         :rtype: proton.utils.BlockingReceiver
-        :raise: NotFound
         """
-        try:
-            options = None
-            name = str(uuid4())
-            if dynamic:
-                # needed by dispatch router
-                options = DynamicNodeProperties({'x-opt-qd.address': unicode(address)})
-                address = None
-            return self._impl.create_receiver(address, name=name, dynamic=dynamic, options=options)
-        except LinkException, le:
-            raise NotFound(*le.args)
+        options = None
+        name = str(uuid4())
+        if dynamic:
+            # needed by dispatch router
+            options = DynamicNodeProperties({'x-opt-qd.address': unicode(address)})
+            address = None
+        return self._impl.create_receiver(address, name=name, dynamic=dynamic, options=options)
 
     def close(self):
         """

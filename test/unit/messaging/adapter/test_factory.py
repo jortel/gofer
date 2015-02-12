@@ -125,7 +125,7 @@ class AdapterTest(TestCase):
         Adapter.bind(str(url), name)
 
         _load.assert_called_with()
-        self.assertEqual(Adapter.bindings, {url.domain_id: adapter})
+        self.assertEqual(Adapter.bindings, {url.canonical: adapter})
 
     @patch('gofer.messaging.adapter.factory.Adapter.bindings', {})
     @patch('gofer.messaging.adapter.factory.Loader.load')

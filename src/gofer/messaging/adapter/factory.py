@@ -145,7 +145,7 @@ class Adapter(object):
             raise NoAdaptersLoaded()
         try:
             url = URL(url)
-            Adapter.bindings[url.domain_id] = catalog[name]
+            Adapter.bindings[url.canonical] = catalog[name]
         except KeyError:
             raise AdapterNotFound(name)
 
@@ -169,7 +169,7 @@ class Adapter(object):
             if url.adapter:
                 return catalog[url.adapter]
             else:
-                return Adapter.bindings[url.domain_id]
+                return Adapter.bindings[url.canonical]
         except KeyError:
             raise AdapterNotFound(url.adapter)
 

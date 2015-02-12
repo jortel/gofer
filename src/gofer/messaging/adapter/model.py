@@ -948,7 +948,8 @@ class Broker(Model):
         :rtype: Broker
         """
         url = URL(url)
-        return Domain.broker.find(url.domain_id)
+        domain_id = url.canonical
+        return Domain.broker.find(domain_id)
 
     def __init__(self, url=None):
         """
@@ -966,7 +967,7 @@ class Broker(Model):
         :return: The domain id.
         :rtype: str
         """
-        return self.url.domain_id
+        return self.url.canonical
 
     @property
     def adapter(self):

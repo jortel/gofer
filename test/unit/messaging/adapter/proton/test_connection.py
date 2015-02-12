@@ -15,17 +15,13 @@ from mock import patch, Mock
 
 from gofer.devel import ipatch
 from gofer import ThreadSingleton
-from gofer.messaging.adapter.model import URL, Broker, NotFound
+from gofer.messaging.adapter.model import URL, Broker
 
 with ipatch('proton'):
     from gofer.messaging.adapter.proton.connection import Connection
 
 
 class ConnectionException(Exception):
-    pass
-
-
-class LinkException(Exception):
     pass
 
 
@@ -104,9 +100,9 @@ class TestConnection(TestCase):
         connection.open()
 
         # validation
-        standard_url = URL(url).standard()
+        canonical = URL(url).canonical
         find.assert_called_once_with(url)
-        blocking.assert_called_once_with(standard_url, ssl_domain=ssl_domain.return_value)
+        blocking.assert_called_once_with(canonical, ssl_domain=ssl_domain.return_value)
 
     @patch('gofer.messaging.adapter.proton.connection.sleep')
     @patch('gofer.messaging.adapter.proton.connection.BlockingConnection')
@@ -165,19 +161,6 @@ class TestConnection(TestCase):
         connection._impl.create_sender.assert_called_once_with(address, name=uuid.return_value)
         self.assertEqual(sender, connection._impl.create_sender.return_value)
 
-    @patch('gofer.messaging.adapter.proton.connection.uuid4')
-    @patch('gofer.messaging.adapter.proton.connection.LinkException', LinkException)
-    def test_sender_not_found(self, uuid):
-        url = 'test-url'
-        address = 'test'
-        uuid.return_value = '1234'
-        connection = Connection(url)
-        connection._impl = Mock()
-        connection._impl.create_sender.side_effect = LinkException
-
-        # test
-        self.assertRaises(NotFound, connection.sender, address)
-
     @patch('gofer.messaging.adapter.proton.connection.DynamicNodeProperties')
     @patch('gofer.messaging.adapter.proton.connection.uuid4')
     def test_receiver(self, uuid, properties):
@@ -213,19 +196,6 @@ class TestConnection(TestCase):
         connection._impl.create_receiver.assert_called_once_with(
             None, dynamic=True, name=uuid.return_value, options=properties.return_value)
         self.assertEqual(receiver, connection._impl.create_receiver.return_value)
-
-    @patch('gofer.messaging.adapter.proton.connection.uuid4')
-    @patch('gofer.messaging.adapter.proton.connection.LinkException', LinkException)
-    def test_receiver_not_found(self, uuid):
-        url = 'test-url'
-        address = 'test'
-        uuid.return_value = '1234'
-        connection = Connection(url)
-        connection._impl = Mock()
-        connection._impl.create_receiver.side_effect = LinkException
-
-        # test
-        self.assertRaises(NotFound, connection.receiver, address)
 
     def test_close(self):
         url = 'test-url'

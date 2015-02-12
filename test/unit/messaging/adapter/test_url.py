@@ -98,7 +98,7 @@ class TestURL(TestCase):
         for test in TESTS:
             test(self)
 
-    def test_domain_id(self):
+    def test_canonical(self):
         urls = [
             'qpid+amqp://elmer:fudd@test-host:5000/all',
             'amqp://elmer:fudd@test-host:5000/all',
@@ -107,18 +107,7 @@ class TestURL(TestCase):
         ]
         for _url in urls:
             url = URL(_url)
-            self.assertEqual(url.domain_id, 'test-host:5000')
-
-    def test_standard(self):
-        urls = [
-            'qpid+amqp://elmer:fudd@test-host:5000/all',
-            'amqp://elmer:fudd@test-host:5000/all',
-            'amqp://test-host:5000/all',
-            'amqp://test-host:5000'
-        ]
-        for _url in urls:
-            url = URL(_url)
-            self.assertEqual(url.standard(), _url.split('+')[-1].rsplit('/all')[0])
+            self.assertEqual(url.canonical, _url.split('+')[-1].rsplit('/all')[0])
 
     def test_is_ssl(self):
         # false
@@ -133,7 +122,7 @@ class TestURL(TestCase):
 
     def test_hash(self):
         url = URL('test')
-        self.assertEqual(hash(url), hash(url.domain_id))
+        self.assertEqual(hash(url), hash(url.canonical))
 
     def test_str(self):
         urls = [
@@ -145,5 +134,5 @@ class TestURL(TestCase):
         ]
         for _url in urls:
             url = URL(_url)
-            self.assertEqual(str(url), url.standard())
+            self.assertEqual(str(url), url.canonical)
 

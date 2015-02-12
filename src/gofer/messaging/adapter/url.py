@@ -98,12 +98,9 @@ class URL(Part):
         self.path = path.path
 
     @property
-    def domain_id(self):
-        return '%s:%d' % (self.host, self.port)
-
-    def standard(self):
+    def canonical(self):
         """
-        Get the *standard* string representation.
+        A *canonical* string representation.
         :return: "<scheme>://<userid>:<password>@<host>:<port>/path"
         :rtype: str
         """
@@ -119,13 +116,13 @@ class URL(Part):
         return self.port == AMQPS
 
     def __hash__(self):
-        return hash(self.domain_id)
+        return hash(self.canonical)
 
     def __eq__(self, other):
-        return self.domain_id == other.domain_id
+        return self.canonical == other.canonical
 
     def __str__(self):
-        return self.standard()
+        return self.canonical
 
 
 class Scheme(Part):
