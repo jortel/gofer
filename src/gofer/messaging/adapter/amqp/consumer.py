@@ -30,19 +30,17 @@ DELIVERY_TAG = 'delivery_tag'
 class Reader(BaseReader):
     """
     An AMQP message reader.
-    :ivar queue: The AMQP queue to read.
-    :type queue: gofer.messaging.adapter.model.Queue
     """
 
-    def __init__(self, queue, url):
+    def __init__(self, node, url):
         """
-        :param queue: The queue to consumer.
-        :type queue: gofer.messaging.adapter.model.BaseQueue
+        :param node: The AMQP node to read.
+        :type node: gofer.messaging.adapter.model.Node
         :param url: The broker url.
         :type url: str
         :see: gofer.messaging.adapter.url.URL
         """
-        BaseReader.__init__(self, queue, url)
+        BaseReader.__init__(self, node, url)
         self.connection = Connection(url)
         self.channel = None
         self.receiver = None
@@ -182,8 +180,8 @@ class Receiver(object):
         """
         fn = self.inbox.put
         channel = self.channel()
-        name = self.reader.queue.name
-        self.tag = channel.basic_consume(name, callback=fn)
+        address = self.reader.node.address
+        self.tag = channel.basic_consume(address, callback=fn)
         return self
 
     def close(self):

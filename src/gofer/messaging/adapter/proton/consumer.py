@@ -41,15 +41,15 @@ class Reader(BaseReader):
     :type receiver: proton.utils.BlockingReceiver
     """
 
-    def __init__(self, queue, url):
+    def __init__(self, node, url):
         """
-        :param queue: The queue to consumer.
-        :type queue: gofer.messaging.adapter.model.BaseQueue
+        :param node: The AMQP node to read.
+        :type node: gofer.messaging.adapter.model.Node
         :param url: The broker url.
         :type url: str
         :see: gofer.messaging.adapter.url.URL
         """
-        BaseReader.__init__(self, queue, url)
+        BaseReader.__init__(self, node, url)
         self.connection = Connection(url)
         self.receiver = None
 
@@ -70,7 +70,7 @@ class Reader(BaseReader):
             # already open
             return
         self.connection.open()
-        self.receiver = self.connection.receiver(self.queue.name)
+        self.receiver = self.connection.receiver(self.node.address)
 
     def close(self):
         """

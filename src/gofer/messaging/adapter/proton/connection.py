@@ -48,9 +48,11 @@ class Connection(BaseConnection):
         :return: The populated domain.
         :rtype: SSLDomain
         :raise: SSLException
+        :raise: ValueError
         """
         domain = None
         if broker.use_ssl():
+            broker.ssl.validate()
             domain = SSLDomain(SSLDomain.MODE_CLIENT)
             domain.set_trusted_ca_db(broker.ssl.ca_certificate)
             domain.set_credentials(

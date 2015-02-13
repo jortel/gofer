@@ -54,6 +54,26 @@ class Connection(BaseConnection):
         if key not in TRANSPORTS:
             TRANSPORTS[key] = TRANSPORTS[SSL]
 
+    @staticmethod
+    def ssl_domain(broker):
+        """
+        Get SSL properties
+        :param broker: A broker object.
+        :type broker: gofer.messaging.adapter.model.Broker
+        :return: The SSL properties
+        :rtype: dict
+        :raise: ValueError
+        """
+        domain = {}
+        if broker.use_ssl():
+            broker.ssl.validate()
+            domain.update(
+                ssl_trustfile=broker.ssl.ca_certificate,
+                ssl_keyfile=broker.ssl.client_key,
+                ssl_certfile=broker.ssl.client_certificate,
+                ssl_skip_hostname_check=(not broker.ssl.host_validation))
+        return domain
+
     def __init__(self, url):
         """
         :param url: The broker url.
@@ -78,8 +98,8 @@ class Connection(BaseConnection):
             # already open
             return
         broker = Broker.find(self.url)
-        ssl = broker.ssl
         Connection.add_transports()
+        domain = self.ssl_domain(broker)
         log.info('connecting: %s', broker)
         impl = RealConnection(
             host=broker.host,
@@ -90,10 +110,7 @@ class Connection(BaseConnection):
             username=broker.userid,
             password=broker.password,
             heartbeat=10,
-            ssl_trustfile=ssl.ca_certificate,
-            ssl_keyfile=ssl.client_key,
-            ssl_certfile=ssl.client_certificate,
-            ssl_skip_hostname_check=(not ssl.host_validation))
+            **domain)
         impl.attach()
         self._impl = impl
         log.info('connected: %s', broker.url)

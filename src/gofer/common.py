@@ -15,6 +15,7 @@
 
 import inspect
 
+from os import access, F_OK, R_OK
 from threading import local as Local
 
 
@@ -29,6 +30,24 @@ def nvl(thing, default):
         return default
     else:
         return thing
+
+
+def valid_path(path, mode=R_OK):
+    """
+    Validate the specified path.
+    :param path: An absolute file path.
+    :type path: sr
+    :param mode: A permission mode.  (Eg: os.R_OK).
+    :type mode: int
+    :raise: ValueError
+    """
+    if not path:
+        # valid paths only
+        return
+    if not access(path, F_OK):
+        raise ValueError('"%s" not found' % path)
+    if not access(path, mode):
+        raise ValueError('"%s" insufficient permissions' % path)
 
 
 class Singleton(type):

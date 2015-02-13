@@ -33,6 +33,7 @@ from gofer.messaging.adapter import \
     NoAdaptersLoaded, \
     Connection, \
     Exchange, \
+    Node, \
     Queue, \
     Reader, \
     Sender, \

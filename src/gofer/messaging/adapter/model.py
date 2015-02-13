@@ -17,6 +17,7 @@ from logging import getLogger
 
 from uuid import uuid4
 
+from gofer.common import valid_path
 from gofer.messaging.model import VERSION, Document
 from gofer.messaging.adapter.url import URL
 from gofer.messaging.adapter.factory import Adapter
@@ -138,6 +139,15 @@ class Node(Model):
         :type name: str
         """
         self.name = name
+
+    @property
+    def address(self):
+        """
+        The AMQP address.
+        :return: The AMQP address.
+        :rtype: str
+        """
+        return self.name
 
     @property
     def domain_id(self):
@@ -491,17 +501,19 @@ class Message(Model):
 class BaseReader(Messenger):
     """
     An AMQP message reader.
+    :ivar node: The AMQP node to read.
+    :type node: Node
     """
 
-    def __init__(self, queue, url):
+    def __init__(self, node, url):
         """
-        :param queue: The queue to consumer.
-        :type queue: gofer.messaging.adapter.model.BaseQueue
+        :param node: The AMQP node to read.
+        :type node: Node
         :param url: The broker url.
         :type url: str
         """
         Messenger.__init__(self, url)
-        self.queue = queue
+        self.node = node
 
     def get(self, timeout=None):
         """
@@ -537,17 +549,17 @@ class Reader(BaseReader):
     :type authenticator: gofer.messaging.auth.Authenticator
     """
 
-    def __init__(self, queue, url=None):
+    def __init__(self, node, url=None):
         """
-        :param queue: The queue to read.
-        :type queue: gofer.messaging.adapter.model.BaseQueue
+        :param node: The ndoe to read.
+        :type node: Node
         :param url: The broker url.
         :type url: str
         :see: gofer.messaging.adapter.url.URL
         """
-        BaseReader.__init__(self, queue, url)
+        BaseReader.__init__(self, node, url)
         adapter = Adapter.find(url)
-        self._impl = adapter.Reader(queue, url)
+        self._impl = adapter.Reader(node, url)
         self.authenticator = None
 
     @model
@@ -905,6 +917,15 @@ class SSL(Model):
         self.client_key = None
         self.client_certificate = None
         self.host_validation = False
+
+    def validate(self):
+        """
+        Validate properties.
+        :raise: ValueError
+        """
+        valid_path(self.ca_certificate)
+        valid_path(self.client_certificate)
+        valid_path(self.client_key)
 
     def __nonzero__(self):
         return (self.ca_certificate or
