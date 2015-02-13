@@ -41,18 +41,18 @@ class TestReader(TestCase):
 
     @patch('gofer.messaging.adapter.amqp.consumer.Connection')
     def test_init(self, connection):
-        queue = Mock()
+        node = Mock(address='test')
         url = 'test-url'
 
         # test
-        reader = Reader(queue, url=url)
+        reader = Reader(node, url=url)
 
         # validation
         connection.assert_called_once_with(url)
         self.assertTrue(isinstance(reader, BaseReader))
         self.assertEqual(reader.url, url)
         self.assertEqual(reader.connection, connection.return_value)
-        self.assertEqual(reader.queue, queue)
+        self.assertEqual(reader.node, node)
         self.assertEqual(reader.channel, None)
         self.assertEqual(reader.receiver, None)
 
@@ -287,15 +287,15 @@ class TestReceiver(TestCase):
         self.assertEqual(channel, reader.channel)
 
     def test_open(self):
-        queue = Mock()
-        reader = Mock(queue=queue, channel=Mock())
+        node = Mock(address='test')
+        reader = Mock(node=node, channel=Mock())
 
         # test
         r = Receiver(reader)
         r = r.open()
 
         # validation
-        reader.channel.basic_consume.assert_called_once_with(queue.name, callback=r.inbox.put)
+        reader.channel.basic_consume.assert_called_once_with(node.address, callback=r.inbox.put)
         self.assertEqual(r.tag, reader.channel.basic_consume.return_value)
 
     def test_close(self):

@@ -368,17 +368,17 @@ class TestMessenger(TestCase):
 class TestBaseReader(TestCase):
 
     def test_init(self):
-        queue = Queue('')
+        node = Node('')
         url = TEST_URL
-        reader = BaseReader(queue, url)
-        self.assertEqual(reader.queue, queue)
+        reader = BaseReader(node, url)
+        self.assertEqual(reader.node, node)
         self.assertEqual(reader.url, url)
         self.assertTrue(isinstance(reader, Messenger))
 
     def test_abstract(self):
         url = TEST_URL
-        queue = Queue('')
-        reader = BaseReader(queue, url)
+        node = Node('test')
+        reader = BaseReader(node, url)
         self.assertRaises(NotImplementedError, reader.get, 10)
         self.assertRaises(NotImplementedError, reader.ack, '')
         self.assertRaises(NotImplementedError, reader.reject, '')
@@ -392,15 +392,15 @@ class TestReader(TestCase):
         plugin = Mock()
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
-        queue = BaseQueue('')
+        node = Node('test')
         url = TEST_URL
 
         # test
-        reader = Reader(queue, url)
+        reader = Reader(node, url)
 
         # validation
         _find.assert_called_with(url)
-        plugin.Reader.assert_called_with(queue, url)
+        plugin.Reader.assert_called_with(node, url)
         self.assertEqual(reader.authenticator, None)
         self.assertTrue(isinstance(reader, BaseReader))
 
@@ -411,8 +411,8 @@ class TestReader(TestCase):
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
         url = TEST_URL
-        queue = BaseQueue('')
-        reader = Reader(queue, url)
+        node = Node('test')
+        reader = Reader(node, url)
         reader.open()
         _impl.open.assert_called_with()
 
@@ -423,8 +423,8 @@ class TestReader(TestCase):
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
         url = TEST_URL
-        queue = BaseQueue('')
-        reader = Reader(queue, url)
+        node = Node('')
+        reader = Reader(node, url)
         is_open = reader.is_open()
         _impl.is_open.assert_called_once_with()
         self.assertEqual(is_open, _impl.is_open.return_value)
@@ -436,8 +436,8 @@ class TestReader(TestCase):
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
         url = TEST_URL
-        queue = BaseQueue('')
-        reader = Reader(queue, url)
+        node = Node('')
+        reader = Reader(node, url)
         reader.open()
         _impl.open.assert_called_once_with()
 
@@ -448,8 +448,8 @@ class TestReader(TestCase):
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
         url = TEST_URL
-        queue = BaseQueue('')
-        reader = Reader(queue, url)
+        node = Node('')
+        reader = Reader(node, url)
         # soft
         reader.close()
         _impl.close.assert_called_with()
@@ -462,8 +462,8 @@ class TestReader(TestCase):
         _find.return_value = plugin
         message = Mock()
         url = TEST_URL
-        queue = BaseQueue('')
-        reader = Reader(queue, url)
+        node = Node('')
+        reader = Reader(node, url)
         reader.ack(message)
         message.ack.assert_called_once_with()
 
@@ -475,8 +475,8 @@ class TestReader(TestCase):
         _find.return_value = plugin
         message = Mock()
         url = TEST_URL
-        queue = BaseQueue('')
-        reader = Reader(queue, url)
+        node = Node('')
+        reader = Reader(node, url)
         reader.reject(message, 29)
         message.reject.assert_called_with(29)
 
@@ -488,11 +488,11 @@ class TestReader(TestCase):
         plugin = Mock()
         plugin.Reader.return_value = _impl
         _find.return_value = plugin
-        queue = BaseQueue('')
+        node = Node('')
         url = TEST_URL
 
         # test
-        reader = Reader(queue, url)
+        reader = Reader(node, url)
 
         # validation
         m = reader.get(10)
@@ -512,7 +512,7 @@ class TestReader(TestCase):
         auth.validate.return_value = document
 
         # test
-        reader = Reader(None)
+        reader = Reader(Node(''))
         reader.get = Mock(return_value=message)
         reader.authenticator = Mock()
         _message, _document = reader.next(10)
@@ -532,7 +532,7 @@ class TestReader(TestCase):
         _find.return_value = plugin
 
         # test
-        reader = Reader(None)
+        reader = Reader(Node(''))
         reader.get = Mock(return_value=None)
         reader.authenticator = Mock()
         _message, _document = reader.next(10)
@@ -554,7 +554,7 @@ class TestReader(TestCase):
         auth.validate.side_effect = ModelError
 
         # test
-        reader = Reader(None)
+        reader = Reader(Node(''))
         reader.get = Mock(return_value=message)
         reader.authenticator = Mock()
         self.assertRaises(ModelError, reader.next, 10)
@@ -579,7 +579,7 @@ class TestReader(TestCase):
         validate.side_effect = ModelError
 
         # test
-        reader = Reader(None)
+        reader = Reader(Node(''))
         reader.get = Mock(return_value=message)
         reader.authenticator = Mock()
         self.assertRaises(ModelError, reader.next, 10)
@@ -604,9 +604,9 @@ class TestReader(TestCase):
 
         # test
         url = TEST_URL
-        queue = BaseQueue('')
+        node = Node('')
         sn = received[1][1].sn
-        reader = Reader(queue, url)
+        reader = Reader(node, url)
         reader.next = Mock(side_effect=received)
         document = reader.search(sn, timeout=10)
 
@@ -635,8 +635,8 @@ class TestReader(TestCase):
 
         # test
         url = TEST_URL
-        queue = BaseQueue('')
-        reader = Reader(queue, url)
+        node = Node('')
+        reader = Reader(node, url)
         reader.next = Mock(side_effect=received)
         document = reader.search('', timeout=10)
 
@@ -664,8 +664,8 @@ class TestReader(TestCase):
 
         # test
         url = TEST_URL
-        queue = BaseQueue('')
-        reader = Reader(queue, url)
+        node = Node('')
+        reader = Reader(node, url)
         reader.next = Mock(side_effect=received)
         document = reader.search('', timeout=10)
 

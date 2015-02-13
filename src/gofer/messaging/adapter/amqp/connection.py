@@ -52,10 +52,12 @@ class Connection(BaseConnection):
         :type broker: gofer.messaging.adapter.model.Broker
         :return: The SSL properties
         :rtype: dict
+        :raise: ValueError
         """
         domain = None
         if broker.use_ssl():
             domain = {}
+            broker.ssl.validate()
             if broker.ssl.ca_certificate:
                 required = ssl.CERT_REQUIRED
             else:

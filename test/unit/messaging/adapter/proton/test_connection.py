@@ -33,8 +33,9 @@ class TestConnection(TestCase):
     def tearDown(self):
         ThreadSingleton.all().clear()
 
+    @patch('gofer.messaging.adapter.model.SSL.validate')
     @patch('gofer.messaging.adapter.proton.connection.SSLDomain')
-    def test_ssl_domain(self, ssl_domain):
+    def test_ssl_domain(self, ssl_domain, validate):
         ssl_domain.MODE_CLIENT = 0x01
         ssl_domain.VERIFY_PEER = 0x02
         ssl_domain.VERIFY_PEER_NAME = 0x03
@@ -47,6 +48,7 @@ class TestConnection(TestCase):
         domain = Connection.ssl_domain(broker)
 
         # validation
+        validate.assert_called_once_with()
         ssl_domain.assert_called_once_with(ssl_domain.MODE_CLIENT)
         domain.set_trusted_ca_db.assert_called_once_with(broker.ssl.ca_certificate)
         domain.set_credentials.assert_called_once_with(
@@ -54,8 +56,9 @@ class TestConnection(TestCase):
             broker.ssl.client_key, None)
         domain.set_peer_authentication.assert_called_once_with(ssl_domain.VERIFY_PEER)
 
+    @patch('gofer.messaging.adapter.model.SSL.validate')
     @patch('gofer.messaging.adapter.proton.connection.SSLDomain')
-    def test_ssl_domain_host_validation(self, ssl_domain):
+    def test_ssl_domain_host_validation(self, ssl_domain, validate):
         ssl_domain.MODE_CLIENT = 0x01
         ssl_domain.VERIFY_PEER = 0x02
         ssl_domain.VERIFY_PEER_NAME = 0x03
@@ -69,6 +72,7 @@ class TestConnection(TestCase):
         domain = Connection.ssl_domain(broker)
 
         # validation
+        validate.assert_called_once_with()
         ssl_domain.assert_called_once_with(ssl_domain.MODE_CLIENT)
         domain.set_trusted_ca_db.assert_called_once_with(broker.ssl.ca_certificate)
         domain.set_credentials.assert_called_once_with(

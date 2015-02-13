@@ -55,16 +55,42 @@ class TestConnection(TestCase):
             self.assertEqual(transports['amqp'], transports['tcp'])
             self.assertEqual(transports['amqps'], transports['ssl'])
 
+    @patch('gofer.messaging.adapter.model.SSL.validate')
+    def test_ssl_domain(self, validate):
+        url = TEST_URL
+
+        # test
+        b = Broker(url)
+        b.ssl.ca_certificate = 'test-ca'
+        b.ssl.client_key = 'test-key'
+        b.ssl.client_certificate = 'test-crt'
+        ssl = Connection.ssl_domain(b)
+
+        # validation
+        validate.assert_called_once_with()
+        self.assertEqual(
+            ssl,
+            {
+                'ssl_trustfile': b.ssl.ca_certificate,
+                'ssl_keyfile': b.ssl.client_key,
+                'ssl_certfile': b.ssl.client_certificate,
+                'ssl_skip_hostname_check': (not b.ssl.host_validation)
+            })
+
+    @patch('gofer.messaging.adapter.qpid.connection.Connection.ssl_domain')
     @patch('gofer.messaging.adapter.qpid.connection.Connection.add_transports')
     @patch('gofer.messaging.adapter.qpid.connection.Broker.find')
     @patch('gofer.messaging.adapter.qpid.connection.RealConnection')
-    def test_open(self, connection, find, add_transports):
+    def test_open(self, connection, find, add_transports, ssl_domain):
         url = TEST_URL
         broker = Broker(url)
         broker.ssl.ca_certificate = 'test-ca'
         broker.ssl.client_key = 'test-key'
         broker.ssl.client_certificate = 'test-crt'
         find.return_value = broker
+
+        ssl_properties = {'A': 1, 'B': 2}
+        ssl_domain.return_value = ssl_properties
 
         # test
         c = Connection(url)
@@ -82,11 +108,9 @@ class TestConnection(TestCase):
             username=broker.userid,
             password=broker.password,
             heartbeat=10,
-            ssl_trustfile=broker.ssl.ca_certificate,
-            ssl_keyfile=broker.ssl.client_key,
-            ssl_certfile=broker.ssl.client_certificate,
-            ssl_skip_hostname_check=(not broker.ssl.host_validation))
+            **ssl_properties)
 
+        ssl_domain.assert_called_once_with(broker)
         c._impl.attach.assert_called_once_with()
         self.assertEqual(c._impl, connection.return_value)
 

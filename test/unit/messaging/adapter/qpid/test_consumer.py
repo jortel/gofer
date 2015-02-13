@@ -35,25 +35,26 @@ class TestReader(TestCase):
 
     @patch('gofer.messaging.adapter.qpid.consumer.Connection')
     def test_init(self, connection):
-        queue = Mock()
+        node = Mock(address='test')
         url = 'test-url'
 
         # test
-        reader = Reader(queue, url=url)
+        reader = Reader(node, url=url)
 
         # validation
         connection.assert_called_once_with(url)
         self.assertTrue(isinstance(reader, BaseReader))
         self.assertEqual(reader.url, url)
         self.assertEqual(reader.connection, connection.return_value)
-        self.assertEqual(reader.queue, queue)
+        self.assertEqual(reader.node, node)
         self.assertEqual(reader.session, None)
         self.assertEqual(reader.receiver, None)
 
     @patch('gofer.messaging.adapter.qpid.consumer.Connection', Mock())
     def test_is_open(self):
         url = 'test-url'
-        reader = Reader(Mock(), url=url)
+        node = Mock(address='test')
+        reader = Reader(node, url=url)
         # closed
         self.assertFalse(reader.is_open())
         # open
@@ -63,27 +64,27 @@ class TestReader(TestCase):
     @patch('gofer.messaging.adapter.qpid.consumer.Connection')
     def test_open(self, connection):
         url = 'test-url'
-        queue = Queue('test-queue')
+        node = Mock(address='test')
 
         # test
-        reader = Reader(queue, url)
+        reader = Reader(node, url)
         reader.is_open = Mock(return_value=False)
         reader.open()
 
         # validation
         connection.return_value.open.assert_called_once_with()
         connection.return_value.session.assert_called_once_with()
-        connection.return_value.session.return_value.receiver.assert_called_once_with(queue.name)
+        connection.return_value.session.return_value.receiver.assert_called_once_with(node.address)
         self.assertEqual(reader.session, connection.return_value.session.return_value)
         self.assertEqual(reader.receiver, reader.session.receiver.return_value)
 
     @patch('gofer.messaging.adapter.qpid.consumer.Connection', Mock())
     def test_open_already(self):
         url = 'test-url'
-        queue = Queue('test-queue')
+        node = Mock(address='test')
 
         # test
-        reader = Reader(queue, url)
+        reader = Reader(node, url)
         reader.is_open = Mock(return_value=True)
         reader.open()
 

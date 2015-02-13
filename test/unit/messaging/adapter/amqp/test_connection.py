@@ -44,7 +44,7 @@ class TestConnection(TestCase):
     @patch('gofer.messaging.adapter.amqp.connection.Broker.find')
     @patch('gofer.messaging.adapter.amqp.connection.Connection.ssl_domain')
     @patch('gofer.messaging.adapter.amqp.connection.RealConnection')
-    def test_open(self, connection, domain, find):
+    def test_open(self, connection, ssl_domain, find):
         url = TEST_URL
         broker = Broker(url)
         broker.ssl.ca_certificate = 'test-ca'
@@ -58,13 +58,13 @@ class TestConnection(TestCase):
         c.open()
 
         # validation
-        domain.assert_called_once_with(broker)
+        ssl_domain.assert_called_once_with(broker)
         connection.assert_called_once_with(
             host=':'.join((broker.host, str(broker.port))),
             virtual_host=broker.virtual_host,
             userid=broker.userid,
             password=broker.password,
-            ssl=domain.return_value,
+            ssl=ssl_domain.return_value,
             confirm_publish=True)
 
         self.assertEqual(c._impl, connection.return_value)
@@ -126,7 +126,8 @@ class TestConnection(TestCase):
         impl.close.assert_called_once_with()
         self.assertEqual(c._impl, None)
 
-    def test_ssl_domain(self):
+    @patch('gofer.messaging.adapter.model.SSL.validate')
+    def test_ssl_domain(self, validate):
         url = TEST_URL
 
         # test
@@ -137,6 +138,7 @@ class TestConnection(TestCase):
         ssl = Connection.ssl_domain(b)
 
         # validation
+        validate.assert_called_once_with()
         self.assertEqual(
             ssl,
             {

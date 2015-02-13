@@ -9,15 +9,18 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+import os
+
 from Queue import Queue
 from threading import Thread
 
 from unittest import TestCase
 
 from mock import Mock
+from tempfile import mktemp
 
 from gofer.common import Singleton, ThreadSingleton, Options
-from gofer.common import synchronized, conditional, nvl
+from gofer.common import synchronized, conditional, nvl, valid_path
 
 
 class Thing(object):
@@ -288,3 +291,30 @@ class TestOptions(TestCase):
     def test_str(self):
         options = Options(a=1, b=2)
         self.assertEqual(str(options), str(options.__dict__))
+
+
+class TestValidPath(TestCase):
+
+    def setUp(self):
+        self.path = mktemp()
+
+    def tearDown(self):
+        if os.path.exists(self.path):
+            os.chmod(self.path, 0x666)
+            os.unlink(self.path)
+
+    def test_valid(self):
+        with open(self.path, 'a'):
+            try:
+                valid_path(self.path)
+            except ValueError:
+                self.fail('Value error not expected')
+
+    def test_not_found(self):
+        self.assertRaises(ValueError, valid_path, self.path)
+
+    def test_perms(self):
+        fp = open(self.path, 'a')
+        fp.close()
+        os.chmod(self.path, 0x00)
+        self.assertRaises(ValueError, valid_path, self.path)

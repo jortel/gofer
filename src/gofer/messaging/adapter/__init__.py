@@ -26,6 +26,7 @@ from gofer.messaging.adapter.model import \
     Broker, \
     Domain, \
     Connection, \
+    Node, \
     Exchange, \
     Queue, \
     Reader, \

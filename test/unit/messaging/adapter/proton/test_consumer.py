@@ -39,24 +39,25 @@ class TestReader(TestCase):
 
     @patch('gofer.messaging.adapter.proton.consumer.Connection')
     def test_init(self, connection):
-        queue = Mock()
+        node = Mock(address='test')
         url = 'test-url'
 
         # test
-        reader = Reader(queue, url=url)
+        reader = Reader(node, url=url)
 
         # validation
         connection.assert_called_once_with(url)
         self.assertTrue(isinstance(reader, BaseReader))
         self.assertEqual(reader.url, url)
         self.assertEqual(reader.connection, connection.return_value)
-        self.assertEqual(reader.queue, queue)
+        self.assertEqual(reader.node, node)
         self.assertEqual(reader.receiver, None)
 
     @patch('gofer.messaging.adapter.proton.consumer.Connection', Mock())
     def test_is_open(self):
         url = 'test-url'
-        reader = Reader(Mock(), url=url)
+        node = Mock(address='test')
+        reader = Reader(node, url=url)
         # closed
         self.assertFalse(reader.is_open())
         # open
@@ -66,25 +67,25 @@ class TestReader(TestCase):
     @patch('gofer.messaging.adapter.proton.consumer.Connection')
     def test_open(self, connection):
         url = 'test-url'
-        queue = Queue('test-queue')
+        node = Mock(address='test')
 
         # test
-        reader = Reader(queue, url)
+        reader = Reader(node, url)
         reader.is_open = Mock(return_value=False)
         reader.open()
 
         # validation
         connection.return_value.open.assert_called_once_with()
-        connection.return_value.receiver.assert_called_once_with(queue.name)
+        connection.return_value.receiver.assert_called_once_with(node.address)
         self.assertEqual(reader.receiver, reader.connection.receiver.return_value)
 
     @patch('gofer.messaging.adapter.proton.consumer.Connection', Mock())
     def test_open_already(self):
         url = 'test-url'
-        queue = Queue('test-queue')
+        node = Mock(address='test')
 
         # test
-        reader = Reader(queue, url)
+        reader = Reader(node, url)
         reader.is_open = Mock(return_value=True)
         reader.open()
 
@@ -95,9 +96,10 @@ class TestReader(TestCase):
         connection = Mock()
         receiver = Mock()
         receiver.close.side_effect = KeyError
+        node = Mock(address='test')
 
         # test
-        reader = Reader(None, '')
+        reader = Reader(node, '')
         reader.connection = connection
         reader.receiver = receiver
         reader.is_open = Mock(return_value=True)
@@ -108,12 +110,12 @@ class TestReader(TestCase):
         self.assertFalse(connection.close.called)
 
     def test_get(self):
-        queue = Queue('test-queue')
+        node = Mock(address='test')
         received = Mock(body='<body/>')
         url = 'test-url'
 
         # test
-        reader = Reader(queue, url=url)
+        reader = Reader(node, url=url)
         reader.receiver = Mock()
         reader.receiver.receive.return_value = received
         message = reader.get(10)
@@ -127,11 +129,11 @@ class TestReader(TestCase):
 
     @patch('gofer.messaging.adapter.proton.consumer.Timeout', Timeout)
     def test_get_empty(self):
-        queue = Mock(name='test-queue')
+        node = Mock(address='test')
         url = 'test-url'
 
         # test
-        reader = Reader(queue, url=url)
+        reader = Reader(node, url=url)
         reader.receiver = Mock()
         reader.receiver.receive.side_effect = Timeout
         message = reader.get(10)
@@ -141,11 +143,11 @@ class TestReader(TestCase):
         self.assertEqual(message, None)
 
     def test_ack(self):
-        queue = Mock(name='test-queue')
+        node = Mock(address='test')
         url = 'test-url'
 
         # test
-        reader = Reader(queue, url=url)
+        reader = Reader(node, url=url)
         reader.receiver = Mock()
         reader.ack(None)
 
@@ -153,11 +155,11 @@ class TestReader(TestCase):
         reader.receiver.accept.assert_called_once_with()
 
     def test_reject(self):
-        queue = Mock(name='test-queue')
+        node = Mock(address='test')
         url = 'test-url'
 
         # test
-        reader = Reader(queue, url=url)
+        reader = Reader(node, url=url)
         reader.receiver = Mock()
         reader.reject(None, requeue=False)
 
@@ -165,11 +167,11 @@ class TestReader(TestCase):
         reader.receiver.reject.assert_called_once_with()
 
     def test_reject_queued(self):
-        queue = Mock(name='test-queue')
+        node = Mock(address='test')
         url = 'test-url'
 
         # test
-        reader = Reader(queue, url=url)
+        reader = Reader(node, url=url)
         reader.receiver = Mock()
         reader.reject(None, requeue=True)
 
