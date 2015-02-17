@@ -10,10 +10,10 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 from unittest import TestCase
+from StringIO import StringIO
 
 from mock import patch, Mock
 
-from StringIO import StringIO
 from copy import deepcopy as clone
 
 from gofer.config import *
@@ -109,10 +109,28 @@ INI_VALID = """
 property1=10
 property2=http://redhat.com
 property3=howdy
+
 [section2]
 property1=10
 property2=1
 property3=0
+"""
+
+READER = """
+# comment
+<skip>
+[section-1]
+property1=1
+property2: 2
+property3 = 3
+property4 = 4
+property5=
+
+[section-2]
+property1=A
+property2: B
+property3 = C
+property4 = D
 """
 
 
@@ -194,33 +212,40 @@ class TestConfig(TestCase):
 
     @patch('gofer.config.Config.open')
     @patch('gofer.config.Config.update')
-    @patch('gofer.config.Config.read')
-    def test_init(self, _read, _update, _open):
-        path = '/path'
+    def test_init(self, _update, _open):
+        path = '/path.conf'
         d = {'A': 1}
-        fp = Mock()
-        Config(path, d, fp)
+        Config(path, d)
         _update.assert_called_with(d)
         _open.assert_called_with([path])
-        _read.assert_called_with(fp)
 
     @patch('__builtin__.open')
-    @patch('gofer.config.Config.read')
-    def test_open(self, _read, _open):
+    @patch('gofer.config.Config.update')
+    @patch('gofer.config.Reader')
+    def test_open_conf(self, _reader, _update, _open):
         _fp = Mock()
         _open.return_value = _fp
-        path = '/path'
+        path = '/path.conf'
         cfg = Config()
         cfg.open(path)
         _open.assert_called_with(path)
-        _read.assert_called_with(_fp)
+        _reader.assert_called_with(_fp)
+        _update.assert_called_with(_reader.return_value.read.return_value)
         _fp.close.assert_called_with()
 
-    def test_read(self):
-        fp = StringIO(INI_VALID)
+    @patch('__builtin__.open')
+    @patch('gofer.config.Config.update')
+    @patch('gofer.config.json.load')
+    def test_open_json(self, _load, _update, _open):
+        _fp = Mock()
+        _open.return_value = _fp
+        path = '/path.json'
         cfg = Config()
-        cfg.read(fp)
-        self.assertEqual(cfg, VALID)
+        cfg.open(path)
+        _open.assert_called_with(path)
+        _load.assert_called_with(_fp)
+        _update.assert_called_with(_load.return_value)
+        _fp.close.assert_called_with()
 
     def test_update(self):
         expected = {}
@@ -521,3 +546,26 @@ class TestGraphSection(TestCase):
         graph = Graph(clone(MINIMAL))
         properties = list(graph.section1)
         self.assertEqual(properties, MINIMAL['section1'].items())
+
+
+class TestReader(TestCase):
+
+    def test_read(self):
+        fp = StringIO(READER)
+        reader = Reader(fp)
+        d = reader.read()
+        self.assertEqual(
+            d,
+            {
+                'section-2': {
+                    'property1': 'A',
+                    'property2': 'B',
+                    'property3': 'C',
+                    'property4': 'D'},
+                'section-1': {
+                    'property1': '1',
+                    'property2': '2',
+                    'property3': '3',
+                    'property4': '4',
+                    'property5': '',
+                }})

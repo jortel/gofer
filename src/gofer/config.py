@@ -47,10 +47,12 @@ cfg = Config('base.conf')
 cfg.validate(schema)
 """
 
+import os
 import re
 
+import json
+
 from threading import RLock
-from iniparse import INIConfig
 
 
 # -- constants ----------------------------------------------------------------
@@ -171,12 +173,11 @@ class Config(dict):
             if isinstance(input, dict):
                 self.update(input)
                 continue
-            self.read(input)
 
     def open(self, paths):
         """
         Open and read the files at the specified paths.
-        :param paths: A path or list of paths to .conf files
+        :param paths: A path or list of paths to (.conf|.json) files
         :type paths: str|list
         """
         if isinstance(paths, basestring):
@@ -184,22 +185,16 @@ class Config(dict):
         for path in paths:
             fp = open(path)
             try:
-                self.read(fp)
+                _, ext = os.path.splitext(path)
+                if ext == '.json':
+                    self.update(json.load(fp))
+                    continue
+                if ext == '.conf':
+                    reader = Reader(fp)
+                    self.update(reader.read())
+                    continue
             finally:
                 fp.close()
-
-    def read(self, fp):
-        """
-        Read and parse the fp.
-        :param fp: An open file
-        :type fp: file-like object.
-        """
-        cfg = INIConfig(fp)
-        for s in cfg:
-            section = self.setdefault(s, {})
-            for p in cfg[s]:
-                v = getattr(cfg[s], p)
-                section[p] = v
 
     def update(self, other):
         """
@@ -557,3 +552,48 @@ class GraphSection(object):
         gs.__str__ = _str
 
         return gs()
+
+
+class Reader(object):
+    """
+    INI Reader
+    """
+
+    SECTION = re.compile(r'(\[)([^]]+)(])')
+    PROPERTY = re.compile(r'(:|=)')
+
+    def __init__(self, fp):
+        """
+        :param fp: An open file object.
+        :type fp: file-like
+        """
+        self.fp = fp
+
+    def read(self):
+        """
+        Read the file and return a dictionary.
+        :return: The parsed file.
+        :rtype: dict
+        """
+        d = {}
+        section = None
+        while True:
+            line = self.fp.readline()
+            if not line:
+                break
+            if line.startswith('#'):
+                continue
+            match = Reader.SECTION.match(line)
+            if match:
+                section = match.group(2)
+                section = section.strip()
+                d[section] = {}
+                continue
+            if not section:
+                continue
+            parts = Reader.PROPERTY.split(line, 1)
+            if len(parts) == 3:
+                p = parts[0].strip()
+                v = parts[2].strip()
+                d[section][p] = v
+        return d

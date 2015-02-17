@@ -32,7 +32,6 @@ from gofer.rmi.consumer import RequestConsumer
 from gofer.rmi.decorators import Remote
 from gofer.common import nvl
 from gofer.config import Config, Graph, get_bool
-from gofer.agent.deplist import DepList
 from gofer.agent.config import PLUGIN_SCHEMA, PLUGIN_DEFAULTS
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
