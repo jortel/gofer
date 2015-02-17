@@ -26,12 +26,8 @@ from gofer.messaging import Producer
 
 log = getLogger(__name__)
 plugin = Plugin.find(__name__)
-builtin = Plugin.find('builtin')
 
 HEARTBEAT = 500
-
-plugin += builtin
-plugin += builtin['Rabbit']
 
 # whiteboard
 plugin.whiteboard['secret'] = 'garfield'
@@ -40,11 +36,6 @@ plugin.whiteboard['secret'] = 'garfield'
 @initializer
 def init_plugin():
     print 'Initialized!'
-
-
-@started
-def start_plugin():
-    print 'Started!'
 
 
 class TestAuthenticator(Authenticator):
@@ -69,6 +60,11 @@ if plugin.cfg.messaging.auth:
     plugin.authenticator = TestAuthenticator()
 
 
+@remote
+def echo(something):
+    return something
+
+
 class BadException(Exception):
     def __init__(self):
         self.cat = Cat()
@@ -84,6 +80,13 @@ class RepoLib:
     @remote
     def update(self):
         print 'Repo updated'
+
+
+class Rabbit:
+
+    @remote
+    def hop(self, n):
+        return 'Rabbit hopped %d times.' % n
 
 
 class Cat:
@@ -240,6 +243,13 @@ class Progress:
                 ctx.progress.report()
             sleep(1)
         return 'sent, boss'
+
+
+class Lion(object):
+
+    @remote
+    def roar(self):
+        return 'Lion says ROAR!'
 
 
 @action(minutes=5)

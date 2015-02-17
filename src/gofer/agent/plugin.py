@@ -22,7 +22,7 @@ import imp
 import errno
 import inspect
 
-from threading import Thread, RLock
+from threading import RLock
 from logging import getLogger
 
 from gofer import NAME, synchronized
@@ -86,54 +86,6 @@ def initializer(fn):
     :rtype: function
     """
     Initializer.add(fn)
-    return fn
-
-
-class Started(object):
-    """
-    Plugin started collection.
-    :cvar started: List of started functions.
-    :type started: list
-    """
-
-    started = []
-
-    @staticmethod
-    def add(function):
-        """
-        Add an started.
-        :param function: The function to add.
-        :type function: function
-        """
-        Started.started.append(function)
-
-    @staticmethod
-    def clear():
-        """
-        Clear the started list.
-        """
-        Started.started = []
-
-    @staticmethod
-    def run():
-        """
-        Run started functions.
-        """
-        for function in Started.started:
-            thread = Thread(target=function)
-            thread.setDaemon(True)
-            thread.start()
-
-
-def started(fn):
-    """
-    Plugin @started decorator.
-    :param fn: A plugin started function.
-    :type fn: function
-    :return: fn
-    :rtype: function
-    """
-    Started.add(fn)
     return fn
 
 
@@ -295,21 +247,13 @@ class Plugin(object):
         """
         return self.dispatcher.dispatch(request)
 
-    def extend(self):
+    def unload(self):
         """
-        Find and extend the plugin defined by the descriptor.
-        :return: The extended plugin.
-        :rtype: Plugin
+        Unload the plugin.
         """
-        name = self.descriptor.main.extends
-        if not name:
-            # nothing specified
-            return
-        extended = Plugin.find(name.strip())
-        if not extended:
-            raise Exception('Extension failed. plugin: %s, not-found')
-        extended += self
-        return extended
+        Plugin.delete(self)
+        self.detach()
+        self.pool.shutdown()
 
     def __getitem__(self, key):
         try:
@@ -423,68 +367,27 @@ class PluginDescriptor(Graph):
         :return: A list of descriptors.
         :rtype: list
         """
-        unsorted = []
+        loaded = []
         PluginDescriptor.__mkdir()
-        for name, path in PluginDescriptor.__list():
+        for name, path in PluginDescriptor._list():
             try:
                 conf = Config(PLUGIN_DEFAULTS, path)
                 conf.validate(PLUGIN_SCHEMA)
                 descriptor = PluginDescriptor(conf)
-                unsorted.append((descriptor.main.name or name, descriptor))
+                loaded.append((descriptor.main.name or name, descriptor))
             except Exception:
                 log.exception(path)
-        return PluginDescriptor.__sort(unsorted)
+        return loaded
     
     @staticmethod
-    def __list():
+    def _list():
         files = os.listdir(PluginDescriptor.ROOT)
         for fn in sorted(files):
-            plugin, ext = fn.split('.', 1)
-            if not ext in ('conf',):
-                continue
             path = os.path.join(PluginDescriptor.ROOT, fn)
             if os.path.isdir(path):
                 continue
+            plugin = os.path.splitext(fn)[0]
             yield (plugin, path)
-    
-    @staticmethod
-    def __sort(descriptors):
-        """
-        Sort descriptors based on defined dependencies.
-        Dependencies defined by [main].requires
-        :param descriptors: A list of descriptor tuples (name,descriptor)
-        :type descriptors: list
-        :return: The sorted list
-        :rtype: list
-        """
-        index = {}
-        for d in descriptors:
-            index[d[0]] = d
-        dl = DepList()
-        for n, d in descriptors:
-            r = (n, d.__requires())
-            dl.add(r)
-        _sorted = []
-        for name in [x[0] for x in dl.sort()]:
-            d = index[name]
-            _sorted.append(d)
-        return _sorted
-
-    def __requires(self):
-        """
-        Get the list of declared required plugins.
-        :return: A list of plugin names.
-        :rtype: list
-        """
-        required = set()
-        declared = self.main.requires
-        if declared:
-            plugins = declared.split(',')
-            required.update([s.strip() for s in plugins])
-        extends = self.main.extends
-        if extends:
-            required.add(extends.strip())
-        return tuple(required)
 
 
 class PluginLoader:
@@ -574,7 +477,6 @@ class PluginLoader:
                 collated += PluginLoader.BUILTINS
                 plugin.dispatcher += collated
                 plugin.actions = Actions.collated()
-                plugin.extend()
                 Initializer.run()
             return plugin
         except Exception:

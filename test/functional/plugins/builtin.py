@@ -22,13 +22,6 @@ class TestAdmin:
         return thing
 
 
-class Rabbit:
-
-    @remote
-    def hop(self, n):
-        return 'Rabbit hopped %d times.' % n
-
-
 @remote
 def echo(something):
     return something

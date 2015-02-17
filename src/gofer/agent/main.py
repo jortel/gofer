@@ -27,7 +27,7 @@ LogHandler.install()
 
 from gofer import NAME
 from gofer import pam
-from gofer.agent.plugin import PluginLoader, Started
+from gofer.agent.plugin import PluginLoader
 from gofer.agent.lock import Lock, LockFailed
 from gofer.agent.config import AgentConfig
 from gofer.agent.rmi import Scheduler
@@ -115,7 +115,6 @@ class Agent:
                     plugin.attach()
                 except Exception:
                     log.exception(plugin.uuid)
-        Started.run()
 
     def __init__(self, plugins):
         """

@@ -37,8 +37,6 @@ PLUGIN_SCHEMA = (
             ('name', OPTIONAL, ANY),
             ('plugin', OPTIONAL, ANY),
             ('threads', OPTIONAL, NUMBER),
-            ('requires', OPTIONAL, ANY),
-            ('extends', OPTIONAL, ANY)
         )
     ),
     ('messaging', REQUIRED,

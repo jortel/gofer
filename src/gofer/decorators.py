@@ -16,5 +16,4 @@
 from gofer.agent.action import action
 from gofer.rmi.decorators import remote, pam, user
 from gofer.agent.plugin import initializer
-from gofer.agent.plugin import started
 
