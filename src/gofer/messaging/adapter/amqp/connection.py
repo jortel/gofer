@@ -20,7 +20,7 @@ from amqp import ConnectionError
 
 from gofer.common import ThreadSingleton
 from gofer.messaging.adapter.reliability import YEAR
-from gofer.messaging.adapter.model import Broker, BaseConnection
+from gofer.messaging.adapter.model import Connector, BaseConnection
 
 
 log = getLogger(__name__)
@@ -45,33 +45,33 @@ class Connection(BaseConnection):
     __metaclass__ = ThreadSingleton
 
     @staticmethod
-    def ssl_domain(broker):
+    def ssl_domain(connector):
         """
         Get SSL properties
-        :param broker: A broker object.
-        :type broker: gofer.messaging.adapter.model.Broker
+        :param connector: A broker object.
+        :type connector: Connector
         :return: The SSL properties
         :rtype: dict
         :raise: ValueError
         """
         domain = None
-        if broker.use_ssl():
+        if connector.use_ssl():
             domain = {}
-            broker.ssl.validate()
-            if broker.ssl.ca_certificate:
+            connector.ssl.validate()
+            if connector.ssl.ca_certificate:
                 required = ssl.CERT_REQUIRED
             else:
                 required = ssl.CERT_NONE
             domain.update(
                 cert_reqs=required,
-                ca_certs=broker.ssl.ca_certificate,
-                keyfile=broker.ssl.client_key,
-                certfile=broker.ssl.client_certificate)
+                ca_certs=connector.ssl.ca_certificate,
+                keyfile=connector.ssl.client_key,
+                certfile=connector.ssl.client_certificate)
         return domain
 
     def __init__(self, url):
         """
-        :param url: The broker url.
+        :param url: The connector url.
         :type url: str
         """
         BaseConnection.__init__(self, url)
@@ -97,15 +97,15 @@ class Connection(BaseConnection):
             # already open
             return
         delay = float(delay)
-        broker = Broker.find(self.url)
-        host = ':'.join((broker.host, str(broker.port)))
-        virtual_host = broker.virtual_host or VIRTUAL_HOST
-        domain = self.ssl_domain(broker)
-        userid = broker.userid or USERID
-        password = broker.password or PASSWORD
+        connector = Connector.find(self.url)
+        host = ':'.join((connector.host, str(connector.port)))
+        virtual_host = connector.virtual_host or VIRTUAL_HOST
+        domain = self.ssl_domain(connector)
+        userid = connector.userid or USERID
+        password = connector.password or PASSWORD
         while True:
             try:
-                log.info('connecting: %s', broker)
+                log.info('connecting: %s', connector)
                 self._impl = RealConnection(
                     host=host,
                     virtual_host=virtual_host,
@@ -113,7 +113,7 @@ class Connection(BaseConnection):
                     userid=userid,
                     password=password,
                     confirm_publish=True)
-                log.info('connected: %s', broker.url)
+                log.info('connected: %s', connector.url)
                 break
             except CONNECTION_EXCEPTIONS:
                 log.exception(str(self.url))

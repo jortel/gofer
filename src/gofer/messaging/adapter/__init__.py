@@ -23,6 +23,7 @@ from gofer.messaging.adapter.factory import \
 
 from gofer.messaging.adapter.model import \
     SSL, \
+    Connector, \
     Broker, \
     Domain, \
     Connection, \

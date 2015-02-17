@@ -26,7 +26,7 @@ from gofer.messaging.adapter.model import BaseQueue, Queue
 from gofer.messaging.adapter.model import Messenger
 from gofer.messaging.adapter.model import BaseReader, Reader
 from gofer.messaging.adapter.model import BaseSender, Sender, Producer
-from gofer.messaging.adapter.model import Broker, SSL
+from gofer.messaging.adapter.model import Connector, SSL
 from gofer.messaging.adapter.model import BaseConnection, Connection
 from gofer.messaging.adapter.model import Message
 from gofer.messaging.adapter.model import ModelError
@@ -952,11 +952,11 @@ class TestSSL(TestCase):
             'ca: test-ca|key: test-key|certificate: test-cert|host-validation: False')
 
 
-class TestBroker(TestCase):
+class TestConnector(TestCase):
 
     def test_init(self):
         url = TEST_URL
-        b = Broker(url)
+        b = Connector(url)
         self.assertEqual(b.url, URL(url))
         self.assertEqual(b.adapter, URL(url).adapter)
         self.assertEqual(b.scheme, URL(url).scheme)
@@ -970,30 +970,30 @@ class TestBroker(TestCase):
         self.assertEqual(b.ssl.client_certificate, None)
         self.assertFalse(b.ssl.host_validation)
 
-    @patch('gofer.messaging.adapter.model.Domain.broker.add')
+    @patch('gofer.messaging.adapter.model.Domain.connector.add')
     def test_add(self, add):
-        broker = Broker('amqp://localhost')
-        broker.add()
-        add.assert_called_once_with(broker)
+        connector = Connector('amqp://localhost')
+        connector.add()
+        add.assert_called_once_with(connector)
 
-    @patch('gofer.messaging.adapter.model.Domain.broker.find')
+    @patch('gofer.messaging.adapter.model.Domain.connector.find')
     def test_find(self, find):
         url = 'amqp://localhost'
-        found = Broker.find(url)
+        found = Connector.find(url)
         find.assert_called_once_with(URL(url).canonical)
         self.assertEqual(found, find.return_value)
 
     def test_use_ssl(self):
         # False
-        broker = Broker('amqp://localhost')
-        self.assertFalse(broker.use_ssl())
+        connector = Connector('amqp://localhost')
+        self.assertFalse(connector.use_ssl())
         # True by port
-        broker = Broker('amqps://localhost')
-        self.assertTrue(broker.use_ssl())
+        connector = Connector('amqps://localhost')
+        self.assertTrue(connector.use_ssl())
 
     def test_str(self):
         url = TEST_URL
-        b = Broker(url)
+        b = Connector(url)
         b.ssl.ca_certificate = 'test-ca'
         b.ssl.client_key = 'test-key'
         b.ssl.client_certificate = 'test-cert'
@@ -1004,7 +1004,7 @@ class TestBroker(TestCase):
 
     def test_domain_id(self):
         url = 'adapter+amqp://localhost'
-        b = Broker(url)
+        b = Connector(url)
         self.assertEqual(b.domain_id, 'amqp://localhost')
 
 

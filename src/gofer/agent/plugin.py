@@ -37,7 +37,7 @@ from gofer.agent.config import PLUGIN_SCHEMA, PLUGIN_DEFAULTS
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
 from gofer.collator import Module
-from gofer.messaging import Broker, Domain, Queue, Exchange
+from gofer.messaging import Connector, Queue, Exchange
 
 
 log = getLogger(__name__)
@@ -237,8 +237,8 @@ class Plugin(object):
         return get_bool(self.cfg.main.enabled)
 
     @property
-    def broker(self):
-        return Broker(self.url)
+    def connector(self):
+        return Connector(self.url)
 
     @property
     def queue(self):
@@ -249,17 +249,17 @@ class Plugin(object):
         """
         Refresh the AMQP configurations using the plugin configuration.
         """
-        broker = Broker(self.url)
+        connector = Connector(self.url)
         messaging = self.cfg.messaging
-        broker.ssl.ca_certificate = messaging.cacert
-        broker.ssl.client_certificate = messaging.clientcert
-        broker.ssl.host_validation = messaging.host_validation
-        Domain.broker.add(broker)
+        connector.ssl.ca_certificate = messaging.cacert
+        connector.ssl.client_certificate = messaging.clientcert
+        connector.ssl.host_validation = messaging.host_validation
+        connector.add()
 
     @synchronized
     def attach(self):
         """
-        Attach (connect) to AMQP broker using the specified uuid.
+        Attach (connect) to AMQP connector using the specified uuid.
         """
         self.detach()
         self.refresh()
@@ -274,7 +274,7 @@ class Plugin(object):
     @synchronized
     def detach(self):
         """
-        Detach (disconnect) from AMQP broker.
+        Detach (disconnect) from AMQP connector.
         """
         if not self.consumer:
             # not attached

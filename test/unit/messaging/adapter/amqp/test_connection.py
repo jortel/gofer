@@ -20,7 +20,7 @@ from gofer.devel import ipatch
 from gofer.common import ThreadSingleton
 
 with ipatch('amqp'):
-    from gofer.messaging.adapter.model import Broker
+    from gofer.messaging.adapter.model import Connector
     from gofer.messaging.adapter.amqp.connection import Connection, BaseConnection
     from gofer.messaging.adapter.amqp.connection import CONNECTION_EXCEPTIONS
 
@@ -41,16 +41,16 @@ class TestConnection(TestCase):
         self.assertTrue(isinstance(c, BaseConnection))
         self.assertEqual(c.url, url)
 
-    @patch('gofer.messaging.adapter.amqp.connection.Broker.find')
+    @patch('gofer.messaging.adapter.amqp.connection.Connector.find')
     @patch('gofer.messaging.adapter.amqp.connection.Connection.ssl_domain')
     @patch('gofer.messaging.adapter.amqp.connection.RealConnection')
     def test_open(self, connection, ssl_domain, find):
         url = TEST_URL
-        broker = Broker(url)
-        broker.ssl.ca_certificate = 'test-ca'
-        broker.ssl.client_key = 'test-key'
-        broker.ssl.client_certificate = 'test-crt'
-        find.return_value = broker
+        connector = Connector(url)
+        connector.ssl.ca_certificate = 'test-ca'
+        connector.ssl.client_key = 'test-key'
+        connector.ssl.client_certificate = 'test-crt'
+        find.return_value = connector
 
         # test
         c = Connection(url)
@@ -58,12 +58,12 @@ class TestConnection(TestCase):
         c.open()
 
         # validation
-        ssl_domain.assert_called_once_with(broker)
+        ssl_domain.assert_called_once_with(connector)
         connection.assert_called_once_with(
-            host=':'.join((broker.host, str(broker.port))),
-            virtual_host=broker.virtual_host,
-            userid=broker.userid,
-            password=broker.password,
+            host=':'.join((connector.host, str(connector.port))),
+            virtual_host=connector.virtual_host,
+            userid=connector.userid,
+            password=connector.password,
             ssl=ssl_domain.return_value,
             confirm_publish=True)
 
@@ -131,7 +131,7 @@ class TestConnection(TestCase):
         url = TEST_URL
 
         # test
-        b = Broker(url)
+        b = Connector(url)
         b.ssl.ca_certificate = 'test-ca'
         b.ssl.client_key = 'test-key'
         b.ssl.client_certificate = 'test-crt'
@@ -152,7 +152,7 @@ class TestConnection(TestCase):
         url = TEST_URL
 
         # test
-        b = Broker(url)
+        b = Connector(url)
         ssl = Connection.ssl_domain(b)
 
         # validation
@@ -169,7 +169,7 @@ class TestConnection(TestCase):
         url = 'amqp://elmer:fudd@redhat.com:1234'
 
         # test
-        b = Broker(url)
+        b = Connector(url)
         ssl = Connection.ssl_domain(b)
 
         self.assertEqual(str(b.url), url)

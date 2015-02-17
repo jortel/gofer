@@ -15,7 +15,7 @@ from mock import patch, Mock
 
 from gofer.devel import ipatch
 from gofer import ThreadSingleton
-from gofer.messaging.adapter.model import URL, Broker
+from gofer.messaging.adapter.model import URL, Connector
 
 with ipatch('proton'):
     from gofer.messaging.adapter.proton.connection import Connection
@@ -39,21 +39,21 @@ class TestConnection(TestCase):
         ssl_domain.MODE_CLIENT = 0x01
         ssl_domain.VERIFY_PEER = 0x02
         ssl_domain.VERIFY_PEER_NAME = 0x03
-        broker = Broker('amqps://localhost')
-        broker.ssl.ca_certificate = 'ca'
-        broker.ssl.client_certificate = 'client'
-        broker.ssl.client_key = 'key'
+        connector = Connector('amqps://localhost')
+        connector.ssl.ca_certificate = 'ca'
+        connector.ssl.client_certificate = 'client'
+        connector.ssl.client_key = 'key'
 
         # test
-        domain = Connection.ssl_domain(broker)
+        domain = Connection.ssl_domain(connector)
 
         # validation
         validate.assert_called_once_with()
         ssl_domain.assert_called_once_with(ssl_domain.MODE_CLIENT)
-        domain.set_trusted_ca_db.assert_called_once_with(broker.ssl.ca_certificate)
+        domain.set_trusted_ca_db.assert_called_once_with(connector.ssl.ca_certificate)
         domain.set_credentials.assert_called_once_with(
-            broker.ssl.client_certificate,
-            broker.ssl.client_key, None)
+            connector.ssl.client_certificate,
+            connector.ssl.client_key, None)
         domain.set_peer_authentication.assert_called_once_with(ssl_domain.VERIFY_PEER)
 
     @patch('gofer.messaging.adapter.model.SSL.validate')
@@ -62,22 +62,22 @@ class TestConnection(TestCase):
         ssl_domain.MODE_CLIENT = 0x01
         ssl_domain.VERIFY_PEER = 0x02
         ssl_domain.VERIFY_PEER_NAME = 0x03
-        broker = Broker('amqps://localhost')
-        broker.ssl.ca_certificate = 'ca'
-        broker.ssl.client_certificate = 'client'
-        broker.ssl.client_key = 'key'
-        broker.ssl.host_validation = True
+        connector = Connector('amqps://localhost')
+        connector.ssl.ca_certificate = 'ca'
+        connector.ssl.client_certificate = 'client'
+        connector.ssl.client_key = 'key'
+        connector.ssl.host_validation = True
 
         # test
-        domain = Connection.ssl_domain(broker)
+        domain = Connection.ssl_domain(connector)
 
         # validation
         validate.assert_called_once_with()
         ssl_domain.assert_called_once_with(ssl_domain.MODE_CLIENT)
-        domain.set_trusted_ca_db.assert_called_once_with(broker.ssl.ca_certificate)
+        domain.set_trusted_ca_db.assert_called_once_with(connector.ssl.ca_certificate)
         domain.set_credentials.assert_called_once_with(
-            broker.ssl.client_certificate,
-            broker.ssl.client_key, None)
+            connector.ssl.client_certificate,
+            connector.ssl.client_key, None)
         domain.set_peer_authentication.assert_called_once_with(ssl_domain.VERIFY_PEER_NAME)
 
     def test_init(self):
@@ -92,7 +92,7 @@ class TestConnection(TestCase):
         connection._impl = Mock()
         self.assertTrue(connection.is_open())
 
-    @patch('gofer.messaging.adapter.proton.connection.Broker.find')
+    @patch('gofer.messaging.adapter.proton.connection.Connector.find')
     @patch('gofer.messaging.adapter.proton.connection.BlockingConnection')
     @patch('gofer.messaging.adapter.proton.connection.Connection.ssl_domain')
     def test_open(self, ssl_domain, blocking, find):
