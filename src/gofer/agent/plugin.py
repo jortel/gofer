@@ -211,7 +211,7 @@ class Plugin(object):
         self.__mutex = RLock()
         self.name = name
         self.descriptor = descriptor
-        self.pool = ThreadPool(int(descriptor.messaging.threads or 1))
+        self.pool = ThreadPool(int(descriptor.main.threads or 1))
         self.impl = None
         self.actions = []
         self.dispatcher = Dispatcher()
