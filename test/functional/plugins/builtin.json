@@ -1,0 +1,10 @@
+{
+    "main": {
+        "enabled": 1
+    },
+    "messaging": {
+        "url": "",
+        "uuid": ""
+    }
+}
+

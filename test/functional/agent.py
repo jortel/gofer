@@ -74,7 +74,8 @@ def install_plugins(url, uuid, threads, auth, exchange):
     _dir = os.path.join(root, 'plugins')
     for fn in os.listdir(_dir):
         path = os.path.join(_dir, fn)
-        if fn.endswith('.conf'):
+        _, ext = os.path.splitext(path)
+        if ext in ('.conf', '.json'):
             conf = Config(path)
             pd = PluginDescriptor(conf)
             if pd.messaging.uuid == 'TEST':
