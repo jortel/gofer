@@ -56,10 +56,18 @@ class Error(Exception):
 class Method(object):
     """
     QMF method.
+    :ivar url: The broker url.
+    :type url: str
     :ivar name: The method name.
     :type name: str
     :ivar arguments: The method arguments.
     :type arguments: dict
+    :ivar connection: A broker connection.
+    :type connection: Connection
+    :ivar sender: A message sender.
+    :type sender: proton.utils.BlockingSender
+    :ivar receiver: A message sender.
+    :type receiver: proton.utils.BlockingReceiver
     """
 
     def __init__(self, url, name, arguments):
@@ -71,9 +79,9 @@ class Method(object):
         :param arguments: The method arguments.
         :type arguments: dict
         """
+        self.url = url
         self.name = name
         self.arguments = arguments
-        self.url = url
         self.connection = None
         self.sender = None
         self.receiver = None

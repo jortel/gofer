@@ -22,9 +22,26 @@ from gofer.messaging.adapter.model import NotFound
 
 with ipatch('qpid'):
     from gofer.messaging.adapter.qpid.reliability import reliable
+    from gofer.messaging.adapter.qpid.reliability import DELAY
 
 
 class _NotFound(Exception):
+    pass
+
+
+class LinkError(Exception):
+
+    def __init__(self, condition=None):
+        self.condition = condition
+
+
+class SendException(Exception):
+
+    def __init__(self, state=0):
+        self.state = state
+
+
+class ConnectionError(Exception):
     pass
 
 
@@ -43,26 +60,63 @@ class TestReliable(TestCase):
         # validation
         fn.assert_called_once_with(*args, **kwargs)
 
-    @patch('gofer.messaging.adapter.qpid.reliability._NotFound', _NotFound)
-    def test_reliable_not_found(self):
+    @patch('gofer.messaging.adapter.qpid.reliability.ConnectionError', ConnectionError)
+    @patch('gofer.messaging.adapter.qpid.reliability.sleep')
+    def test_reliable_connection_exception(self, sleep):
         url = 'test-url'
-        fn = Mock(side_effect=[ValueError, None])
+        fn = Mock(side_effect=[ConnectionError, None])
         thing = Mock(url=url, connection=Mock())
         args = (thing, 2, 3)
         kwargs = {'A': 1}
 
         # test
         wrapped = reliable(fn)
-        self.assertRaises(ValueError, wrapped, *args, **kwargs)
+        wrapped(*args, **kwargs)
 
-    @patch('gofer.messaging.adapter.qpid.reliability._NotFound', _NotFound)
-    def test_reliable_not_found(self):
+        # validation
+        thing.close.assert_called_once_with()
+        thing.connection.close.assert_called_once_with()
+        sleep.assert_called_once_with(DELAY)
+        thing.open.assert_called_once_with()
+        self.assertEqual(
+            fn.call_args_list,
+            [
+                (args, kwargs),
+                (args, kwargs),
+            ])
+
+    @patch('gofer.messaging.adapter.qpid.reliability.LinkError', LinkError)
+    @patch('gofer.messaging.adapter.qpid.reliability.sleep')
+    def test_reliable_link_detached(self, sleep):
         url = 'test-url'
-        fn = Mock(side_effect=[_NotFound, None])
+        fn = Mock(side_effect=[LinkError, None])
         thing = Mock(url=url, connection=Mock())
         args = (thing, 2, 3)
         kwargs = {'A': 1}
 
         # test
         wrapped = reliable(fn)
-        self.assertRaises(NotFound, wrapped, *args, **kwargs)
+        wrapped(*args, **kwargs)
+
+        # validation
+        thing.close.assert_called_once_with()
+        sleep.assert_called_once_with(DELAY)
+        thing.open.assert_called_once_with()
+        self.assertFalse(thing.connection.close.called)
+        self.assertEqual(
+            fn.call_args_list,
+            [
+                (args, kwargs),
+                (args, kwargs),
+            ])
+
+    @patch('gofer.messaging.adapter.qpid.reliability._NotFound', _NotFound)
+    @patch('gofer.messaging.adapter.qpid.reliability.sleep')
+    def test_reliable_link_not_found(self, sleep):
+        url = 'test-url'
+        fn = Mock(side_effect=_NotFound)
+
+        # test
+        wrapped = reliable(fn)
+        self.assertRaises(NotFound, wrapped, None)
+        self.assertFalse(sleep.called)

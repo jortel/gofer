@@ -51,6 +51,7 @@ class Sender(BaseSender):
         """
         return self.session is not None
 
+    @reliable
     def open(self):
         """
         Open the reader.

@@ -103,7 +103,7 @@ class Connection(BaseConnection):
                 log.info('connected: %s', connector.url)
                 break
             except (ConnectionException, SSLException), e:
-                log.error('connect: %s, failed: %s', str(self.url), e)
+                log.error('connect: %s, failed: %s', self.url, e)
                 if retries > 0:
                     log.info('retry in %d seconds', delay)
                     sleep(delay)

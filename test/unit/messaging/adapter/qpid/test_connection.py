@@ -24,10 +24,14 @@ with ipatch('qpid'):
     from gofer.messaging.adapter.qpid.connection import Connection, BaseConnection
 
 
-TEST_URL = 'amqp+amqps://elmer:fudd@redhat.com:1234/test-virtual-host'
+TEST_URL = 'qpid+amqps://elmer:fudd@redhat.com:1234/test-virtual-host'
 
 
 class Local(object):
+    pass
+
+
+class ConnectionError(Exception):
     pass
 
 
@@ -103,7 +107,6 @@ class TestConnection(TestCase):
             host=connector.host,
             port=connector.port,
             tcp_nodelay=True,
-            reconnect=True,
             transport=connector.scheme,
             username=connector.userid,
             password=connector.password,
@@ -113,6 +116,43 @@ class TestConnection(TestCase):
         ssl_domain.assert_called_once_with(connector)
         c._impl.attach.assert_called_once_with()
         self.assertEqual(c._impl, connection.return_value)
+
+    @patch('gofer.messaging.adapter.qpid.connection.sleep')
+    @patch('gofer.messaging.adapter.qpid.connection.RealConnection')
+    @patch('gofer.messaging.adapter.qpid.connection.ConnectionError', ConnectionError)
+    @patch('gofer.messaging.adapter.qpid.connection.Connection.add_transports', Mock())
+    def test_open_with_retry(self, connection, sleep):
+        url = TEST_URL
+        side_effect = [ConnectionError, Mock()]
+        connection.return_value.attach.side_effect = side_effect
+
+        # test
+        c = Connection(url)
+        c._ssh = Mock()
+        c.open(delay=10)
+
+        # validation
+        sleep.assert_called_once_with(10)
+        self.assertEqual(connection.call_count, 2)
+        self.assertEqual(c._impl, connection.return_value)
+
+    @patch('gofer.messaging.adapter.qpid.connection.sleep')
+    @patch('gofer.messaging.adapter.qpid.connection.RealConnection')
+    @patch('gofer.messaging.adapter.qpid.connection.ConnectionError', ConnectionError)
+    @patch('gofer.messaging.adapter.qpid.connection.Connection.add_transports', Mock())
+    def test_open_with_no_retry(self, connection, sleep):
+        url = TEST_URL
+        side_effect = [ConnectionError, Mock()]
+        connection.side_effect = side_effect
+
+        # test
+        c = Connection(url)
+        c._ssh = Mock()
+        self.assertRaises(ConnectionError, c.open, retries=0)
+
+        # validation
+        self.assertFalse(sleep.called)
+        self.assertEqual(connection.call_count, 1)
 
     def test_open_already(self):
         url = TEST_URL
@@ -129,9 +169,10 @@ class TestConnection(TestCase):
         self.assertEqual(session, c._impl.session.return_value)
 
     def test_close(self):
-        url = TEST_URL
+        url = 'test-url'
         c = Connection(url)
         impl = Mock()
+        impl.close.side_effect = ValueError
         c._impl = impl
         c.close()
         impl.close.assert_called_once_with()

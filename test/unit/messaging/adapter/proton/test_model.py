@@ -42,6 +42,9 @@ class TestMethod(TestCase):
         self.assertEqual(method.url, url)
         self.assertEqual(method.name, name)
         self.assertEqual(method.arguments, arguments)
+        self.assertEqual(method.connection, None)
+        self.assertEqual(method.sender, None)
+        self.assertEqual(method.receiver, None)
 
     def test_body(self):
         name = model.CREATE

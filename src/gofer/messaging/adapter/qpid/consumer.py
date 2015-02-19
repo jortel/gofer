@@ -18,7 +18,6 @@
 Provides AMQP message consumer classes.
 """
 
-from time import sleep
 from logging import getLogger
 
 from qpid.messaging import Empty
@@ -96,6 +95,7 @@ class Reader(BaseReader):
         except Exception:
             pass
 
+    @reliable
     def get(self, timeout=None):
         """
         Get the next message from the queue.
@@ -109,10 +109,8 @@ class Reader(BaseReader):
             return Message(self, impl, impl.content)
         except Empty:
             pass
-        except Exception, e:
-            log.error(str(e))
-            sleep(60)
 
+    @reliable
     def ack(self, message):
         """
         Acknowledge all messages received on the session.
@@ -121,6 +119,7 @@ class Reader(BaseReader):
         """
         self.session.acknowledge(message=message)
 
+    @reliable
     def reject(self, message, requeue=True):
         """
         Reject the specified message.

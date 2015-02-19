@@ -137,7 +137,7 @@ class Scheme(Part):
     def validated(name):
         supported = PORT.keys()
         if name not in supported:
-            raise ValueError('must be: ' % supported)
+            raise ValueError('must be: %s' % supported)
         return name.lower()
 
     def __init__(self, fragment):

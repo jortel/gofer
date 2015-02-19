@@ -11,15 +11,34 @@
 #
 # Jeff Ortel (jortel@redhat.com)
 
-from qpid.messaging import NotFound as _NotFound
+from time import sleep
 
+from qpid.messaging import NotFound as _NotFound
+from qpid.messaging import ConnectionError, LinkError
+
+from gofer.common import Thread
 from gofer.messaging.adapter.model import NotFound
 
 
+DELAY = 10   # seconds
+
+
 def reliable(fn):
-    def _fn(*args, **kwargs):
-        try:
-            return fn(*args, **kwargs)
-        except _NotFound, e:
-            raise NotFound(*e.args)
+    def _fn(thing, *args, **kwargs):
+        repair = lambda: None
+        while not Thread.aborted():
+            try:
+                repair()
+                return fn(thing, *args, **kwargs)
+            except _NotFound, e:
+                raise NotFound(*e.args)
+            except LinkError:
+                sleep(DELAY)
+                thing.close()
+                repair = thing.open
+            except ConnectionError:
+                sleep(DELAY)
+                thing.close()
+                thing.connection.close()
+                repair = thing.open
     return _fn
