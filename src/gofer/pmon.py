@@ -195,10 +195,10 @@ class PathMonitor(Thread):
         """
         delay = self._precision
         while not Thread.aborted():
+            sleep(delay)
             for tracker in self.paths():
-                sleep(delay)
                 self._sniff(tracker)
-            
+
     def _sniff(self, tracker):
         """
         Sniff the path.
@@ -211,8 +211,10 @@ class PathMonitor(Thread):
         path = tracker.path
         _last_modified = last_modified(path)
         if _last_modified == tracker.last_modified:
+            # not touched
             return
         _digest = digest(path)
         if _digest == tracker.digest:
+            # unchanged
             return
         tracker(_last_modified, _digest)
