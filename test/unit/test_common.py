@@ -10,17 +10,18 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 import os
+import errno
 
 from Queue import Queue
 from threading import Thread
 
 from unittest import TestCase
 
-from mock import Mock
+from mock import Mock, patch
 from tempfile import mktemp
 
 from gofer.common import Singleton, ThreadSingleton, Options
-from gofer.common import synchronized, conditional, nvl, valid_path
+from gofer.common import synchronized, conditional, mkdir, nvl, valid_path
 
 
 class Thing(object):
@@ -82,6 +83,29 @@ class Thing3(object):
     @conditional
     def bar(self, n, a=0):
         return n, a
+
+
+class TestMkdir(TestCase):
+
+    @patch('os.makedirs')
+    def test_make(self, mkdirs):
+        path = '/tmp/dir'
+        mkdir(path)
+        mkdirs.assert_called_once_with(path)
+
+    @patch('os.makedirs')
+    def test_exists(self, mkdirs):
+        path = '/tmp/dir'
+        exception = OSError()
+        exception.errno = errno.EEXIST
+        mkdirs.side_effect = exception
+        mkdir(path)
+
+    @patch('os.makedirs')
+    def test_failed(self, mkdirs):
+        path = '/tmp/dir'
+        mkdirs.side_effect = OSError()
+        self.assertRaises(OSError, mkdir, path)
 
 
 class TestNVL(TestCase):

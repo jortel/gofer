@@ -28,10 +28,11 @@ service = passwd
 """
 
 import os
+import json
 
 from time import sleep
 from optparse import OptionParser
-from logging import getLogger, DEBUG
+from logging import getLogger
 from logging.handlers import RotatingFileHandler
 
 # logging
@@ -87,7 +88,10 @@ def install_plugins(url, uuid, threads, auth, exchange):
                 pd.messaging.exchange = exchange
             path = os.path.join(PluginDescriptor.ROOT, fn)
             with open(path, 'w') as fp:
-                fp.write(str(pd))
+                if ext == '.conf':
+                    fp.write(str(pd))
+                else:
+                    json.dump(conf, fp, indent=4)
             continue
         if fn.endswith('.py'):
             f = open(path)
@@ -124,7 +128,7 @@ class TestAgent:
     def __init__(self, url, uuid, threads, auth, exchange):
         setup_logging()
         install(url, uuid, threads, auth, exchange)
-        plugins = PluginLoader.load()
+        plugins = PluginLoader.load_all()
         agent = Agent(plugins)
         agent.start(False)
         while True:

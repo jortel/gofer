@@ -116,7 +116,7 @@ property2=1
 property3=0
 """
 
-READER = """
+I_READER = """
 # comment
 <skip>
 [section-1]
@@ -131,6 +131,24 @@ property1=A
 property2: B
 property3 = C
 property4 = D
+"""
+
+JSON_READER = """
+{
+    "section-1": {
+        "property1": "1",
+        "property2": "2",
+        "property3": "3",
+        "property4": "4",
+        "property5": ""
+    },
+    "section-2": {
+        "property1": "A",
+        "property2": "B",
+        "property3": "C",
+        "property4": "D"
+    }
+}
 """
 
 
@@ -219,19 +237,14 @@ class TestConfig(TestCase):
         _update.assert_called_with(d)
         _open.assert_called_with([path])
 
-    @patch('__builtin__.open')
     @patch('gofer.config.Config.update')
     @patch('gofer.config.Reader')
-    def test_open_conf(self, _reader, _update, _open):
-        _fp = Mock()
-        _open.return_value = _fp
+    def test_open_conf(self, _reader, _update):
         path = '/path.conf'
         cfg = Config()
         cfg.open(path)
-        _open.assert_called_with(path)
-        _reader.assert_called_with(_fp)
+        _reader.assert_called_with(path)
         _update.assert_called_with(_reader.return_value.read.return_value)
-        _fp.close.assert_called_with()
 
     @patch('__builtin__.open')
     @patch('gofer.config.Config.update')
@@ -548,11 +561,86 @@ class TestGraphSection(TestCase):
         self.assertEqual(properties, MINIMAL['section1'].items())
 
 
-class TestReader(TestCase):
+class TestIReader(TestCase):
 
     def test_read(self):
-        fp = StringIO(READER)
-        reader = Reader(fp)
+        fp = StringIO(I_READER)
+        reader = IReader()
+        d = reader.read(fp)
+        self.assertEqual(
+            d,
+            {
+                'section-2': {
+                    'property1': 'A',
+                    'property2': 'B',
+                    'property3': 'C',
+                    'property4': 'D'},
+                'section-1': {
+                    'property1': '1',
+                    'property2': '2',
+                    'property3': '3',
+                    'property4': '4',
+                    'property5': '',
+                }})
+
+
+class TestJsonReader(TestCase):
+
+    def test_read(self):
+        fp = StringIO(JSON_READER)
+        reader = JsonReader()
+        d = reader.read(fp)
+        self.assertEqual(
+            d,
+            {
+                'section-2': {
+                    'property1': 'A',
+                    'property2': 'B',
+                    'property3': 'C',
+                    'property4': 'D'},
+                'section-1': {
+                    'property1': '1',
+                    'property2': '2',
+                    'property3': '3',
+                    'property4': '4',
+                    'property5': '',
+                }})
+
+
+class TestReader(TestCase):
+
+    @patch('__builtin__.open', Mock())
+    def test_unsupported(self):
+        reader = Reader('test.unsupported')
+        self.assertRaises(ValueError, reader.read)
+
+    @patch('__builtin__.open')
+    def test_iread(self, _open):
+        path = 'test.conf'
+        _open.return_value = StringIO(I_READER)
+        reader = Reader(path)
+        d = reader.read()
+        _open.assert_called_with(path)
+        self.assertEqual(
+            d,
+            {
+                'section-2': {
+                    'property1': 'A',
+                    'property2': 'B',
+                    'property3': 'C',
+                    'property4': 'D'},
+                'section-1': {
+                    'property1': '1',
+                    'property2': '2',
+                    'property3': '3',
+                    'property4': '4',
+                    'property5': '',
+                }})
+
+    @patch('__builtin__.open')
+    def test_jread(self, _open):
+        _open.return_value = StringIO(JSON_READER)
+        reader = Reader('test.json')
         d = reader.read()
         self.assertEqual(
             d,

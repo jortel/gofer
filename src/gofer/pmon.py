@@ -55,19 +55,25 @@ def digest(path):
     :return: the digest.
     :rtype: str
     """
+    _hash = sha256()
     try:
-        h = sha256()
-        fp = open(path)
-        try:
-            while True:
-                s = fp.read(10240)
-                if s:
-                    h.update(s)
-                else:
-                    break
-            return h.hexdigest()
-        finally:
-            fp.close()
+        # file
+        if os.path.isfile(path):
+            fp = open(path)
+            try:
+                while True:
+                    s = fp.read(10240)
+                    if s:
+                        _hash.update(s)
+                    else:
+                        break
+            finally:
+                fp.close()
+        # directory
+        else:
+            for s in os.listdir(path):
+                _hash.update(s)
+        return _hash.hexdigest()
     except (IOError, OSError):
         pass
     return None
@@ -124,7 +130,10 @@ class Tracker(object):
             self.skip = 30
 
     def __eq__(self, other):
-        return self.path == other.path and self.target == other.function
+        return self.path == other.path and self.target == other.target
+
+    def __hash__(self):
+        return hash((self.path, self.target))
 
     def __str__(self):
         return self.path
@@ -134,7 +143,7 @@ class PathMonitor(Thread):
     """
     Tracker monitor.
     :ivar _paths: A list of paths to monitor.
-    :type _paths: list path:[last_modified, digest, function, skip]
+    :type _paths: list path:[last_modified, digest, target, skip]
     :ivar __mutex: The mutex.
     :type __mutex: RLock
     """
@@ -143,7 +152,7 @@ class PathMonitor(Thread):
         super(PathMonitor, self).__init__()
         self.__mutex = RLock()
         self._precision = precision
-        self._paths = []
+        self._paths = set()
         self.setDaemon(True)
 
     @synchronized
@@ -155,7 +164,7 @@ class PathMonitor(Thread):
         :param target: Called when a change at path is detected.
         :type target: callable
         """
-        self._paths.append(Tracker(path, target))
+        self._paths.add(Tracker(path, target))
 
     @synchronized
     def delete(self, path, target):

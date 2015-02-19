@@ -27,7 +27,7 @@ LogHandler.install()
 
 from gofer import NAME
 from gofer import pam
-from gofer.agent.plugin import PluginLoader
+from gofer.agent.plugin import PluginLoader, PluginMonitor
 from gofer.agent.lock import Lock, LockFailed
 from gofer.agent.config import AgentConfig
 from gofer.agent.rmi import Scheduler
@@ -100,28 +100,13 @@ class Agent:
         scheduler.start()
         return scheduler
 
-    @staticmethod
-    def _start_plugins(plugins):
-        """
-        Start the plugins.
-          - Attach each plugin as appropriate.
-          - Call started.
-        :param plugins: A list of loaded plugins.
-        :type plugins: list
-        """
-        for plugin in plugins:
-            if plugin.uuid and plugin.url and plugin.enabled:
-                try:
-                    plugin.attach()
-                except Exception:
-                    log.exception(plugin.uuid)
-
     def __init__(self, plugins):
         """
         :param plugins: A list of loaded plugins
         :type plugins: list
         """
         self.plugins = plugins
+        self.pmon = PluginMonitor()
         pam.SERVICE = cfg.pam.service or pam.SERVICE
 
     def start(self, block=True):
@@ -131,7 +116,7 @@ class Agent:
         plugins = self.plugins
         action_thread = self._start_actions(plugins)
         self._start_scheduler(plugins)
-        self._start_plugins(plugins)
+        self.pmon.start()
         log.info('agent started.')
         if block:
             action_thread.join(self.WAIT)
@@ -164,7 +149,7 @@ def start(daemon=True):
     if daemon:
         start_daemon(lock)
     try:
-        plugins = PluginLoader.load()
+        plugins = PluginLoader.load_all()
         agent = Agent(plugins)
         agent.start()
     finally:

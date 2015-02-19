@@ -183,18 +183,9 @@ class Config(dict):
         if isinstance(paths, basestring):
             paths = (paths,)
         for path in paths:
-            fp = open(path)
-            try:
-                _, ext = os.path.splitext(path)
-                if ext == '.json':
-                    self.update(json.load(fp))
-                    continue
-                if ext == '.conf':
-                    reader = Reader(fp)
-                    self.update(reader.read())
-                    continue
-            finally:
-                fp.close()
+            reader = Reader(path)
+            d = reader.read()
+            self.update(d)
 
     def update(self, other):
         """
@@ -203,6 +194,8 @@ class Config(dict):
         :type other: dict
         """
         for s, v in other.items():
+            if isinstance(v, unicode):
+                v = v.encode('utf-8')
             section = self.setdefault(s, {})
             section.update(v)
 
@@ -554,7 +547,7 @@ class GraphSection(object):
         return gs()
 
 
-class Reader(object):
+class IReader(object):
     """
     INI Reader
     """
@@ -562,28 +555,23 @@ class Reader(object):
     SECTION = re.compile(r'(\[)([^]]+)(])')
     PROPERTY = re.compile(r'(:|=)')
 
-    def __init__(self, fp):
-        """
-        :param fp: An open file object.
-        :type fp: file-like
-        """
-        self.fp = fp
-
-    def read(self):
+    def read(self, fp):
         """
         Read the file and return a dictionary.
+        :param fp: An open file descriptor.
+        :type fp: file
         :return: The parsed file.
         :rtype: dict
         """
         d = {}
         section = None
         while True:
-            line = self.fp.readline()
+            line = fp.readline()
             if not line:
                 break
             if line.startswith('#'):
                 continue
-            match = Reader.SECTION.match(line)
+            match = IReader.SECTION.match(line)
             if match:
                 section = match.group(2)
                 section = section.strip()
@@ -591,9 +579,56 @@ class Reader(object):
                 continue
             if not section:
                 continue
-            parts = Reader.PROPERTY.split(line, 1)
+            parts = IReader.PROPERTY.split(line, 1)
             if len(parts) == 3:
                 p = parts[0].strip()
                 v = parts[2].strip()
                 d[section][p] = v
         return d
+
+
+class JsonReader(object):
+    """
+    JSON Reader
+    """
+
+    def read(self, fp):
+        """
+        Read the file and return a dictionary.
+        :param fp: An open file descriptor.
+        :type fp: file
+        :return: The parsed file.
+        :rtype: dict
+        """
+        try:
+            return json.load(fp)
+        except ValueError:
+            return {}
+
+
+class Reader(object):
+
+    EXTENSION = {
+        '.ini': IReader(),
+        '.conf': IReader(),
+        '.json': JsonReader()
+    }
+
+    def __init__(self, path):
+        """
+        :param path: An absolute path.
+        :type path: str
+        """
+        self.path = path
+
+    def read(self):
+        _, ext = os.path.splitext(self.path)
+        fp = open(self.path)
+        try:
+            try:
+                reader = Reader.EXTENSION[ext]
+                return reader.read(fp)
+            except KeyError:
+                raise ValueError('%s not supported' % ext)
+        finally:
+            fp.close()

@@ -13,10 +13,20 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
+import os
 import inspect
+import errno
 
 from os import access, F_OK, R_OK
 from threading import local as Local
+
+
+def mkdir(path):
+    try:
+        os.makedirs(path)
+    except OSError, e:
+        if e.errno != errno.EEXIST:
+            raise
 
 
 def nvl(thing, default):

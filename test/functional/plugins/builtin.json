@@ -1,6 +1,6 @@
 {
     "main": {
-        "enabled": 1
+        "enabled": "1"
     },
     "messaging": {
         "url": "",

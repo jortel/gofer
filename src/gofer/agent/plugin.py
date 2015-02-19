@@ -19,7 +19,6 @@ Plugin classes.
 
 import os
 import imp
-import errno
 import inspect
 
 from threading import RLock
@@ -30,13 +29,14 @@ from gofer.rmi.dispatcher import Dispatcher
 from gofer.rmi.threadpool import ThreadPool
 from gofer.rmi.consumer import RequestConsumer
 from gofer.rmi.decorators import Remote
-from gofer.common import nvl
-from gofer.config import Config, Graph, get_bool
+from gofer.common import nvl, mkdir
+from gofer.config import Config, Graph, Reader, get_bool
 from gofer.agent.config import PLUGIN_SCHEMA, PLUGIN_DEFAULTS
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
 from gofer.collator import Module
 from gofer.messaging import Connector, Queue, Exchange
+from gofer.pmon import PathMonitor
 
 
 log = getLogger(__name__)
@@ -91,12 +91,6 @@ def initializer(fn):
 class Plugin(object):
     """
     Represents a plugin.
-    :ivar name: The plugin name.
-    :type name: str
-    :ivar descriptor: The plugin descriptor.
-    :type descriptor: PluginDescriptor
-    :cvar plugins: The dict of loaded plugins.
-    :type plugins: dict
     """
     plugins = {}
     
@@ -113,6 +107,7 @@ class Plugin(object):
             names = (plugin.name,)
         for name in names:
             Plugin.plugins[name] = plugin
+        Plugin.plugins[plugin.path] = plugin
         return plugin
     
     @staticmethod
@@ -130,7 +125,7 @@ class Plugin(object):
     @staticmethod
     def find(name):
         """
-        Find a plugin by name
+        Find a plugin by name or path.
         :param name: A plugin name
         :type name: str
         :return: The plugin when found.
@@ -152,16 +147,16 @@ class Plugin(object):
             unique.append(p)
         return unique
 
-    def __init__(self, name, descriptor):
+    def __init__(self, descriptor, path):
         """
-        :param name: The plugin name.
-        :type name: str
         :param descriptor: The plugin descriptor.
         :type descriptor: PluginDescriptor
+        :param path: The plugin descriptor path.
+        :type path: str
         """
         self.__mutex = RLock()
-        self.name = name
         self.descriptor = descriptor
+        self.path = path
         self.pool = ThreadPool(int(descriptor.main.threads or 1))
         self.impl = None
         self.actions = []
@@ -170,6 +165,10 @@ class Plugin(object):
         self.authenticator = None
         self.consumer = None
         self.imported = {}
+
+    @property
+    def name(self):
+        return self.cfg.main.name
 
     @property
     def cfg(self):
@@ -220,7 +219,7 @@ class Plugin(object):
         consumer.authenticator = self.authenticator
         consumer.start()
         self.consumer = consumer
-        log.info('plugin uuid="%s", attached', self.uuid)
+        log.info('plugin:%s queue:%s, attached', self.name, self.uuid)
 
     @synchronized
     def detach(self):
@@ -233,7 +232,7 @@ class Plugin(object):
         self.consumer.stop()
         self.consumer.join()
         self.consumer = None
-        log.info('plugin uuid="%s", detached', self.uuid)
+        log.info('plugin:%s queue:%s, detached', self.name, self.uuid)
         model = BrokerModel(self)
         model.teardown()
 
@@ -253,6 +252,7 @@ class Plugin(object):
         Plugin.delete(self)
         self.detach()
         self.pool.shutdown()
+        log.info('plugin:%s, unloaded', self.name)
 
     def __getitem__(self, key):
         try:
@@ -348,52 +348,13 @@ class PluginDescriptor(Graph):
     """
     Provides a plugin descriptor
     """
-    
+
     ROOT = '/etc/%s/plugins' % NAME
     
-    @staticmethod
-    def __mkdir():
-        try:
-            os.makedirs(PluginDescriptor.ROOT)
-        except OSError, e:
-            if e.errno != errno.EEXIST:
-                raise
-    
-    @staticmethod
-    def load():
-        """
-        Load the plugin descriptors.
-        :return: A list of descriptors.
-        :rtype: list
-        """
-        loaded = []
-        PluginDescriptor.__mkdir()
-        for name, path in PluginDescriptor._list():
-            try:
-                conf = Config(PLUGIN_DEFAULTS, path)
-                conf.validate(PLUGIN_SCHEMA)
-                descriptor = PluginDescriptor(conf)
-                loaded.append((descriptor.main.name or name, descriptor))
-            except Exception:
-                log.exception(path)
-        return loaded
-    
-    @staticmethod
-    def _list():
-        files = os.listdir(PluginDescriptor.ROOT)
-        for fn in sorted(files):
-            path = os.path.join(PluginDescriptor.ROOT, fn)
-            if os.path.isdir(path):
-                continue
-            plugin = os.path.splitext(fn)[0]
-            yield (plugin, path)
-
 
 class PluginLoader:
     """
     Agent plugins loader.
-    :cvar PATH: A list of paths to directories containing plugins.
-    :type PATH: list
     """
 
     PATH = [
@@ -407,7 +368,53 @@ class PluginLoader:
     BUILTINS = Remote.collated()
 
     @staticmethod
-    def find_plugin(plugin):
+    def load_all():
+        """
+        Load all plugins.
+        :return: A list of loaded plugins.
+        :rtype: list
+        """
+        loaded = []
+        mkdir(PluginDescriptor.ROOT)
+        files = os.listdir(PluginDescriptor.ROOT)
+        for fn in sorted(files):
+            _, ext = os.path.splitext(fn)
+            if ext not in Reader.EXTENSION:
+                continue
+            path = os.path.join(PluginDescriptor.ROOT, fn)
+            if os.path.isdir(path):
+                continue
+            plugin = PluginLoader.load(path)
+            if plugin:
+                loaded.append(plugin)
+        return loaded
+
+    @staticmethod
+    def load(path):
+        """
+        Load the specified plugin.
+        :param path: A plugin descriptor path.
+        :type path: str
+        :return: The loaded plugin.
+        :rtype: Plugin
+        """
+        fn = os.path.basename(path)
+        name, _ = os.path.splitext(fn)
+        default = dict(main=dict(name=name))
+        conf = Config(PLUGIN_DEFAULTS, default, path)
+        conf.validate(PLUGIN_SCHEMA)
+        descriptor = PluginDescriptor(conf)
+        plugin = Plugin(descriptor, path)
+        if plugin.enabled:
+            plugin = Plugin(descriptor, path)
+            plugin = PluginLoader._load(plugin)
+        else:
+            plugin = None
+            log.warn('plugin:%s, DISABLED', plugin.name)
+        return plugin
+
+    @staticmethod
+    def _find(plugin):
         """
         Find a plugin module.
         :param plugin: The plugin name.
@@ -421,63 +428,133 @@ class PluginLoader:
             path = os.path.join(root, mod)
             if os.path.exists(path):
                 return path
-        raise Exception('%s, not found in:%s' % (mod, PluginLoader.PATH))
+        reason = '%s, not found in:%s' % (mod, PluginLoader.PATH)
+        raise Exception(reason)
 
     @staticmethod
-    def load():
-        """
-        Load the plugins.
-        :return: A list of loaded plugins
-        :rtype: list
-        """
-        loaded = []
-        for name, descriptor in PluginDescriptor.load():
-            if not get_bool(descriptor.main.enabled):
-                continue
-            plugin = PluginLoader._import(name, descriptor)
-            if not plugin:
-                continue  # load failed
-            if not plugin.enabled:
-                log.warn('plugin: %s, DISABLED', name)
-            loaded.append(plugin)
-        return loaded
-
-    @staticmethod
-    def _import(name, descriptor):
+    def _load(plugin):
         """
         Import a module by file name.
-        :param name: The plugin (module) name.
-        :type name: str
-        :param descriptor: A plugin descriptor.
-        :type descriptor: PluginDescriptor
-        :return: The loaded module.
+        :param plugin: A plugin to load.
+        :type plugin: Plugin
+        :return: The loaded plugin.
         :rtype: Plugin
         """
         Remote.clear()
         Actions.clear()
         Initializer.clear()
-        plugin = Plugin(name, descriptor)
         Plugin.add(plugin)
         try:
-            path = descriptor.main.plugin
+            path = plugin.descriptor.main.plugin
             if path:
                 Plugin.add(plugin, path)
                 plugin.impl = __import__(path, {}, {}, [path.split('.')[-1]])
             else:
-                path = PluginLoader.find_plugin(name)
-                plugin.impl = imp.load_source(name, path)
+                path = PluginLoader._find(plugin.name)
+                plugin.impl = imp.load_source(plugin.name, path)
 
-            log.info('plugin [%s] loaded using: %s', name, path)
+            log.info('plugin:%s loaded using: %s', plugin.name, path)
 
             for fn in Remote.find(plugin.impl.__name__):
                 fn.gofer.plugin = plugin
-            if plugin.enabled:
-                collated = Remote.collated()
-                collated += PluginLoader.BUILTINS
-                plugin.dispatcher += collated
-                plugin.actions = Actions.collated()
-                Initializer.run()
+
+            collated = Remote.collated()
+            collated += PluginLoader.BUILTINS
+            plugin.dispatcher += collated
+            plugin.actions = Actions.collated()
+            Initializer.run()
+
+            if plugin.uuid and plugin.url:
+                plugin.attach()
+
             return plugin
         except Exception:
             Plugin.delete(plugin)
-            log.exception('plugin "%s", import failed', name)
+            log.exception('plugin:%s, import failed', plugin.name)
+
+
+class PluginMonitor(object):
+    """
+    Plugin monitoring.
+    :cvar pmon: Path monitor.
+    :type pmon: PathMonitor
+    """
+
+    def __init__(self):
+        self.pmon = PathMonitor()
+
+    def start(self):
+        """
+        Start monitoring.
+        """
+        self.pmon.add(PluginDescriptor.ROOT, self.changed)
+        for plugin in Plugin.all():
+            self.pmon.add(plugin.path, self.changed)
+        self.pmon.start()
+
+    def root_changed(self):
+        """
+        The directory containing plugin descriptors has changed.
+        """
+        root = PluginDescriptor.ROOT
+        loaded = {p.path for p in Plugin.all()}
+        for path in [os.path.join(root, name) for name in os.listdir(root)]:
+            _, ext = os.path.splitext(path)
+            if ext not in Reader.EXTENSION:
+                continue
+            if path in loaded:
+                continue
+            self.load(path)
+
+    def file_changed(self, path):
+        """
+        A file descriptor has been changed/deleted.
+        The associated plugin is loaded/reloaded as needed.
+        :param path: The path that changed.
+        :type path: str
+        """
+        plugin = Plugin.find(path)
+        if os.path.exists(path):
+            # load/reload
+            if plugin:
+                self.unload(plugin)
+            self.load(path)
+        else:
+            # unload
+            self.unload(plugin)
+
+    def changed(self, path):
+        """
+        A monitored path has changed.
+        :param path: The path that changed.
+        :type path: str
+        """
+        log.info('changed: %s', path)
+        root = PluginDescriptor.ROOT
+        if path == root:
+            self.root_changed()
+        else:
+            self.file_changed(path)
+
+    def unload(self, plugin):
+        """
+        Unload the plugin.
+        :param plugin: The plugin to unload.
+        :type plugin: Plugin
+        """
+        log.info('plugin:%s, unloading', plugin.name)
+        plugin.unload()
+
+    def load(self, path):
+        """
+        Load the plugin at the specified path and begin
+        monitoring the path.
+        :param path: The path that changed.
+        :type path: str
+        """
+        plugin = PluginLoader.load(path)
+        if not plugin:
+            # not loaded
+            return
+        self.pmon.add(path, self.changed)
+
