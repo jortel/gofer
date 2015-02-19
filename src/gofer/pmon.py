@@ -18,12 +18,12 @@ Provides path and process monitoring classes.
 
 import os
 
-from gofer import synchronized
-
 from hashlib import sha256
-from time import sleep
-from threading import Thread, RLock
+from threading import RLock
 from logging import getLogger
+from time import sleep
+
+from gofer import Thread, synchronized
 
 
 log = getLogger(__name__)
@@ -194,7 +194,7 @@ class PathMonitor(Thread):
         Thread main.
         """
         delay = self._precision
-        while True:
+        while not Thread.aborted():
             for tracker in self.paths():
                 sleep(delay)
                 self._sniff(tracker)

@@ -21,11 +21,10 @@ import os
 import errno
 
 from time import sleep, time
-from threading import Thread
 from logging import getLogger
 from Queue import Queue
 
-from gofer import NAME, Singleton
+from gofer import NAME, Thread, Singleton
 from gofer.messaging import Document
 from gofer.rmi.window import Window
 from gofer.rmi.tracker import Tracker
@@ -159,7 +158,7 @@ class Pending(object):
             self._put(request, path)
         self.is_open = True
         # queue delayed messages
-        while True:
+        while not Thread.aborted():
             sleep(1)
             for path in Pending._list(Pending.DELAYED):
                 request = Pending._read(path)

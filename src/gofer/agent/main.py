@@ -18,7 +18,6 @@ import os
 import logging
 
 from time import sleep
-from threading import Thread
 from getopt import getopt, GetoptError
 
 from gofer.agent.logutil import LogHandler
@@ -26,8 +25,8 @@ from gofer.agent.logutil import LogHandler
 LogHandler.install()
 
 from gofer import NAME
-from gofer import pam
-from gofer.agent.plugin import PluginLoader, PluginMonitor
+from gofer import pam, Thread
+from gofer.agent.plugin import Plugin, PluginLoader, PluginMonitor
 from gofer.agent.lock import Lock, LockFailed
 from gofer.agent.config import AgentConfig
 from gofer.agent.rmi import Scheduler
@@ -39,16 +38,9 @@ cfg = AgentConfig()
 class ActionThread(Thread):
     """
     Run actions independently of main thread.
-    :ivar actions: A list of actions to run.
-    :type actions: [Action,..]
     """
     
-    def __init__(self, actions):
-        """
-        :param actions: A list of actions to run.
-        :type actions: [Action,..]
-        """
-        self.actions = actions
+    def __init__(self):
         Thread.__init__(self, name='Actions')
         self.setDaemon(True)
    
@@ -56,10 +48,11 @@ class ActionThread(Thread):
         """
         Run actions.
         """
-        while True:
-            for action in self.actions:
-                action()
-            sleep(1)
+        while not Thread.aborted():
+            for plugin in Plugin.all():
+                for action in plugin.actions:
+                    plugin.pool.run(action)
+            sleep(10)
 
 
 class Agent:
@@ -71,55 +64,22 @@ class Agent:
 
     WAIT = None
 
-    @staticmethod
-    def _start_actions(plugins):
-        """
-        Start actions on enabled plugins.
-        :param plugins: A list of loaded plugins.
-        :type plugins: list
-        :return: The started action thread.
-        :rtype: ActionThread
-        """
-        actions = []
-        for plugin in plugins:
-            actions.extend(plugin.actions)
-        action_thread = ActionThread(actions)
-        action_thread.start()
-        return action_thread
-
-    @staticmethod
-    def _start_scheduler(plugins):
-        """
-        Start the RMI scheduler.
-        :param plugins: A list of loaded plugins.
-        :type plugins: list
-        :return: The started scheduler thread.
-        :rtype: Scheduler
-        """
-        scheduler = Scheduler(plugins)
-        scheduler.start()
-        return scheduler
-
-    def __init__(self, plugins):
-        """
-        :param plugins: A list of loaded plugins
-        :type plugins: list
-        """
-        self.plugins = plugins
-        self.pmon = PluginMonitor()
+    def __init__(self):
+        self.plugin_monitor = PluginMonitor()
         pam.SERVICE = cfg.pam.service or pam.SERVICE
 
     def start(self, block=True):
         """
         Start the agent.
         """
-        plugins = self.plugins
-        action_thread = self._start_actions(plugins)
-        self._start_scheduler(plugins)
-        self.pmon.start()
+        actions = ActionThread()
+        actions.start()
+        scheduler = Scheduler()
+        scheduler.start()
+        self.plugin_monitor.start()
         log.info('agent started.')
         if block:
-            action_thread.join(self.WAIT)
+            scheduler.join(self.WAIT)
 
 
 class AgentLock(Lock):
@@ -149,8 +109,8 @@ def start(daemon=True):
     if daemon:
         start_daemon(lock)
     try:
-        plugins = PluginLoader.load_all()
-        agent = Agent(plugins)
+        PluginLoader.load_all()
+        agent = Agent()
         agent.start()
     finally:
         lock.release()

@@ -14,12 +14,13 @@
 #
 
 from time import time
-from threading import Thread, local as Local
 from logging import getLogger
 
+from gofer.common import Thread, Local
 from gofer.rmi.window import *
 from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import Pending
+from gofer.agent.plugin import Plugin
 from gofer.rmi.dispatcher import Return, PluginNotFound
 from gofer.messaging import Document, Producer
 from gofer.metrics import Timer, timestamp
@@ -176,22 +177,19 @@ class Scheduler(Thread):
     """
     The pending request scheduler.
     Processes the *pending* queue.
-    :ivar plugins: A collection of loaded plugins.
-    :type plugins: list
     """
     
-    def __init__(self, plugins):
-        """
-        :param plugins: A collection of loaded plugins.
-        :type plugins: list
-        """
+    def __init__(self):
         Thread.__init__(self, name='scheduler')
-        self.plugins = plugins
         self.pending = Pending()
         self.setDaemon(True)
 
+    @property
+    def plugins(self):
+        return Plugin.all()
+
     def run(self):
-        while True:
+        while not Thread.aborted():
             request = self.pending.get()
             try:
                 plugin = self.find_plugin(request)

@@ -17,7 +17,7 @@ from logging import getLogger
 
 from uuid import uuid4
 
-from gofer.common import valid_path
+from gofer.common import Thread, valid_path
 from gofer.messaging.model import VERSION, Document
 from gofer.messaging.adapter.url import URL
 from gofer.messaging.adapter.factory import Adapter
@@ -388,7 +388,7 @@ class Queue(BaseQueue):
         reader = Reader(self, url=url)
         reader.open()
         try:
-            while True:
+            while not Thread.aborted():
                 message = reader.get()
                 if message:
                     message.ack()
@@ -655,7 +655,7 @@ class Reader(BaseReader):
         :rtype: Document
         :raise: ModelError
         """
-        while True:
+        while not Thread.aborted():
             message, document = self.next(timeout)
             if message:
                 message.ack()

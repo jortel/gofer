@@ -18,7 +18,7 @@ from proton import SSLDomain, SSLException
 from proton.utils import BlockingConnection
 from proton.reactor import DynamicNodeProperties
 
-from gofer.common import ThreadSingleton
+from gofer.common import Thread, ThreadSingleton
 from gofer.messaging.adapter.reliability import YEAR
 from gofer.messaging.adapter.model import Connector, BaseConnection
 
@@ -95,15 +95,15 @@ class Connection(BaseConnection):
         delay = float(delay)
         connector = Connector.find(self.url)
         url = connector.url.canonical
-        while True:
+        while not Thread.aborted():
             try:
                 log.info('connecting: %s', connector)
                 domain = self.ssl_domain(connector)
                 self._impl = BlockingConnection(url, ssl_domain=domain)
                 log.info('connected: %s', connector.url)
                 break
-            except (ConnectionException, SSLException):
-                log.exception(url)
+            except (ConnectionException, SSLException), e:
+                log.error('connect: %s, failed: %s', str(self.url), e)
                 if retries > 0:
                     log.info('retry in %d seconds', delay)
                     sleep(delay)

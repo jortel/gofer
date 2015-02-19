@@ -37,6 +37,7 @@ from gofer.agent.whiteboard import Whiteboard
 from gofer.collator import Module
 from gofer.messaging import Connector, Queue, Exchange
 from gofer.pmon import PathMonitor
+from gofer.rmi.threadpool import Task, task
 
 
 log = getLogger(__name__)
@@ -91,6 +92,24 @@ def initializer(fn):
 class Plugin(object):
     """
     Represents a plugin.
+    :ivar descriptor: descriptor.
+    :type descriptor: PluginDescriptor
+    :param path: The descriptor path.
+    :type path: str
+    :ivar pool: The plugin thread pool.
+    :type pool: ThreadPool
+    :ivar impl: The plugin implementation.
+    :ivar impl: module
+    :ivar actions: List of: gofer.action.Action.
+    :type actions: list
+    :ivar dispatcher: The RMI dispatcher.
+    :type dispatcher: Dispatcher
+    :ivar whiteboard: The plugin whiteboard.
+    :type whiteboard: Whiteboard
+    :ivar authenticator: The plugin message authenticator.
+    :type authenticator: gofer.messaging.auth.Authenticator
+    :ivar consumer: An AMQP request consumer.
+    :type consumer: gofer.rmi.consumer.RequestConsumer.
     """
     plugins = {}
     
@@ -164,7 +183,6 @@ class Plugin(object):
         self.whiteboard = Whiteboard()
         self.authenticator = None
         self.consumer = None
-        self.imported = {}
 
     @property
     def name(self):
@@ -206,6 +224,7 @@ class Plugin(object):
         connector.ssl.host_validation = messaging.host_validation
         connector.add()
 
+    @task(blocking=False)
     @synchronized
     def attach(self):
         """
@@ -250,6 +269,7 @@ class Plugin(object):
         Unload the plugin.
         """
         Plugin.delete(self)
+        Task.abort(self)
         self.detach()
         self.pool.shutdown()
         log.info('plugin:%s, unloaded', self.name)
@@ -409,8 +429,8 @@ class PluginLoader:
             plugin = Plugin(descriptor, path)
             plugin = PluginLoader._load(plugin)
         else:
-            plugin = None
             log.warn('plugin:%s, DISABLED', plugin.name)
+            plugin = None
         return plugin
 
     @staticmethod

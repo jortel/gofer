@@ -18,7 +18,7 @@ from socket import error as SocketError
 from amqp import Connection as RealConnection
 from amqp import ConnectionError
 
-from gofer.common import ThreadSingleton
+from gofer.common import Thread, ThreadSingleton
 from gofer.messaging.adapter.reliability import YEAR
 from gofer.messaging.adapter.model import Connector, BaseConnection
 
@@ -103,7 +103,7 @@ class Connection(BaseConnection):
         domain = self.ssl_domain(connector)
         userid = connector.userid or USERID
         password = connector.password or PASSWORD
-        while True:
+        while not Thread.aborted():
             try:
                 log.info('connecting: %s', connector)
                 self._impl = RealConnection(
@@ -115,8 +115,8 @@ class Connection(BaseConnection):
                     confirm_publish=True)
                 log.info('connected: %s', connector.url)
                 break
-            except CONNECTION_EXCEPTIONS:
-                log.exception(str(self.url))
+            except CONNECTION_EXCEPTIONS, e:
+                log.error('connect: %s, failed: %s', str(self.url), e)
                 if retries > 0:
                     log.info('retry in %d seconds', delay)
                     sleep(delay)

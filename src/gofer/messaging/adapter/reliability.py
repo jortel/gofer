@@ -15,6 +15,8 @@
 
 from time import sleep
 
+from gofer import Thread
+
 SECOND = 1
 MINUTE = SECOND * 60
 HOUR = MINUTE * 60
@@ -33,7 +35,7 @@ def blocking(fn):
     def _fn(reader, timeout=None):
         delay = DELAY
         timer = float(timeout or 0)
-        while True:
+        while not Thread.aborted():
             message = fn(reader, timer)
             if message:
                 return message

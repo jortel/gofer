@@ -36,14 +36,14 @@ class TestConsumerThread(TestCase):
         self.assertTrue(isinstance(consumer, Thread))
         self.assertTrue(consumer.daemon)
         self.assertEqual(consumer._reader,  None)
-        self.assertTrue(consumer._run)
 
-    def test_stop(self):
+    @patch('gofer.common.Thread.abort')
+    def test_stop(self, abort):
         url = 'test-url'
         queue = Queue('test-queue')
         consumer = ConsumerThread(queue, url)
         consumer.stop()
-        self.assertFalse(consumer._run)
+        abort.assert_called_once_with()
 
     @patch('gofer.messaging.consumer.Reader')
     def test_run(self, reader):

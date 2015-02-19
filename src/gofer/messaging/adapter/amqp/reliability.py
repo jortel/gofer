@@ -14,6 +14,7 @@ from time import sleep
 
 from amqp import ChannelError
 
+from gofer import Thread
 from gofer.messaging.adapter.model import NotFound
 from gofer.messaging.adapter.amqp.connection import Connection, CONNECTION_EXCEPTIONS
 
@@ -24,7 +25,7 @@ DELAY = 10  # seconds
 def reliable(fn):
     def _fn(thing, *args, **kwargs):
         repair = lambda: None
-        while True:
+        while not Thread.aborted():
             try:
                 repair()
                 return fn(thing, *args, **kwargs)

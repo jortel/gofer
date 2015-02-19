@@ -20,7 +20,7 @@ Contains request delivery policies.
 from logging import getLogger
 from uuid import uuid4
 
-from gofer.common import Options, nvl
+from gofer.common import Thread, Options, nvl
 from gofer.messaging import Document, InvalidDocument
 from gofer.messaging import Producer, Reader, Queue, Exchange
 from gofer.rmi.dispatcher import Return, RemoteException
@@ -202,7 +202,7 @@ class Policy(object):
         timer = Timer()
         timeout = float(self.wait)
 
-        while True:
+        while not Thread.aborted():
             timer.start()
             document = reader.search(sn, int(timeout))
             timer.stop()

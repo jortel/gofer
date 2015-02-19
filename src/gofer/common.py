@@ -19,6 +19,13 @@ import errno
 
 from os import access, F_OK, R_OK
 from threading import local as Local
+from threading import Thread as _Thread
+from threading import currentThread as current_thread
+from threading import Event
+from logging import getLogger
+
+
+log = getLogger(__name__)
 
 
 def mkdir(path):
@@ -58,6 +65,42 @@ def valid_path(path, mode=R_OK):
         raise ValueError('"%s" not found' % path)
     if not access(path, mode):
         raise ValueError('"%s" insufficient permissions' % path)
+
+
+class Thread(_Thread):
+    """
+    Thread that supports an abort event.
+    """
+
+    ABORT = '__aborted__'
+
+    def __init__(self, *args, **kwargs):
+        super(Thread, self).__init__(*args, **kwargs)
+        setattr(self, Thread.ABORT, Event())
+
+    @staticmethod
+    def aborted():
+        """
+        Check abort event.
+        :return: True if raised.
+        :rtype: bool
+        """
+        thread = current_thread()
+        try:
+            event = getattr(thread, Thread.ABORT)
+        except AttributeError:
+            event = Event()
+        aborted = event.isSet()
+        if aborted:
+            log.warn('thread:%s, ABORTED', thread.getName())
+        return aborted
+
+    def abort(self):
+        """
+        Abort event raised.
+        """
+        aborted = getattr(self, Thread.ABORT)
+        aborted.set()
 
 
 class Singleton(type):

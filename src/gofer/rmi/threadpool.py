@@ -17,10 +17,13 @@
 Thread Pool classes.
 """
 
+import inspect
+
 from uuid import uuid4
-from threading import Thread
 from Queue import Queue
 from logging import getLogger
+
+from gofer.common import Thread, current_thread
 
 
 log = getLogger(__name__)
@@ -51,7 +54,7 @@ class Worker(Thread):
         """
         Main run loop; processes input queue.
         """
-        while True:
+        while not Thread.aborted():
             call = self.queue.get()
             if call == 1:
                 # # busy
@@ -186,6 +189,7 @@ class ThreadPool:
         """
         # send stop request
         for t in self.threads:
+            t.abort()
             t.put(0)
         for t in self.threads:
             t.join()
@@ -226,3 +230,76 @@ class Direct:
         :type options: dict
         """
         return fn(*args, **options)
+
+
+class Task(object):
+    """
+    Dispatch work to a thread.
+    """
+
+    threads = {}
+
+    @staticmethod
+    def abort(thing):
+        """
+        Abort all tasks related to the specified object.
+        :param thing: An object/function.
+        """
+        _id = id(thing)
+        for thread in Task.threads.get(_id, []):
+            thread.abort()
+
+    def __init__(self, function, blocking=False):
+        """
+        :param function: A callable.
+        :type function: callable
+        :
+        """
+        self.function = function
+        self.blocking = blocking
+        self.queue = Queue()
+
+    def __call__(self, *args, **kwargs):
+        """
+        Run the task and return the result.
+        Blocks the caller until the task is finished.
+        :param args: Passed.
+        :param kwargs: Passed.
+        :return: Whatever the function returns.
+        """
+        def call():
+            try:
+                retval = self.function(*args, **kwargs)
+            except Exception, retval:
+                pass
+            self.queue.put(retval)
+            thread = current_thread()
+            running.remove(thread)
+        if args:
+            _id = id(args[0])
+        else:
+            _id = id(self.function)
+        thread = Thread(target=call)
+        thread.setDaemon(True)
+        running = Task.threads.setdefault(_id, [])
+        running.append(thread)
+        thread.start()
+        if not self.blocking:
+            return
+        retval = self.queue.get()
+        if isinstance(retval, Exception):
+            raise retval
+        else:
+            return retval
+
+
+def task(blocking=None):
+    def _fn(fn):
+        def _call(*args, **kwargs):
+            task = Task(fn, blocking)
+            return task(*args, **kwargs)
+        return _call
+    if inspect.isfunction(blocking):
+        return _fn(blocking)
+    else:
+        return _fn

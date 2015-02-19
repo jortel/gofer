@@ -56,9 +56,8 @@ class TestAgent:
 
         from gofer.agent.main import PluginLoader, Agent
 
-        pl = PluginLoader()
-        plugins = pl.load()
-        agent = Agent(plugins)
+        PluginLoader.load_all()
+        agent = Agent()
         agent.start(False)
         print 'Agent pid:%s started. Working directory [ %s ]' % (os.getpid(), self.root)
         while True:

@@ -128,8 +128,8 @@ class TestAgent:
     def __init__(self, url, uuid, threads, auth, exchange):
         setup_logging()
         install(url, uuid, threads, auth, exchange)
-        plugins = PluginLoader.load_all()
-        agent = Agent(plugins)
+        PluginLoader.load_all()
+        agent = Agent()
         agent.start(False)
         while True:
             sleep(10)

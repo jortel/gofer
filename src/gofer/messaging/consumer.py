@@ -10,9 +10,9 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 from time import sleep
-from threading import Thread
 from logging import getLogger
 
+from gofer.common import Thread
 from gofer.messaging.model import InvalidDocument
 from gofer.messaging.adapter.model import Reader
 
@@ -37,14 +37,13 @@ class ConsumerThread(Thread):
         self.queue = queue
         self.authenticator = None
         self._reader = None
-        self._run = True
         self.setDaemon(True)
 
     def stop(self):
         """
         Stop processing documents.
         """
-        self._run = False
+        self.abort()
 
     def run(self):
         """
@@ -54,7 +53,7 @@ class ConsumerThread(Thread):
         self._reader.authenticator = self.authenticator
         self._open()
         try:
-            while self._run:
+            while not Thread.aborted():
                 self._read()
         finally:
             self._close()
@@ -63,7 +62,7 @@ class ConsumerThread(Thread):
         """
         Open the reader.
         """
-        while self._run:
+        while not Thread.aborted():
             try:
                 self._reader.open()
                 break

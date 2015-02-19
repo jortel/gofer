@@ -16,6 +16,7 @@ from logging import getLogger
 from proton import ConnectionException, Delivery
 from proton.utils import SendException, LinkDetached
 
+from gofer import Thread
 from gofer.messaging.adapter.model import NotFound
 from gofer.messaging.adapter.reliability import DAY
 
@@ -37,7 +38,7 @@ NOT_FOUND = 'amqp:not-found'
 def reliable(fn):
     def _fn(thing, *args, **kwargs):
         repair = lambda: None
-        while True:
+        while not Thread.aborted():
             try:
                 repair()
                 return fn(thing, *args, **kwargs)
