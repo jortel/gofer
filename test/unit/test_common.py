@@ -21,7 +21,8 @@ from mock import Mock, patch
 from tempfile import mktemp
 
 from gofer.common import Singleton, ThreadSingleton, Options
-from gofer.common import synchronized, conditional, mkdir, nvl, valid_path
+from gofer.common import synchronized, conditional, released
+from gofer.common import mkdir, nvl, valid_path
 
 
 class Thing(object):
@@ -83,6 +84,13 @@ class Thing3(object):
     @conditional
     def bar(self, n, a=0):
         return n, a
+
+
+class Thing4(object):
+
+    @released
+    def bar(self):
+        pass
 
 
 class TestMkdir(TestCase):
@@ -216,6 +224,7 @@ class TestThreadSingleton(TestCase):
         finally:
             ThreadSingleton.all().clear()
 
+
 class TestDecorators(TestCase):
 
     def test_synchronized(self):
@@ -249,6 +258,19 @@ class TestDecorators(TestCase):
     def test_conditional_no_condition(self):
         thing = Thing3(None)
         self.assertRaises(AttributeError, thing.bar, 0)
+
+    @patch('gofer.common.ThreadSingleton.all')
+    def test_released(self, _all):
+        things = {
+            'A': Mock(),
+            'B': Mock(),
+            'C': Mock(close=Mock(side_effect=ValueError))
+        }
+        _all.return_value = things
+        thing4 = Thing4()
+        thing4.bar()
+        for thing in things.values():
+            thing.close.assert_called_with()
 
 
 class TestOptions(TestCase):

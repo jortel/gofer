@@ -73,15 +73,12 @@ class Reader(BaseReader):
         """
         receiver = self.receiver
         self.receiver = None
-
+        channel = self.channel
+        self.channel = None
         try:
             receiver.close()
         except Exception:
             pass
-
-        channel = self.channel
-        self.channel = None
-
         try:
             channel.close()
         except Exception:

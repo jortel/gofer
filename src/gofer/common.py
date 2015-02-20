@@ -212,6 +212,23 @@ def conditional(fn):
     return sfn
 
 
+def released(fn):
+    """
+    All thread singleton resources released.
+    """
+    def _fn(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        finally:
+            collection = ThreadSingleton.all()
+            for thing in collection.values():
+                try:
+                    thing.close()
+                except Exception:
+                    pass
+    return _fn
+
+
 class Options(object):
     """
     Provides a dict-like object that also provides

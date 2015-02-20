@@ -205,8 +205,15 @@ class TestConnection(TestCase):
         url = 'test-url'
         c = Connection(url)
         impl = Mock()
-        impl.close.side_effect = ValueError
         c._impl = impl
         c.close()
         impl.close.assert_called_once_with()
         self.assertEqual(c._impl, None)
+
+    def test_close_failed(self):
+        url = 'test-url'
+        c = Connection(url)
+        impl = Mock()
+        impl.close.side_effect = ValueError
+        c._impl = impl
+        c.close()

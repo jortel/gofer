@@ -68,7 +68,6 @@ class Sender(BaseSender):
         """
         session = self.session
         self.session = None
-
         try:
             session.close()
         except Exception:

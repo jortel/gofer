@@ -20,13 +20,12 @@ Plugin classes.
 import os
 import imp
 import inspect
-
 from threading import RLock
 from logging import getLogger
 
 from gofer import NAME, synchronized
 from gofer.rmi.dispatcher import Dispatcher
-from gofer.rmi.threadpool import ThreadPool
+from gofer.threadpool import ThreadPool
 from gofer.rmi.consumer import RequestConsumer
 from gofer.rmi.decorators import Remote
 from gofer.common import nvl, mkdir
@@ -37,7 +36,7 @@ from gofer.agent.whiteboard import Whiteboard
 from gofer.collator import Module
 from gofer.messaging import Connector, Queue, Exchange
 from gofer.pmon import PathMonitor
-from gofer.rmi.threadpool import Task, task
+from gofer.threadpool import Task, task
 
 
 log = getLogger(__name__)

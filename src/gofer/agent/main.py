@@ -25,7 +25,8 @@ from gofer.agent.logutil import LogHandler
 LogHandler.install()
 
 from gofer import NAME
-from gofer import pam, Thread
+from gofer import pam
+from gofer.common import Thread, released
 from gofer.agent.plugin import Plugin, PluginLoader, PluginMonitor
 from gofer.agent.lock import Lock, LockFailed
 from gofer.agent.config import AgentConfig
@@ -43,7 +44,8 @@ class ActionThread(Thread):
     def __init__(self):
         Thread.__init__(self, name='Actions')
         self.setDaemon(True)
-   
+
+    @released
     def run(self):
         """
         Run actions.

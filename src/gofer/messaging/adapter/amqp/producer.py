@@ -84,7 +84,6 @@ class Sender(BaseSender):
         """
         channel = self.channel
         self.channel = None
-
         try:
             channel.close()
         except Exception:

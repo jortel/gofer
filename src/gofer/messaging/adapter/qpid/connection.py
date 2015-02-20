@@ -153,8 +153,9 @@ class Connection(BaseConnection):
         """
         connection = self._impl
         self._impl = None
-
         try:
             connection.close()
+            connector = Connector.find(self.url)
+            log.info('closed: %s', connector.url)
         except Exception:
             pass

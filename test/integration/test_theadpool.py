@@ -24,7 +24,7 @@ from time import sleep
 
 sys.path.insert(0, os.path.join(os.getcwd(), '../../src/'))
 
-from gofer.rmi.threadpool import ThreadPool
+from gofer.threadpool import ThreadPool
 
 
 logging.basicConfig()

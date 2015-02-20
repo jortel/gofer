@@ -79,7 +79,6 @@ class Reader(BaseReader):
         """
         receiver = self.receiver
         self.receiver = None
-
         try:
             receiver.close()
         except Exception:

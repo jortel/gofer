@@ -204,20 +204,3 @@ class TestReader(TestCase):
         # validation
         reader.receiver.fetch.assert_called_once_with(10)
         self.assertEqual(message, None)
-
-    @patch('gofer.messaging.adapter.qpid.consumer.sleep')
-    @patch('gofer.messaging.adapter.qpid.consumer.Empty', Empty)
-    def test_get_raised(self, sleep):
-        queue = Mock(name='test-queue')
-        url = 'test-url'
-
-        # test
-        reader = Reader(queue, url=url)
-        reader.receiver = Mock()
-        reader.receiver.fetch.side_effect = ValueError
-        message = reader.get(10)
-
-        # validation
-        reader.receiver.fetch.assert_called_once_with(10)
-        sleep.assert_called_once_with(60)
-        self.assertEqual(message, None)

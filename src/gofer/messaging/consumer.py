@@ -12,7 +12,7 @@
 from time import sleep
 from logging import getLogger
 
-from gofer.common import Thread
+from gofer.common import Thread, released
 from gofer.messaging.model import InvalidDocument
 from gofer.messaging.adapter.model import Reader
 
@@ -45,6 +45,7 @@ class ConsumerThread(Thread):
         """
         self.abort()
 
+    @released
     def run(self):
         """
         Main consumer loop.

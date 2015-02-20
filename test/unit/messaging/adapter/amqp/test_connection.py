@@ -116,16 +116,6 @@ class TestConnection(TestCase):
         ch = c.channel()
         self.assertEqual(ch, c._impl.channel.return_value)
 
-    def test_close(self):
-        url = 'test-url'
-        c = Connection(url)
-        impl = Mock()
-        impl.close.side_effect = ValueError
-        c._impl = impl
-        c.close()
-        impl.close.assert_called_once_with()
-        self.assertEqual(c._impl, None)
-
     @patch('gofer.messaging.adapter.model.SSL.validate')
     def test_ssl_domain(self, validate):
         url = TEST_URL
@@ -176,3 +166,20 @@ class TestConnection(TestCase):
 
         # validation
         self.assertEqual(ssl, None)
+
+    def test_close(self):
+        url = 'test-url'
+        c = Connection(url)
+        impl = Mock()
+        c._impl = impl
+        c.close()
+        impl.close.assert_called_once_with()
+        self.assertEqual(c._impl, None)
+
+    def test_close_failed(self):
+        url = 'test-url'
+        c = Connection(url)
+        impl = Mock()
+        impl.close.side_effect = ValueError
+        c._impl = impl
+        c.close()

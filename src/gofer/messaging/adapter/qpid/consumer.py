@@ -81,15 +81,12 @@ class Reader(BaseReader):
         """
         receiver = self.receiver
         self.receiver = None
-
+        session = self.session
+        self.session = None
         try:
             receiver.close()
         except Exception:
             pass
-
-        session = self.session
-        self.session = None
-
         try:
             session.close()
         except Exception:

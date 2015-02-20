@@ -23,7 +23,7 @@ from uuid import uuid4
 from Queue import Queue
 from logging import getLogger
 
-from gofer.common import Thread, current_thread
+from gofer.common import Thread, released, current_thread
 
 
 log = getLogger(__name__)
@@ -49,7 +49,8 @@ class Worker(Thread):
         Thread.__init__(self, name=name)
         self.queue = Queue(backlog)
         self.setDaemon(True)
-        
+
+    @released
     def run(self):
         """
         Main run loop; processes input queue.
