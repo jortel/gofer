@@ -78,9 +78,9 @@ def install_plugins(url, uuid, threads, auth, exchange):
             conf = Config(path)
             pd = PluginDescriptor(conf)
             if pd.messaging.uuid == 'TEST':
+                pd.main.threads = threads
                 pd.messaging.url = url
                 pd.messaging.uuid = uuid
-                pd.messaging.threads = threads
                 pd.messaging.auth = auth
             if exchange:
                 pd.messaging.exchange = exchange

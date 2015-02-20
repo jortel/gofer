@@ -20,7 +20,7 @@ from proton.reactor import DynamicNodeProperties
 
 from gofer.common import ThreadSingleton
 from gofer.messaging.adapter.reliability import YEAR
-from gofer.messaging.adapter.model import Broker, BaseConnection
+from gofer.messaging.adapter.model import Connector, BaseConnection
 
 
 log = getLogger(__name__)
@@ -40,25 +40,25 @@ class Connection(BaseConnection):
     __metaclass__ = ThreadSingleton
 
     @staticmethod
-    def ssl_domain(broker):
+    def ssl_domain(connector):
         """
         Get the ssl domain using the broker settings.
-        :param broker: A broker.
-        :type broker: gofer.messaging.adapter.model.Broker
+        :param connector: A broker.
+        :type connector: Connector
         :return: The populated domain.
         :rtype: SSLDomain
         :raise: SSLException
         :raise: ValueError
         """
         domain = None
-        if broker.use_ssl():
-            broker.ssl.validate()
+        if connector.use_ssl():
+            connector.ssl.validate()
             domain = SSLDomain(SSLDomain.MODE_CLIENT)
-            domain.set_trusted_ca_db(broker.ssl.ca_certificate)
+            domain.set_trusted_ca_db(connector.ssl.ca_certificate)
             domain.set_credentials(
-                broker.ssl.client_certificate,
-                broker.ssl.client_key or broker.ssl.client_certificate, None)
-            if broker.ssl.host_validation:
+                connector.ssl.client_certificate,
+                connector.ssl.client_key or connector.ssl.client_certificate, None)
+            if connector.ssl.host_validation:
                 mode = SSLDomain.VERIFY_PEER_NAME
             else:
                 mode = SSLDomain.VERIFY_PEER
@@ -67,7 +67,7 @@ class Connection(BaseConnection):
 
     def __init__(self, url):
         """
-        :param url: The broker url.
+        :param url: The connector url.
         :type url: str
         """
         super(Connection, self).__init__(url)
@@ -93,14 +93,14 @@ class Connection(BaseConnection):
             # already open
             return
         delay = float(delay)
-        broker = Broker.find(self.url)
-        url = broker.url.canonical
+        connector = Connector.find(self.url)
+        url = connector.url.canonical
         while True:
             try:
-                log.info('connecting: %s', broker)
-                domain = self.ssl_domain(broker)
+                log.info('connecting: %s', connector)
+                domain = self.ssl_domain(connector)
                 self._impl = BlockingConnection(url, ssl_domain=domain)
-                log.info('connected: %s', broker.url)
+                log.info('connected: %s', connector.url)
                 break
             except (ConnectionException, SSLException):
                 log.exception(url)

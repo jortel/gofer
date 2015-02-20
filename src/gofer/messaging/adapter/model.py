@@ -941,10 +941,10 @@ class SSL(Model):
         return '|'.join(s)
 
 
-class Broker(Model):
+class Connector(Model):
     """
-    Represents an AMQP broker.
-    :ivar url: The broker's url.
+    Represents an AMQP connector.
+    :ivar url: The URL.
     :type url: URL
     :ivar ssl: The SSL configuration.
     :type ssl: SSL
@@ -961,13 +961,13 @@ class Broker(Model):
         """
         domain_id = URL(url).canonical
         try:
-            return Domain.broker.find(domain_id)
+            return Domain.connector.find(domain_id)
         except NotFound:
-            return Broker(url)
+            return Connector(url)
 
     def __init__(self, url=None):
         """
-        :param url: The broker url:
+        :param url: The connector url:
             <adapter>+<scheme>://<userid:password@<host>:<port>/<virtual-host>.
         :type url: str
         """
@@ -1050,7 +1050,7 @@ class Broker(Model):
         """
         Add this broker to the domain.
         """
-        Domain.broker.add(self)
+        Domain.connector.add(self)
 
     def use_ssl(self):
         """
@@ -1067,14 +1067,21 @@ class Broker(Model):
         return '|'.join(s)
 
 
+class Broker(Connector):
+    """
+    Backwards comparability.
+    """
+
+
 # --- domain -----------------------------------------------------------------
 
 
 class Domain(object):
     """
     Model object domains.
-    :cvar broker: Collection of brokers.
-    :type broker: _Domain
+    :cvar connector: Collection of connectors.
+    :type connector: _Domain
     """
-    broker = _Domain()
+    connector = _Domain()
+    broker = connector  # backwards compatibility
 

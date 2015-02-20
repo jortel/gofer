@@ -77,6 +77,7 @@ Defines basic plugin properties.
     - /opt/gofer/plugins
 
 - **enabled** - Specify the plugin as enabled/disabled.
+- **threads** - The (optional) number of threads for the RMI dispatcher.
 - **requires** -  Specify (optional) required (,) comma separated list of plugins by name.
 - **extends** - Specify (optional) another plugin to extend by name.
 
@@ -106,7 +107,6 @@ Defines basic plugin properties.
 - **clientcert** - The (optional) SSL client certificate.
   A (PEM) file containing **both** the private key and certificate.
 - **host_validation** - The (optional) flag indicates SSL host validation should be performed.
-- **threads** - The (optional) number of threads for the RMI dispatcher.
   Default to (1) when not specified.
 
 [model]

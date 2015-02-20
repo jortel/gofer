@@ -21,7 +21,6 @@ from gofer.rmi.window import *
 from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import Pending
 from gofer.rmi.dispatcher import Return, PluginNotFound
-from gofer.rmi.threadpool import Direct
 from gofer.messaging import Document, Producer
 from gofer.metrics import Timer, timestamp
 
@@ -38,8 +37,6 @@ class Task:
     :type request: Document
     :ivar commit: Transaction commit function.
     :type commit: callable
-    :ivar window: The window in which the task is valid.
-    :type window: dict
     :ivar ts: Timestamp
     :type ts: float
     """
@@ -175,41 +172,6 @@ class Task:
             log.exception('send failed: %s', result)
 
 
-class TrashPlugin:
-    """
-    An *empty* plugin.
-    Used when the appropriate plugin cannot be found.
-    """
-
-    def __init__(self, inbound):
-        self.url = inbound.url
-        self.queue = inbound.queue
-        self.authenticator = None
-        self.pool = Direct()
-    
-    def dispatch(self, request):
-        try:
-            log.info('request sn=%s, trashed', request.sn)
-            raise PluginNotFound(self.queue)
-        except PluginNotFound:
-            return Return.exception()
-
-
-class TrashProducer(object):
-    """
-    The producer used when an appropriate one cannot be found.
-    """
-
-    def send(self, *args, **kwargs):
-        """
-        Send replies into the bit bucket.
-        """
-        pass
-
-    def close(self):
-        pass
-
-
 class Scheduler(Thread):
     """
     The pending request scheduler.
@@ -235,6 +197,8 @@ class Scheduler(Thread):
                 plugin = self.find_plugin(request)
                 task = Task(plugin, request, self.pending.commit)
                 plugin.pool.run(task)
+            except PluginNotFound:
+                self.pending.commit(request.sn)
             except Exception:
                 self.pending.commit(request.sn)
                 log.exception(request.sn)
@@ -248,13 +212,14 @@ class Scheduler(Thread):
         :type request: Document
         :return: The appropriate plugin.
         :rtype: gofer.agent.plugin.Plugin
+        :raise: PluginNotFound
         """
         inbound = Options(request.inbound)
         for plugin in self.plugins:
             if plugin.queue == inbound.queue:
                 return plugin
         log.info('plugin not found for "%s"', inbound.queue)
-        return TrashPlugin(inbound)
+        raise PluginNotFound(inbound.queue)
     
 
 class Context:

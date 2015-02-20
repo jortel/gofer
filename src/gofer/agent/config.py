@@ -34,6 +34,9 @@ PLUGIN_SCHEMA = (
     ('main', REQUIRED,
         (
             ('enabled', REQUIRED, BOOL),
+            ('name', OPTIONAL, ANY),
+            ('plugin', OPTIONAL, ANY),
+            ('threads', OPTIONAL, NUMBER),
             ('requires', OPTIONAL, ANY),
             ('extends', OPTIONAL, ANY)
         )
@@ -45,7 +48,6 @@ PLUGIN_SCHEMA = (
             ('cacert', OPTIONAL, ANY),
             ('clientcert', OPTIONAL, ANY),
             ('host_validation', OPTIONAL, BOOL),
-            ('threads', OPTIONAL, NUMBER),
         )
     ),
     ('model', OPTIONAL,
@@ -62,8 +64,6 @@ PLUGIN_SCHEMA = (
 PLUGIN_DEFAULTS = {
     'main': {
         'enabled': '0',
-    },
-    'messaging': {
         'threads': '1',
     },
     'model': {

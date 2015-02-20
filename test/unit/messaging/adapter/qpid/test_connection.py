@@ -20,7 +20,7 @@ from gofer.devel import ipatch
 from gofer.common import ThreadSingleton
 
 with ipatch('qpid'):
-    from gofer.messaging.adapter.model import Broker
+    from gofer.messaging.adapter.model import Connector
     from gofer.messaging.adapter.qpid.connection import Connection, BaseConnection
 
 
@@ -60,7 +60,7 @@ class TestConnection(TestCase):
         url = TEST_URL
 
         # test
-        b = Broker(url)
+        b = Connector(url)
         b.ssl.ca_certificate = 'test-ca'
         b.ssl.client_key = 'test-key'
         b.ssl.client_certificate = 'test-crt'
@@ -79,15 +79,15 @@ class TestConnection(TestCase):
 
     @patch('gofer.messaging.adapter.qpid.connection.Connection.ssl_domain')
     @patch('gofer.messaging.adapter.qpid.connection.Connection.add_transports')
-    @patch('gofer.messaging.adapter.qpid.connection.Broker.find')
+    @patch('gofer.messaging.adapter.qpid.connection.Connector.find')
     @patch('gofer.messaging.adapter.qpid.connection.RealConnection')
     def test_open(self, connection, find, add_transports, ssl_domain):
         url = TEST_URL
-        broker = Broker(url)
-        broker.ssl.ca_certificate = 'test-ca'
-        broker.ssl.client_key = 'test-key'
-        broker.ssl.client_certificate = 'test-crt'
-        find.return_value = broker
+        connector = Connector(url)
+        connector.ssl.ca_certificate = 'test-ca'
+        connector.ssl.client_key = 'test-key'
+        connector.ssl.client_certificate = 'test-crt'
+        find.return_value = connector
 
         ssl_properties = {'A': 1, 'B': 2}
         ssl_domain.return_value = ssl_properties
@@ -100,17 +100,17 @@ class TestConnection(TestCase):
         # validation
         add_transports.assert_called_once_with()
         connection.assert_called_once_with(
-            host=broker.host,
-            port=broker.port,
+            host=connector.host,
+            port=connector.port,
             tcp_nodelay=True,
             reconnect=True,
-            transport=broker.scheme,
-            username=broker.userid,
-            password=broker.password,
+            transport=connector.scheme,
+            username=connector.userid,
+            password=connector.password,
             heartbeat=10,
             **ssl_properties)
 
-        ssl_domain.assert_called_once_with(broker)
+        ssl_domain.assert_called_once_with(connector)
         c._impl.attach.assert_called_once_with()
         self.assertEqual(c._impl, connection.return_value)
 

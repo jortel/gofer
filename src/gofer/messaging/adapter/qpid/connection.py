@@ -23,7 +23,7 @@ from qpid.messaging import Connection as RealConnection
 from qpid.messaging.transports import TRANSPORTS
 
 from gofer.common import ThreadSingleton
-from gofer.messaging.adapter.model import Broker, BaseConnection
+from gofer.messaging.adapter.model import Connector, BaseConnection
 
 
 log = getLogger(__name__)
@@ -55,23 +55,23 @@ class Connection(BaseConnection):
             TRANSPORTS[key] = TRANSPORTS[SSL]
 
     @staticmethod
-    def ssl_domain(broker):
+    def ssl_domain(connector):
         """
         Get SSL properties
-        :param broker: A broker object.
-        :type broker: gofer.messaging.adapter.model.Broker
+        :param connector: A broker object.
+        :type connector: Connector
         :return: The SSL properties
         :rtype: dict
         :raise: ValueError
         """
         domain = {}
-        if broker.use_ssl():
-            broker.ssl.validate()
+        if connector.use_ssl():
+            connector.ssl.validate()
             domain.update(
-                ssl_trustfile=broker.ssl.ca_certificate,
-                ssl_keyfile=broker.ssl.client_key,
-                ssl_certfile=broker.ssl.client_certificate,
-                ssl_skip_hostname_check=(not broker.ssl.host_validation))
+                ssl_trustfile=connector.ssl.ca_certificate,
+                ssl_keyfile=connector.ssl.client_key,
+                ssl_certfile=connector.ssl.client_certificate,
+                ssl_skip_hostname_check=(not connector.ssl.host_validation))
         return domain
 
     def __init__(self, url):
@@ -97,23 +97,23 @@ class Connection(BaseConnection):
         if self.is_open():
             # already open
             return
-        broker = Broker.find(self.url)
+        connector = Connector.find(self.url)
         Connection.add_transports()
-        domain = self.ssl_domain(broker)
-        log.info('connecting: %s', broker)
+        domain = self.ssl_domain(connector)
+        log.info('connecting: %s', connector)
         impl = RealConnection(
-            host=broker.host,
-            port=broker.port,
+            host=connector.host,
+            port=connector.port,
             tcp_nodelay=True,
             reconnect=True,
-            transport=broker.url.scheme,
-            username=broker.userid,
-            password=broker.password,
+            transport=connector.url.scheme,
+            username=connector.userid,
+            password=connector.password,
             heartbeat=10,
             **domain)
         impl.attach()
         self._impl = impl
-        log.info('connected: %s', broker.url)
+        log.info('connected: %s', connector.url)
 
     def session(self):
         """

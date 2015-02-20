@@ -25,6 +25,7 @@ from gofer.messaging.consumer import \
 from gofer.messaging.adapter import \
     URL, \
     SSL, \
+    Connector, \
     Broker, \
     Domain, \
     Adapter, \
