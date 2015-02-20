@@ -16,7 +16,7 @@ from logging import getLogger
 from proton import ConnectionException
 from proton import SSLDomain, SSLException
 from proton.utils import BlockingConnection
-from proton.reactors import DynamicNodeProperties
+from proton.reactor import DynamicNodeProperties
 
 from gofer.common import ThreadSingleton
 from gofer.messaging.adapter.reliability import YEAR
