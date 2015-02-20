@@ -18,7 +18,7 @@ Thread Pool classes.
 """
 
 from uuid import uuid4
-from Queue import Queue
+from Queue import Queue, Empty
 from logging import getLogger
 
 from gofer.common import List, Thread, released, current_thread
@@ -74,6 +74,23 @@ class Worker(Thread):
         """
         self.queue.put(call)
         self.queue.put(1)  # busy
+
+    def drain(self):
+        """
+        Drain pending calls.
+        :return: A list of: Call.
+        :rtype: list
+        """
+        pending = []
+        while True:
+            try:
+                call = self.queue.get(block=False)
+                if not isinstance(call, Call):
+                    continue
+                pending.append(call)
+            except Empty:
+                break
+        return pending
 
     def backlog(self):
         """
@@ -139,6 +156,8 @@ class ThreadPool:
     A load distributed thread pool.
     :ivar capacity: The min # of workers.
     :type capacity: int
+    :ivar threads: List of: Worker
+    :type threads: list
     """
 
     def __init__(self, capacity=1):
@@ -185,13 +204,18 @@ class ThreadPool:
         """
         Shutdown the pool.
         Terminate and join all workers.
+        :return: List of orphaned calls.  List of: Call.
+        :rtype: list
         """
-        # send stop request
+        orphans = []
         for t in self.threads:
             t.abort()
             t.put(0)
         for t in self.threads:
             t.join()
+        for t in self.threads:
+            orphans += t.drain()
+        return orphans
 
     def __add(self):
         """

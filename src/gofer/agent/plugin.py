@@ -317,12 +317,46 @@ class Plugin(object):
     def unload(self):
         """
         Unload the plugin.
+         - Delete the plugin.
+         - Abort associated tasks.
+         - Detach.
+         - Shutdown the pool.
+         - Commit (discard) pending work.
         """
         Plugin.delete(self)
         Task.abort(self)
         self.detach()
-        self.pool.shutdown()
+        pending = self.pool.shutdown()
+        for call in pending:
+            task = call.fn
+            task.commit()
         log.info('plugin:%s, unloaded', self.name)
+
+    def reload(self):
+        """
+        Reload the plugin.
+         - Delete the plugin.
+         - Abort associated tasks.
+         - Detach.
+         - Shutdown the pool.
+         - Reschedule pending work to reloaded plugin.
+        """
+        Plugin.delete(self)
+        Task.abort(self)
+        self.detach()
+        pending = self.pool.shutdown()
+        plugin = PluginLoader.load(self.path)
+        if plugin:
+            for call in pending:
+                task = call.fn
+                task.plugin = self
+                plugin.pool.run(task)
+        else:
+            for call in pending:
+                task = call.fn
+                task.commit()
+        log.info('plugin:%s, reloaded', self.name)
+        return plugin
 
     def __getitem__(self, key):
         try:
@@ -586,9 +620,10 @@ class PluginMonitor(object):
         plugin = Plugin.find(path)
         if os.path.exists(path):
             # load/reload
-            if plugin:
-                self.unload(plugin)
-            self.load(path)
+            if plugin and plugin.enabled:
+                plugin.reload()
+            else:
+                self.load(path)
         else:
             # unload
             self.unload(plugin)
