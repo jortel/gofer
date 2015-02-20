@@ -17,13 +17,11 @@
 Thread Pool classes.
 """
 
-import inspect
-
 from uuid import uuid4
 from Queue import Queue
 from logging import getLogger
 
-from gofer.common import Thread, released, current_thread
+from gofer.common import List, Thread, released, current_thread
 
 
 log = getLogger(__name__)
@@ -271,9 +269,13 @@ class Task(object):
         def call():
             try:
                 retval = self.function(*args, **kwargs)
-            except Exception, retval:
-                pass
-            self.queue.put(retval)
+                if self.blocking:
+                    self.queue.put(retval)
+            except Exception, e:
+                if self.blocking:
+                    self.queue.put(e)
+                else:
+                    log.exception(e)
             thread = current_thread()
             running.remove(thread)
         if args:
@@ -282,7 +284,7 @@ class Task(object):
             _id = id(self.function)
         thread = Thread(target=call)
         thread.setDaemon(True)
-        running = Task.threads.setdefault(_id, [])
+        running = Task.threads.setdefault(_id, List())
         running.append(thread)
         thread.start()
         if not self.blocking:
@@ -294,13 +296,12 @@ class Task(object):
             return retval
 
 
-def task(blocking=None):
-    def _fn(fn):
-        def _call(*args, **kwargs):
-            task = Task(fn, blocking)
-            return task(*args, **kwargs)
-        return _call
-    if inspect.isfunction(blocking):
-        return _fn(blocking)
-    else:
-        return _fn
+def task(fn):
+    """
+    Task decorator.
+    See: Task
+    """
+    def _fn(*args, **kwargs):
+        task = Task(fn)
+        return task(*args, **kwargs)
+    return _fn

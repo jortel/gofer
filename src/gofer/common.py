@@ -21,7 +21,7 @@ from os import access, F_OK, R_OK
 from threading import local as Local
 from threading import Thread as _Thread
 from threading import currentThread as current_thread
-from threading import Event
+from threading import Event, RLock
 from logging import getLogger
 
 
@@ -275,3 +275,26 @@ class Options(object):
 
     def __str__(self):
         return str(self.__dict__)
+
+
+class List(object):
+
+    def __init__(self):
+        self.__mutex = RLock()
+        self._list = []
+
+    @synchronized
+    def append(self, thing):
+        self._list.append(thing)
+
+    @synchronized
+    def insert(self, index, thing):
+        self._list.insert(index, thing)
+
+    @synchronized
+    def remove(self, thing):
+        self._list.remove(thing)
+
+    @synchronized
+    def __iter__(self):
+        return iter(self._list[:])

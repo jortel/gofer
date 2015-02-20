@@ -88,6 +88,69 @@ def initializer(fn):
     return fn
 
 
+class Plugins(object):
+    """
+    Plugins Collection.
+    """
+
+    def __init__(self):
+        self.__mutex = RLock()
+        self.plugins = {}
+
+    @synchronized
+    def add(self, plugin, *names):
+        """
+        Add the plugin.
+        :param plugin: The plugin to add.
+        :type plugin: Plugin
+        :return: The added plugin
+        :rtype: Plugin
+        """
+        if not names:
+            names = (plugin.name,)
+        for name in names:
+            self.plugins[name] = plugin
+        self.plugins[plugin.path] = plugin
+        return plugin
+
+    @synchronized
+    def delete(self, plugin):
+        """
+        Delete the plugin.
+        :param plugin: The plugin to delete.
+        :type plugin: Plugin
+        """
+        for k, v in self.plugins.items():
+            if v == plugin:
+                del self.plugins[k]
+        return plugin
+
+    @synchronized
+    def find(self, name):
+        """
+        Find a plugin by name or path.
+        :param name: A plugin name
+        :type name: str
+        :return: The plugin when found.
+        :rtype: Plugin
+        """
+        return self.plugins.get(name)
+
+    @synchronized
+    def all(self):
+        """
+        Get a unique list of loaded plugins.
+        :return: A list of plugins
+        :rtype: list
+        """
+        unique = []
+        for p in self.plugins.values():
+            if p in unique:
+                continue
+            unique.append(p)
+        return unique
+
+
 class Plugin(object):
     """
     Represents a plugin.
@@ -110,7 +173,8 @@ class Plugin(object):
     :ivar consumer: An AMQP request consumer.
     :type consumer: gofer.rmi.consumer.RequestConsumer.
     """
-    plugins = {}
+
+    loaded = Plugins()
     
     @staticmethod
     def add(plugin, *names):
@@ -121,12 +185,7 @@ class Plugin(object):
         :return: The added plugin
         :rtype: Plugin
         """
-        if not names:
-            names = (plugin.name,)
-        for name in names:
-            Plugin.plugins[name] = plugin
-        Plugin.plugins[plugin.path] = plugin
-        return plugin
+        Plugin.loaded.add(plugin, *names)
     
     @staticmethod
     def delete(plugin):
@@ -135,10 +194,7 @@ class Plugin(object):
         :param plugin: The plugin to delete.
         :type plugin: Plugin
         """
-        for k, v in Plugin.plugins.items():
-            if v == plugin:
-                del Plugin.plugins[k]
-        return plugin
+        Plugin.loaded.delete(plugin)
     
     @staticmethod
     def find(name):
@@ -149,8 +205,8 @@ class Plugin(object):
         :return: The plugin when found.
         :rtype: Plugin 
         """
-        return Plugin.plugins.get(name)
-    
+        return Plugin.loaded.find(name)
+
     @staticmethod
     def all():
         """
@@ -158,12 +214,7 @@ class Plugin(object):
         :return: A list of plugins
         :rtype: list
         """
-        unique = []
-        for p in Plugin.plugins.values():
-            if p in unique:
-                continue
-            unique.append(p)
-        return unique
+        return Plugin.loaded.all()
 
     def __init__(self, descriptor, path):
         """
@@ -223,7 +274,7 @@ class Plugin(object):
         connector.ssl.host_validation = messaging.host_validation
         connector.add()
 
-    @task(blocking=False)
+    @task
     @synchronized
     def attach(self):
         """
@@ -495,21 +546,21 @@ class PluginLoader:
 class PluginMonitor(object):
     """
     Plugin monitoring.
-    :cvar pmon: Path monitor.
-    :type pmon: PathMonitor
+    :ivar monitor: Path monitor.
+    :type monitor: PathMonitor
     """
 
     def __init__(self):
-        self.pmon = PathMonitor()
+        self.monitor = PathMonitor()
 
     def start(self):
         """
         Start monitoring.
         """
-        self.pmon.add(PluginDescriptor.ROOT, self.changed)
+        self.monitor.add(PluginDescriptor.ROOT, self.changed)
         for plugin in Plugin.all():
-            self.pmon.add(plugin.path, self.changed)
-        self.pmon.start()
+            self.monitor.add(plugin.path, self.changed)
+        self.monitor.start()
 
     def root_changed(self):
         """
@@ -575,5 +626,5 @@ class PluginMonitor(object):
         if not plugin:
             # not loaded
             return
-        self.pmon.add(path, self.changed)
+        self.monitor.add(path, self.changed)
 
