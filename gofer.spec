@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.5.1
+Version: 2.5.2
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -265,6 +265,11 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Fri Feb 20 2015 Jeff Ortel <jortel@redhat.com> 2.5.2-1
+- proton 0.9-1.20150219 compat; proton.reactors renamed: proton.reactor.
+  (jortel@redhat.com)
+- 1192563 - validate SSL file paths. (jortel@redhat.com)
+
 * Thu Feb 12 2015 Jeff Ortel <jortel@redhat.com> 2.5.1-1
 - Fix virtual hosts. (jortel@redhat.com)
 - Using LinkDetached in proton.reliable. (jortel@redhat.com)
