@@ -19,7 +19,9 @@ Plugin classes.
 
 import os
 import imp
+import sys
 import inspect
+
 from threading import RLock
 from logging import getLogger
 
@@ -195,6 +197,8 @@ class Plugin(object):
         :type plugin: Plugin
         """
         Plugin.loaded.delete(plugin)
+        mod = plugin.impl.__name__
+        del sys.modules[mod]
     
     @staticmethod
     def find(name):
