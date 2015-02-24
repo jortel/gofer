@@ -38,7 +38,6 @@ from gofer.agent.whiteboard import Whiteboard
 from gofer.collator import Module
 from gofer.messaging import Connector, Queue, Exchange
 from gofer.pmon import PathMonitor
-from gofer.threadpool import Task, task
 
 
 log = getLogger(__name__)
@@ -278,7 +277,6 @@ class Plugin(object):
         connector.ssl.host_validation = messaging.host_validation
         connector.add()
 
-    @task
     @synchronized
     def attach(self):
         """
@@ -328,7 +326,6 @@ class Plugin(object):
          - Commit (discard) pending work.
         """
         Plugin.delete(self)
-        Task.abort(self)
         self.detach()
         pending = self.pool.shutdown()
         for call in pending:
@@ -346,7 +343,6 @@ class Plugin(object):
          - Reschedule pending work to reloaded plugin.
         """
         Plugin.delete(self)
-        Task.abort(self)
         self.detach()
         pending = self.pool.shutdown()
         plugin = PluginLoader.load(self.path)
