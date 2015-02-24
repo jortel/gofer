@@ -90,9 +90,9 @@ def initializer(fn):
     return fn
 
 
-class Plugins(object):
+class Container(object):
     """
-    Plugins Collection.
+    Plugin container.
     """
 
     def __init__(self):
@@ -176,7 +176,7 @@ class Plugin(object):
     :type consumer: gofer.rmi.consumer.RequestConsumer.
     """
 
-    loaded = Plugins()
+    container = Container()
     
     @staticmethod
     def add(plugin, *names):
@@ -187,7 +187,7 @@ class Plugin(object):
         :return: The added plugin
         :rtype: Plugin
         """
-        Plugin.loaded.add(plugin, *names)
+        Plugin.container.add(plugin, *names)
     
     @staticmethod
     def delete(plugin):
@@ -196,7 +196,7 @@ class Plugin(object):
         :param plugin: The plugin to delete.
         :type plugin: Plugin
         """
-        Plugin.loaded.delete(plugin)
+        Plugin.container.delete(plugin)
         mod = plugin.impl.__name__
         del sys.modules[mod]
     
@@ -209,7 +209,7 @@ class Plugin(object):
         :return: The plugin when found.
         :rtype: Plugin 
         """
-        return Plugin.loaded.find(name)
+        return Plugin.container.find(name)
 
     @staticmethod
     def all():
@@ -218,7 +218,7 @@ class Plugin(object):
         :return: A list of plugins
         :rtype: list
         """
-        return Plugin.loaded.all()
+        return Plugin.container.all()
 
     def __init__(self, descriptor, path):
         """
