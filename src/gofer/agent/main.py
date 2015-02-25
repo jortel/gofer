@@ -30,7 +30,6 @@ from gofer.common import Thread, released
 from gofer.agent.plugin import Plugin, PluginLoader, PluginMonitor
 from gofer.agent.lock import Lock, LockFailed
 from gofer.agent.config import AgentConfig
-from gofer.agent.rmi import Scheduler
 
 log = logging.getLogger(__name__)
 cfg = AgentConfig()
@@ -74,14 +73,14 @@ class Agent:
         """
         Start the agent.
         """
+        for plugin in Plugin.all():
+            plugin.start()
         actions = ActionThread()
         actions.start()
-        scheduler = Scheduler()
-        scheduler.start()
         self.plugin_monitor.start()
         log.info('agent started.')
         if block:
-            scheduler.join(self.WAIT)
+            actions.join(self.WAIT)
 
 
 class AgentLock(Lock):

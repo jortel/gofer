@@ -25,8 +25,8 @@ from logging import getLogger
 from Queue import Queue
 
 from gofer import NAME, Thread, Singleton
+from gofer.common import mkdir
 from gofer.messaging import Document
-from gofer.rmi.window import Window
 from gofer.rmi.tracker import Tracker
 
 
@@ -41,20 +41,6 @@ class Pending(object):
     __metaclass__ = Singleton
 
     PENDING = '/var/lib/%s/messaging/pending' % NAME
-    DELAYED = '/var/lib/%s/messaging/delayed' % NAME
-
-    @staticmethod
-    def _mkdir(path):
-        """
-        Ensure the directory exists.
-        :param: A directory path.
-        :type path: str
-        """
-        try:
-            os.makedirs(path)
-        except OSError, e:
-            if e.errno != errno.EEXIST:
-                raise
 
     @staticmethod
     def _write(request, path):
@@ -96,45 +82,24 @@ class Pending(object):
         finally:
             fp.close()
 
-    @staticmethod
-    def _delayed(request):
-        """
-        Get whether the document has a future window.
-        Cancelled requests are not considered to be delayed and
-        the window is ignored.
-        :param request: An AMQP request.
-        :type request: Document
-        :return: True when window in the future.
-        :rtype: bool
-        """
-        tracker = Tracker()
-        if request.window and not tracker.cancelled(request.sn):
-            window = Window(request.window)
-            if window.future():
-                log.debug('%s delayed', request.sn)
-                return True
-        return False
-
-    @staticmethod
-    def _list(path):
+    def _list(self):
         """
         Directory listing sorted by when it was created.
-        :param path: The path to a directory.
-        :type path: str
         :return: A sorted directory listing (absolute paths).
         :rtype: list
         """
+        path = os.path.join(Pending.PENDING, self.stream)
         paths = [os.path.join(path, name) for name in os.listdir(path)]
         return sorted(paths)
 
-    def __init__(self, backlog=100):
+    def __init__(self, stream):
         """
-        :param backlog: The queue capacity.
-        :type backlog: int
+        :param stream: The stream name.
+        :type stream: str
         """
-        Pending._mkdir(Pending.PENDING)
-        Pending._mkdir(Pending.DELAYED)
-        self.queue = Queue(backlog)
+        mkdir(os.path.join(Pending.PENDING, stream))
+        self.stream = stream
+        self.queue = Queue(maxsize=100)
         self.is_open = False
         self.sequential = Sequential()
         self.journal = {}
@@ -145,11 +110,10 @@ class Pending(object):
     def _open(self):
         """
         Open for operations.
-        - Load journal(ed) requests. These are requests were in the queuing pipeline
-          when the process was terminated. put() is blocked until this has completed.
-        - Then, continuously attempt to queue delayed messages.
+        Load journal(ed) requests. These are requests were in the queuing pipeline
+        when the process was terminated. put() is blocked until this has completed.
         """
-        for path in Pending._list(Pending.PENDING):
+        for path in self._list():
             log.info('restoring [%s]', path)
             request = Pending._read(path)
             if not request:
@@ -157,18 +121,6 @@ class Pending(object):
                 continue
             self._put(request, path)
         self.is_open = True
-        # queue delayed messages
-        while not Thread.aborted():
-            sleep(1)
-            for path in Pending._list(Pending.DELAYED):
-                request = Pending._read(path)
-                if not request:
-                    # read failed
-                    continue
-                if Pending._delayed(request):
-                    continue
-                self.put(request)
-                os.unlink(path)
 
     def put(self, request):
         """
@@ -180,15 +132,10 @@ class Pending(object):
         while not self.is_open:
             # block until opened
             sleep(1)
-
         fn = self.sequential.next()
-        if not Pending._delayed(request):
-            path = os.path.join(Pending.PENDING, fn)
-            Pending._write(request, path)
-            self._put(request, path)
-        else:
-            path = os.path.join(Pending.DELAYED, fn)
-            Pending._write(request, path)
+        path = os.path.join(Pending.PENDING, self.stream, fn)
+        Pending._write(request, path)
+        self._put(request, path)
 
     def get(self):
         """

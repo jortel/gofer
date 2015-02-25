@@ -19,8 +19,8 @@ from optparse import OptionParser, Option
 from hashlib import sha256
 from logging import basicConfig
 from threading import Thread
+from datetime import datetime as dt
 
-from gofer.rmi.window import *
 from gofer.rmi.dispatcher import *
 from gofer.rmi.async import ReplyConsumer
 from gofer.metrics import Timer
@@ -157,10 +157,6 @@ def demo(agent):
         print e
 
 
-def later(**offset):
-    return dt.utcnow()+delta(**offset)
-
-
 def threads(n=10):
     t = None
     for i in range(0, n):
@@ -204,22 +200,6 @@ def test_triggers():
     print t
     t()
     print 'Manual trigger, OK'
-    
-
-def demo_window(exit=0):
-    print 'demo window, +10, +10min seconds'
-    address = Agent.address.split('/')[-1].upper()
-    begin = later(seconds=10)
-    window = Window(begin=begin, seconds=5)
-    agent = Agent(reply=address)
-    dog = agent.Dog(window=window, data='demo')
-    print dt.now()
-    print dog.bark('hello, after 10 seconds')
-    print dog.wag(3)
-    print dog.bark('hello again, after 10 seconds')
-    sleep(120)
-    if exit:
-        sys.exit(0)
     
 
 def demo_pam_authentication(yp, exit=0):
@@ -404,29 +384,8 @@ def main():
 
     # asynchronous
     print '(demo) asynchronous'
-    window = Window(begin=dt.utcnow(), minutes=1)
-    agent = Agent(reply=address, window=window)
+    agent = Agent(reply=address)
     demo(agent)
-
-    # group 2
-    print 'group 2'
-    begin = later(seconds=20)
-    window = Window(begin=begin, minutes=10)
-    agent = Agent(reply=address, window=window, data='group 2')
-    dog = agent.Dog()
-    print dog.bark('hello')
-    print dog.wag(3)
-    print dog.bark('hello again')
-
-    # group 1
-    print 'group 1'
-    begin = later(seconds=10)
-    window = Window(begin=begin, minutes=10)
-    agent = Agent(reply=address, window=window, data='group 1')
-    dog = agent.Dog()
-    print dog.bark('hello')
-    print dog.wag(3)
-    print dog.bark('hello again')
 
 
 def smoke_test(exit=0):
@@ -490,7 +449,6 @@ if __name__ == '__main__':
     reply_consumer.start(on_reply)
 
     # demo_progress(1)
-    # demo_window(1)
     # test_performance()
 
     demo_authentication(yp)

@@ -26,6 +26,7 @@ from threading import RLock
 from logging import getLogger
 
 from gofer import NAME, synchronized
+from gofer.common import released
 from gofer.rmi.dispatcher import Dispatcher
 from gofer.threadpool import ThreadPool
 from gofer.rmi.consumer import RequestConsumer
@@ -37,10 +38,20 @@ from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
 from gofer.collator import Module
 from gofer.messaging import Connector, Queue, Exchange
+from gofer.agent.rmi import Scheduler
 from gofer.pmon import PathMonitor
 
 
 log = getLogger(__name__)
+
+
+def attach(fn):
+    def _fn(plugin):
+        def call():
+            if plugin.url and plugin.uuid:
+                fn(plugin)
+        plugin.pool.run(call)
+    return _fn
 
 
 class Initializer(object):
@@ -234,12 +245,17 @@ class Plugin(object):
         self.actions = []
         self.dispatcher = Dispatcher()
         self.whiteboard = Whiteboard()
+        self.scheduler = Scheduler(self)
         self.authenticator = None
         self.consumer = None
 
     @property
     def name(self):
         return self.cfg.main.name
+
+    @property
+    def stream(self):
+        return self.name
 
     @property
     def cfg(self):
@@ -266,6 +282,28 @@ class Plugin(object):
         model = BrokerModel(self)
         return model.queue
 
+    def start(self):
+        """
+        Start the plugin.
+        - attach
+        - start scheduler
+        """
+        self.attach()
+        self.scheduler.start()
+
+    def shutdown(self):
+        """
+        Shutdown the plugin.
+        - shutdown the thread pool.
+        - shutdown the scheduler.
+        :return: List of pending requests.
+        :rtype: list
+        """
+        pending = self.pool.shutdown()
+        self.scheduler.shutdown()
+        self.scheduler.join()
+        return pending
+
     def refresh(self):
         """
         Refresh the AMQP configurations using the plugin configuration.
@@ -277,35 +315,40 @@ class Plugin(object):
         connector.ssl.host_validation = messaging.host_validation
         connector.add()
 
+    @attach
     @synchronized
     def attach(self):
         """
         Attach (connect) to AMQP connector using the specified uuid.
         """
-        self.detach()
+        self.detach(teardown=False)
         self.refresh()
         model = BrokerModel(self)
         queue = model.setup()
-        consumer = RequestConsumer(queue, self.url)
+        consumer = RequestConsumer(queue, self)
         consumer.authenticator = self.authenticator
         consumer.start()
         self.consumer = consumer
         log.info('plugin:%s queue:%s, attached', self.name, self.uuid)
 
+    @released
     @synchronized
-    def detach(self):
+    def detach(self, teardown=True):
         """
         Detach (disconnect) from AMQP connector.
+        :param teardown: Teardown the broker model.
+        :type teardown: bool
         """
         if not self.consumer:
             # not attached
             return
-        self.consumer.stop()
+        self.consumer.shutdown()
         self.consumer.join()
         self.consumer = None
         log.info('plugin:%s queue:%s, detached', self.name, self.uuid)
-        model = BrokerModel(self)
-        model.teardown()
+        if teardown:
+            model = BrokerModel(self)
+            model.teardown()
 
     def dispatch(self, request):
         """
@@ -325,9 +368,9 @@ class Plugin(object):
          - Shutdown the pool.
          - Commit (discard) pending work.
         """
-        Plugin.delete(self)
         self.detach()
-        pending = self.pool.shutdown()
+        Plugin.delete(self)
+        pending = self.shutdown()
         for call in pending:
             task = call.fn
             task.commit()
@@ -342,9 +385,9 @@ class Plugin(object):
          - Shutdown the pool.
          - Reschedule pending work to reloaded plugin.
         """
-        Plugin.delete(self)
         self.detach()
-        pending = self.pool.shutdown()
+        Plugin.delete(self)
+        pending = self.shutdown()
         plugin = PluginLoader.load(self.path)
         if plugin:
             for call in pending:
@@ -567,10 +610,6 @@ class PluginLoader:
             plugin.dispatcher += collated
             plugin.actions = Actions.collated()
             Initializer.run()
-
-            if plugin.uuid and plugin.url:
-                plugin.attach()
-
             return plugin
         except Exception:
             Plugin.delete(plugin)
@@ -661,5 +700,6 @@ class PluginMonitor(object):
         if not plugin:
             # not loaded
             return
+        plugin.start()
         self.monitor.add(path, self.changed)
 

@@ -39,9 +39,9 @@ class ConsumerThread(Thread):
         self._reader = None
         self.setDaemon(True)
 
-    def stop(self):
+    def shutdown(self):
         """
-        Stop processing documents.
+        Shutdown the consumer.
         """
         self.abort()
 

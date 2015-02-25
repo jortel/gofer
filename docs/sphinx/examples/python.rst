@@ -267,9 +267,6 @@ method on reply.
         ...
         print reply.retval # succeeded, do something with return value.
         ...
-    except WindowMissed, ex:
-        # handle maintenance window missed.
-        pass
     except Exception, ex:
         # handle general exception
         pass
@@ -279,38 +276,6 @@ method on reply.
  reader = ReplyConsumer(reply_to)
  reader.start(callback)
  ...
-
-Maintenance Windows
-^^^^^^^^^^^^^^^^^^^
-
-Asynchronous invocation can define a *window* in which the agent must perform the operation.
-This is intended to support *maintenance windows* but can be used for:
-
-#. Asynchronous w/ timeout
-#. Asynchronous to be performed in the future
-#. 1 & 2.
-
-In cases where the agent cannot perform the operation within the specified *window*, a *WindowMissed*
-exception is raised.  In this example, we tell agents (a,b,c) dogs to wag their tails 10 times on
-July 26th between 10am & 11am.
-
-Eg:
-
-::
-
- from datetime import datetime
- from gofer.proxy import Agent
- from gofer.messaging.window import Window
-
- # window is on July 26th between 10am - 11am.
-
- start = datetime(2010, 7, 26, 10)
- window = Window(begin=start, hours=1)
- agent = Agent('amqp://localhost', 'test', reply='tasks', wait=0, window=window)
- dog = agent.Dog()
- print dog.wag(10) # request sent to (a,b,c) and asynchronous replies sent to 'tasks' queue.
-   'e688f50b-3108-43dd-9a57-813f434749a8'
-
 
 Class Constructor Arguments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

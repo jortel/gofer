@@ -17,11 +17,8 @@ from time import time
 from logging import getLogger
 
 from gofer.common import Thread, Local
-from gofer.rmi.window import *
 from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import Pending
-from gofer.agent.plugin import Plugin
-from gofer.rmi.dispatcher import Return, PluginNotFound
 from gofer.messaging import Document, Producer
 from gofer.metrics import Timer, timestamp
 
@@ -72,10 +69,6 @@ class Task:
         self.producer = None
         self.ts = time()
 
-    @property
-    def window(self):
-        return self.request.window
-
     def __call__(self):
         """
         Dispatch received request.
@@ -87,42 +80,15 @@ class Task:
         self.producer = self._producer(self.plugin)
         self.producer.open()
         try:
-            self.__call()
+            self.send_started(request)
+            result = self.plugin.dispatch(request)
+            self.commit(request.sn)
+            self.send_reply(request, result)
         finally:
             self.context.sn = None
             self.context.progress = None
             self.context.cancelled = None
             self.producer.close()
-
-    def __call(self):
-        """
-        Dispatch received request.
-        """
-        request = self.request
-        try:
-            self.window_missed()
-            self.send_started(request)
-            result = self.plugin.dispatch(request)
-            self.commit(request.sn)
-            self.send_reply(request, result)
-        except WindowMissed:
-            self.commit(request.sn)
-            log.info('window missed: %s', request)
-            self.send_reply(request, Return.exception())
-
-    def window_missed(self):
-        """
-        Check the window.
-        :raise WindowPending: when window in the future.
-        :raise WindowMissed: when window missed.
-        """
-        w = self.window
-        if not isinstance(w, dict):
-            return
-        window = Window(w)
-        request = self.request
-        if window.past():
-            raise WindowMissed(request.sn)
 
     def send_started(self, request):
         """
@@ -179,46 +145,36 @@ class Scheduler(Thread):
     Processes the *pending* queue.
     """
     
-    def __init__(self):
+    def __init__(self, plugin):
+        """
+        :param plugin: A plugin.
+        :type plugin: gofer.agent.plugin.Plugin
+        """
         Thread.__init__(self, name='scheduler')
-        self.pending = Pending()
+        self.plugin = plugin
+        self.pending = Pending(plugin.stream)
         self.setDaemon(True)
 
-    @property
-    def plugins(self):
-        return Plugin.all()
-
     def run(self):
+        """
+        Read the pending queue and dispatch requests
+        to the plugin thread pool.
+        """
         while not Thread.aborted():
             request = self.pending.get()
             try:
-                plugin = self.find_plugin(request)
-                task = Task(plugin, request, self.pending.commit)
-                plugin.pool.run(task)
-            except PluginNotFound:
-                self.pending.commit(request.sn)
+                task = Task(self.plugin, request, self.pending.commit)
+                self.plugin.pool.run(task)
             except Exception:
                 self.pending.commit(request.sn)
                 log.exception(request.sn)
+
+    def shutdown(self):
+        """
+        Shutdown the scheduler.
+        """
+        self.abort()
         
-    def find_plugin(self, request):
-        """
-        Find the plugin that provides the class specified in
-        the *request* embedded in the request.  Returns
-        EmptyPlugin when not found.
-        :param request: A gofer messaging request.
-        :type request: Document
-        :return: The appropriate plugin.
-        :rtype: gofer.agent.plugin.Plugin
-        :raise: PluginNotFound
-        """
-        inbound = Options(request.inbound)
-        for plugin in self.plugins:
-            if plugin.queue == inbound.queue:
-                return plugin
-        log.info('plugin not found for "%s"', inbound.queue)
-        raise PluginNotFound(inbound.queue)
-    
 
 class Context:
     """

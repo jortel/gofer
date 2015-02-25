@@ -14,8 +14,6 @@ Summary
    The asynchronous RMI reply address.  Eg: amq.direct/test-queue
  *trigger*
    Specifies trigger used for RMI calls. (0=auto <default>, 1=manual)
- *winndow*
-   RMI processing window
  *secret*
    The shared secret (security)
  *ttl*
@@ -79,34 +77,6 @@ Passed to Agent() and apply to all RMI calls.
  trigger = dog.bark('delayed!')
  print trigger.sn      # do something with serial number
  trigger()             # pull the trigger
-
-window
-------
-
-The **window** specifies an RMI execution window.  This window is a date/time in the future in which
-the agent should process the RMI.  The default is: *anytime*.
-
-See: Window for details.
-
-Example:
-
-Assume the following window is created as between 10 and 20 seconds from now.
-
-::
-
- from datetime import datetime as dt
-
- begin = later(seconds=10)
- window = Window(begin=begin, minutes=10)
-
-Passed to Agent() and apply to all RMI calls.
-
-::
-
- from gofer.proxy import Agent
- from gofer.rmi.window import Window
-
- agent = Agent(url, uuid, window=window)
 
 
 secret

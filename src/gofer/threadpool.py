@@ -21,7 +21,7 @@ from uuid import uuid4
 from Queue import Queue, Empty
 from logging import getLogger
 
-from gofer.common import List, Thread, released, current_thread
+from gofer.common import Thread, released
 
 
 log = getLogger(__name__)

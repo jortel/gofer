@@ -24,7 +24,6 @@ from gofer.common import Thread, Options, nvl
 from gofer.messaging import Document, InvalidDocument
 from gofer.messaging import Producer, Reader, Queue, Exchange
 from gofer.rmi.dispatcher import Return, RemoteException
-from gofer.rmi.window import Window
 from gofer.metrics import Timer
 
 
@@ -176,10 +175,6 @@ class Policy(object):
     @property
     def secret(self):
         return self.options.secret
-
-    @property
-    def window(self):
-        return self.options.window or Window()
 
     @property
     def data(self):
@@ -336,7 +331,6 @@ class Trigger:
                 sn=self.sn,
                 replyto=reply,
                 request=self._request,
-                window=self._policy.window,
                 secret=self._policy.secret,
                 pam=self._policy.pam,
                 data=self._policy.data)

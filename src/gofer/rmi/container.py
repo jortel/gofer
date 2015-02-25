@@ -34,8 +34,6 @@ class Container(object):
           (int) Request TTL (time-to-live).
       - wait
           (int) Seconds to wait for a synchronous reply (default:90).
-      - window
-          (Window) Request valid window.
       - authenticator
           (Authenticator) A message authenticator.
       - progress

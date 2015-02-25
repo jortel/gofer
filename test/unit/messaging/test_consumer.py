@@ -38,11 +38,11 @@ class TestConsumerThread(TestCase):
         self.assertEqual(consumer._reader,  None)
 
     @patch('gofer.common.Thread.abort')
-    def test_stop(self, abort):
+    def test_shutdown(self, abort):
         url = 'test-url'
         queue = Queue('test-queue')
         consumer = ConsumerThread(queue, url)
-        consumer.stop()
+        consumer.shutdown()
         abort.assert_called_once_with()
 
     @patch('gofer.messaging.consumer.Reader')

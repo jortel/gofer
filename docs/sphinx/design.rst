@@ -41,7 +41,6 @@ Requirements Summary:
 - Exception propagation.
 - Easy to use.
 - Easy to extend classes/method exposed for RMI.
-- Support Maintenance Windows - messages have effective date & time.
 - Events
 - Support multiple API versions.
 
@@ -65,7 +64,6 @@ The message format is json:
    - **sn** - Serial Number (uuid)
    - **version** - The API version.
    - **routing** - A tuple containing the amqp (sender, destination).
-   - **window** - The window, date/time UTC window in which the message is valid.
    - **secret** - The (optional) shared secret used for request authentication.
    - **pam** - The (optional) PAM authentication credentials.
    - **replyto** - The reply amqp address (optional)
@@ -98,7 +96,6 @@ Example RMI request message:
         "cfa806a4-919a-495f-b1dd-3fc11be9a8d0" ,
         "19802a28-a18c-4ae3-ac57-b7a2e78a427a"
     ],
-    "window":{},
     "replyto": "cfa806a4-919a-495f-b1dd-3fc11be9a8d0",
     "version": "0.2"
     "request": {
