@@ -606,6 +606,16 @@ class Dispatcher:
         """
         self.catalog = dict([(c.__name__, c) for c in classes or []])
 
+    def provides(self, name):
+        """
+        Get whether the name is in the catalog.
+        :param name: A class name.
+        :type name: str
+        :return: True if provides.
+        :rtype: bool
+        """
+        return name in self.catalog
+
     def dispatch(self, document):
         """
         Dispatch the requested RMI.

@@ -29,6 +29,50 @@ AGENT_SCHEMA = (
     ),
 )
 
+#
+# [main]
+#
+#   enabled
+#      Plugin enabled/disabled (0|1)
+#   name
+#      The (optional) plugin name. The basename of the descriptor is used when not specified.
+#   plugin
+#      The (optional) fully qualified module to be loaded from the PYTHON path.
+#   threads
+#      The (optional) number of threads for the RMI dispatcher.
+#   accept
+#      Accept forwarding from.  A comma (,) separated list of plugin names (,=none|*=all).
+#   forward
+#      Forward to.  A comma (,) separated list of plugin names (,=none|*=all).
+#
+# [messaging]
+#
+#   uuid
+#      The (optional) agent identity. This value also specifies the queue name.
+#   url
+#      The (optional) broker connection URL.
+#   cacert
+#      The (optional) SSL CA certificate used to validate the server certificate.
+#   clientcert
+#      The (optional) SSL client certificate.  PEM encoded and contains both key and certificate.
+#   host_validation
+#      The (optional) flag indicates SSL host validation should be performed.
+#
+# [model]
+#
+#   managed
+#      The (optional) level of broker model management.  Default: 2.
+#        - 0 = none
+#        - 1 = declare and bind queue.
+#        - 2 = declare and bind queue; drain and delete queue on explicit detach.
+#   queue
+#      The (optional) AMQP queue name.  This overrides the uuid.
+#   expiration
+#      The (optional) auto-deleted queue expiration (seconds).
+#   exchange
+#      The (optional) AMQP exchange.
+#
+#
 
 PLUGIN_SCHEMA = (
     ('main', REQUIRED,
@@ -37,6 +81,8 @@ PLUGIN_SCHEMA = (
             ('name', OPTIONAL, ANY),
             ('plugin', OPTIONAL, ANY),
             ('threads', OPTIONAL, NUMBER),
+            ('accept', OPTIONAL, ANY),
+            ('forward', OPTIONAL, ANY),
         )
     ),
     ('messaging', REQUIRED,
@@ -63,6 +109,8 @@ PLUGIN_DEFAULTS = {
     'main': {
         'enabled': '0',
         'threads': '1',
+        'accept': ',',
+        'forward': ','
     },
     'model': {
         'managed': '2'

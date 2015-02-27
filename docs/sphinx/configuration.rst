@@ -59,7 +59,7 @@ Plugin Descriptors
 ^^^^^^^^^^^^^^^^^^
 
 Each plugin has a configuration located in ``/etc/gofer/plugins``.  Plugin descriptors
-are *ini* style configuration that require the following sections and properties:
+are *ini* style configuration files that require the following sections and properties:
 
 [main]
 ------
@@ -76,10 +76,10 @@ Defines basic plugin properties.
     - /usr/lib64/gofer/plugins
     - /opt/gofer/plugins
 
-- **enabled** - Specify the plugin as enabled/disabled.
+- **enabled** - The plugin is enabled/disabled.
 - **threads** - The (optional) number of threads for the RMI dispatcher.
-- **requires** -  Specify (optional) required (,) comma separated list of plugins by name.
-- **extends** - Specify (optional) another plugin to extend by name.
+- **accept** - Accept forwarding list.  Comma ',' separated list of plugin names.
+- **forward** - Forwarding list.  Comma ',' separated list of plugin names.
 
 [messaging]
 -----------
@@ -108,6 +108,8 @@ Defines basic plugin properties.
   A (PEM) file containing **both** the private key and certificate.
 - **host_validation** - The (optional) flag indicates SSL host validation should be performed.
   Default to (1) when not specified.
+
+File extensions just be (.conf|.json).
 
 [model]
 -------

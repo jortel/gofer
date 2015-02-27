@@ -37,7 +37,7 @@ from gofer.agent.config import PLUGIN_SCHEMA, PLUGIN_DEFAULTS
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
 from gofer.collator import Module
-from gofer.messaging import Connector, Queue, Exchange
+from gofer.messaging import Document, Connector, Queue, Exchange
 from gofer.agent.rmi import Scheduler
 from gofer.pmon import PathMonitor
 
@@ -282,6 +282,18 @@ class Plugin(object):
         model = BrokerModel(self)
         return model.queue
 
+    @property
+    def forward(self):
+        _list = self.cfg.main.forward
+        _list = [p.strip() for p in _list.split(',')]
+        return set(_list)
+
+    @property
+    def accept(self):
+        _list = self.cfg.main.accept
+        _list = [p.strip() for p in _list.split(',')]
+        return set(_list)
+
     def start(self):
         """
         Start the plugin.
@@ -350,6 +362,16 @@ class Plugin(object):
             model = BrokerModel(self)
             model.teardown()
 
+    def provides(self, name):
+        """
+        Get whether the plugin provides the name.
+        :param name: A class name.
+        :type name: str
+        :return: True if provides.
+        :raise: bool
+        """
+        return self.dispatcher.provides(name)
+
     def dispatch(self, request):
         """
         Dispatch (invoke) the specified RMI request.
@@ -357,7 +379,28 @@ class Plugin(object):
         :type request: gofer.Document
         :return: The RMI returned.
         """
-        return self.dispatcher.dispatch(request)
+        call = Document(request.request)
+        dispatcher = self.dispatcher
+        if not self.provides(call.classname):
+            for plugin in Plugin.all():
+                if not plugin.provides(call.classname):
+                    # not provided
+                    continue
+                valid = set()
+                valid.add('*')
+                valid.add(plugin.name)
+                if not valid.intersection(self.forward):
+                    # (forwarding) not approved
+                    continue
+                valid = set()
+                valid.add('*')
+                valid.add(self.name)
+                if not valid.intersection(plugin.accept):
+                    # (accept) not approved
+                    continue
+                dispatcher = plugin.dispatcher
+                break
+        return dispatcher.dispatch(request)
 
     def unload(self):
         """
@@ -400,33 +443,6 @@ class Plugin(object):
                 task.commit()
         log.info('plugin:%s, reloaded', self.name)
         return plugin
-
-    def __getitem__(self, key):
-        try:
-            return self.dispatcher[key]
-        except KeyError:
-            return self.dispatcher[self.name][key]
-
-    def __iter__(self):
-        return iter(self.dispatcher)
-
-    def __iadd__(self, other):
-        if isinstance(other, Plugin):
-            for thing in other:
-                self.__iadd__(thing)
-            return self
-        if inspect.isclass(other):
-            self.dispatcher[other.__name__] = other
-            return self
-        if inspect.isfunction(other):
-            try:
-                mod = self.dispatcher[self.name]
-            except KeyError:
-                mod = Module(self.name)
-                self.dispatcher[self.name] = mod
-            mod += other
-            return self
-        return self
 
 
 class BrokerModel(object):

@@ -22,6 +22,17 @@ class TestAdmin:
         return thing
 
 
+class Duck(object):
+
+    @remote
+    def quack(self, words):
+        return words
+
+    @remote
+    def fly(self):
+        return 'Headed south for the winter.  Bye.'
+
+
 @remote
 def echo(something):
     return something

@@ -405,6 +405,9 @@ def smoke_test(exit=0):
         print rabbit.hop(T)
         lion = agent.Lion()
         print lion.roar()
+        duck = agent.Duck()
+        print duck.fly()
+        print duck.quack('aflak')
     print 'DONE'
     if exit:
         sys.exit(0)

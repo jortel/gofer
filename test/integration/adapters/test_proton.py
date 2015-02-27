@@ -17,7 +17,7 @@ from gofer.messaging.adapter.factory import Loader
 
 basicConfig()
 
-URL = 'amqp://localhost:5690'
+URL = 'amqp://localhost'
 
 
 def run():
