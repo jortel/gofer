@@ -155,6 +155,12 @@ class PathMonitor(Thread):
         self._paths = set()
         self.setDaemon(True)
 
+    def shutdown(self):
+        """
+        Shutdown the monitor.
+        """
+        self.abort()
+
     @synchronized
     def add(self, path, target):
         """
