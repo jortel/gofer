@@ -30,7 +30,6 @@ from gofer.rmi.dispatcher import Dispatcher
 from gofer.threadpool import ThreadPool
 from gofer.rmi.consumer import RequestConsumer
 from gofer.rmi.decorators import Remote
-from gofer.rmi.store import Pending
 from gofer.common import nvl, mkdir
 from gofer.config import Config, Graph, Reader, get_bool
 from gofer.agent.config import PLUGIN_SCHEMA, PLUGIN_DEFAULTS
