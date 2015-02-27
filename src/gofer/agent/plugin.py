@@ -20,7 +20,6 @@ Plugin classes.
 import os
 import imp
 import sys
-import inspect
 
 from threading import RLock
 from logging import getLogger
@@ -31,12 +30,12 @@ from gofer.rmi.dispatcher import Dispatcher
 from gofer.threadpool import ThreadPool
 from gofer.rmi.consumer import RequestConsumer
 from gofer.rmi.decorators import Remote
+from gofer.rmi.store import Pending
 from gofer.common import nvl, mkdir
 from gofer.config import Config, Graph, Reader, get_bool
 from gofer.agent.config import PLUGIN_SCHEMA, PLUGIN_DEFAULTS
 from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
-from gofer.collator import Module
 from gofer.messaging import Document, Connector, Queue, Exchange
 from gofer.agent.rmi import Scheduler
 from gofer.pmon import PathMonitor
@@ -405,28 +404,27 @@ class Plugin(object):
     def unload(self):
         """
         Unload the plugin.
-         - Delete the plugin.
-         - Abort associated tasks.
-         - Detach.
-         - Shutdown the pool.
-         - Commit (discard) pending work.
+        - Detach.
+        - Delete the plugin.
+        - Abort scheduled requests.
+        - Plugin shutdown.
+        - Purge pending requests.
         """
         self.detach()
         Plugin.delete(self)
-        pending = self.shutdown()
-        for call in pending:
-            task = call.fn
-            task.commit()
+        self.shutdown()
+        self.scheduler.pending.delete()
         log.info('plugin:%s, unloaded', self.name)
 
     def reload(self):
         """
         Reload the plugin.
-         - Delete the plugin.
-         - Abort associated tasks.
-         - Detach.
-         - Shutdown the pool.
-         - Reschedule pending work to reloaded plugin.
+        - Detach.
+        - Delete the plugin.
+        - Abort scheduled requests.
+        - Plugin shutdown.
+        - Reload plugin.
+        - Reschedule pending requests to reloaded plugin.
         """
         self.detach()
         Plugin.delete(self)
@@ -640,7 +638,7 @@ class PluginMonitor(object):
     """
 
     def __init__(self):
-        self.monitor = PathMonitor()
+        self.monitor = PathMonitor(2)
 
     def start(self):
         """
@@ -651,7 +649,7 @@ class PluginMonitor(object):
             self.monitor.add(plugin.path, self.changed)
         self.monitor.start()
 
-    def root_changed(self):
+    def dir_changed(self):
         """
         The directory containing plugin descriptors has changed.
         """
@@ -665,9 +663,9 @@ class PluginMonitor(object):
                 continue
             self.load(path)
 
-    def file_changed(self, path):
+    def pd_changed(self, path):
         """
-        A file descriptor has been changed/deleted.
+        A plugin descriptor has been changed/deleted.
         The associated plugin is loaded/reloaded as needed.
         :param path: The path that changed.
         :type path: str
@@ -692,9 +690,9 @@ class PluginMonitor(object):
         log.info('changed: %s', path)
         root = PluginDescriptor.ROOT
         if path == root:
-            self.root_changed()
+            self.dir_changed()
         else:
-            self.file_changed(path)
+            self.pd_changed(path)
 
     def unload(self, plugin):
         """

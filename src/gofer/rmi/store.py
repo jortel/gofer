@@ -22,7 +22,7 @@ import errno
 
 from time import sleep, time
 from logging import getLogger
-from Queue import Queue
+from Queue import Queue, Empty
 
 from gofer import NAME, Thread, Singleton
 from gofer.common import mkdir
@@ -97,7 +97,6 @@ class Pending(object):
         :param stream: The stream name.
         :type stream: str
         """
-        mkdir(os.path.join(Pending.PENDING, stream))
         self.stream = stream
         self.queue = Queue(maxsize=100)
         self.is_open = False
@@ -113,8 +112,11 @@ class Pending(object):
         Load journal(ed) requests. These are requests were in the queuing pipeline
         when the process was terminated. put() is blocked until this has completed.
         """
+        path = os.path.join(Pending.PENDING, self.stream)
+        mkdir(path)
+        log.info('Using: %s', path)
         for path in self._list():
-            log.info('restoring [%s]', path)
+            log.info('Restoring: %s', path)
             request = Pending._read(path)
             if not request:
                 # read failed
@@ -144,7 +146,11 @@ class Pending(object):
         :return: The next pending request.
         :rtype: Document
         """
-        return self.queue.get()
+        while not Thread.aborted():
+            try:
+                return self.queue.get(timeout=10)
+            except Empty:
+                pass
 
     def commit(self, sn):
         """
@@ -162,6 +168,30 @@ class Pending(object):
         except OSError, e:
             if e.errno != errno.ENOENT:
                 raise
+
+    def delete(self):
+        """
+        Drain the queue and delete the store.
+        """
+        self.is_open = False
+        self.thread.abort()
+        self.thread.join()
+        self._drain()
+        path = os.path.join(Pending.PENDING, self.stream)
+        os.rmdir(path)
+        log.info('%s, deleted', path)
+
+    def _drain(self):
+        """
+        Drain the queue.
+        """
+        self.is_open = False
+        while not Thread.aborted():
+            try:
+                request = self.queue.get(timeout=1)
+                self.commit(request.sn)
+            except Empty:
+                break
 
     def _put(self, request, jnl_path):
         """
