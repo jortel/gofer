@@ -614,9 +614,9 @@ class PluginLoader:
             plugin.actions = Actions.collated()
             plugin.load()
             return plugin
-        except Exception, e:
-            Plugin.delete(plugin)
+        except Exception:
             log.exception('plugin:%s, import failed', plugin.name)
+            Plugin.delete(plugin)
 
 
 class PluginMonitor(object):
