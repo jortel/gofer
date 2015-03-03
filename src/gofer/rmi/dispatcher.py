@@ -479,7 +479,7 @@ class Security:
     def __init__(self, method, fninfo):
         """
         :param method: The method name.
-        :type method: str
+        :type method: RMI
         :param fninfo: The decorated function info.
         :type fninfo: Options
         """

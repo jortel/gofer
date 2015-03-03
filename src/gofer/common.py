@@ -29,6 +29,11 @@ log = getLogger(__name__)
 
 
 def mkdir(path):
+    """
+    Make a directory at the specified path.
+    :param path: An absolute path.
+    :type path: str
+    """
     try:
         os.makedirs(path)
     except OSError, e:
@@ -214,6 +219,7 @@ def conditional(fn):
 
 def released(fn):
     """
+    Decorator.
     All thread singleton resources released.
     """
     def _fn(*args, **kwargs):

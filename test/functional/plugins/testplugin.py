@@ -149,7 +149,7 @@ class Dog:
         return 'PAM is happy!'
     
     @remote
-    @user(name='root')
+    @user(name='jortel')
     def testpam2(self):
         return 'PAM (2) is happy!'
     
@@ -164,13 +164,13 @@ class Dog:
         return 'PAM (4) is happy!'
     
     
-    @user(name='root')
+    @user(name='jortel')
     @user(name='jortel')
     @remote(secret='elmer')
     def testLayered(self):
         return 'LAYERED (1) is happy'
 
-    @user(name='root')
+    @user(name='jortel')
     @remote(secret='elmer')
     def testLayered2(self):
         return 'LAYERED (2) is happy'

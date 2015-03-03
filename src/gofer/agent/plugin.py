@@ -29,12 +29,13 @@ from gofer.common import released
 from gofer.rmi.dispatcher import Dispatcher
 from gofer.threadpool import ThreadPool
 from gofer.rmi.consumer import RequestConsumer
-from gofer.rmi.decorators import Remote
+from gofer.rmi.decorator import Remote
 from gofer.common import nvl, mkdir
 from gofer.config import Config, Graph, Reader, get_bool
 from gofer.agent.config import PLUGIN_SCHEMA, PLUGIN_DEFAULTS
-from gofer.agent.action import Actions
+from gofer.agent.decorator import Actions
 from gofer.agent.whiteboard import Whiteboard
+from gofer.agent.decorator import Loading
 from gofer.messaging import Document, Connector, Queue, Exchange
 from gofer.agent.rmi import Scheduler
 from gofer.pmon import PathMonitor
@@ -50,52 +51,6 @@ def attach(fn):
                 fn(plugin)
         plugin.pool.run(call)
     return _fn
-
-
-class Initializer(object):
-    """
-    Plugin initializer collection.
-    :cvar initializer: List of initializer functions.
-    :type initializer: list
-    """
-
-    initializer = []
-
-    @staticmethod
-    def add(function):
-        """
-        Add an initializer.
-        :param function: The function to add.
-        :type function: function
-        """
-        Initializer.initializer.append(function)
-
-    @staticmethod
-    def clear():
-        """
-        Clear the initializer list.
-        """
-        Initializer.initializer = []
-
-    @staticmethod
-    def run():
-        """
-        Run initializer functions.
-        """
-        for function in Initializer.initializer:
-            function()
-
-
-def initializer(fn):
-    """
-    Plugin @initializer decorator.
-    :param fn: A plugin initializer function.
-    :type fn: function
-    :return: fn
-    :rtype: function
-    """
-    Initializer.add(fn)
-    return fn
 
 
 class Container(object):
@@ -159,6 +114,25 @@ class Container(object):
                 continue
             unique.append(p)
         return unique
+
+
+class Hook(object):
+    """
+    Plugin hooks.
+    :ivar init: The *init* hook.
+    """
+
+    def __init__(self):
+        self.init = []
+        self.unload = []
+
+    def on_load(self):
+        for fn in self.init:
+            fn()
+
+    def on_unload(self):
+        for fn in self.unload:
+            fn()
 
 
 class Plugin(object):
@@ -244,6 +218,7 @@ class Plugin(object):
         self.dispatcher = Dispatcher()
         self.whiteboard = Whiteboard()
         self.scheduler = Scheduler(self)
+        self.hook = Hook()
         self.authenticator = None
         self.consumer = None
 
@@ -400,6 +375,12 @@ class Plugin(object):
                 break
         return dispatcher.dispatch(request)
 
+    def load(self):
+        """
+        Load the plugin.
+        """
+        self.hook.on_load()
+
     def unload(self):
         """
         Unload the plugin.
@@ -412,6 +393,7 @@ class Plugin(object):
         self.detach()
         Plugin.delete(self)
         self.shutdown()
+        self.hook.on_unload()
         self.scheduler.pending.delete()
         log.info('plugin:%s, unloaded', self.name)
 
@@ -428,6 +410,7 @@ class Plugin(object):
         self.detach()
         Plugin.delete(self)
         pending = self.shutdown()
+        self.hook.on_unload()
         plugin = PluginLoader.load(self.path)
         if plugin:
             for call in pending:
@@ -602,7 +585,7 @@ class PluginLoader:
         """
         Remote.clear()
         Actions.clear()
-        Initializer.clear()
+        Loading.plugin = plugin
         Plugin.add(plugin)
         try:
             path = plugin.descriptor.main.plugin
@@ -622,7 +605,7 @@ class PluginLoader:
             collated += PluginLoader.BUILTINS
             plugin.dispatcher += collated
             plugin.actions = Actions.collated()
-            Initializer.run()
+            plugin.load()
             return plugin
         except Exception:
             Plugin.delete(plugin)

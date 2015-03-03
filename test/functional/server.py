@@ -208,7 +208,7 @@ def demo_pam_authentication(yp, exit=0):
     dog = agent.Dog()
     print dog.testpam()
     # @user synonym
-    agent = Agent(user='root', password=yp['root'])
+    agent = Agent(user='jortel', password=yp['jortel'])
     dog = agent.Dog()
     print dog.testpam2()
     # the @pam with specified service
@@ -262,7 +262,7 @@ def demo_pam_authentication(yp, exit=0):
 def demo_layered_security(yp, exit=0):
     user = 'jortel'
     # multi-user
-    for user in ('jortel', 'root'):
+    for user in ('jortel', 'jortel'):
         agent = Agent(user=user, password=yp[user])
         dog = agent.Dog()
         print dog.testLayered()

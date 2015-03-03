@@ -22,7 +22,7 @@ from gofer.decorators import remote
 from gofer.rmi.tracker import Tracker
 from gofer.rmi.criteria import Builder
 from gofer.agent.plugin import Plugin
-from gofer.agent.action import Actions
+from gofer.agent.decorator import Actions
 
 
 log = getLogger(__name__)

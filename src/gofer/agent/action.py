@@ -13,64 +13,14 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-"""
-Action class for gofer agent.
-"""
-
 import inspect
 
-from gofer.collator import Collator
+from logging import getLogger
 from datetime import datetime as dt
 from datetime import timedelta
-from logging import getLogger
 
 
 log = getLogger(__name__)
-
-
-class Actions:
-    """
-    :cvar functions: The list of decorated functions.
-    """
-    functions = {}
-    
-    @staticmethod
-    def add(fn, interval):
-        Actions.functions[fn] = interval
-
-    @staticmethod
-    def clear():
-        """
-        Clear the list of actions.
-        """
-        Actions.functions = {}
-    
-    @staticmethod
-    def collated():
-        collated = []
-        collator = Collator()
-        classes, functions = collator.collate(Actions.functions)
-        for _class, methods in classes.items():
-            inst = _class()
-            for method, options in methods:
-                method = getattr(inst, method.__name__)
-                action = Action(method, **options)
-                collated.append(action)
-        for module, fn_list in functions.items():
-            for function, options in fn_list:
-                action = Action(function, **options)
-                collated.append(action)
-        return collated
-    
-
-def action(**interval):
-    """
-    Action decorator.
-    """
-    def decorator(fn):
-        Actions.add(fn, interval)
-        return fn
-    return decorator
 
 
 class Action:
@@ -78,13 +28,8 @@ class Action:
     Abstract recurring action (base).
     :ivar target: The action target.
     :type target: (method|function)
-    :keyword interval: The run interval.
-      One of:
-        - days
-        - seconds
-        - minutes
-        - hours
-        - weeks
+    :ivar interval: The run interval.
+    :type interval: dt
     :ivar last: The last run timestamp.
     :type last: datetime
     """
@@ -93,8 +38,14 @@ class Action:
         """
         :param target: The action target.
         :type target: (method|function)
-        :param interval: The run interval (minutes).
-        :type interval: timedelta
+        :keyword interval: The run interval.
+          One of:
+            - days
+            - seconds
+            - minutes
+            - hours
+            - weeks
+        :type interval: dict
         """
         self.target = target
         for k, v in interval.items():
@@ -121,9 +72,9 @@ class Action:
         Invoke the action.
         """
         try:
-            next = self.last + self.interval
+            _next = self.last + self.interval
             now = dt.utcnow()
-            if next < now:
+            if _next < now:
                 self.last = now
                 log.debug('perform "%s"', self.name())
                 self.target()

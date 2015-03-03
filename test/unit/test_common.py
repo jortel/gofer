@@ -23,6 +23,7 @@ from tempfile import mktemp
 from gofer.common import Singleton, ThreadSingleton, Options
 from gofer.common import synchronized, conditional, released
 from gofer.common import mkdir, nvl, valid_path
+from gofer.common import List
 
 
 class Thing(object):
@@ -364,3 +365,18 @@ class TestValidPath(TestCase):
         fp.close()
         os.chmod(self.path, 0x00)
         self.assertRaises(ValueError, valid_path, self.path)
+
+
+class TestList(TestCase):
+
+    def test_all(self):
+        _list = List()
+        _list.append(2)
+        self.assertEqual(_list._list, [2])
+        _list.append(3)
+        self.assertEqual(_list._list, [2, 3])
+        _list.insert(0, 1)
+        self.assertEqual(_list._list, [1, 2, 3])
+        _list.remove(2)
+        self.assertEqual(_list._list, [1, 3])
+        self.assertEqual(list(iter(_list)), _list._list)

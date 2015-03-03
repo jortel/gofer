@@ -13,70 +13,7 @@ from unittest import TestCase
 
 from mock import Mock, patch
 
-from gofer.agent.action import Actions, Action, action
-
-
-class TestActions(TestCase):
-
-    def test_add(self):
-        functions = {}
-        fn = '<function>'
-        interval = '<interval>'
-        with patch('gofer.agent.action.Actions.functions', functions):
-            Actions.add(fn, interval)
-            self.assertEqual(functions, {fn: interval})
-
-    def test_clear(self):
-        functions = {}
-        fn = '<function>'
-        interval = '<interval>'
-        with patch('gofer.agent.action.Actions.functions', functions):
-            Actions.add(fn, interval)
-            self.assertEqual(Actions.functions, {fn: interval})
-            Actions.clear()
-            self.assertEqual(Actions.functions, {})
-
-    @patch('gofer.agent.action.Action')
-    @patch('gofer.agent.action.Collator.collate')
-    def test_collated(self, collate, action):
-        functions = (
-            (Mock(__name__='m1'), dict(days=30)),
-            (Mock(__name__='m2'), dict(minutes=40)),
-            (Mock(__name__='fn1'), dict(hours=10)),
-            (Mock(__name__='fn2'), dict(seconds=20)),
-        )
-        class_1 = Mock(__name__='class_1')
-        mod_1 = Mock(__name__='mod_1')
-        collate.return_value = (
-            {class_1: functions[0:2]},
-            {mod_1: functions[2:4]}
-        )
-        actions = [
-            Mock(),
-            Mock(),
-            Mock(),
-            Mock(),
-        ]
-        action.side_effect = actions
-
-        with patch('gofer.agent.action.Actions.functions', dict(functions)):
-            collated = Actions.collated()
-            self.assertEqual(
-                action.call_args_list,
-                [
-                    ((class_1().m1,), functions[0][1]),
-                    ((class_1().m2,), functions[1][1]),
-                    ((functions[2][0],), functions[2][1]),
-                    ((functions[3][0],), functions[3][1]),
-                ])
-            self.assertEqual(collated, actions)
-
-    @patch('gofer.agent.action.Actions.add')
-    def test_decorator(self, add):
-        fn = Mock()
-        dfn = action(hours=10)
-        dfn(fn)
-        add.assert_called_once_with(fn, dict(hours=10))
+from gofer.agent.action import Action
 
 
 class TestAction(TestCase):
