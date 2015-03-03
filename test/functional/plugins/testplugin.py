@@ -33,9 +33,13 @@ HEARTBEAT = 500
 plugin.whiteboard['secret'] = 'garfield'
 
 
-@initializer
-def init_plugin():
+@load
+def load():
     print 'Initialized!'
+
+@unload
+def unload():
+    print 'Unloaded'
 
 
 class TestAuthenticator(Authenticator):
