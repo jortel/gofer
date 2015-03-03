@@ -17,8 +17,27 @@ from gofer import NAME, Singleton
 from gofer.config import Config, Graph
 from gofer.config import REQUIRED, OPTIONAL, ANY, BOOL, NUMBER
 
+#
+# [main]
+#
+#   monitor
+#      Plugin monitoring delay (seconds).  (0=disabled).
+#
+# [logging]
+#   <module>
+#      Logging level
+#
+# [pam]
+#   service
+#      The default PAM service for authentication.  Default:passwd
+#
 
 AGENT_SCHEMA = (
+    ('main', REQUIRED,
+        (
+            ('monitor', OPTIONAL, NUMBER),
+        )
+    ),
     ('logging', REQUIRED,
         []
     ),
@@ -105,6 +124,18 @@ PLUGIN_SCHEMA = (
 )
 
 
+AGENT_DEFAULTS = {
+    'main': {
+        'monitor': '0'
+    },
+    'logging': {
+    },
+    'pam': {
+        'service': 'passwd'
+    }
+}
+
+
 PLUGIN_DEFAULTS = {
     'main': {
         'enabled': '0',
@@ -129,10 +160,10 @@ class AgentConfig(Graph):
 
     PATH = '/etc/%s/agent.conf' % NAME
 
-    def __init__(self, path=PATH):
+    def __init__(self, path=None):
         """
         Read the configuration.
         """
-        conf = Config(path)
+        conf = Config(AGENT_DEFAULTS, path or AgentConfig.PATH)
         conf.validate(AGENT_SCHEMA)
         Graph.__init__(self, conf)

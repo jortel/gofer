@@ -16,15 +16,18 @@
 
 ROOT = '/opt/gofer'
 
-CONFIGURATION = """
+AGENT_CONF = """
+[main]
+monitor=2
+
 [logging]
-gofer.agent = info
-gofer.messaging = info
+gofer.agent=info
+gofer.messaging=info
 
 [messaging]
 
 [pam]
-service = passwd
+service=passwd
 """
 
 import os
@@ -45,7 +48,7 @@ from gofer.agent.config import AgentConfig
 AgentConfig.PATH = '/opt/gofer/agent.conf'
 if not os.path.exists(AgentConfig.PATH):
     with open(AgentConfig.PATH, 'w+') as fp:
-        fp.write(CONFIGURATION)
+        fp.write(AGENT_CONF)
 
 # lock
 from gofer.agent.main import AgentLock

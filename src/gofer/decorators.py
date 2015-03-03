@@ -138,7 +138,7 @@ def load(fn):
     :type fn: function
     :return: The decorated function.
     """
-    Loading.plugin.hook.init.append(fn)
+    Loading.plugin.hook.load.append(fn)
     return fn
 
 

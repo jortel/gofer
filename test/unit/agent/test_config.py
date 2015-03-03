@@ -14,15 +14,15 @@ from unittest import TestCase
 
 from mock import patch
 
-from gofer.agent.config import AgentConfig, AGENT_SCHEMA, Graph
+from gofer.agent.config import AgentConfig, AGENT_SCHEMA, AGENT_DEFAULTS, Graph
 
 
-class Test(TestCase):
+class TestAgentConfig(TestCase):
 
     @patch('gofer.agent.config.Config')
     def test_init(self, cfg):
         path = str(uuid4())
         agent = AgentConfig(path)
-        cfg.assert_called_once_with(path)
+        cfg.assert_called_once_with(AGENT_DEFAULTS, path)
         cfg.return_value.validate.assert_called_once_with(AGENT_SCHEMA)
         self.assertTrue(isinstance(agent, Graph))

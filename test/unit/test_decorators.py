@@ -104,14 +104,14 @@ class TestLoading(TestCase):
         loading.plugin = Mock()
         def fn(): pass
         load(fn)
-        loading.plugin.hook.init.append.assert_called_once_with(fn)
+        loading.plugin.hook.load.append.assert_called_once_with(fn)
 
     @patch('gofer.decorators.Loading')
     def test_initializer(self, loading):
         loading.plugin = Mock()
         def fn(): pass
         initializer(fn)
-        loading.plugin.hook.init.append.assert_called_once_with(fn)
+        loading.plugin.hook.load.append.assert_called_once_with(fn)
 
     @patch('gofer.decorators.Loading')
     def test_unload(self, loading):

@@ -119,18 +119,25 @@ class Container(object):
 class Hook(object):
     """
     Plugin hooks.
-    :ivar init: The *init* hook.
+    :ivar load: The *loaded* hook.
+    :ivar unload: The *unloaded* hook.
     """
 
     def __init__(self):
-        self.init = []
+        self.load = []
         self.unload = []
 
-    def on_load(self):
-        for fn in self.init:
+    def loaded(self):
+        """
+        Called after a plugin is loaded.
+        """
+        for fn in self.load:
             fn()
 
-    def on_unload(self):
+    def unloaded(self):
+        """
+        Called after a plugin has been unloaded.
+        """
         for fn in self.unload:
             fn()
 
@@ -379,7 +386,7 @@ class Plugin(object):
         """
         Load the plugin.
         """
-        self.hook.on_load()
+        self.hook.loaded()
 
     def unload(self):
         """
@@ -393,7 +400,7 @@ class Plugin(object):
         self.detach()
         Plugin.delete(self)
         self.shutdown()
-        self.hook.on_unload()
+        self.hook.unloaded()
         self.scheduler.pending.delete()
         log.info('plugin:%s, unloaded', self.name)
 
@@ -410,7 +417,7 @@ class Plugin(object):
         self.detach()
         Plugin.delete(self)
         pending = self.shutdown()
-        self.hook.on_unload()
+        self.hook.unloaded()
         plugin = PluginLoader.load(self.path)
         if plugin:
             for call in pending:
@@ -607,7 +614,7 @@ class PluginLoader:
             plugin.actions = Actions.collated()
             plugin.load()
             return plugin
-        except Exception:
+        except Exception, e:
             Plugin.delete(plugin)
             log.exception('plugin:%s, import failed', plugin.name)
 
@@ -619,13 +626,21 @@ class PluginMonitor(object):
     :type monitor: PathMonitor
     """
 
-    def __init__(self):
-        self.monitor = PathMonitor(2)
+    def __init__(self, delay):
+        """
+        :param delay: The delay in seconds.
+        :type delay: int
+        """
+        self.delay = delay
+        self.monitor = PathMonitor(delay)
 
     def start(self):
         """
         Start monitoring.
         """
+        if not self.delay:
+            # not enabled
+            return
         self.monitor.add(PluginDescriptor.ROOT, self.changed)
         for plugin in Plugin.all():
             self.monitor.add(plugin.path, self.changed)

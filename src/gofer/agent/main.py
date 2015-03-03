@@ -32,7 +32,6 @@ from gofer.agent.lock import Lock, LockFailed
 from gofer.agent.config import AgentConfig
 
 log = logging.getLogger(__name__)
-cfg = AgentConfig()
 
 
 class ActionThread(Thread):
@@ -66,8 +65,9 @@ class Agent:
     WAIT = None
 
     def __init__(self):
-        self.plugin_monitor = PluginMonitor()
-        pam.SERVICE = cfg.pam.service or pam.SERVICE
+        cfg = AgentConfig()
+        self.plugin_monitor = PluginMonitor(int(cfg.main.monitor))
+        pam.SERVICE = cfg.pam.service
 
     def start(self, block=True):
         """
@@ -156,6 +156,7 @@ def setup_logging():
     """
     Set logging levels based on configuration.
     """
+    cfg = AgentConfig()
     for name, level in cfg.logging:
         if not level:
             continue

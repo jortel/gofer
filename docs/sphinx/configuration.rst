@@ -13,6 +13,15 @@ files located in ``/etc/gofer/conf.d``.  During startup, gofer first reads
 
 All configuration files support the following sections and properties:
 
+[main]
+------
+
+Defines basic agent properties.
+
+- **monitor** - The (optional) plugin monitoring delay (seconds).  A value of 0 wil disable
+  plugin monitoring.  Default:0
+
+
 [logging]
 ---------
 
