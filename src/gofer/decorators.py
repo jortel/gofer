@@ -38,7 +38,7 @@ def options(fn):
     return opt
 
 
-def remote(secret=None):
+def remote(fx=None, secret=None):
     """
     The *remote* decorator.
     Used to expose function/methods as RMI targets.
@@ -48,15 +48,15 @@ def remote(secret=None):
     """
     def inner(fn):
         opt = options(fn)
-        if fn != secret:
+        if secret:
             required = Options()
             required.secret = secret
             auth = ('secret', required)
             opt.security.append(auth)
         Remote.add(fn)
         return fn
-    if inspect.isfunction(secret):
-        return inner(secret)
+    if inspect.isfunction(fx):
+        return inner(fx)
     else:
         return inner
 

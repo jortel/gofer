@@ -37,9 +37,14 @@ plugin.whiteboard['secret'] = 'garfield'
 def load():
     print 'Initialized!'
 
+
 @unload
 def unload():
     print 'Unloaded'
+
+
+def get_elmer():
+    return 'elmer'
 
 
 class TestAuthenticator(Authenticator):
@@ -170,7 +175,7 @@ class Dog:
     
     @user(name='jortel')
     @user(name='jortel')
-    @remote(secret='elmer')
+    @remote(secret=get_elmer)
     def testLayered(self):
         return 'LAYERED (1) is happy'
 

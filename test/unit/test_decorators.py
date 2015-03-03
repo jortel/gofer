@@ -51,7 +51,7 @@ class TestRemote(TestCase):
     def test_secret(self, _remote):
         def fn(): pass
         secret = 'fedex'
-        remote(secret)(fn)
+        remote(secret=secret)(fn)
         opt = getattr(fn, NAME)
         self.assertEqual(str(opt), str({'security': [('secret', {'secret': 'fedex'})]}))
         _remote.add.assert_called_once_with(fn)

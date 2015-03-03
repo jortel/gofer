@@ -186,6 +186,9 @@ class Plugin(object):
         :type plugin: Plugin
         """
         Plugin.container.delete(plugin)
+        if not plugin.impl:
+            # not loaded
+            return
         mod = plugin.impl.__name__
         del sys.modules[mod]
     
