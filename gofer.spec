@@ -160,6 +160,7 @@ Group: Development/Languages
 BuildRequires: python
 Requires: python-%{name} = %{version}
 Requires: python-qpid >= 0.18
+Requires: python-ssl
 
 %description -n python-%{name}-qpid
 Provides the gofer qpid messaging adapter package.
