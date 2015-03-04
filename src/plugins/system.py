@@ -17,16 +17,15 @@ System plugin.
 """
 
 from subprocess import Popen, PIPE, call
-from gofer.decorators import *
-from gofer.agent.plugin import Plugin
-from gofer.pam import authenticate
 from logging import getLogger
 
+from gofer.decorators import pam, remote
+from gofer.pam import authenticate
+
 log = getLogger(__name__)
-plugin = Plugin.find(__name__)
 
 
-class System:
+class System(object):
     
     @remote
     @pam(user='root')
@@ -39,10 +38,12 @@ class System:
             - +m    : where m is minutes.
             - hh:mm : time (hours:minutes) 24hr clock.
         :type when: str
+        :return: The exit code.
+        :rtype: int
         :see: shutdown(8)
         """
         command = 'shutdown -h %s &' % when
-        call(command, shell=True)
+        return call(command, shell=True)
 
     @remote
     @pam(user='root')
@@ -55,18 +56,108 @@ class System:
             - +m    : where m is minutes.
             - hh:mm : time (hours:minutes) 24hr clock.
         :type when: str
+        :return: The exit code.
+        :rtype: int
         :see: shutdown(8)
         """
         command = 'shutdown -r %s &' % when
-        call(command, shell=True)
+        return call(command, shell=True)
         
     @remote
     @pam(user='root')
     def cancel(self):
         """
         Cancel a scheduled shutdown; halt() or reboot().
+        :return: The exit code.
+        :rtype: int
         """
-        call('shutdown -c', shell=True)
+        return call('shutdown -c', shell=True)
+
+
+class Service(object):
+    """
+    Services management.
+    """
+
+    @remote
+    @pam(user='root')
+    def start(self, name):
+        """
+        Start the named service.
+        :param name: The service name.
+        :rtype name: str
+        :return: The exit code and stdout.
+        :rtype: tuple
+        """
+        command = ('service', name, 'start')
+        p = Popen(command, stdout=PIPE)
+        try:
+            result = p.stdout.read()
+            p.stdout.close()
+            status = p.wait()
+            return status, result
+        except OSError, e:
+            return -1, str(e)
+
+    @remote
+    @pam(user='root')
+    def stop(self, name):
+        """
+        Stop the named service.
+        :param name: The service name.
+        :rtype name: str
+        :return: The exit code and stdout.
+        :rtype: tuple
+        """
+        command = ('service', name, 'stop')
+        p = Popen(command, stdout=PIPE)
+        try:
+            result = p.stdout.read()
+            p.stdout.close()
+            status = p.wait()
+            return status, result
+        except OSError, e:
+            return -1, str(e)
+
+    @remote
+    @pam(user='root')
+    def restart(self, name):
+        """
+        Restart the named service.
+        :param name: The service name.
+        :rtype name: str
+        :return: The exit code and stdout.
+        :rtype: tuple
+        """
+        command = ('service', name, 'restart')
+        p = Popen(command, stdout=PIPE)
+        try:
+            result = p.stdout.read()
+            p.stdout.close()
+            status = p.wait()
+            return status, result
+        except OSError, e:
+            return -1, str(e)
+
+    @remote
+    @pam(user='root')
+    def status(self, name):
+        """
+        Get the *status* of the named service.
+        :param name: The service name.
+        :rtype name: str
+        :return: The exit code and stdout.
+        :rtype: tuple
+        """
+        command = ('service', name, 'status')
+        p = Popen(command, stdout=PIPE)
+        try:
+            result = p.stdout.read()
+            p.stdout.close()
+            status = p.wait()
+            return status, result
+        except OSError, e:
+            return -1, str(e)
 
 
 class Shell:
@@ -86,13 +177,15 @@ class Shell:
         :return: tuple (status, output)
         :rtype: tuple
         """
-        authenticate(user, password)
-        command = ('su', '-', user, '-c', cmd)
-        p = Popen(command, stdout=PIPE)
-        try:
-            result = p.stdout.read()
-            p.stdout.close()
-            status = p.wait()
-            return status, result
-        except OSError, e:
-            return -1, str(e)
+        if authenticate(user, password):
+            command = ('su', '-', user, '-c', cmd)
+            p = Popen(command, stdout=PIPE)
+            try:
+                result = p.stdout.read()
+                p.stdout.close()
+                status = p.wait()
+                return status, result
+            except OSError, e:
+                return -1, str(e)
+        else:
+            return -1, 'user "%s" not authenticated'
