@@ -14,7 +14,7 @@ from unittest import TestCase
 from mock import patch, Mock, ANY
 
 from gofer.agent.plugin import attach
-from gofer.agent.plugin import Container, Hook
+from gofer.agent.plugin import Container, Hook, Plugin
 
 
 class TestAttach(TestCase):
@@ -125,3 +125,145 @@ class TestHook(TestCase):
         h.unloaded()
         for fn in h.unload:
             fn.assert_called_once_with()
+
+
+class TestPlugin(TestCase):
+
+    @patch('gofer.agent.plugin.Hook')
+    @patch('gofer.agent.plugin.Scheduler')
+    @patch('gofer.agent.plugin.Whiteboard')
+    @patch('gofer.agent.plugin.Dispatcher')
+    @patch('gofer.agent.plugin.ThreadPool')
+    def test_init(self, pool, dispatcher, whiteboard, scheduler, hook):
+        threads = 4
+        descriptor = Mock(main=Mock(threads=threads))
+        path = '/tmp/path'
+
+        # test
+        plugin = Plugin(descriptor, path)
+
+        # validation
+        pool.assert_called_once_with(threads)
+        dispatcher.assert_called_once_with()
+        scheduler.assert_called_once_with(plugin)
+        hook.assert_called_once_with()
+        self.assertEqual(plugin.descriptor, descriptor)
+        self.assertEqual(plugin.path, path)
+        self.assertEqual(plugin.pool, pool.return_value)
+        self.assertEqual(plugin.impl, None)
+        self.assertEqual(plugin.actions, [])
+        self.assertEqual(plugin.dispatcher, dispatcher.return_value)
+        self.assertEqual(plugin.whiteboard, whiteboard.return_value)
+        self.assertEqual(plugin.scheduler, scheduler.return_value)
+        self.assertEqual(plugin.hook, hook.return_value)
+        self.assertEqual(plugin.authenticator, None)
+        self.assertEqual(plugin.consumer, None)
+
+    @patch('gofer.agent.plugin.BrokerModel')
+    @patch('gofer.agent.plugin.Connector')
+    @patch('gofer.agent.plugin.Whiteboard', Mock())
+    @patch('gofer.agent.plugin.Scheduler', Mock())
+    @patch('gofer.agent.plugin.ThreadPool', Mock())
+    def test_properties(self, connector, model):
+        descriptor = Mock(
+            main=Mock(
+                enabled='1',
+                threads=4,
+                forward='a, b, c',
+                accept='d, e, f'),
+            messaging=Mock(
+                uuid='x99',
+                url='amqp://localhost')
+        )
+        plugin = Plugin(descriptor, '')
+        # name
+        self.assertEqual(plugin.name, descriptor.main.name)
+        # stream
+        self.assertEqual(plugin.stream, descriptor.main.name)
+        # cfg
+        self.assertEqual(plugin.cfg, descriptor)
+        # uuid
+        self.assertEqual(plugin.uuid, descriptor.messaging.uuid)
+        # url
+        self.assertEqual(plugin.url, descriptor.messaging.url)
+        # enabled
+        self.assertTrue(plugin.enabled)
+        # connector
+        self.assertEqual(plugin.connector, connector.return_value)
+        connector.assert_called_once_with(descriptor.messaging.url)
+        # queue
+        self.assertEqual(plugin.queue, model.return_value.queue)
+        model.assert_called_once_with(plugin)
+        # forward
+        _list = descriptor.main.forward
+        self.assertEqual(
+            plugin.forward,
+            set([p.strip() for p in _list.split(',')]))
+        # accept
+        _list = descriptor.main.accept
+        self.assertEqual(
+            plugin.accept,
+            set([p.strip() for p in _list.split(',')]))
+
+    @patch('gofer.agent.plugin.Scheduler')
+    @patch('gofer.agent.plugin.Whiteboard', Mock())
+    @patch('gofer.agent.plugin.ThreadPool', Mock())
+    def test_start(self, scheduler):
+        descriptor = Mock(main=Mock(threads=4))
+
+        # test
+        plugin = Plugin(descriptor, '')
+        plugin.attach = Mock()
+        plugin.start()
+
+        # validation
+        plugin.attach.assert_called_once_with()
+        scheduler.return_value.start.assert_called_once_with()
+
+    @patch('gofer.agent.plugin.Scheduler')
+    @patch('gofer.agent.plugin.ThreadPool')
+    @patch('gofer.agent.plugin.Whiteboard', Mock())
+    def test_shutdown(self, pool, scheduler):
+        descriptor = Mock(main=Mock(threads=4))
+
+        # test
+        plugin = Plugin(descriptor, '')
+        plugin.detach = Mock()
+        plugin.shutdown(False)
+
+        # validation
+        plugin.detach.assert_called_once_with(False)
+        scheduler.return_value.shutdown.assert_called_once_with()
+        scheduler.return_value.join.assert_called_once_with()
+        pool.return_value.shutdown.assert_called_once_with()
+
+    @patch('gofer.agent.plugin.Connector')
+    @patch('gofer.agent.plugin.Scheduler', Mock())
+    @patch('gofer.agent.plugin.ThreadPool', Mock())
+    @patch('gofer.agent.plugin.Whiteboard', Mock())
+    def test_refresh(self, connector):
+        url = 'amqp://localhost'
+        descriptor = Mock(
+            main=Mock(
+                enabled='1',
+                threads=4),
+            messaging=Mock(
+                uuid='x99',
+                url='amqp://localhost',
+                cacert='ca',
+                clientkey='key',
+                clientcert='crt')
+        )
+
+        # test
+        plugin = Plugin(descriptor, '')
+        plugin.refresh()
+
+        # validation
+        connector.assert_called_once_with(descriptor.messaging.url)
+        connector = connector.return_value
+        connector.add.assert_called_once_with()
+        self.assertEqual(connector.ssl.ca_certificate, descriptor.messaging.cacert)
+        self.assertEqual(connector.ssl.client_key, descriptor.messaging.clientkey)
+        self.assertEqual(connector.ssl.client_certificate, descriptor.messaging.clientcert)
+        self.assertEqual(connector.ssl.host_validation, descriptor.messaging.host_validation)

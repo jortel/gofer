@@ -286,14 +286,18 @@ class Plugin(object):
         self.attach()
         self.scheduler.start()
 
-    def shutdown(self):
+    def shutdown(self, teardown=True):
         """
         Shutdown the plugin.
+        - detach
         - shutdown the thread pool.
         - shutdown the scheduler.
+        :param teardown: Teardown the broker model.
+        :type teardown: bool
         :return: List of pending requests.
         :rtype: list
         """
+        self.detach(teardown)
         pending = self.pool.shutdown()
         self.scheduler.shutdown()
         self.scheduler.join()
@@ -306,6 +310,7 @@ class Plugin(object):
         connector = Connector(self.url)
         messaging = self.cfg.messaging
         connector.ssl.ca_certificate = messaging.cacert
+        connector.ssl.client_key = messaging.clientkey
         connector.ssl.client_certificate = messaging.clientcert
         connector.ssl.host_validation = messaging.host_validation
         connector.add()
@@ -316,7 +321,7 @@ class Plugin(object):
         """
         Attach (connect) to AMQP connector using the specified uuid.
         """
-        self.detach(teardown=False)
+        self.detach(False)
         self.refresh()
         model = BrokerModel(self)
         queue = model.setup()
@@ -400,7 +405,6 @@ class Plugin(object):
         - Plugin shutdown.
         - Purge pending requests.
         """
-        self.detach()
         Plugin.delete(self)
         self.shutdown()
         self.hook.unloaded()
@@ -417,9 +421,8 @@ class Plugin(object):
         - Reload plugin.
         - Reschedule pending requests to reloaded plugin.
         """
-        self.detach()
         Plugin.delete(self)
-        pending = self.shutdown()
+        pending = self.shutdown(False)
         self.hook.unloaded()
         plugin = PluginLoader.load(self.path)
         if plugin:

@@ -110,6 +110,7 @@ PLUGIN_SCHEMA = (
             ('uuid', OPTIONAL, ANY),
             ('cacert', OPTIONAL, ANY),
             ('clientcert', OPTIONAL, ANY),
+            ('clientkey', OPTIONAL, ANY),
             ('host_validation', OPTIONAL, BOOL),
         )
     ),
