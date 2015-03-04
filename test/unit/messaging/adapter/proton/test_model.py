@@ -34,15 +34,17 @@ class TestError(TestCase):
 
 class TestMethod(TestCase):
 
-    def test_init(self):
+    @patch('gofer.messaging.adapter.proton.model.Connection')
+    def test_init(self, _connection):
         url = 'test-url'
         name = model.CREATE
         arguments = {'a': 1}
         method = Method(url, name, arguments)
+        _connection.assert_called_once_with(url)
         self.assertEqual(method.url, url)
         self.assertEqual(method.name, name)
         self.assertEqual(method.arguments, arguments)
-        self.assertEqual(method.connection, None)
+        self.assertEqual(method.connection, _connection.return_value)
         self.assertEqual(method.sender, None)
         self.assertEqual(method.receiver, None)
 
@@ -150,18 +152,15 @@ class TestMethod(TestCase):
         receiver.close.side_effect = ValueError
         connection.receiver.return_value = receiver
         connection.sender.return_value = sender
-        con = Mock()
 
         # test
         method = Method(url, '', {})
         method.close = Mock()
-        method.connection = con
         method.repair()
 
         # validation
         method.close.assert_called_once_with()
-        con.close.assert_called_once_with()
-        _connection.assert_called_once_with(url)
+        connection.close.assert_called_once_with()
         connection.open.assert_called_once_with()
         connection.sender.assert_called_once_with(model.ADDRESS)
         connection.receiver.assert_called_once_with(model.ADDRESS, dynamic=True)

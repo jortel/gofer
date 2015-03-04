@@ -83,7 +83,7 @@ class Method(object):
         self.url = url
         self.name = name
         self.arguments = arguments
-        self.connection = None
+        self.connection = Connection(url)
         self.session = None
         self.sender = None
         self.receiver = None
@@ -120,7 +120,17 @@ class Method(object):
         if self.is_open():
             # already open
             return
-        self.connection = Connection(self.url)
+        self.connection.open()
+        self.session = self.connection.session()
+        self.sender = self.session.sender(ADDRESS)
+        self.receiver = self.session.receiver(self.reply_to)
+
+    def repair(self):
+        """
+        Repair the connection and get a sender and receiver.
+        """
+        self.close()
+        self.connection.close()
         self.connection.open()
         self.session = self.connection.session()
         self.sender = self.session.sender(ADDRESS)

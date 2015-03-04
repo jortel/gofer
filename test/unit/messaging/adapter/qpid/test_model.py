@@ -34,15 +34,17 @@ class TestError(TestCase):
 
 class TestMethod(TestCase):
 
-    def test_init(self):
+    @patch('gofer.messaging.adapter.qpid.model.Connection')
+    def test_init(self, _connection):
         url = 'test-url'
         name = model.CREATE
         arguments = {'a': 1}
         method = Method(url, name, arguments)
+        _connection.assert_called_once_with(url)
         self.assertEqual(method.url, url)
         self.assertEqual(method.name, name)
         self.assertEqual(method.arguments, arguments)
-        self.assertEqual(method.connection, None)
+        self.assertEqual(method.connection, _connection.return_value)
         self.assertEqual(method.session, None)
         self.assertEqual(method.sender, None)
         self.assertEqual(method.receiver, None)
@@ -132,7 +134,39 @@ class TestMethod(TestCase):
         method.open()
 
         # validation
-        _connection.assert_called_once_with(url)
+        connection.open.assert_called_once_with()
+        session.sender.assert_called_once_with(model.ADDRESS)
+        session.receiver.assert_called_once_with(reply_to)
+        self.assertEqual(method.connection, connection)
+        self.assertEqual(method.sender, sender)
+        self.assertEqual(method.receiver, receiver)
+
+    @patch('gofer.messaging.adapter.qpid.model.uuid4')
+    @patch('gofer.messaging.adapter.qpid.model.Connection')
+    def test_repair(self, _connection, uuid):
+        url = 'url-test'
+        uuid.return_value = '5138'
+        connection = Mock()
+        _connection.return_value = connection
+        session = Mock()
+        session.close.side_effect = ValueError
+        sender = Mock()
+        sender.close.side_effect = ValueError
+        receiver = Mock()
+        receiver.close.side_effect = ValueError
+        connection.session.return_value = session
+        session.receiver.return_value = receiver
+        session.sender.return_value = sender
+        reply_to = model.REPLY_TO % uuid.return_value
+
+        # test
+        method = Method(url, '', {})
+        method.close = Mock()
+        method.repair()
+
+        # validation
+        method.close.assert_called_once_with()
+        connection.close.assert_called_once_with()
         connection.open.assert_called_once_with()
         session.sender.assert_called_once_with(model.ADDRESS)
         session.receiver.assert_called_once_with(reply_to)

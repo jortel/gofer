@@ -34,11 +34,8 @@ def reliable(fn):
                 raise NotFound(*e.args)
             except LinkError:
                 sleep(DELAY)
-                thing.close()
-                repair = thing.open
+                repair = thing.repair
             except ConnectionError:
                 sleep(DELAY)
-                thing.close()
-                thing.connection.close()
-                repair = thing.open
+                repair = thing.repair
     return _fn
