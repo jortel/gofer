@@ -331,7 +331,6 @@ class Plugin(object):
         self.consumer = consumer
         log.info('plugin:%s queue:%s, attached', self.name, self.uuid)
 
-    @released
     @synchronized
     def detach(self, teardown=True):
         """
@@ -472,6 +471,7 @@ class BrokerModel(object):
     def exchange(self):
         return self.cfg.exchange
 
+    @released
     def setup(self):
         """
         Setup the broker model.
@@ -488,6 +488,7 @@ class BrokerModel(object):
                 exchange.bind(queue, url)
         return queue
 
+    @released
     def teardown(self):
         """
         Teardown the broker model.
