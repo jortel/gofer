@@ -92,7 +92,6 @@ class Test(object):
         address = Address('test.10')
         queue = Queue(address.queue)
         queue.durable = False
-        queue.auto_delete = True
         queue.declare(self.url)
         self.producer_reader(address)
 
@@ -101,11 +100,9 @@ class Test(object):
         address = Address('test_11.direct/test.11')
         exchange = Exchange(address.exchange, policy='direct')
         exchange.durable = False
-        exchange.auto_delete = True
         exchange.declare(self.url)
         queue = Queue(address.queue)
         queue.durable = False
-        queue.auto_delete = True
         queue.declare(self.url)
         exchange.bind(queue, self.url)
         self.producer_reader(address)
@@ -115,11 +112,9 @@ class Test(object):
         address = Address('test_12.topic/test.12')
         exchange = Exchange(address.exchange, policy='topic')
         exchange.durable = False
-        exchange.auto_delete = True
         exchange.declare(self.url)
         queue = Queue(address.queue)
         queue.durable = False
-        queue.auto_delete = True
         queue.declare(self.url)
         exchange.bind(queue, self.url)
         self.producer_reader(address)
