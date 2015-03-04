@@ -267,3 +267,99 @@ class TestPlugin(TestCase):
         self.assertEqual(connector.ssl.client_key, descriptor.messaging.clientkey)
         self.assertEqual(connector.ssl.client_certificate, descriptor.messaging.clientcert)
         self.assertEqual(connector.ssl.host_validation, descriptor.messaging.host_validation)
+
+    @patch('gofer.agent.plugin.RequestConsumer')
+    @patch('gofer.agent.plugin.BrokerModel')
+    @patch('gofer.agent.plugin.ThreadPool')
+    @patch('gofer.agent.plugin.Scheduler', Mock())
+    @patch('gofer.agent.plugin.Whiteboard', Mock())
+    def test_attach(self, pool, model, consumer):
+        queue = Mock()
+        descriptor = Mock(main=Mock(threads=4))
+        pool.return_value.run.side_effect = lambda fn: fn()
+        model.return_value.setup.return_value = queue
+
+        # test
+        plugin = Plugin(descriptor, '')
+        plugin.authenticator = Mock()
+        plugin.detach = Mock()
+        plugin.refresh = Mock()
+        plugin.attach()
+
+        # validation
+        plugin.detach.assert_called_once_with(False)
+        model.assert_called_once_with(plugin)
+        model.return_value.setup.assert_called_once_with()
+        consumer.assert_called_once_with(queue, plugin)
+        consumer = consumer.return_value
+        consumer.start.assert_called_once_with()
+        self.assertEqual(consumer.authenticator, plugin.authenticator)
+        self.assertEqual(plugin.consumer, consumer)
+
+    @patch('gofer.agent.plugin.BrokerModel')
+    @patch('gofer.agent.plugin.ThreadPool', Mock())
+    @patch('gofer.agent.plugin.Scheduler', Mock())
+    @patch('gofer.agent.plugin.Whiteboard', Mock())
+    def test_detach(self, model):
+        descriptor = Mock(main=Mock(threads=4))
+        consumer = Mock()
+
+        # test
+        plugin = Plugin(descriptor, '')
+        plugin.consumer = consumer
+        plugin.detach()
+
+        # validation
+        consumer.shutdown.assert_called_once_with()
+        consumer.join.assert_called_once_with()
+        model.assert_called_once_with(plugin)
+        model = model.return_value
+        model.teardown.assert_called_once_with()
+        self.assertEqual(plugin.consumer, None)
+
+    @patch('gofer.agent.plugin.BrokerModel')
+    @patch('gofer.agent.plugin.ThreadPool', Mock())
+    @patch('gofer.agent.plugin.Scheduler', Mock())
+    @patch('gofer.agent.plugin.Whiteboard', Mock())
+    def test_detach_not_attached(self, model):
+        descriptor = Mock(main=Mock(threads=4))
+
+        # test
+        plugin = Plugin(descriptor, '')
+        plugin.detach()
+
+        # validation
+        self.assertFalse(model.called)
+
+    @patch('gofer.agent.plugin.BrokerModel')
+    @patch('gofer.agent.plugin.ThreadPool', Mock())
+    @patch('gofer.agent.plugin.Scheduler', Mock())
+    @patch('gofer.agent.plugin.Whiteboard', Mock())
+    def test_detach_no_teardown(self, model):
+        descriptor = Mock(main=Mock(threads=4))
+        consumer = Mock()
+
+        # test
+        plugin = Plugin(descriptor, '')
+        plugin.consumer = consumer
+        plugin.detach(teardown=False)
+
+        # validation
+        consumer.shutdown.assert_called_once_with()
+        consumer.join.assert_called_once_with()
+        self.assertFalse(model.called)
+        self.assertEqual(plugin.consumer, None)
+
+    @patch('gofer.agent.plugin.ThreadPool', Mock())
+    @patch('gofer.agent.plugin.Scheduler', Mock())
+    @patch('gofer.agent.plugin.Whiteboard', Mock())
+    def test_provides(self):
+        descriptor = Mock(main=Mock(threads=4))
+
+        # test
+        plugin = Plugin(descriptor, '')
+        plugin.dispatcher = Mock()
+        provides = plugin.provides('Dog')
+
+        # validation
+        self.assertEqual(provides, plugin.dispatcher.provides.return_value)

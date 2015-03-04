@@ -113,8 +113,9 @@ Defines basic plugin properties.
    - (amqps|ssl) port:5671
 
 - **cacert** - The (optional) SSL CA certificate used to validate the server certificate.
+- **clientkey** - The (optional) SSL client private key.
 - **clientcert** - The (optional) SSL client certificate.
-  A (PEM) file containing **both** the private key and certificate.
+  A (PEM) file may contain **both** the private key and certificate.
 - **host_validation** - The (optional) flag indicates SSL host validation should be performed.
   Default to (1) when not specified.
 
