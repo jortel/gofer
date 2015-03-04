@@ -64,16 +64,24 @@ class Sender(BaseSender):
     @reliable
     def open(self):
         """
-        Open the reader.
+        Open the sender.
         """
         if self.is_open():
             # already opened
             return
         self.connection.open()
 
+    def repair(self):
+        """
+        Repair the sender.
+        """
+        self.close()
+        self.connection.close()
+        self.connection.open()
+
     def close(self):
         """
-        Close the reader.
+        Close the sender.
         """
         pass
 

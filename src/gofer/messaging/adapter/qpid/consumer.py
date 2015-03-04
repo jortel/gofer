@@ -75,6 +75,17 @@ class Reader(BaseReader):
         self.connection.open()
         self.session = self.connection.session()
         self.receiver = self.session.receiver(self.node.address)
+
+    def repair(self):
+        """
+        Repair the reader.
+        :raise: NotFound
+        """
+        self.close()
+        self.connection.close()
+        self.connection.open()
+        self.session = self.connection.session()
+        self.receiver = self.session.receiver(self.node.address)
     
     def close(self):
         """

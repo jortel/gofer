@@ -68,6 +68,7 @@ class Sender(BaseSender):
         """
         return self.channel is not None
 
+    @reliable
     def open(self):
         """
         Open the reader.
@@ -75,6 +76,15 @@ class Sender(BaseSender):
         if self.is_open():
             # already opened
             return
+        self.connection.open()
+        self.channel = self.connection.channel()
+
+    def repair(self):
+        """
+        Repair the reader.
+        """
+        self.close()
+        self.connection.close()
         self.connection.open()
         self.channel = self.connection.channel()
 

@@ -31,15 +31,12 @@ def reliable(fn):
             except ChannelError, e:
                 if e.code != 404:
                     sleep(DELAY)
-                    thing.close()
-                    repair = thing.open
+                    repair = thing.repair
                 else:
                     raise NotFound(*e.args)
             except CONNECTION_EXCEPTIONS:
                 sleep(DELAY)
-                thing.close()
-                thing.connection.close()
-                repair = thing.open
+                repair = thing.repair
     return _fn
 
 

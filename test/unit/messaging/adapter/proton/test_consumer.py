@@ -79,6 +79,24 @@ class TestReader(TestCase):
         connection.return_value.receiver.assert_called_once_with(node.address)
         self.assertEqual(reader.receiver, reader.connection.receiver.return_value)
 
+    @patch('gofer.messaging.adapter.proton.consumer.Connection')
+    def test_repair(self, connection):
+        url = 'test-url'
+        node = Mock(address='test')
+
+        # test
+        reader = Reader(node, url)
+        reader.close = Mock()
+
+        reader.repair()
+
+        # validation
+        reader.close.assert_called_once_with()
+        reader.connection.close.assert_called_once_with()
+        connection.return_value.open.assert_called_once_with()
+        connection.return_value.receiver.assert_called_once_with(node.address)
+        self.assertEqual(reader.receiver, reader.connection.receiver.return_value)
+
     @patch('gofer.messaging.adapter.proton.consumer.Connection', Mock())
     def test_open_already(self):
         url = 'test-url'

@@ -349,6 +349,7 @@ class TestMessenger(TestCase):
         messenger = Messenger(TEST_URL)
         self.assertRaises(NotImplementedError, messenger.is_open)
         self.assertRaises(NotImplementedError, messenger.open)
+        self.assertRaises(NotImplementedError, messenger.repair)
         self.assertRaises(NotImplementedError, messenger.close)
 
     @patch('gofer.messaging.adapter.model.Messenger.open')
@@ -415,6 +416,18 @@ class TestReader(TestCase):
         reader = Reader(node, url)
         reader.open()
         _impl.open.assert_called_with()
+
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_repair(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Reader.return_value = _impl
+        _find.return_value = plugin
+        url = TEST_URL
+        node = Node('test')
+        reader = Reader(node, url)
+        reader.repair()
+        _impl.repair.assert_called_with()
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_is_open(self, _find):
@@ -730,6 +743,17 @@ class TestSender(TestCase):
         _impl.open.assert_called_with()
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_repair(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Sender.return_value = _impl
+        _find.return_value = plugin
+        url = TEST_URL
+        sender = Sender(url)
+        sender.repair()
+        _impl.repair.assert_called_with()
+
+    @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_close(self, _find):
         _impl = Mock()
         plugin = Mock()
@@ -796,6 +820,17 @@ class TestProducer(TestCase):
         producer = Producer(url)
         producer.open()
         _impl.open.assert_called_with()
+
+    @patch('gofer.messaging.adapter.model.Adapter.find')
+    def test_repair(self, _find):
+        _impl = Mock()
+        plugin = Mock()
+        plugin.Sender.return_value = _impl
+        _find.return_value = plugin
+        url = TEST_URL
+        producer = Producer(url)
+        producer.repair()
+        _impl.repair.assert_called_with()
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_close(self, _find):

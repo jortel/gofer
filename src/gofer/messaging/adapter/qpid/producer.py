@@ -53,11 +53,20 @@ class Sender(BaseSender):
 
     def open(self):
         """
-        Open the reader.
+        Open the sender.
         """
         if self.is_open():
             # already opened
             return
+        self.connection.open()
+        self.session = self.connection.session()
+
+    def repair(self):
+        """
+        Repair the sender.
+        """
+        self.close()
+        self.connection.close()
         self.connection.open()
         self.session = self.connection.session()
 

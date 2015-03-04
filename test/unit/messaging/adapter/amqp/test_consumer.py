@@ -85,6 +85,27 @@ class TestReader(TestCase):
         self.assertEqual(reader.channel, connection.return_value.channel.return_value)
         self.assertEqual(reader.receiver, receiver.return_value)
 
+    @patch('gofer.messaging.adapter.amqp.consumer.Connection')
+    @patch('gofer.messaging.adapter.amqp.consumer.Receiver')
+    def test_repair(self, receiver, connection):
+        url = 'test-url'
+        queue = Queue('test-queue')
+        receiver.return_value.open.return_value = receiver.return_value
+
+        # test
+        reader = Reader(queue, url)
+        reader.close = Mock()
+        reader.repair()
+
+        # validation
+        reader.close.assert_called_once_with()
+        reader.connection.close.assert_called_once_with()
+        connection.return_value.open.assert_called_once_with()
+        connection.return_value.channel.assert_called_once_with()
+        receiver.assert_called_once_with(reader)
+        self.assertEqual(reader.channel, connection.return_value.channel.return_value)
+        self.assertEqual(reader.receiver, receiver.return_value)
+
     @patch('gofer.messaging.adapter.amqp.consumer.Connection', Mock())
     @patch('gofer.messaging.adapter.amqp.consumer.Receiver')
     def test_open_already(self, receiver):

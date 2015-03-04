@@ -72,6 +72,15 @@ class Reader(BaseReader):
         self.connection.open()
         self.receiver = self.connection.receiver(self.node.address)
 
+    def repair(self):
+        """
+        Repair the reader.
+        """
+        self.close()
+        self.connection.close()
+        self.connection.open()
+        self.receiver = self.connection.receiver(self.node.address)
+
     def close(self):
         """
         Close the reader.

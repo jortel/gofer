@@ -81,6 +81,20 @@ class TestSender(TestCase):
         # validation
         connection.return_value.open.assert_called_once_with()
 
+    @patch('gofer.messaging.adapter.proton.producer.Connection')
+    def test_repair(self, connection):
+        url = 'test-url'
+
+        # test
+        sender = Sender(url)
+        sender.close = Mock()
+        sender.repair()
+
+        # validation
+        sender.connection.close.assert_called_once_with()
+        sender.close.assert_called_once_with()
+        connection.return_value.open.assert_called_once_with()
+
     @patch('gofer.messaging.adapter.proton.producer.Connection', Mock())
     def test_open_already(self):
         url = 'test-url'

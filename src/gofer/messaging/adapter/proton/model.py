@@ -141,6 +141,17 @@ class Method(object):
         self.receiver = self.connection.receiver(ADDRESS, dynamic=True)
         self.sender = self.connection.sender(ADDRESS)
 
+    def repair(self):
+        """
+        Repair the connection and get a sender and receiver.
+        """
+        self.close()
+        self.connection.close()
+        self.connection = Connection(self.url)
+        self.connection.open()
+        self.receiver = self.connection.receiver(ADDRESS, dynamic=True)
+        self.sender = self.connection.sender(ADDRESS)
+
     def close(self):
         """
         Close the sender and receiver.
