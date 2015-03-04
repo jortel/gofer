@@ -188,4 +188,4 @@ class Shell:
             except OSError, e:
                 return -1, str(e)
         else:
-            return -1, 'user "%s" not authenticated'
+            return -1, 'user "%s" not authenticated' % user
