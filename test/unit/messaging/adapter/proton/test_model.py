@@ -137,6 +137,38 @@ class TestMethod(TestCase):
         self.assertEqual(method.sender, sender)
         self.assertEqual(method.receiver, receiver)
 
+    @patch('gofer.messaging.adapter.proton.model.uuid4')
+    @patch('gofer.messaging.adapter.proton.model.Connection')
+    def test_repair(self, _connection, uuid):
+        url = 'url-test'
+        uuid.return_value = '5138'
+        connection = Mock()
+        _connection.return_value = connection
+        sender = Mock()
+        sender.close.side_effect = ValueError
+        receiver = Mock()
+        receiver.close.side_effect = ValueError
+        connection.receiver.return_value = receiver
+        connection.sender.return_value = sender
+        con = Mock()
+
+        # test
+        method = Method(url, '', {})
+        method.close = Mock()
+        method.connection = con
+        method.repair()
+
+        # validation
+        method.close.assert_called_once_with()
+        con.close.assert_called_once_with()
+        _connection.assert_called_once_with(url)
+        connection.open.assert_called_once_with()
+        connection.sender.assert_called_once_with(model.ADDRESS)
+        connection.receiver.assert_called_once_with(model.ADDRESS, dynamic=True)
+        self.assertEqual(method.connection, connection)
+        self.assertEqual(method.sender, sender)
+        self.assertEqual(method.receiver, receiver)
+
     def test_close(self):
         connection = Mock()
         sender = Mock()

@@ -67,6 +67,18 @@ class Reader(BaseReader):
         receiver = Receiver(self)
         self.receiver = receiver.open()
 
+    def repair(self):
+        """
+        Repair the reader.
+        :raise: NotFound
+        """
+        self.close()
+        self.connection.close()
+        self.connection.open()
+        self.channel = self.connection.channel()
+        receiver = Receiver(self)
+        self.receiver = receiver.open()
+
     def close(self):
         """
         Close the reader.

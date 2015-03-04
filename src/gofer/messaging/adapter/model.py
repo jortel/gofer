@@ -428,6 +428,13 @@ class Messenger(Model):
         """
         raise NotImplementedError()
 
+    def repair(self):
+        """
+        Repair the messenger.
+        :raise: NotFound
+        """
+        raise NotImplementedError()
+
     def close(self):
         """
         Close the messenger.
@@ -580,6 +587,14 @@ class Reader(BaseReader):
         self._impl.open()
 
     @model
+    def repair(self):
+        """
+        Repair the reader.
+        :raise: NotFound
+        """
+        self._impl.repair()
+
+    @model
     def close(self):
         """
         Close the reader.
@@ -726,6 +741,14 @@ class Sender(BaseSender):
         self._impl.open()
 
     @model
+    def repair(self):
+        """
+        Repair the sender.
+        :raise: NotFound
+        """
+        self._impl.repair()
+
+    @model
     def close(self):
         """
         Close the sender.
@@ -780,6 +803,14 @@ class Producer(Messenger):
         :raise: ModelError
         """
         self._impl.open()
+
+    @model
+    def repair(self):
+        """
+        Repair the producer.
+        :raise: ModelError
+        """
+        self._impl.repair()
 
     @model
     def close(self):

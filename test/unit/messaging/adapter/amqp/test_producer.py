@@ -103,6 +103,22 @@ class TestSender(TestCase):
         connection.return_value.channel.assert_called_once_with()
         self.assertEqual(sender.channel, connection.return_value.channel.return_value)
 
+    @patch('gofer.messaging.adapter.amqp.producer.Connection')
+    def test_repair(self, connection):
+        url = 'test-url'
+
+        # test
+        sender = Sender(url)
+        sender.close = Mock()
+        sender.repair()
+
+        # validation
+        sender.close.assert_called_once_with()
+        sender.connection.close.assert_called_once_with()
+        connection.return_value.open.assert_called_once_with()
+        connection.return_value.channel.assert_called_once_with()
+        self.assertEqual(sender.channel, connection.return_value.channel.return_value)
+
     @patch('gofer.messaging.adapter.amqp.producer.Connection', Mock())
     def test_open_already(self):
         url = 'test-url'

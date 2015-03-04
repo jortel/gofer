@@ -70,10 +70,8 @@ class TestReliable(TestCase):
         wrapped(*args, **kwargs)
 
         # validation
-        thing.close.assert_called_once_with()
-        thing.connection.close.assert_called_once_with()
         sleep.assert_called_once_with(DELAY)
-        thing.open.assert_called_once_with()
+        thing.repair.assert_called_once_with()
         self.assertEqual(
             fn.call_args_list,
             [
@@ -95,10 +93,8 @@ class TestReliable(TestCase):
         wrapped(*args, **kwargs)
 
         # validation
-        thing.close.assert_called_once_with()
         sleep.assert_called_once_with(DELAY)
-        thing.open.assert_called_once_with()
-        self.assertFalse(thing.connection.close.called)
+        thing.repair.assert_called_once_with()
         self.assertEqual(
             fn.call_args_list,
             [

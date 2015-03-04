@@ -45,15 +45,12 @@ def reliable(fn):
             except LinkDetached, le:
                 if le.condition != NOT_FOUND:
                     sleep(DELAY)
-                    thing.close()
-                    repair = thing.open
+                    repair = thing.repair
                 else:
                     raise NotFound(*le.args)
             except ConnectionException:
                 sleep(DELAY)
-                thing.close()
-                thing.connection.close()
-                repair = thing.open
+                repair = thing.repair
     return _fn
 
 
