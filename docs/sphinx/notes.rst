@@ -160,3 +160,38 @@ Notes:
 Deprecated:
 
  - Using gofer.proxy.agent() has been deprecated.
+
+
+gofer 2.6
+^^^^^^^^^
+
+Notes:
+
+ - Fixed recursion issue in proton adapter reconnect logic.
+
+ - Add support for dynamic plugin loading, reloading and unloading.
+
+ - Add plugin monitoring.  When enabled in agent.conf, the agent container will monitor
+   the /etc/gofer/plugins directory for changes to plugin descriptors.  When a descriptor
+   has changed, the plugin is reloaded.  When a *new* descriptor is found, the plugin is
+   loaded.  When a plugin descriptor is deleted, the plugin is unloaded.
+   See [main] *monitor* property in agent.conf.
+
+ - Decentralized RMI scheduling.  Each plugin has its own scheduler.
+
+ - Add support for RMI request forwarding to other plugins.  Requests can be forwarded
+   to other plugins when they cannot be satisfied by the target plugin.
+   See [main] *accept* and *forward* properties for details.
+
+ - Much better AMQP connection management.  When plugins are unloaded, all associated
+   AMQP connections are closed.
+
+ - Add services API to the *system* plugin.  The *Service* class supports *start*,
+   *restart*, *stop* and *status* operations on services.
+
+ - The python-gofer-qpid package *Requires:* python-ssl.  Needed so that python-qpid
+   will support SSL.
+
+Deprecated:
+
+ - The *maintenance window* feature and associated properties.
