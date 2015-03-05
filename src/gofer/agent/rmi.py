@@ -150,7 +150,7 @@ class Scheduler(Thread):
         :param plugin: A plugin.
         :type plugin: gofer.agent.plugin.Plugin
         """
-        Thread.__init__(self, name='scheduler')
+        Thread.__init__(self, name='scheduler:%s' % plugin.stream)
         self.plugin = plugin
         self.pending = Pending(plugin.stream)
         self.setDaemon(True)
