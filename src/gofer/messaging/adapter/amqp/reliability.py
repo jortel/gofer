@@ -15,7 +15,7 @@ from time import sleep
 from amqp import ChannelError
 
 from gofer import Thread
-from gofer.messaging.adapter.model import NotFound
+from gofer.messaging.adapter.model import Messenger, NotFound
 from gofer.messaging.adapter.amqp.connection import Connection, CONNECTION_EXCEPTIONS
 
 
@@ -23,21 +23,21 @@ DELAY = 10  # seconds
 
 
 def reliable(fn):
-    def _fn(thing, *args, **kwargs):
+    def _fn(messenger, *args, **kwargs):
         repair = lambda: None
         while not Thread.aborted():
             try:
                 repair()
-                return fn(thing, *args, **kwargs)
+                return fn(messenger, *args, **kwargs)
             except ChannelError, e:
                 if e.code != 404:
                     sleep(DELAY)
-                    repair = thing.repair
+                    repair = messenger.repair
                 else:
                     raise NotFound(*e.args)
             except CONNECTION_EXCEPTIONS:
                 sleep(DELAY)
-                repair = thing.repair
+                repair = messenger.repair
     return _fn
 
 
@@ -52,14 +52,19 @@ def endpoint(fn):
     return _fn
 
 
-class Endpoint(object):
+class Endpoint(Messenger):
 
     def __init__(self, url):
-        self.url = url
+        super(Endpoint, self).__init__(url)
         self.connection = Connection(url)
         self.channel = None
 
     def open(self):
+        self.connection.open()
+        self.channel = self.connection.channel()
+    
+    def repair(self):
+        self.connection.close()
         self.connection.open()
         self.channel = self.connection.channel()
 

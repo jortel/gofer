@@ -36,32 +36,32 @@ NOT_FOUND = 'amqp:not-found'
 
 
 def reliable(fn):
-    def _fn(thing, *args, **kwargs):
+    def _fn(messenger, *args, **kwargs):
         repair = lambda: None
         while not Thread.aborted():
             try:
                 repair()
-                return fn(thing, *args, **kwargs)
+                return fn(messenger, *args, **kwargs)
             except LinkDetached, le:
                 if le.condition != NOT_FOUND:
                     sleep(DELAY)
-                    repair = thing.repair
+                    repair = messenger.repair
                 else:
                     raise NotFound(*le.args)
             except ConnectionException:
                 sleep(DELAY)
-                repair = thing.repair
+                repair = messenger.repair
     return _fn
 
 
 def resend(fn):
     @reliable
-    def _fn(thing, *args, **kwargs):
+    def _fn(sender, *args, **kwargs):
         retry = MAX_RESEND
         delay = RESEND_DELAY
         while retry > 0:
             try:
-                return fn(thing, *args, **kwargs)
+                return fn(sender, *args, **kwargs)
             except SendException, le:
                 if le.state == Delivery.RELEASED:
                     sleep(delay)

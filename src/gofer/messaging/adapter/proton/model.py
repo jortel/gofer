@@ -14,7 +14,7 @@ from logging import getLogger
 
 from proton import Message
 
-from gofer.messaging.adapter.model import BaseExchange, BaseQueue
+from gofer.messaging.adapter.model import Messenger, BaseExchange, BaseQueue
 from gofer.messaging.adapter.proton.connection import Connection
 from gofer.messaging.adapter.proton.reliability import reliable, resend
 
@@ -53,7 +53,7 @@ class Error(Exception):
         self.code = code
 
 
-class Method(object):
+class Method(Messenger):
     """
     QMF method.
     :ivar url: The broker url.
@@ -79,7 +79,7 @@ class Method(object):
         :param arguments: The method arguments.
         :type arguments: dict
         """
-        self.url = url
+        super(Method, self).__init__(url)
         self.name = name
         self.arguments = arguments
         self.connection = Connection(url)

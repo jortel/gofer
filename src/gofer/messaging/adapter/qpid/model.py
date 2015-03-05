@@ -14,7 +14,7 @@ from logging import getLogger
 
 from qpid.messaging import Message
 
-from gofer.messaging.adapter.model import BaseExchange, BaseQueue
+from gofer.messaging.adapter.model import Messenger, BaseExchange, BaseQueue
 from gofer.messaging.adapter.qpid.connection import Connection
 from gofer.messaging.adapter.qpid.reliability import reliable
 
@@ -54,7 +54,7 @@ class Error(Exception):
         self.code = code
 
 
-class Method(object):
+class Method(Messenger):
     """
     QMF method.
     :ivar name: The method name.
@@ -80,7 +80,7 @@ class Method(object):
         :param arguments: The method arguments.
         :type arguments: dict
         """
-        self.url = url
+        super(Method, self).__init__(url)
         self.name = name
         self.arguments = arguments
         self.connection = Connection(url)

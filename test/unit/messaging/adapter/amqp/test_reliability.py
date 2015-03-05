@@ -39,8 +39,8 @@ class TestReliable(TestCase):
 
     def test_reliable(self):
         fn = Mock()
-        thing = Mock()
-        args = (thing, 2, 3)
+        messenger = Mock()
+        args = (messenger, 2, 3)
         kwargs = {'A': 1}
 
         # test
@@ -55,8 +55,8 @@ class TestReliable(TestCase):
     def test_reliable_connection_exception(self, sleep):
         url = 'test-url'
         fn = Mock(side_effect=[ConnectionException, None])
-        thing = Mock(url=url, connection=Mock())
-        args = (thing, 2, 3)
+        messenger = Mock(url=url, connection=Mock())
+        args = (messenger, 2, 3)
         kwargs = {'A': 1}
 
         # test
@@ -65,7 +65,7 @@ class TestReliable(TestCase):
 
         # validation
         sleep.assert_called_once_with(DELAY)
-        thing.repair.assert_called_once_with()
+        messenger.repair.assert_called_once_with()
         self.assertEqual(
             fn.call_args_list,
             [
@@ -78,8 +78,8 @@ class TestReliable(TestCase):
     def test_reliable_channel_exception(self, sleep):
         url = 'test-url'
         fn = Mock(side_effect=[ChannelError, None])
-        thing = Mock(url=url, connection=Mock())
-        args = (thing, 2, 3)
+        messenger = Mock(url=url, connection=Mock())
+        args = (messenger, 2, 3)
         kwargs = {'A': 1}
 
         # test
@@ -88,7 +88,7 @@ class TestReliable(TestCase):
 
         # validation
         sleep.assert_called_once_with(DELAY)
-        thing.repair.assert_called_once_with()
+        messenger.repair.assert_called_once_with()
         self.assertEqual(
             fn.call_args_list,
             [
@@ -101,8 +101,8 @@ class TestReliable(TestCase):
     def test_reliable_channel_exception_not_found(self, sleep):
         url = 'test-url'
         fn = Mock(side_effect=[ChannelError(404), None])
-        thing = Mock(url=url, connection=Mock())
-        args = (thing, 2, 3)
+        messenger = Mock(url=url, connection=Mock())
+        args = (messenger, 2, 3)
         kwargs = {'A': 1}
 
         # test
@@ -113,20 +113,20 @@ class TestReliable(TestCase):
         self.assertFalse(sleep.called)
 
     @patch('gofer.messaging.adapter.amqp.reliability.Endpoint')
-    def test_endpoint(self, thing):
+    def test_endpoint(self, messenger):
         fn = Mock()
         url = Mock()
-        args = (thing.return_value,)
+        args = (messenger.return_value,)
 
         # test
         wrapped = endpoint(fn)
         wrapped(url)
 
         # validation
-        thing.assert_called_once_with(url)
-        thing.return_value.open.assert_called_once_with()
+        messenger.assert_called_once_with(url)
+        messenger.return_value.open.assert_called_once_with()
         fn.assert_called_once_with(*args)
-        thing.return_value.close.assert_called_once_with()
+        messenger.return_value.close.assert_called_once_with()
 
 
 class TestEndpoint(TestCase):
@@ -134,34 +134,43 @@ class TestEndpoint(TestCase):
     @patch('gofer.messaging.adapter.amqp.reliability.Connection')
     def test_init(self, connection):
         url = Mock()
-        thing = Endpoint(url)
+        messenger = Endpoint(url)
         connection.assert_called_once_with(url)
-        self.assertEqual(thing.connection, connection.return_value)
-        self.assertEqual(thing.channel, None)
+        self.assertEqual(messenger.connection, connection.return_value)
+        self.assertEqual(messenger.channel, None)
 
     @patch('gofer.messaging.adapter.amqp.reliability.Connection', Mock())
     def test_open(self):
         url = Mock()
-        thing = Endpoint(url)
-        thing.open()
-        thing.connection.open.assert_called_once_with()
-        self.assertEqual(thing.channel, thing.connection.channel.return_value)
+        messenger = Endpoint(url)
+        messenger.open()
+        messenger.connection.open.assert_called_once_with()
+        self.assertEqual(messenger.channel, messenger.connection.channel.return_value)
+        
+    @patch('gofer.messaging.adapter.amqp.reliability.Connection', Mock())
+    def test_repair(self):
+        url = Mock()
+        messenger = Endpoint(url)
+        messenger.repair()
+        messenger.connection.close.assert_called_once_with()
+        messenger.connection.open.assert_called_once_with()
+        self.assertEqual(messenger.channel, messenger.connection.channel.return_value)
 
     @patch('gofer.messaging.adapter.amqp.reliability.Connection', Mock())
     def test_close(self):
         url = Mock()
-        thing = Endpoint(url)
-        thing.connection = Mock()
-        thing.channel = Mock()
-        thing.close()
-        thing.channel.close.assert_called_once_with()
+        messenger = Endpoint(url)
+        messenger.connection = Mock()
+        messenger.channel = Mock()
+        messenger.close()
+        messenger.channel.close.assert_called_once_with()
 
     @patch('gofer.messaging.adapter.amqp.reliability.Connection', Mock())
     def test_close_failed(self):
         url = Mock()
-        thing = Endpoint(url)
-        thing.connection = Mock()
-        thing.channel = Mock()
-        thing.channel.close.side_effect = ValueError
-        thing.close()
-        thing.channel.close.assert_called_once_with()
+        messenger = Endpoint(url)
+        messenger.connection = Mock()
+        messenger.channel = Mock()
+        messenger.channel.close.side_effect = ValueError
+        messenger.close()
+        messenger.channel.close.assert_called_once_with()

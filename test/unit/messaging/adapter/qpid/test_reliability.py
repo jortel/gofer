@@ -49,8 +49,8 @@ class TestReliable(TestCase):
 
     def test_reliable(self):
         fn = Mock()
-        thing = Mock()
-        args = (thing, 2, 3)
+        messenger = Mock()
+        args = (messenger, 2, 3)
         kwargs = {'A': 1}
 
         # test
@@ -65,8 +65,8 @@ class TestReliable(TestCase):
     def test_reliable_connection_exception(self, sleep):
         url = 'test-url'
         fn = Mock(side_effect=[ConnectionError, None])
-        thing = Mock(url=url, connection=Mock())
-        args = (thing, 2, 3)
+        messenger = Mock(url=url, connection=Mock())
+        args = (messenger, 2, 3)
         kwargs = {'A': 1}
 
         # test
@@ -75,7 +75,7 @@ class TestReliable(TestCase):
 
         # validation
         sleep.assert_called_once_with(DELAY)
-        thing.repair.assert_called_once_with()
+        messenger.repair.assert_called_once_with()
         self.assertEqual(
             fn.call_args_list,
             [
@@ -88,8 +88,8 @@ class TestReliable(TestCase):
     def test_reliable_link_detached(self, sleep):
         url = 'test-url'
         fn = Mock(side_effect=[LinkError, None])
-        thing = Mock(url=url, connection=Mock())
-        args = (thing, 2, 3)
+        messenger = Mock(url=url, connection=Mock())
+        args = (messenger, 2, 3)
         kwargs = {'A': 1}
 
         # test
@@ -98,7 +98,7 @@ class TestReliable(TestCase):
 
         # validation
         sleep.assert_called_once_with(DELAY)
-        thing.repair.assert_called_once_with()
+        messenger.repair.assert_called_once_with()
         self.assertEqual(
             fn.call_args_list,
             [
