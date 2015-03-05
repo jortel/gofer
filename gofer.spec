@@ -127,7 +127,6 @@ fi
 %package -n python-%{name}
 Summary: Gofer python lib modules
 Group: Development/Languages
-Obsoletes: %{name}-lib
 BuildRequires: python
 Requires: pam
 %if 0%{?rhel} && 0%{?rhel} < 6
@@ -160,7 +159,9 @@ Group: Development/Languages
 BuildRequires: python
 Requires: python-%{name} = %{version}
 Requires: python-qpid >= 0.18
+%if 0%{?rhel} && 0%{?rhel} < 6
 Requires: python-ssl
+%endif
 
 %description -n python-%{name}-qpid
 Provides the gofer qpid messaging adapter package.
