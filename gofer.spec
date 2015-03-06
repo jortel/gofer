@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.5.3
+Version: 2.6.0
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
