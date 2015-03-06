@@ -18,7 +18,7 @@ import inspect
 from gofer import NAME, Options
 from gofer.rmi.decorator import Remote
 from gofer.agent.decorator import Actions
-from gofer.agent.decorator import Loading
+from gofer.agent.decorator import Delegate
 
 
 def options(fn):
@@ -138,7 +138,7 @@ def load(fn):
     :type fn: function
     :return: The decorated function.
     """
-    Loading.plugin.hook.load.append(fn)
+    Delegate.load.append(fn)
     return fn
 
 
@@ -152,7 +152,7 @@ def unload(fn):
     :type fn: function
     :return: The decorated function.
     """
-    Loading.plugin.hook.unload.append(fn)
+    Delegate.unload.append(fn)
     return fn
 
 

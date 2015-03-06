@@ -13,7 +13,7 @@ from unittest import TestCase
 
 from mock import Mock, patch
 
-from gofer.agent.decorator import Actions
+from gofer.agent.decorator import Actions, Delegate
 
 
 class TestActions(TestCase):
@@ -70,3 +70,36 @@ class TestActions(TestCase):
                     ((functions[3][0],), functions[3][1]),
                 ])
             self.assertEqual(collated, actions)
+
+
+class TestDelegate(TestCase):
+
+    def test_init(self):
+        Delegate.load.append(1)
+        Delegate.unload.append(2)
+        d = Delegate()
+        self.assertEqual(Delegate.load, [])
+        self.assertEqual(Delegate.unload, [])
+        self.assertEqual(d.load, [1])
+        self.assertEqual(d.unload, [2])
+
+    def test_loaded(self):
+        d = Delegate()
+        d.load = [Mock(), Mock()]
+        d.loaded()
+        for fn in d.load:
+            fn.asssert_called_once_with()
+
+    def test_unloaded(self):
+        d = Delegate()
+        d.unload = [Mock(), Mock()]
+        d.unloaded()
+        for fn in d.unload:
+            fn.asssert_called_once_with()
+
+    def test_unloaded_failed(self):
+        d = Delegate()
+        d.unload = [Mock(side_effect=ValueError), Mock()]
+        d.unloaded()
+        for fn in d.unload:
+            fn.asssert_called_once_with()

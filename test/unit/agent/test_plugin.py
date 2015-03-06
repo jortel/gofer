@@ -14,7 +14,7 @@ from unittest import TestCase
 from mock import patch, Mock, ANY
 
 from gofer.agent.plugin import attach
-from gofer.agent.plugin import Container, Hook, Plugin
+from gofer.agent.plugin import Container, Plugin, Delegate
 
 
 class TestAttach(TestCase):
@@ -105,36 +105,14 @@ class TestContainer(TestCase):
         self.assertEqual(plugins, [1, 2])
 
 
-class TestHook(TestCase):
-
-    def test_init(self):
-        h = Hook()
-        self.assertEqual(h.load, [])
-        self.assertEqual(h.unload, [])
-
-    def test_loaded(self):
-        h = Hook()
-        h.load = [Mock(), Mock()]
-        h.loaded()
-        for fn in h.load:
-            fn.assert_called_once_with()
-
-    def test_unloaded(self):
-        h = Hook()
-        h.unload = [Mock(), Mock()]
-        h.unloaded()
-        for fn in h.unload:
-            fn.assert_called_once_with()
-
-
 class TestPlugin(TestCase):
 
-    @patch('gofer.agent.plugin.Hook')
+    @patch('gofer.agent.plugin.Delegate')
     @patch('gofer.agent.plugin.Scheduler')
     @patch('gofer.agent.plugin.Whiteboard')
     @patch('gofer.agent.plugin.Dispatcher')
     @patch('gofer.agent.plugin.ThreadPool')
-    def test_init(self, pool, dispatcher, whiteboard, scheduler, hook):
+    def test_init(self, pool, dispatcher, whiteboard, scheduler, delegate):
         threads = 4
         descriptor = Mock(main=Mock(threads=threads))
         path = '/tmp/path'
@@ -146,7 +124,7 @@ class TestPlugin(TestCase):
         pool.assert_called_once_with(threads)
         dispatcher.assert_called_once_with()
         scheduler.assert_called_once_with(plugin)
-        hook.assert_called_once_with()
+        delegate.assert_called_once_with()
         self.assertEqual(plugin.descriptor, descriptor)
         self.assertEqual(plugin.path, path)
         self.assertEqual(plugin.pool, pool.return_value)
@@ -155,7 +133,7 @@ class TestPlugin(TestCase):
         self.assertEqual(plugin.dispatcher, dispatcher.return_value)
         self.assertEqual(plugin.whiteboard, whiteboard.return_value)
         self.assertEqual(plugin.scheduler, scheduler.return_value)
-        self.assertEqual(plugin.hook, hook.return_value)
+        self.assertEqual(plugin.delegate, delegate.return_value)
         self.assertEqual(plugin.authenticator, None)
         self.assertEqual(plugin.consumer, None)
 

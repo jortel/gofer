@@ -97,25 +97,25 @@ class TestAction(TestCase):
         actions.add.assert_called_once_with(fn, interval)
 
 
-class TestLoading(TestCase):
+class TestDelegate(TestCase):
 
-    @patch('gofer.decorators.Loading')
-    def test_load(self, loading):
-        loading.plugin = Mock()
-        def fn(): pass
+    @patch('gofer.decorators.Delegate')
+    def test_load(self, delegate):
+        fn = Mock()
+        delegate.load = Mock()
         load(fn)
-        loading.plugin.hook.load.append.assert_called_once_with(fn)
+        delegate.load.append.assert_called_once_with(fn)
 
-    @patch('gofer.decorators.Loading')
-    def test_initializer(self, loading):
-        loading.plugin = Mock()
-        def fn(): pass
+    @patch('gofer.decorators.Delegate')
+    def test_initializer(self, delegate):
+        fn = Mock()
+        delegate.load = Mock()
         initializer(fn)
-        loading.plugin.hook.load.append.assert_called_once_with(fn)
+        delegate.load.append.assert_called_once_with(fn)
 
-    @patch('gofer.decorators.Loading')
-    def test_unload(self, loading):
-        loading.plugin = Mock()
-        def fn(): pass
+    @patch('gofer.decorators.Delegate')
+    def test_unload(self, delegate):
+        fn = Mock()
+        delegate.unload = Mock()
         unload(fn)
-        loading.plugin.hook.unload.append.assert_called_once_with(fn)
+        delegate.unload.append.assert_called_once_with(fn)

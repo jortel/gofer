@@ -61,10 +61,37 @@ class Actions:
         return collated
 
 
-class Loading(object):
+class Delegate(object):
     """
-    Target plugin.
-    :cvar plugin: A plugin currently being loaded.
-    :type plugin: gofer.agent.plugin.Plugin
+    Plugin delegate functions.
+    :cvar load: Decorated plugin load function.
+    :type load: list
+    :cvar unload: Decorated plugin unload function.
+    :type unload: list
     """
-    plugin = None
+
+    load = []
+    unload = []
+
+    def __init__(self):
+        self.load = Delegate.load
+        self.unload = Delegate.unload
+        Delegate.load = []
+        Delegate.unload = []
+
+    def loaded(self):
+        """
+        Plugin loaded.
+        """
+        for fn in self.load:
+            fn()
+
+    def unloaded(self):
+        """
+        Plugin unloaded.
+        """
+        for fn in self.unload:
+            try:
+                fn()
+            except Exception:
+                log.exception(str(fn))

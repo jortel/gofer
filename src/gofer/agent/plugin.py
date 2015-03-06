@@ -17,28 +17,28 @@
 Plugin classes.
 """
 
-import os
 import imp
+import os
 import sys
 
-from threading import RLock
 from logging import getLogger
+from threading import RLock
 
-from gofer import NAME, synchronized
-from gofer.common import released
-from gofer.rmi.dispatcher import Dispatcher
-from gofer.threadpool import ThreadPool
-from gofer.rmi.consumer import RequestConsumer
-from gofer.rmi.decorator import Remote
-from gofer.common import nvl, mkdir
-from gofer.config import Config, Graph, Reader, get_bool
 from gofer.agent.config import PLUGIN_SCHEMA, PLUGIN_DEFAULTS
 from gofer.agent.decorator import Actions
-from gofer.agent.whiteboard import Whiteboard
-from gofer.agent.decorator import Loading
-from gofer.messaging import Document, Connector, Queue, Exchange
+from gofer.agent.decorator import Delegate
 from gofer.agent.rmi import Scheduler
+from gofer.agent.whiteboard import Whiteboard
+from gofer.common import nvl, mkdir
+from gofer.common import released
+from gofer.config import Config, Graph, Reader, get_bool
+from gofer import NAME, synchronized
+from gofer.messaging import Document, Connector, Queue, Exchange
 from gofer.pmon import PathMonitor
+from gofer.rmi.consumer import RequestConsumer
+from gofer.rmi.decorator import Remote
+from gofer.rmi.dispatcher import Dispatcher
+from gofer.threadpool import ThreadPool
 
 
 log = getLogger(__name__)
@@ -114,32 +114,6 @@ class Container(object):
                 continue
             unique.append(p)
         return unique
-
-
-class Hook(object):
-    """
-    Plugin hooks.
-    :ivar load: The *loaded* hook.
-    :ivar unload: The *unloaded* hook.
-    """
-
-    def __init__(self):
-        self.load = []
-        self.unload = []
-
-    def loaded(self):
-        """
-        Called after a plugin is loaded.
-        """
-        for fn in self.load:
-            fn()
-
-    def unloaded(self):
-        """
-        Called after a plugin has been unloaded.
-        """
-        for fn in self.unload:
-            fn()
 
 
 class Plugin(object):
@@ -228,7 +202,7 @@ class Plugin(object):
         self.dispatcher = Dispatcher()
         self.whiteboard = Whiteboard()
         self.scheduler = Scheduler(self)
-        self.hook = Hook()
+        self.delegate = Delegate()
         self.authenticator = None
         self.consumer = None
 
@@ -393,7 +367,7 @@ class Plugin(object):
         """
         Load the plugin.
         """
-        self.hook.loaded()
+        self.delegate.loaded()
 
     def unload(self):
         """
@@ -406,7 +380,7 @@ class Plugin(object):
         """
         Plugin.delete(self)
         self.shutdown()
-        self.hook.unloaded()
+        self.delegate.unloaded()
         self.scheduler.pending.delete()
         log.info('plugin:%s, unloaded', self.name)
 
@@ -422,7 +396,7 @@ class Plugin(object):
         """
         Plugin.delete(self)
         pending = self.shutdown(False)
-        self.hook.unloaded()
+        self.delegate.unloaded()
         plugin = PluginLoader.load(self.path)
         if plugin:
             for call in pending:
@@ -599,7 +573,6 @@ class PluginLoader:
         """
         Remote.clear()
         Actions.clear()
-        Loading.plugin = plugin
         Plugin.add(plugin)
         try:
             path = plugin.descriptor.main.plugin
@@ -619,6 +592,7 @@ class PluginLoader:
             collated += PluginLoader.BUILTINS
             plugin.dispatcher += collated
             plugin.actions = Actions.collated()
+            plugin.delegate = Delegate()
             plugin.load()
             return plugin
         except Exception:
