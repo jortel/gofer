@@ -381,6 +381,14 @@ class Plugin(object):
         Load the plugin.
         """
         self.delegate.loaded()
+        path = self.cfg.messaging.authenticator
+        if path:
+            path = path.split('.')
+            mod = '.'.join(path[:-1])
+            mod = __import__(mod, {}, {}, [path[-1]])
+            self.authenticator = mod.Authenticator()
+        else:
+            self.authenticator = None
 
     def unload(self):
         """

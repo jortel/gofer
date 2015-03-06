@@ -76,6 +76,8 @@ AGENT_SCHEMA = (
 #      The (optional) SSL client certificate.  PEM encoded and contains both key and certificate.
 #   host_validation
 #      The (optional) flag indicates SSL host validation should be performed.
+#   authenticator
+#      The (optional) fully qualified Authenticator to be loaded from the PYTHON path.
 #
 # [model]
 #
@@ -112,6 +114,7 @@ PLUGIN_SCHEMA = (
             ('clientcert', OPTIONAL, ANY),
             ('clientkey', OPTIONAL, ANY),
             ('host_validation', OPTIONAL, BOOL),
+            ('authenticator', OPTIONAL, ANY),
         )
     ),
     ('model', OPTIONAL,

@@ -14,7 +14,7 @@ from unittest import TestCase
 from mock import patch, Mock, ANY
 
 from gofer.agent.plugin import attach
-from gofer.agent.plugin import Container, Plugin, Delegate
+from gofer.agent.plugin import Container, Plugin
 
 
 class TestAttach(TestCase):
