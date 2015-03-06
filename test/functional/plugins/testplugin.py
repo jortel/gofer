@@ -43,6 +43,16 @@ def unload():
     print 'Unloaded'
 
 
+@action
+def one_timer():
+    print 'one time action'
+
+
+@action(seconds=90)
+def recurring_action():
+    print 'recurring action'
+
+
 def get_elmer():
     return 'elmer'
 
@@ -259,11 +269,6 @@ class Lion(object):
     @remote
     def roar(self):
         return 'Lion says ROAR!'
-
-
-@action(minutes=5)
-def test_action():
-    log.info('Testing')
 
 
 class Heartbeat:

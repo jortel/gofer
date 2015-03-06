@@ -90,11 +90,17 @@ class TestUser(TestCase):
 class TestAction(TestCase):
 
     @patch('gofer.decorators.Actions')
-    def test_call(self, actions):
+    def test_recurring(self, actions):
         def fn(): pass
         interval = dict(hours=10)
         action(**interval)(fn)
         actions.add.assert_called_once_with(fn, interval)
+
+    @patch('gofer.decorators.Actions')
+    def test_single(self, actions):
+        def fn(): pass
+        action(fn)
+        actions.add.assert_called_once_with(fn, {'days': 36500})
 
 
 class TestDelegate(TestCase):

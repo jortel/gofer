@@ -107,10 +107,11 @@ def user(name=None):
     return inner
 
 
-def action(**interval):
+def action(fx=None, **interval):
     """
     The *action* decorator.
     Used to designate a function/method as being a recurring action.
+    No interval can be used to specify the action to run only once.
     :keyword interval: The run interval.
       One of:
         - days
@@ -122,9 +123,12 @@ def action(**interval):
     :return: The decorated function.
     """
     def inner(fn):
-        Actions.add(fn, interval)
+        Actions.add(fn, interval or dict(days=0x8E94))
         return fn
-    return inner
+    if inspect.isfunction(fx):
+        return inner(fx)
+    else:
+        return inner
 
 
 def load(fn):
