@@ -22,7 +22,7 @@ from tempfile import mktemp
 
 from gofer.common import Singleton, ThreadSingleton, Options
 from gofer.common import synchronized, conditional, released
-from gofer.common import mkdir, nvl, valid_path
+from gofer.common import mkdir, rmdir, unlink, nvl, valid_path
 from gofer.common import List
 
 
@@ -115,6 +115,52 @@ class TestMkdir(TestCase):
         path = '/tmp/dir'
         mkdirs.side_effect = OSError()
         self.assertRaises(OSError, mkdir, path)
+
+
+class TestRmdir(TestCase):
+
+    @patch('os.rmdir')
+    def test_rm(self, _rmdir):
+        path = '/tmp/dir'
+        rmdir(path)
+        _rmdir.assert_called_once_with(path)
+
+    @patch('os.rmdir')
+    def test_not_exist(self, _rmdir):
+        path = '/tmp/dir'
+        exception = OSError()
+        exception.errno = errno.ENOENT
+        _rmdir.side_effect = exception
+        rmdir(path)
+
+    @patch('os.rmdir')
+    def test_failed(self, _rmdir):
+        path = '/tmp/dir'
+        _rmdir.side_effect = OSError()
+        self.assertRaises(OSError, rmdir, path)
+
+
+class TestUnlink(TestCase):
+
+    @patch('os.unlink')
+    def test_unlink(self, _unlink):
+        path = '/tmp/file'
+        unlink(path)
+        _unlink.assert_called_once_with(path)
+
+    @patch('os.unlink')
+    def test_not_exist(self, _unlink):
+        path = '/tmp/file'
+        exception = OSError()
+        exception.errno = errno.ENOENT
+        _unlink.side_effect = exception
+        unlink(path)
+
+    @patch('os.unlink')
+    def test_failed(self, _unlink):
+        path = '/tmp/file'
+        _unlink.side_effect = OSError()
+        self.assertRaises(OSError, unlink, path)
 
 
 class TestNVL(TestCase):

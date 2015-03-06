@@ -93,8 +93,6 @@ class Tracker(object):
     :type digest: str
     :ivar target: Called when path change detected.
     :type target: callable
-    :ivar skip: The calls to skip due to prior call error.
-    :type skip: int
     """
 
     def __init__(self, path, target):
@@ -108,7 +106,6 @@ class Tracker(object):
         self.last_modified = last_modified(path)
         self.digest = digest(path)
         self.target = target
-        self.skip = 0
 
     def __call__(self, last_modified, digest):
         """
@@ -118,16 +115,12 @@ class Tracker(object):
         :param digest: hex digest of file content.
         :type digest: str
         """
+        self.last_modified = last_modified
+        self.digest = digest
         try:
-            if self.skip:
-                self.skip -= 1
-                return
             self.target(self.path)
-            self.last_modified = last_modified
-            self.digest = digest
         except Exception, e:
             log.info('path: "%s" call raised: "%s"', self, e)
-            self.skip = 30
 
     def __eq__(self, other):
         return self.path == other.path and self.target == other.target

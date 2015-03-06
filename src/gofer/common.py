@@ -41,6 +41,32 @@ def mkdir(path):
             raise
 
 
+def rmdir(path):
+    """
+    Delete a directory at the specified path.
+    :param path: An absolute path.
+    :type path: str
+    """
+    try:
+        os.rmdir(path)
+    except OSError, e:
+        if e.errno != errno.ENOENT:
+            raise
+
+
+def unlink(path):
+    """
+    Unlink the specified path.
+    :param path: An absolute path.
+    :type path: str
+    """
+    try:
+        os.unlink(path)
+    except OSError, e:
+        if e.errno != errno.ENOENT:
+            raise
+
+
 def nvl(thing, default):
     """
     None value defaulter.

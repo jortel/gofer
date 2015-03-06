@@ -18,14 +18,13 @@ Provides (local) message storage classes.
 """
 
 import os
-import errno
 
 from time import sleep, time
 from logging import getLogger
 from Queue import Queue, Empty
 
 from gofer import NAME, Thread, Singleton
-from gofer.common import mkdir
+from gofer.common import mkdir, rmdir, unlink
 from gofer.messaging import Document
 from gofer.rmi.tracker import Tracker
 
@@ -161,13 +160,10 @@ class Pending(object):
         """
         try:
             path = self.journal[sn]
-            os.unlink(path)
+            unlink(path)
             log.debug('%s committed', sn)
         except KeyError:
             log.warn('%s not found for commit', sn)
-        except OSError, e:
-            if e.errno != errno.ENOENT:
-                raise
 
     def delete(self):
         """
@@ -178,7 +174,7 @@ class Pending(object):
         self.thread.join()
         self._drain()
         path = os.path.join(Pending.PENDING, self.stream)
-        os.rmdir(path)
+        rmdir(path)
         log.info('%s, deleted', path)
 
     def _drain(self):
