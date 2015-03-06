@@ -251,15 +251,24 @@ class Plugin(object):
         _list = [p.strip() for p in _list.split(',')]
         return set(_list)
 
+    @property
+    def is_started(self):
+        return self.scheduler.is_alive()
+
+    @synchronized
     def start(self):
         """
         Start the plugin.
         - attach
         - start scheduler
         """
+        if self.is_started:
+            # already started
+            return
         self.attach()
         self.scheduler.start()
 
+    @synchronized
     def shutdown(self, teardown=True):
         """
         Shutdown the plugin.
@@ -271,12 +280,16 @@ class Plugin(object):
         :return: List of pending requests.
         :rtype: list
         """
+        if not self.is_started:
+            # not started
+            return []
         self.detach(teardown)
         pending = self.pool.shutdown()
         self.scheduler.shutdown()
         self.scheduler.join()
         return pending
 
+    @synchronized
     def refresh(self):
         """
         Refresh the AMQP configurations using the plugin configuration.

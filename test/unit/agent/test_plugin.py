@@ -154,6 +154,7 @@ class TestPlugin(TestCase):
                 url='amqp://localhost')
         )
         plugin = Plugin(descriptor, '')
+        plugin.scheduler = Mock()
         # name
         self.assertEqual(plugin.name, descriptor.main.name)
         # stream
@@ -182,12 +183,15 @@ class TestPlugin(TestCase):
         self.assertEqual(
             plugin.accept,
             set([p.strip() for p in _list.split(',')]))
+        # is_started
+        self.assertEqual(plugin.is_started, plugin.scheduler.is_alive.return_value)
 
     @patch('gofer.agent.plugin.Scheduler')
     @patch('gofer.agent.plugin.Whiteboard', Mock())
     @patch('gofer.agent.plugin.ThreadPool', Mock())
     def test_start(self, scheduler):
         descriptor = Mock(main=Mock(threads=4))
+        scheduler.return_value.is_alive.return_value = False
 
         # test
         plugin = Plugin(descriptor, '')
@@ -199,10 +203,27 @@ class TestPlugin(TestCase):
         scheduler.return_value.start.assert_called_once_with()
 
     @patch('gofer.agent.plugin.Scheduler')
+    @patch('gofer.agent.plugin.Whiteboard', Mock())
+    @patch('gofer.agent.plugin.ThreadPool', Mock())
+    def test_start_already_started(self, scheduler):
+        descriptor = Mock(main=Mock(threads=4))
+        scheduler.return_value.is_alive.return_value = True
+
+        # test
+        plugin = Plugin(descriptor, '')
+        plugin.attach = Mock()
+        plugin.start()
+
+        # validation
+        self.assertFalse(plugin.attach.called)
+        self.assertFalse(scheduler.return_value.start.called)
+
+    @patch('gofer.agent.plugin.Scheduler')
     @patch('gofer.agent.plugin.ThreadPool')
     @patch('gofer.agent.plugin.Whiteboard', Mock())
     def test_shutdown(self, pool, scheduler):
         descriptor = Mock(main=Mock(threads=4))
+        scheduler.return_value.is_alive.return_value = True
 
         # test
         plugin = Plugin(descriptor, '')
@@ -214,6 +235,24 @@ class TestPlugin(TestCase):
         scheduler.return_value.shutdown.assert_called_once_with()
         scheduler.return_value.join.assert_called_once_with()
         pool.return_value.shutdown.assert_called_once_with()
+
+    @patch('gofer.agent.plugin.Scheduler')
+    @patch('gofer.agent.plugin.ThreadPool')
+    @patch('gofer.agent.plugin.Whiteboard', Mock())
+    def test_shutdown_not_running(self, pool, scheduler):
+        descriptor = Mock(main=Mock(threads=4))
+        scheduler.return_value.is_alive.return_value = False
+
+        # test
+        plugin = Plugin(descriptor, '')
+        plugin.detach = Mock()
+        plugin.shutdown(False)
+
+        # validation
+        self.assertFalse(plugin.detach.called)
+        self.assertFalse(scheduler.return_value.shutdown.called)
+        self.assertFalse(scheduler.return_value.join.called)
+        self.assertFalse(pool.return_value.shutdown.called)
 
     @patch('gofer.agent.plugin.Connector')
     @patch('gofer.agent.plugin.Scheduler', Mock())
