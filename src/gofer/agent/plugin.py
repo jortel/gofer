@@ -652,6 +652,19 @@ class PluginMonitor(object):
             self.monitor.add(plugin.path, self.changed)
         self.monitor.start()
 
+    def changed(self, path):
+        """
+        A monitored path has changed.
+        :param path: The path that changed.
+        :type path: str
+        """
+        log.info('changed: %s', path)
+        root = PluginDescriptor.ROOT
+        if path == root:
+            self.dir_changed()
+        else:
+            self.file_changed(path)
+
     def dir_changed(self):
         """
         The directory containing plugin descriptors has changed.
@@ -666,7 +679,7 @@ class PluginMonitor(object):
                 continue
             self.load(path)
 
-    def pd_changed(self, path):
+    def file_changed(self, path):
         """
         A plugin descriptor has been changed/deleted.
         The associated plugin is loaded/reloaded as needed.
@@ -684,26 +697,13 @@ class PluginMonitor(object):
             # unload
             self.unload(plugin)
 
-    def changed(self, path):
-        """
-        A monitored path has changed.
-        :param path: The path that changed.
-        :type path: str
-        """
-        log.info('changed: %s', path)
-        root = PluginDescriptor.ROOT
-        if path == root:
-            self.dir_changed()
-        else:
-            self.pd_changed(path)
-
     def unload(self, plugin):
         """
         Unload the plugin.
         :param plugin: The plugin to unload.
         :type plugin: Plugin
         """
-        log.info('plugin:%s, unloading', plugin.name)
+        self.monitor.delete(plugin.path, self.changed)
         plugin.unload()
 
     def load(self, path):
