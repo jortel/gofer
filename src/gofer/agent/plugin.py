@@ -427,6 +427,7 @@ class Plugin(object):
                 task = call.fn
                 task.plugin = self
                 plugin.pool.run(task)
+            plugin.start()
         else:
             for call in pending:
                 task = call.fn
