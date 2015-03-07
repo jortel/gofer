@@ -658,7 +658,7 @@ class PluginMonitor(object):
         :param path: The path that changed.
         :type path: str
         """
-        log.info('changed: %s', path)
+        log.debug('changed: %s', path)
         root = PluginDescriptor.ROOT
         if path == root:
             self.dir_changed()
@@ -677,6 +677,7 @@ class PluginMonitor(object):
                 continue
             if path in loaded:
                 continue
+            log.info('added: %s', path)
             self.load(path)
 
     def file_changed(self, path):
@@ -689,12 +690,14 @@ class PluginMonitor(object):
         plugin = Plugin.find(path)
         if os.path.exists(path):
             # load/reload
+            log.info('changed: %s', path)
             if plugin and plugin.enabled:
                 plugin.reload()
             else:
                 self.load(path)
         else:
             # unload
+            log.info('deleted: %s', path)
             self.unload(plugin)
 
     def unload(self, plugin):
