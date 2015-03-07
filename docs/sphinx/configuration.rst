@@ -76,7 +76,7 @@ are *ini* style configuration files that require the following sections and prop
 Defines basic plugin properties.
 
 - **name** - The (optional) plugin name.  The basename of the descriptor is used when not specified.
-- **plugin** - The (optional) fully qualified module to be loaded from the PYTHON path.
+- **plugin** - The (optional) fully qualified path to the module to be loaded from the PYTHON path.
   When *plugin* is not specified, the plugin is loaded by searching the following directories for a
   module with the same name as the plugin:
 
@@ -93,6 +93,8 @@ Defines basic plugin properties.
 [messaging]
 -----------
 
+- **authenticator** - The (optional) fully qualified path to a message *Authenticator* to be
+  loaded from the PYTHON path.
 - **uuid** - The agent identity. This value also specifies the queue name.
 - **'url** - The (optional) broker connection URL.
   No value indicates the plugin should **not** connect to broker.
