@@ -88,7 +88,7 @@ rm -rf %{buildroot}
 %{python_sitelib}/%{name}/agent/
 %{_bindir}/%{name}d
 %if 0%{?systemd}
-%attr(755,root,root) %{_unitdir}/%{name}d.service
+%attr(644,root,root) %{_unitdir}/%{name}d.service
 %else
 %attr(755,root,root) %{_sysconfdir}/init.d/%{name}d
 %endif
