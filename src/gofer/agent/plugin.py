@@ -376,6 +376,7 @@ class Plugin(object):
                 break
         return dispatcher.dispatch(request)
 
+    @synchronized
     def load(self):
         """
         Load the plugin.
@@ -390,6 +391,7 @@ class Plugin(object):
         else:
             self.authenticator = None
 
+    @synchronized
     def unload(self):
         """
         Unload the plugin.
@@ -405,6 +407,7 @@ class Plugin(object):
         self.scheduler.pending.delete()
         log.info('plugin:%s, unloaded', self.name)
 
+    @synchronized
     def reload(self):
         """
         Reload the plugin.
