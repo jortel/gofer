@@ -130,7 +130,7 @@ PLUGIN_SCHEMA = (
 
 AGENT_DEFAULTS = {
     'main': {
-        'monitor': '0'
+        'monitor': '2'
     },
     'logging': {
     },
