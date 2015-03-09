@@ -266,6 +266,20 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Mon Mar 09 2015 Jeff Ortel <jortel@redhat.com> 2.6.0-1
+- Support one-time actions. (jortel@redhat.com)
+- Support authenticator in the plugin descriptor. (jortel@redhat.com)
+- Support plugin monitoring. (jortel@redhat.com)
+- Support dynamic plugin loading, reloading, unloading.
+- Support services in system plugin. (jortel@redhat.com)
+- Support forwarding/accepting. (jortel@redhat.com)
+- Support comprehensive broker connection clean up.
+- Requires: python-ssl only on RHEL 5. (jortel@redhat.com)
+- 1198797 - Fixed recursion in adapter reliability logic. (jortel@redhat.com)
+- Fix not-authenticated error message. (jortel@redhat.com)
+- Fix systemd unit permissions. (jortel@redhat.com)
+- Window deprecated (jortel@redhat.com)
+
 * Fri Feb 20 2015 Jeff Ortel <jortel@redhat.com> 2.5.3-1
 - Broker renamed: Connector. (jortel@redhat.com)
 - Plugin not-found logged and discarded. (jortel@redhat.com)
