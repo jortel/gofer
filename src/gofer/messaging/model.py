@@ -9,14 +9,9 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-try:
-    import simplejson as json
-except ImportError:
-    import json
-
 from logging import getLogger
 
-from gofer.common import Options
+from gofer.common import json, Options
 
 
 log = getLogger(__name__)
