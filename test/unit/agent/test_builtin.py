@@ -85,6 +85,7 @@ Plugins:
       <class> admin
         methods:
           cancel(sn, criteria)
+          echo(text)
           hello()
           help()
       <class> dog
@@ -158,8 +159,8 @@ class TestAdmin(TestCase):
     @patch('gofer.agent.builtin.inspect.isfunction')
     @patch('gofer.agent.builtin.inspect.ismodule')
     @patch('gofer.agent.builtin.Actions')
-    @patch('gofer.agent.builtin.Plugin')
-    def test_help(self, plugin, actions, is_mod, is_fn):
+    @patch('gofer.agent.builtin.Container')
+    def test_help(self, container, actions, is_mod, is_fn):
         is_mod.side_effect = lambda thing: thing == Module
         is_fn.return_value = True
         actions.return_value.collated.return_value = [
@@ -175,7 +176,7 @@ class TestAdmin(TestCase):
             Plugin('animals', True, dispatcher),
             Plugin('fish', False, None),
         ]
-        plugin.all.return_value = plugins
+        container.return_value.all.return_value = plugins
 
         # test
         admin = Admin()

@@ -154,6 +154,8 @@ PLUGIN_DEFAULTS = {
         'accept': ',',
         'forward': ','
     },
+    'messaging': {
+    },
     'model': {
         'managed': '2'
     }

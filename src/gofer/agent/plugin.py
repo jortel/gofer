@@ -24,7 +24,7 @@ import sys
 from logging import getLogger
 from threading import RLock
 
-from gofer import Singleton
+from gofer import Singleton, synchronized, NAME
 from gofer.agent.config import PLUGIN_SCHEMA, PLUGIN_DEFAULTS
 from gofer.agent.decorator import Actions
 from gofer.agent.decorator import Delegate
@@ -33,7 +33,6 @@ from gofer.agent.whiteboard import Whiteboard
 from gofer.common import nvl, mkdir
 from gofer.common import released
 from gofer.config import Config, Graph, Reader, get_bool
-from gofer import NAME, synchronized
 from gofer.messaging import Document, Connector, Queue, Exchange
 from gofer.rmi.consumer import RequestConsumer
 from gofer.rmi.decorator import Remote
@@ -53,6 +52,48 @@ def attach(fn):
     return _fn
 
 
+class Builtin(object):
+    """
+    The builtin plugin.
+    """
+
+    PATH = '/var/lib/%s/.builtin.conf' % NAME
+
+    NAME = '__builtin__'
+
+    DESCRIPTOR = """
+    [main]
+    enabled=1
+    name=%s
+    threads=3
+    plugin=gofer.agent.builtin
+    accept=*
+    """ % NAME
+
+    @staticmethod
+    def install():
+        """
+        Install the descriptor.
+        """
+        fp = open(Builtin.PATH, 'w+')
+        try:
+            for line in Builtin.DESCRIPTOR.split('\n'):
+                fp.write(line.strip())
+                fp.write('\n')
+        finally:
+            fp.close()
+
+    @staticmethod
+    def find():
+        """
+        Find this plugin.
+        :return: This plugin.
+        :rtype: Plugin
+        """
+        container = Container()
+        return container.find(Builtin.NAME)
+
+
 class Container(object):
     """
     Plugin container.
@@ -63,17 +104,6 @@ class Container(object):
     def __init__(self):
         self.__mutex = RLock()
         self.plugins = {}
-
-    @staticmethod
-    def builtin():
-        Remote.clear()
-        try:
-            path = 'gofer.agent.builtin'
-            plugin = __import__(path, {}, {}, [path.split('.')[-1]])
-            reload(plugin)
-            return plugin, Remote.collated()
-        finally:
-            Remote.clear()
 
     @synchronized
     def add(self, plugin, *names):
@@ -297,6 +327,7 @@ class Plugin(object):
     def forward(self):
         _list = self.cfg.main.forward
         _list = [p.strip() for p in _list.split(',')]
+        _list.append(Builtin.NAME)
         return set(_list)
 
     @property
@@ -582,13 +613,16 @@ class PluginLoader:
         :rtype: list
         """
         loaded = []
-        mkdir(PluginDescriptor.ROOT)
-        files = os.listdir(PluginDescriptor.ROOT)
-        for fn in sorted(files):
-            _, ext = os.path.splitext(fn)
+        root = PluginDescriptor.ROOT
+        Builtin.install()
+        mkdir(root)
+        paths = [os.path.join(root, fn) for fn in os.listdir(root)]
+        paths = sorted(paths)
+        paths.append(Builtin.PATH)
+        for path in paths:
+            _, ext = os.path.splitext(path)
             if ext not in Reader.EXTENSION:
                 continue
-            path = os.path.join(PluginDescriptor.ROOT, fn)
             if os.path.isdir(path):
                 continue
             plugin = PluginLoader.load(path)
@@ -650,7 +684,6 @@ class PluginLoader:
         Remote.clear()
         Actions.clear()
         Plugin.add(plugin)
-        _, builtins = Container.builtin()
         try:
 
             path = plugin.descriptor.main.plugin
@@ -666,9 +699,7 @@ class PluginLoader:
             for fn in Remote.find(plugin.impl.__name__):
                 fn.gofer.plugin = plugin
 
-            collated = Remote.collated()
-            collated += builtins
-            plugin.dispatcher += collated
+            plugin.dispatcher += Remote.collated()
             plugin.actions = Actions.collated()
             plugin.delegate = Delegate()
             plugin.load()

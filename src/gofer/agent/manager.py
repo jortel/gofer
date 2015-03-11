@@ -22,7 +22,7 @@ from socket import TCP_NODELAY, SOL_SOCKET, SO_REUSEADDR, SO_LINGER
 
 from gofer.common import Thread
 from gofer.messaging import Document
-from gofer.agent.plugin import Container
+from gofer.agent.plugin import Container, Builtin
 
 
 HOST = 'localhost'
@@ -38,9 +38,14 @@ class Handler(object):
     """
 
     def show(self):
-        builtin, _ = Container.builtin()
-        admin = builtin.Admin()
+        plugin = Builtin.find()
+        admin = plugin.impl.Admin()
         return admin.help()
+
+    def cancel(self, sn=None, criteria=None):
+        plugin = Builtin.find()
+        admin = plugin.impl.Admin()
+        return admin.cancel(sn=sn, criteria=criteria)
 
     def load(self, path):
         container = Container()

@@ -18,27 +18,46 @@ import inspect
 
 from logging import getLogger
 
-from gofer.decorators import remote
 from gofer.rmi.tracker import Tracker
 from gofer.rmi.criteria import Builder
-from gofer.agent.plugin import Plugin
+from gofer.agent.plugin import Container
 from gofer.agent.decorator import Actions
+from gofer.decorators import remote
 
 
 log = getLogger(__name__)
 
 
-def indent(v, n, *args):
+def indent(value, indent, *args):
+    """
+    Generate an indent.
+    :param value: The value to indent.
+    :type value: object
+    :param indent: Number of spaces to indent.
+    :type indent: int
+    :param args: Replacement arguments.
+    :type args: list
+    :return: The indented value.
+    :rtype: str
+    """
     s = []
-    for n in range(0, n):
+    for n in range(0, indent):
         s.append(' ')
-    s.append(str(v) % args)
+    s.append(str(value) % args)
     return ''.join(s)
 
 
-def signature(n, fn):
+def signature(name, fn):
+    """
+    Get the function signature.
+    :param name:  The function/method name.
+    :type name: str
+    :param fn: A function/method object.
+    :return: The signature.
+    :rtype: str
+    """
     s = list()
-    s.append(n)
+    s.append(name)
     s.append('(')
     spec = inspect.getargspec(fn)
     if 'self' in spec[0]:
@@ -53,6 +72,9 @@ def signature(n, fn):
 
 
 class Admin:
+    """
+    Provides administration.
+    """
 
     @remote
     def cancel(self, sn=None, criteria=None):
@@ -84,14 +106,36 @@ class Admin:
         return cancelled
 
     @remote
+    def echo(self, text):
+        """
+        Echo the specified text.
+        :param text: Any text.
+        :type text: str
+        :return: The specified text.
+        :rtype: str
+        """
+        return text
+
+    @remote
     def hello(self):
+        """
+        Get hello message.
+        :return: The message.
+        :rtype: str
+        """
         return 'Hello, I am gofer agent'
 
     @remote
     def help(self):
+        """
+        Show information about loaded plugins.
+        :return: Information
+        :rtype: str
+        """
         s = list()
         s.append('Plugins:')
-        for p in Plugin.all():
+        container = Container()
+        for p in container.all():
             if not p.enabled:
                 continue
             # plugin

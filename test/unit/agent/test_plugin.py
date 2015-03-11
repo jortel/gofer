@@ -15,7 +15,7 @@ from mock import patch, Mock, ANY
 
 from gofer.common import Singleton
 from gofer.agent.plugin import attach
-from gofer.agent.plugin import Container, Plugin
+from gofer.agent.plugin import Container, Plugin, Builtin
 
 
 class TestAttach(TestCase):
@@ -43,6 +43,31 @@ class TestAttach(TestCase):
         call()
         plugin.pool.run.assert_called_once_with(ANY)
         self.assertFalse(fn.called)
+
+
+class TestBuiltin(TestCase):
+
+    @patch('__builtin__.open')
+    def test_install(self, _open):
+        fp = Mock()
+        _open.return_value = fp
+        Builtin.install()
+        _open.assert_called_once_with(Builtin.PATH, 'w+')
+
+        writes = []
+        for line in Builtin.DESCRIPTOR.split('\n'):
+            writes.append(((line.strip(),), {}))
+            writes.append((('\n',), {}))
+        self.assertEqual(fp.write.call_args_list, writes)
+        fp.close.assert_called_once_with()
+
+    @patch('gofer.agent.plugin.Container')
+    def test_find(self, container):
+        plugin = Builtin.find()
+        container.assert_called_once_with()
+        container = container.return_value
+        container.find.assert_called_once_with(Builtin.NAME)
+        self.assertEqual(plugin, container.find.return_value)
 
 
 class TestContainer(TestCase):
@@ -182,7 +207,7 @@ class TestPlugin(TestCase):
         _list = descriptor.main.forward
         self.assertEqual(
             plugin.forward,
-            set([p.strip() for p in _list.split(',')]))
+            set([p.strip() for p in _list.split(',')] + [Builtin.NAME]))
         # accept
         _list = descriptor.main.accept
         self.assertEqual(
