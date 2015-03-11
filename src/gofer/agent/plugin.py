@@ -434,13 +434,13 @@ class Plugin(object):
         """
         self.delegate.loaded()
         path = self.cfg.messaging.authenticator
-        if path:
-            path = path.split('.')
-            mod = '.'.join(path[:-1])
-            mod = __import__(mod, {}, {}, [path[-1]])
-            self.authenticator = mod.Authenticator()
-        else:
-            self.authenticator = None
+        if not path:
+            # not configured
+            return
+        path = path.split('.')
+        mod = '.'.join(path[:-1])
+        mod = __import__(mod, {}, {}, [path[-1]])
+        self.authenticator = mod.Authenticator()
 
     @synchronized
     def unload(self):
