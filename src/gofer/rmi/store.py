@@ -23,7 +23,7 @@ from time import sleep, time
 from logging import getLogger
 from Queue import Queue, Empty
 
-from gofer import NAME, Thread, Singleton
+from gofer import NAME, Thread
 from gofer.common import mkdir, rmdir, unlink
 from gofer.messaging import Document
 from gofer.rmi.tracker import Tracker

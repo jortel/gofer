@@ -13,8 +13,6 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-import sys
-
 from optparse import OptionParser
 
 from gofer.messaging import Document
