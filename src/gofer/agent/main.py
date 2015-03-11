@@ -27,7 +27,7 @@ LogHandler.install()
 from gofer import NAME
 from gofer import pam
 from gofer.common import Thread, released
-from gofer.agent.plugin import Plugin, PluginLoader, PluginMonitor
+from gofer.agent.plugin import Plugin, PluginLoader
 from gofer.agent.lock import Lock, LockFailed
 from gofer.agent.config import AgentConfig
 
@@ -66,7 +66,6 @@ class Agent:
 
     def __init__(self):
         cfg = AgentConfig()
-        self.plugin_monitor = PluginMonitor(int(cfg.main.monitor))
         pam.SERVICE = cfg.pam.service
 
     def start(self, block=True):
@@ -77,7 +76,6 @@ class Agent:
             plugin.start()
         actions = ActionThread()
         actions.start()
-        self.plugin_monitor.start()
         log.info('agent started.')
         if block:
             actions.join(self.WAIT)

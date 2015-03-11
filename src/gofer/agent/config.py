@@ -18,11 +18,6 @@ from gofer.config import Config, Graph
 from gofer.config import REQUIRED, OPTIONAL, ANY, BOOL, NUMBER
 
 #
-# [main]
-#
-#   monitor
-#      Plugin monitoring delay (seconds).  (0=disabled).
-#
 # [logging]
 #   <module>
 #      Logging level
@@ -33,11 +28,6 @@ from gofer.config import REQUIRED, OPTIONAL, ANY, BOOL, NUMBER
 #
 
 AGENT_SCHEMA = (
-    ('main', REQUIRED,
-        (
-            ('monitor', OPTIONAL, NUMBER),
-        )
-    ),
     ('logging', REQUIRED,
         []
     ),
@@ -129,9 +119,6 @@ PLUGIN_SCHEMA = (
 
 
 AGENT_DEFAULTS = {
-    'main': {
-        'monitor': '2'
-    },
     'logging': {
     },
     'pam': {

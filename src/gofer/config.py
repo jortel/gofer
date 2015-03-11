@@ -50,9 +50,9 @@ cfg.validate(schema)
 import os
 import re
 
-import json
-
 from threading import RLock
+
+from gofer.common import json
 
 
 # -- constants ----------------------------------------------------------------

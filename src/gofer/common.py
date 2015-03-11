@@ -17,12 +17,16 @@ import os
 import inspect
 import errno
 
-from os import access, F_OK, R_OK
 from threading import local as Local
 from threading import Thread as _Thread
 from threading import currentThread as current_thread
 from threading import Event, RLock
 from logging import getLogger
+
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 
 log = getLogger(__name__)
@@ -80,7 +84,7 @@ def nvl(thing, default):
         return thing
 
 
-def valid_path(path, mode=R_OK):
+def valid_path(path, mode=os.R_OK):
     """
     Validate the specified path.
     :param path: An absolute file path.
@@ -92,9 +96,9 @@ def valid_path(path, mode=R_OK):
     if not path:
         # valid paths only
         return
-    if not access(path, F_OK):
+    if not os.access(path, os.F_OK):
         raise ValueError('"%s" not found' % path)
-    if not access(path, mode):
+    if not os.access(path, mode):
         raise ValueError('"%s" insufficient permissions' % path)
 
 
