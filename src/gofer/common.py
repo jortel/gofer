@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011 Red Hat, Inc.
+# Copyright (c) 2015 Red Hat, Inc.
 #
 # This software is licensed to you under the GNU Lesser General Public
 # License as published by the Free Software Foundation; either version

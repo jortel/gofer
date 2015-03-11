@@ -13,6 +13,7 @@ from unittest import TestCase
 
 from mock import patch, Mock, ANY
 
+from gofer.common import Singleton
 from gofer.agent.plugin import attach
 from gofer.agent.plugin import Container, Plugin
 
@@ -45,6 +46,12 @@ class TestAttach(TestCase):
 
 
 class TestContainer(TestCase):
+
+    def setUp(self):
+        Singleton._inst.clear()
+
+    def tearDown(self):
+        Singleton._inst.clear()
 
     def test_init(self):
         cnt = Container()
@@ -157,8 +164,6 @@ class TestPlugin(TestCase):
         plugin.scheduler = Mock()
         # name
         self.assertEqual(plugin.name, descriptor.main.name)
-        # stream
-        self.assertEqual(plugin.stream, descriptor.main.name)
         # cfg
         self.assertEqual(plugin.cfg, descriptor)
         # uuid

@@ -17,8 +17,9 @@
 ROOT = '/opt/gofer'
 
 AGENT_CONF = """
-[main]
-monitor=2
+[manager]
+enabled=1
+port=5651
 
 [logging]
 gofer.agent=info

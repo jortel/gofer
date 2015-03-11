@@ -150,9 +150,9 @@ class Scheduler(Thread):
         :param plugin: A plugin.
         :type plugin: gofer.agent.plugin.Plugin
         """
-        Thread.__init__(self, name='scheduler:%s' % plugin.stream)
+        Thread.__init__(self, name='scheduler:%s' % plugin.name)
         self.plugin = plugin
-        self.pending = Pending(plugin.stream)
+        self.pending = Pending(plugin.name)
         self.setDaemon(True)
 
     def run(self):
@@ -168,6 +168,14 @@ class Scheduler(Thread):
             except Exception:
                 self.pending.commit(request.sn)
                 log.exception(request.sn)
+
+    def add(self, request):
+        """
+        Add a request to be scheduled.
+        :param request: A request to be scheduled.
+        :rtype request: gofer.messaging.Document
+        """
+        self.pending.put(request)
 
     def shutdown(self):
         """

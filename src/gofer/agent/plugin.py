@@ -24,6 +24,7 @@ import sys
 from logging import getLogger
 from threading import RLock
 
+from gofer import Singleton
 from gofer.agent.config import PLUGIN_SCHEMA, PLUGIN_DEFAULTS
 from gofer.agent.decorator import Actions
 from gofer.agent.decorator import Delegate
@@ -34,7 +35,6 @@ from gofer.common import released
 from gofer.config import Config, Graph, Reader, get_bool
 from gofer import NAME, synchronized
 from gofer.messaging import Document, Connector, Queue, Exchange
-from gofer.pmon import PathMonitor
 from gofer.rmi.consumer import RequestConsumer
 from gofer.rmi.decorator import Remote
 from gofer.rmi.dispatcher import Dispatcher
@@ -58,9 +58,19 @@ class Container(object):
     Plugin container.
     """
 
+    __metaclass__ = Singleton
+
     def __init__(self):
         self.__mutex = RLock()
         self.plugins = {}
+
+    @staticmethod
+    def builtins():
+        Remote.clear()
+        path = 'gofer.agent.builtin'
+        plugin = __import__(path, {}, {}, [path.split('.')[-1]])
+        reload(plugin)
+        return plugin, Remote.collated()
 
     @synchronized
     def add(self, plugin, *names):
@@ -114,6 +124,51 @@ class Container(object):
                 continue
             unique.append(p)
         return unique
+
+    @synchronized
+    def load(self, path):
+        """
+        Load the plugin at the specified path.
+        :param path: The absolute path to the descriptor.
+        :type path: str
+        """
+        if path in self.plugins:
+            raise ValueError('plugin: %s, already loaded' % path)
+        plugin = PluginLoader.load(path)
+        if plugin:
+            plugin.start()
+        else:
+            raise Exception('failed')
+
+    @synchronized
+    def reload(self, path):
+        """
+        Reload the plugin at the specified path.
+        :param path: The absolute path to the descriptor or a plugin name.
+        :type path: str
+        """
+        if path not in self.plugins:
+            raise ValueError('plugin: %s, not-found' % path)
+        plugin = self.find(path)
+        if plugin:
+            plugin.reload()
+        else:
+            raise Exception('failed')
+
+    @synchronized
+    def unload(self, path):
+        """
+        Unload the plugin at the specified path.
+        :param path: The absolute path to the descriptor or a plugin name.
+        :type path: str
+        """
+        if path not in self.plugins:
+            raise ValueError('plugin: %s, not-found' % path)
+        plugin = self.find(path)
+        if plugin:
+            plugin.unload()
+        else:
+            raise Exception('failed')
 
 
 class Plugin(object):
@@ -209,10 +264,6 @@ class Plugin(object):
     @property
     def name(self):
         return self.cfg.main.name
-
-    @property
-    def stream(self):
-        return self.name
 
     @property
     def cfg(self):
@@ -520,9 +571,6 @@ class PluginLoader:
         '/opt/%s/plugins' % NAME,
     ]
 
-    BUILTIN = __import__('gofer.agent.builtin')
-    BUILTINS = Remote.collated()
-
     @staticmethod
     def load_all():
         """
@@ -599,7 +647,9 @@ class PluginLoader:
         Remote.clear()
         Actions.clear()
         Plugin.add(plugin)
+        _, builtins = Container.builtins()
         try:
+
             path = plugin.descriptor.main.plugin
             if path:
                 Plugin.add(plugin, path)
@@ -614,7 +664,7 @@ class PluginLoader:
                 fn.gofer.plugin = plugin
 
             collated = Remote.collated()
-            collated += PluginLoader.BUILTINS
+            collated += builtins
             plugin.dispatcher += collated
             plugin.actions = Actions.collated()
             plugin.delegate = Delegate()
@@ -623,103 +673,3 @@ class PluginLoader:
         except Exception:
             log.exception('plugin:%s, import failed', plugin.name)
             Plugin.delete(plugin)
-
-
-class PluginMonitor(object):
-    """
-    Plugin monitoring.
-    :ivar monitor: Path monitor.
-    :type monitor: PathMonitor
-    """
-
-    def __init__(self, delay):
-        """
-        :param delay: The delay in seconds.
-        :type delay: int
-        """
-        self.delay = delay
-        self.monitor = PathMonitor(delay)
-
-    def start(self):
-        """
-        Start monitoring.
-        """
-        if not self.delay:
-            # not enabled
-            return
-        self.monitor.add(PluginDescriptor.ROOT, self.changed)
-        for plugin in Plugin.all():
-            self.monitor.add(plugin.path, self.changed)
-        self.monitor.start()
-
-    def changed(self, path):
-        """
-        A monitored path has changed.
-        :param path: The path that changed.
-        :type path: str
-        """
-        log.debug('changed: %s', path)
-        root = PluginDescriptor.ROOT
-        if path == root:
-            self.dir_changed()
-        else:
-            self.file_changed(path)
-
-    def dir_changed(self):
-        """
-        The directory containing plugin descriptors has changed.
-        """
-        root = PluginDescriptor.ROOT
-        loaded = {p.path for p in Plugin.all()}
-        for path in [os.path.join(root, name) for name in os.listdir(root)]:
-            _, ext = os.path.splitext(path)
-            if ext not in Reader.EXTENSION:
-                continue
-            if path in loaded:
-                continue
-            log.info('added: %s', path)
-            self.load(path)
-
-    def file_changed(self, path):
-        """
-        A plugin descriptor has been changed/deleted.
-        The associated plugin is loaded/reloaded as needed.
-        :param path: The path that changed.
-        :type path: str
-        """
-        plugin = Plugin.find(path)
-        if os.path.exists(path):
-            # load/reload
-            log.info('changed: %s', path)
-            if plugin and plugin.enabled:
-                plugin.reload()
-            else:
-                self.load(path)
-        else:
-            # unload
-            log.info('deleted: %s', path)
-            self.unload(plugin)
-
-    def unload(self, plugin):
-        """
-        Unload the plugin.
-        :param plugin: The plugin to unload.
-        :type plugin: Plugin
-        """
-        self.monitor.delete(plugin.path, self.changed)
-        plugin.unload()
-
-    def load(self, path):
-        """
-        Load the plugin at the specified path and begin
-        monitoring the path.
-        :param path: The path that changed.
-        :type path: str
-        """
-        plugin = PluginLoader.load(path)
-        if not plugin:
-            # not loaded
-            return
-        plugin.start()
-        self.monitor.add(path, self.changed)
-

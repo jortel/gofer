@@ -16,7 +16,6 @@
 from logging import getLogger
 
 from gofer import Options
-from gofer.rmi.store import Pending
 from gofer.messaging import Consumer, Producer, Document
 from gofer.metrics import timestamp
 
@@ -38,7 +37,7 @@ class RequestConsumer(Consumer):
         :type plugin: gofer.agent.plugin.Plugin
         """
         super(RequestConsumer, self).__init__(queue, plugin.url)
-        self.stream = plugin.stream
+        self.scheduler = plugin.scheduler
 
     def _rejected(self, code, description, document, details):
         """
@@ -56,8 +55,7 @@ class RequestConsumer(Consumer):
         details = dict(
             code=code,
             description=description,
-            details=details
-        )
+            details=details)
         request = Document()
         request.load(document)
         self._send(request, 'rejected', **details)
@@ -102,5 +100,4 @@ class RequestConsumer(Consumer):
         inbound.url = self.url
         inbound.queue = self.queue.name
         request.inbound = inbound
-        pending = Pending(self.stream)
-        pending.put(request)
+        self.scheduler.add(request)

@@ -37,8 +37,6 @@ class Pending(object):
     Persistent store and queuing for pending requests.
     """
 
-    __metaclass__ = Singleton
-
     PENDING = '/var/lib/%s/messaging/pending' % NAME
 
     @staticmethod

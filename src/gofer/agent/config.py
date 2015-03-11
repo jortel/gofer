@@ -18,10 +18,13 @@ from gofer.config import Config, Graph
 from gofer.config import REQUIRED, OPTIONAL, ANY, BOOL, NUMBER
 
 #
-# [main]
-#
-#   monitor
-#      Plugin monitoring delay (seconds).  (0=disabled).
+# [manager]
+#   enabled
+#      The manager is (enabled|disabled).
+#   host
+#      Host (name or IP) the manager listens on.
+#   port
+#      The port number the manager listens on.
 #
 # [logging]
 #   <module>
@@ -33,9 +36,11 @@ from gofer.config import REQUIRED, OPTIONAL, ANY, BOOL, NUMBER
 #
 
 AGENT_SCHEMA = (
-    ('main', REQUIRED,
+    ('manager', REQUIRED,
         (
-            ('monitor', OPTIONAL, NUMBER),
+            ('enabled', OPTIONAL, BOOL),
+            ('host', OPTIONAL, ANY),
+            ('port', OPTIONAL, NUMBER),
         )
     ),
     ('logging', REQUIRED,
@@ -129,8 +134,10 @@ PLUGIN_SCHEMA = (
 
 
 AGENT_DEFAULTS = {
-    'main': {
-        'monitor': '2'
+    'manager': {
+        'enabled': '0',
+        'host': 'localhost',
+        'port': '5650',
     },
     'logging': {
     },

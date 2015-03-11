@@ -1,0 +1,68 @@
+.\" Manpage for gofer.
+.\" Contact jortel@redhat.com to correct errors or typos.
+.TH man 1 "10 March 2015" "2.6" "goferd man page"
+
+.SH NAME
+
+gofer \- The goferd management tool.
+
+.SH SYNOPSIS
+
+gofer [ -h ] [ -H \fIHOST\fR ] [ -p \fIPORT\fR ]
+         [ -s ] [ -l \fIPATH\fR ] [ -r \fIPATH\fR ] [ -u \fIPATH\fR ]
+
+.SH DESCRIPTION
+
+.B gofer
+is the command line tool for managing goferd.
+
+.PP
+See: https://github.com/jortel/gofer for more information.
+
+.SH OPTIONS
+
+The following options are supported by \fBgofer\fR
+
+.TP
+-h [ --help ]
+Displays the help message.
+.TP
+-H [ --host ] \fIHOST\fR
+The host or IP used to connect to goferd.
+.TP
+-p [ --port ] \fIPORT\fR
+The port used to connect to goferd.
+.TP
+-s [ --status ]
+Displays goferd status information.
+.TP
+-l [ --load ] \fIPATH\fR
+Load the plugin using the specified \fIPATH\fR to the descriptor.
+.TP
+-r [ --reload ] \fIPATH\fR
+Reload the plugin using the specified \fIPATH\fR to the descriptor.
+The \fIPATH\fR can also be the plugin name.
+.TP
+-u [ --unload ] \fIPATH\fR
+Unload the plugin using the specified \fIPATH\fR to the descriptor.
+The \fIPATH\fR can also be the plugin name.
+
+.SH SEE ALSO
+
+goferd(1)
+
+.SH BUGS
+
+No known bugs.
+
+.SH FILES
+
+.TP
+/etc/gofer/agent.conf
+The main
+.B goferd
+configuration file
+
+.SH AUTHOR
+
+Jeff Ortel (jortel@redhat.com)

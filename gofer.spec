@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.6.0
+Version: 2.7.0
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -62,7 +62,7 @@ mkdir -p %{buildroot}/%{_usr}/lib/%{name}/plugins
 mkdir -p %{buildroot}/%{_usr}/share/%{name}/plugins
 mkdir -p %{buildroot}/%{_mandir}/man1
 
-cp bin/%{name}d %{buildroot}/usr/bin
+cp bin/* %{buildroot}/usr/bin
 cp etc/%{name}/*.conf %{buildroot}/%{_sysconfdir}/%{name}
 cp etc/%{name}/plugins/*.conf %{buildroot}/%{_sysconfdir}/%{name}/plugins
 cp src/plugins/*.py %{buildroot}/%{_usr}/share/%{name}/plugins
@@ -96,7 +96,7 @@ rm -rf %{buildroot}
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/builtin.conf
 %{_usr}/share/%{name}/plugins/builtin.*
 %doc LICENSE
-%doc %{_mandir}/man1/gofer*
+%doc %{_mandir}/man1/goferd.*
 
 %post
 %if 0%{?systemd}
@@ -148,6 +148,25 @@ Provides gofer python lib modules.
 %{python_sitelib}/%{name}/messaging/adapter/*.py*
 %{python_sitelib}/%{name}/devel/
 %doc LICENSE
+
+
+# --- tools ------------------------------------------------------------------
+
+%package -n %{name}-tools
+Summary: Gofer tools
+Group: Development/Languages
+BuildRequires: python
+Requires: python-%{name} = %{version}
+
+%description -n%{name}-tools
+Provides the gofer tools.
+
+%files -n %{name}-tools
+%defattr(-,root,root,-)
+%{python_sitelib}/%{name}/tools/
+%{_bindir}/%{name}
+%doc LICENSE
+%doc %{_mandir}/man1/gofer.*
 
 
 # --- python-qpid messaging adapter ------------------------------------------

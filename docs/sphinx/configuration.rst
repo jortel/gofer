@@ -13,13 +13,14 @@ files located in ``/etc/gofer/conf.d``.  During startup, gofer first reads
 
 All configuration files support the following sections and properties:
 
-[main]
-------
+[manager]
+---------
 
-Defines basic agent properties.
+Defines agent manager properties.
 
-- **monitor** - The (optional) plugin monitoring delay (seconds).  A value of 0 wil disable
-  plugin monitoring.  Default:0
+- **enabled** - The manager is (1=enabled|0=disabled).
+- **host** - The host (interface) the manager listens on.  Defaults to: `localhost`.
+- **port** - The port the manager listens on.  Defaults to: `9000`.
 
 
 [logging]
@@ -85,7 +86,7 @@ Defines basic plugin properties.
     - /usr/lib64/gofer/plugins
     - /opt/gofer/plugins
 
-- **enabled** - The plugin is enabled/disabled.
+- **enabled** - The plugin is (1=enabled|=0disabled).
 - **threads** - The (optional) number of threads for the RMI dispatcher.
 - **accept** - Accept forwarding list.  Comma ',' separated list of plugin names.
 - **forward** - Forwarding list.  Comma ',' separated list of plugin names.

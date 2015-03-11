@@ -7,7 +7,7 @@ branches:
     - master
 install:
   - "mkdir /tmp/bin"
+  - "cp bin/gofer /tmp/bin/gofer"
   - "cp bin/goferd /tmp/bin/goferd"
-  - "pip install iniparse"
   - "pip install src/"
 script: nosetests test/unit

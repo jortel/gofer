@@ -14,7 +14,9 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-from gofer.agent.main import main
+import sys
+
+from gofer.tools.gcmd import main
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
