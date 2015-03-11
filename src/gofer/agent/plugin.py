@@ -65,12 +65,15 @@ class Container(object):
         self.plugins = {}
 
     @staticmethod
-    def builtins():
+    def builtin():
         Remote.clear()
-        path = 'gofer.agent.builtin'
-        plugin = __import__(path, {}, {}, [path.split('.')[-1]])
-        reload(plugin)
-        return plugin, Remote.collated()
+        try:
+            path = 'gofer.agent.builtin'
+            plugin = __import__(path, {}, {}, [path.split('.')[-1]])
+            reload(plugin)
+            return plugin, Remote.collated()
+        finally:
+            Remote.clear()
 
     @synchronized
     def add(self, plugin, *names):
@@ -647,7 +650,7 @@ class PluginLoader:
         Remote.clear()
         Actions.clear()
         Plugin.add(plugin)
-        _, builtins = Container.builtins()
+        _, builtins = Container.builtin()
         try:
 
             path = plugin.descriptor.main.plugin

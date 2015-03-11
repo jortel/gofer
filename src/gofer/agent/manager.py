@@ -38,7 +38,7 @@ class Handler(object):
     """
 
     def show(self):
-        builtin, _ = Container.builtins()
+        builtin, _ = Container.builtin()
         admin = builtin.Admin()
         return admin.help()
 
