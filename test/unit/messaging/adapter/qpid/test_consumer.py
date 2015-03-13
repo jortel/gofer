@@ -78,8 +78,9 @@ class TestReader(TestCase):
         self.assertEqual(reader.session, connection.return_value.session.return_value)
         self.assertEqual(reader.receiver, reader.session.receiver.return_value)
 
+    @patch('gofer.messaging.adapter.qpid.consumer.Reader.close')
     @patch('gofer.messaging.adapter.qpid.consumer.Connection')
-    def test_repair(self, connection):
+    def test_repair(self, connection, close):
         url = 'test-url'
         node = Mock(address='test')
 
@@ -88,6 +89,7 @@ class TestReader(TestCase):
         reader.repair()
 
         # validation
+        close.assert_called_once_with()
         connection.return_value.close.assert_called_once_with()
         connection.return_value.open.assert_called_once_with()
         connection.return_value.session.assert_called_once_with()
@@ -110,7 +112,6 @@ class TestReader(TestCase):
 
     def test_close(self):
         connection = Mock()
-        connection.opened.return_value = True
         session = Mock(connection=connection)
         receiver = Mock()
 
@@ -127,25 +128,6 @@ class TestReader(TestCase):
         session.close.assert_called_once_with()
         self.assertFalse(connection.close.called)
 
-    def test_close_not_connected(self):
-        connection = Mock()
-        connection.opened.return_value = False
-        session = Mock(connection=connection)
-        receiver = Mock()
-
-        # test
-        reader = Reader(None, '')
-        reader.connection = connection
-        reader.session = session
-        reader.receiver = receiver
-        reader.is_open = Mock(return_value=True)
-        reader.close()
-
-        # validation
-        receiver.close.assert_called_once_with()
-        self.assertFalse(session.close.called)
-        self.assertFalse(connection.close.called)
-        
     def test_ack(self):
         message = Mock()
 

@@ -80,8 +80,7 @@ class Reader(BaseReader):
         Repair the reader.
         :raise: NotFound
         """
-        self.session = None
-        self.receiver = None
+        self.close()
         self.connection.close()
         self.connection.open()
         self.session = self.connection.session()
@@ -100,8 +99,7 @@ class Reader(BaseReader):
         except Exception:
             pass
         try:
-            if session.connection.opened():
-                session.close()
+            session.close()
         except Exception:
             pass
 
