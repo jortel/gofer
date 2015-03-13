@@ -114,7 +114,7 @@ class TestConnection(TestCase):
             **ssl_properties)
 
         ssl_domain.assert_called_once_with(connector)
-        c._impl.attach.assert_called_once_with()
+        c._impl.open.assert_called_once_with()
         self.assertEqual(c._impl, connection.return_value)
 
     @patch('gofer.messaging.adapter.qpid.connection.sleep')
@@ -124,7 +124,7 @@ class TestConnection(TestCase):
     def test_open_with_retry(self, connection, sleep):
         url = TEST_URL
         side_effect = [ConnectionError, Mock()]
-        connection.return_value.attach.side_effect = side_effect
+        connection.return_value.open.side_effect = side_effect
 
         # test
         c = Connection(url)
@@ -172,9 +172,20 @@ class TestConnection(TestCase):
         url = 'test-url'
         c = Connection(url)
         impl = Mock()
+        impl.opened.return_value = True
         c._impl = impl
         c.close()
         impl.close.assert_called_once_with()
+        self.assertEqual(c._impl, None)
+
+    def test_close_not_connected(self):
+        url = 'test-url'
+        c = Connection(url)
+        impl = Mock()
+        impl.opened.return_value = False
+        c._impl = impl
+        c.close()
+        self.assertFalse(impl.close.called)
         self.assertEqual(c._impl, None)
 
     def test_close_failed(self):

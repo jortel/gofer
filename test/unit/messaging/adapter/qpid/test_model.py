@@ -176,7 +176,8 @@ class TestMethod(TestCase):
 
     def test_close(self):
         connection = Mock()
-        session = Mock()
+        connection.opened.return_value = True
+        session = Mock(connection=connection)
         sender = Mock()
         receiver = Mock()
         method = Method('', '', {})
@@ -189,9 +190,31 @@ class TestMethod(TestCase):
         method.close()
 
         # validation
-        session.close.assert_called_once_with()
         receiver.close.assert_called_once_with()
         sender.close.assert_called_once_with()
+        session.close.assert_called_once_with()
+        self.assertFalse(connection.close.called)
+
+    def test_close_not_connected(self):
+        connection = Mock()
+        connection.opened.return_value = False
+        session = Mock(connection=connection)
+        sender = Mock()
+        receiver = Mock()
+        method = Method('', '', {})
+        method.connection = connection
+        method.session = session
+        method.sender = sender
+        method.receiver = receiver
+
+        # test
+        method.close()
+
+        # validation
+        receiver.close.assert_called_once_with()
+        sender.close.assert_called_once_with()
+        self.assertFalse(session.close.called)
+        self.assertFalse(connection.close.called)
 
     @patch('gofer.messaging.adapter.qpid.model.uuid4')
     @patch('gofer.messaging.adapter.qpid.model.Message')
