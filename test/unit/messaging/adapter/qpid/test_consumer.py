@@ -78,6 +78,23 @@ class TestReader(TestCase):
         self.assertEqual(reader.session, connection.return_value.session.return_value)
         self.assertEqual(reader.receiver, reader.session.receiver.return_value)
 
+    @patch('gofer.messaging.adapter.qpid.consumer.Connection')
+    def test_repair(self, connection):
+        url = 'test-url'
+        node = Mock(address='test')
+
+        # test
+        reader = Reader(node, url)
+        reader.repair()
+
+        # validation
+        connection.return_value.close.assert_called_once_with()
+        connection.return_value.open.assert_called_once_with()
+        connection.return_value.session.assert_called_once_with()
+        connection.return_value.session.return_value.receiver.assert_called_once_with(node.address)
+        self.assertEqual(reader.session, connection.return_value.session.return_value)
+        self.assertEqual(reader.receiver, reader.session.receiver.return_value)
+
     @patch('gofer.messaging.adapter.qpid.consumer.Connection', Mock())
     def test_open_already(self):
         url = 'test-url'

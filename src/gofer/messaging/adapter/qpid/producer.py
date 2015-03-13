@@ -66,7 +66,7 @@ class Sender(BaseSender):
         """
         Repair the sender.
         """
-        self.close()
+        self.session = None
         self.connection.close()
         self.connection.open()
         self.session = self.connection.session()

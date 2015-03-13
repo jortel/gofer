@@ -161,11 +161,9 @@ class TestMethod(TestCase):
 
         # test
         method = Method(url, '', {})
-        method.close = Mock()
         method.repair()
 
         # validation
-        method.close.assert_called_once_with()
         connection.close.assert_called_once_with()
         connection.open.assert_called_once_with()
         session.sender.assert_called_once_with(model.ADDRESS)

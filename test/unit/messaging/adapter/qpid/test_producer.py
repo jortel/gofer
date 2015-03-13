@@ -60,6 +60,20 @@ class TestSender(TestCase):
         connection.return_value.session.assert_called_once_with()
         self.assertEqual(sender.session, connection.return_value.session.return_value)
 
+    @patch('gofer.messaging.adapter.qpid.producer.Connection')
+    def test_repair(self, connection):
+        url = 'test-url'
+
+        # test
+        sender = Sender(url)
+        sender.repair()
+
+        # validation
+        connection.return_value.close.assert_called_once_with()
+        connection.return_value.open.assert_called_once_with()
+        connection.return_value.session.assert_called_once_with()
+        self.assertEqual(sender.session, connection.return_value.session.return_value)
+
     @patch('gofer.messaging.adapter.qpid.producer.Connection', Mock())
     def test_open_already(self):
         url = 'test-url'
