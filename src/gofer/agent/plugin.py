@@ -34,6 +34,7 @@ from gofer.common import nvl, mkdir
 from gofer.common import released
 from gofer.config import Config, Graph, Reader, get_bool
 from gofer.messaging import Document, Connector, Queue, Exchange
+from gofer.messaging import NotFound
 from gofer.rmi.consumer import RequestConsumer
 from gofer.rmi.decorator import Remote
 from gofer.rmi.dispatcher import Dispatcher
@@ -579,10 +580,13 @@ class BrokerModel(object):
         """
         if self.managed < 2:
             return
-        url = self.plugin.url
-        queue = Queue(self.queue)
-        queue.purge(url)
-        queue.delete(url)
+        try:
+            url = self.plugin.url
+            queue = Queue(self.queue)
+            queue.purge(url)
+            queue.delete(url)
+        except NotFound:
+            pass
 
 
 class PluginDescriptor(Graph):
