@@ -66,7 +66,7 @@ class Sender(BaseSender):
         """
         Repair the sender.
         """
-        self.session = None
+        self.close()
         self.connection.close()
         self.connection.open()
         self.session = self.connection.session()
@@ -78,8 +78,7 @@ class Sender(BaseSender):
         session = self.session
         self.session = None
         try:
-            if session.connection.opened():
-                session.close()
+            session.close()
         except Exception:
             pass
 

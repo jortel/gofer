@@ -129,9 +129,7 @@ class Method(Messenger):
         """
         Repair the connection and get a sender and receiver.
         """
-        self.sender = None
-        self.session = None
-        self.receiver = None
+        self.close()
         self.connection.close()
         self.connection.open()
         self.session = self.connection.session()
@@ -157,8 +155,7 @@ class Method(Messenger):
         except Exception:
             pass
         try:
-            if session.connection.opened():
-                session.close()
+            session.close()
         except Exception:
             pass
 

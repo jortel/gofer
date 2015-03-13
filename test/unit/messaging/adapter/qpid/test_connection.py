@@ -172,20 +172,9 @@ class TestConnection(TestCase):
         url = 'test-url'
         c = Connection(url)
         impl = Mock()
-        impl.opened.return_value = True
         c._impl = impl
         c.close()
         impl.close.assert_called_once_with()
-        self.assertEqual(c._impl, None)
-
-    def test_close_not_connected(self):
-        url = 'test-url'
-        c = Connection(url)
-        impl = Mock()
-        impl.opened.return_value = False
-        c._impl = impl
-        c.close()
-        self.assertFalse(impl.close.called)
         self.assertEqual(c._impl, None)
 
     def test_close_failed(self):

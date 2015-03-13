@@ -142,8 +142,9 @@ class TestMethod(TestCase):
         self.assertEqual(method.receiver, receiver)
 
     @patch('gofer.messaging.adapter.qpid.model.uuid4')
+    @patch('gofer.messaging.adapter.qpid.model.Method.close')
     @patch('gofer.messaging.adapter.qpid.model.Connection')
-    def test_repair(self, _connection, uuid):
+    def test_repair(self, _connection, close, uuid):
         url = 'url-test'
         uuid.return_value = '5138'
         connection = Mock()
@@ -164,6 +165,7 @@ class TestMethod(TestCase):
         method.repair()
 
         # validation
+        close.assert_called_once_with()
         connection.close.assert_called_once_with()
         connection.open.assert_called_once_with()
         session.sender.assert_called_once_with(model.ADDRESS)
@@ -174,7 +176,6 @@ class TestMethod(TestCase):
 
     def test_close(self):
         connection = Mock()
-        connection.opened.return_value = True
         session = Mock(connection=connection)
         sender = Mock()
         receiver = Mock()
@@ -191,27 +192,6 @@ class TestMethod(TestCase):
         receiver.close.assert_called_once_with()
         sender.close.assert_called_once_with()
         session.close.assert_called_once_with()
-        self.assertFalse(connection.close.called)
-
-    def test_close_not_connected(self):
-        connection = Mock()
-        connection.opened.return_value = False
-        session = Mock(connection=connection)
-        sender = Mock()
-        receiver = Mock()
-        method = Method('', '', {})
-        method.connection = connection
-        method.session = session
-        method.sender = sender
-        method.receiver = receiver
-
-        # test
-        method.close()
-
-        # validation
-        receiver.close.assert_called_once_with()
-        sender.close.assert_called_once_with()
-        self.assertFalse(session.close.called)
         self.assertFalse(connection.close.called)
 
     @patch('gofer.messaging.adapter.qpid.model.uuid4')
