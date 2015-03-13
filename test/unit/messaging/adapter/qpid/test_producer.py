@@ -74,7 +74,9 @@ class TestSender(TestCase):
 
     def test_close(self):
         connection = Mock()
-        session = Mock()
+        connection.opened.return_value = True
+        session = Mock(connection=connection)
+
         # test
         sender = Sender(None)
         sender.connection = connection
@@ -84,6 +86,22 @@ class TestSender(TestCase):
 
         # validation
         session.close.assert_called_once_with()
+        self.assertFalse(connection.close.called)
+
+    def test_close_not_connected(self):
+        connection = Mock()
+        connection.opened.return_value = False
+        session = Mock(connection=connection)
+
+        # test
+        sender = Sender(None)
+        sender.connection = connection
+        sender.session = session
+        sender.is_open = Mock(return_value=True)
+        sender.close()
+
+        # validation
+        self.assertFalse(session.close.called)
         self.assertFalse(connection.close.called)
 
     @patch('gofer.messaging.adapter.qpid.producer.Message')

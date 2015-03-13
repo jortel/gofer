@@ -155,7 +155,8 @@ class Method(Messenger):
         except Exception:
             pass
         try:
-            session.close()
+            if session.connection.opened():
+                session.close()
         except Exception:
             pass
 

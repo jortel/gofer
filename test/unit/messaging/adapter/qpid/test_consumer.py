@@ -93,7 +93,8 @@ class TestReader(TestCase):
 
     def test_close(self):
         connection = Mock()
-        session = Mock()
+        connection.opened.return_value = True
+        session = Mock(connection=connection)
         receiver = Mock()
 
         # test
@@ -107,6 +108,25 @@ class TestReader(TestCase):
         # validation
         receiver.close.assert_called_once_with()
         session.close.assert_called_once_with()
+        self.assertFalse(connection.close.called)
+
+    def test_close_not_connected(self):
+        connection = Mock()
+        connection.opened.return_value = False
+        session = Mock(connection=connection)
+        receiver = Mock()
+
+        # test
+        reader = Reader(None, '')
+        reader.connection = connection
+        reader.session = session
+        reader.receiver = receiver
+        reader.is_open = Mock(return_value=True)
+        reader.close()
+
+        # validation
+        receiver.close.assert_called_once_with()
+        self.assertFalse(session.close.called)
         self.assertFalse(connection.close.called)
         
     def test_ack(self):

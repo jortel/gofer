@@ -78,7 +78,8 @@ class Sender(BaseSender):
         session = self.session
         self.session = None
         try:
-            session.close()
+            if session.connection.opened():
+                session.close()
         except Exception:
             pass
 

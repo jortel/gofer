@@ -124,7 +124,7 @@ class Connection(BaseConnection):
                     password=connector.password,
                     heartbeat=10,
                     **domain)
-                impl.attach()
+                impl.open()
                 self._impl = impl
                 log.info('connected: %s', connector.url)
                 break
@@ -154,6 +154,9 @@ class Connection(BaseConnection):
         connection = self._impl
         self._impl = None
         try:
+            if not connection.opened():
+                # not open
+                return
             connection.close()
             connector = Connector.find(self.url)
             log.info('closed: %s', connector.url)
