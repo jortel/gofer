@@ -22,7 +22,6 @@ from gofer.common import ThreadSingleton
 with ipatch('amqp'):
     from gofer.messaging.adapter.model import Connector
     from gofer.messaging.adapter.amqp.connection import Connection, BaseConnection
-    from gofer.messaging.adapter.amqp.connection import CONNECTION_EXCEPTIONS
 
 TEST_URL = 'amqp+amqps://elmer:fudd@redhat.com:1234/test-virtual-host'
 
@@ -75,39 +74,6 @@ class TestConnection(TestCase):
         c._impl = Mock()
         c.open()
         self.assertFalse(c._impl.open.called)
-
-    @patch('gofer.messaging.adapter.amqp.connection.sleep')
-    @patch('gofer.messaging.adapter.amqp.connection.RealConnection')
-    def test_open_with_retry(self, connection, sleep):
-        url = TEST_URL
-        side_effect = [CONNECTION_EXCEPTIONS[0], Mock()]
-        connection.side_effect = side_effect
-
-        # test
-        c = Connection(url)
-        c._ssh = Mock()
-        c.open(delay=10)
-
-        # validation
-        sleep.assert_called_once_with(10)
-        self.assertEqual(connection.call_count, 2)
-        self.assertEqual(c._impl, side_effect[1])
-
-    @patch('gofer.messaging.adapter.amqp.connection.sleep')
-    @patch('gofer.messaging.adapter.amqp.connection.RealConnection')
-    def test_open_with_no_retry(self, connection, sleep):
-        url = TEST_URL
-        side_effect = [CONNECTION_EXCEPTIONS[0], Mock()]
-        connection.side_effect = side_effect
-
-        # test
-        c = Connection(url)
-        c._ssh = Mock()
-        self.assertRaises(CONNECTION_EXCEPTIONS[0], c.open, retries=0)
-
-        # validation
-        self.assertFalse(sleep.called)
-        self.assertEqual(connection.call_count, 1)
 
     def test_channel(self):
         url = TEST_URL

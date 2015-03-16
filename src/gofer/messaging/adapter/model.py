@@ -851,6 +851,8 @@ class BaseConnection(Model):
     Base AMQP connection.
     :ivar url: A broker URL.
     :type url: str
+    :ivar retry: Retry failed connects.
+    :type retry: bool
     """
 
     def __init__(self, url):
@@ -860,6 +862,7 @@ class BaseConnection(Model):
         :see: URL
         """
         self.url = url
+        self.retry = True
 
     def is_open(self):
         """
@@ -897,10 +900,17 @@ class Connection(BaseConnection):
     An AMQP channel object.
     """
 
-    def __init__(self, url=None):
+    def __init__(self, url=None, retry=False):
+        """
+        :param url: A broker URL.
+        :type url: str
+        :param retry: Retry failed connect.
+        :type retry: bool
+        """
         BaseConnection.__init__(self, url)
         adapter = Adapter.find(url)
         self._impl = adapter.Connection(url)
+        self.retry = retry
 
     def is_open(self):
         """
@@ -916,6 +926,7 @@ class Connection(BaseConnection):
         Open the connection.
         :raise: ModelError
         """
+        self._impl.retry = self.retry
         self._impl.open()
 
     @model

@@ -127,7 +127,7 @@ class Thread(_Thread):
             event = Event()
         aborted = event.isSet()
         if aborted:
-            log.warn('thread:%s, ABORTED', thread.getName())
+            log.info('thread:%s, ABORTED', thread.getName())
         return aborted
 
     def abort(self):

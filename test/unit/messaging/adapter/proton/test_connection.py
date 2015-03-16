@@ -21,10 +21,6 @@ with ipatch('proton'):
     from gofer.messaging.adapter.proton.connection import Connection
 
 
-class ConnectionException(Exception):
-    pass
-
-
 class TestConnection(TestCase):
 
     def setUp(self):
@@ -107,36 +103,6 @@ class TestConnection(TestCase):
         canonical = URL(url).canonical
         find.assert_called_once_with(url)
         blocking.assert_called_once_with(canonical, ssl_domain=ssl_domain.return_value)
-
-    @patch('gofer.messaging.adapter.proton.connection.sleep')
-    @patch('gofer.messaging.adapter.proton.connection.BlockingConnection')
-    @patch('gofer.messaging.adapter.proton.connection.ConnectionException', ConnectionException)
-    def test_open_with_retry(self, blocking, sleep):
-        url = 'test-url'
-        blocking.side_effect = [ConnectionException, None]
-
-        # test
-        connection = Connection(url)
-        connection.open(delay=10)
-
-        # validation
-        sleep.assert_called_once_with(10)
-        self.assertEqual(blocking.call_count, 2)
-
-    @patch('gofer.messaging.adapter.proton.connection.sleep')
-    @patch('gofer.messaging.adapter.proton.connection.BlockingConnection')
-    @patch('gofer.messaging.adapter.proton.connection.ConnectionException', ConnectionException)
-    def test_open_with_retry_exceeded(self, blocking, sleep):
-        url = 'test-url'
-        connection = Connection(url)
-        blocking.side_effect = ConnectionException
-
-        # test
-        self.assertRaises(ConnectionException, connection.open, retries=1, delay=10)
-
-        # validation
-        sleep.assert_called_once_with(10)
-        self.assertEqual(blocking.call_count, 2)
 
     @patch('gofer.messaging.adapter.proton.connection.BlockingConnection')
     def test_open_already(self, blocking):

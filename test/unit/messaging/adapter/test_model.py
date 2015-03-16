@@ -882,6 +882,7 @@ class TestBaseConnection(TestCase):
     def test_init(self):
         connection = BaseConnection(TEST_URL)
         self.assertEqual(connection.url, TEST_URL)
+        self.assertTrue(connection.retry)
 
     def test_abstract(self):
         connection = BaseConnection(TEST_URL)
@@ -916,9 +917,11 @@ class TestConnection(TestCase):
         plugin.Connection.return_value = _impl
         _find.return_value = plugin
         url = TEST_URL
-        connection = Connection(url)
+        retry = 1234
+        connection = Connection(url, retry)
         _find.assert_called_with(url)
         self.assertEqual(connection.url, url)
+        self.assertEqual(connection.retry, retry)
         self.assertEqual(connection._impl, _impl)
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
@@ -940,9 +943,11 @@ class TestConnection(TestCase):
         plugin.Connection.return_value = _impl
         _find.return_value = plugin
         url = TEST_URL
-        connection = Connection(url)
+        retry = 1234
+        connection = Connection(url, retry)
         connection.open()
         _impl.open.assert_called_once_with()
+        self.assertEqual(_impl.retry, retry)
 
     @patch('gofer.messaging.adapter.model.Adapter.find')
     def test_close(self, _find):

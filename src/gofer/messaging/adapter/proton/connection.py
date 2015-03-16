@@ -9,7 +9,6 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from time import sleep
 from uuid import uuid4
 from logging import getLogger
 
@@ -18,18 +17,12 @@ from proton import SSLDomain, SSLException
 from proton.utils import BlockingConnection
 from proton.reactor import DynamicNodeProperties
 
-from gofer.common import Thread, ThreadSingleton
-from gofer.messaging.adapter.reliability import YEAR
+from gofer.common import ThreadSingleton
 from gofer.messaging.adapter.model import Connector, BaseConnection
+from gofer.messaging.adapter.connect import retry
 
 
 log = getLogger(__name__)
-
-
-DELAY = 10
-MAX_DELAY = 90
-RETRIES = YEAR / MAX_DELAY
-DELAY_MULTIPLIER = 1.2
 
 
 class Connection(BaseConnection):
@@ -81,37 +74,18 @@ class Connection(BaseConnection):
         """
         return self._impl is not None
 
-    def open(self, retries=RETRIES, delay=DELAY):
+    @retry(ConnectionException, SSLException)
+    def open(self):
         """
         Open a connection to the broker.
-        :param retries: The number of retries.
-        :type retries: int
-        :param delay: The delay between retries in seconds.
-        :type delay: int
         """
         if self.is_open():
             # already open
             return
-        delay = float(delay)
         connector = Connector.find(self.url)
         url = connector.url.canonical
-        while not Thread.aborted():
-            try:
-                log.info('connecting: %s', connector)
-                domain = self.ssl_domain(connector)
-                self._impl = BlockingConnection(url, ssl_domain=domain)
-                log.info('connected: %s', connector.url)
-                break
-            except (ConnectionException, SSLException), e:
-                log.error('connect: %s, failed: %s', self.url, e)
-                if retries > 0:
-                    log.info('retry in %d seconds', delay)
-                    sleep(delay)
-                    if delay < MAX_DELAY:
-                        delay *= DELAY_MULTIPLIER
-                    retries -= 1
-                else:
-                    raise
+        domain = self.ssl_domain(connector)
+        self._impl = BlockingConnection(url, ssl_domain=domain)
 
     def sender(self, address):
         """

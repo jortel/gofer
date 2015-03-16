@@ -17,16 +17,15 @@
 Defined Qpid broker objects.
 """
 
-from time import sleep
 from logging import getLogger
 
 from qpid.messaging import Connection as RealConnection
 from qpid.messaging.transports import TRANSPORTS
 from qpid.messaging import ConnectionError
 
-from gofer.common import Thread, ThreadSingleton
-from gofer.messaging.adapter.reliability import YEAR
+from gofer.common import ThreadSingleton
 from gofer.messaging.adapter.model import Connector, BaseConnection
+from gofer.messaging.adapter.connect import retry
 
 
 log = getLogger(__name__)
@@ -36,11 +35,6 @@ AMQP = 'amqp'
 AMQPS = 'amqps'
 TCP = 'tcp'
 SSL = 'ssl'
-
-DELAY = 10
-MAX_DELAY = 90
-RETRIES = YEAR / MAX_DELAY
-DELAY_MULTIPLIER = 1.2
 
 
 class Connection(BaseConnection):
@@ -98,13 +92,10 @@ class Connection(BaseConnection):
         """
         return self._impl is not None
 
-    def open(self, retries=RETRIES, delay=DELAY):
+    @retry(ConnectionError)
+    def open(self):
         """
         Open a connection to the broker.
-        :param retries: The number of retries.
-        :type retries: int
-        :param delay: The delay between retries in seconds.
-        :type delay: int
         """
         if self.is_open():
             # already open
@@ -113,31 +104,17 @@ class Connection(BaseConnection):
         Connection.add_transports()
         domain = self.ssl_domain(connector)
         log.info('connecting: %s', connector)
-        while not Thread.aborted():
-            try:
-                impl = RealConnection(
-                    host=connector.host,
-                    port=connector.port,
-                    tcp_nodelay=True,
-                    transport=connector.url.scheme,
-                    username=connector.userid,
-                    password=connector.password,
-                    heartbeat=10,
-                    **domain)
-                impl.open()
-                self._impl = impl
-                log.info('connected: %s', connector.url)
-                break
-            except ConnectionError, e:
-                log.error('connect: %s, failed: %s', str(self.url), e)
-                if retries > 0:
-                    log.info('retry in %d seconds', delay)
-                    sleep(delay)
-                    if delay < MAX_DELAY:
-                        delay *= DELAY_MULTIPLIER
-                    retries -= 1
-                else:
-                    raise
+        impl = RealConnection(
+            host=connector.host,
+            port=connector.port,
+            tcp_nodelay=True,
+            transport=connector.url.scheme,
+            username=connector.userid,
+            password=connector.password,
+            heartbeat=10,
+            **domain)
+        impl.open()
+        self._impl = impl
 
     def session(self):
         """

@@ -11,16 +11,15 @@
 
 import ssl
 
-from time import sleep
 from logging import getLogger
 from socket import error as SocketError
 
 from amqp import Connection as RealConnection
 from amqp import ConnectionError
 
-from gofer.common import Thread, ThreadSingleton
-from gofer.messaging.adapter.reliability import YEAR
+from gofer.common import ThreadSingleton
 from gofer.messaging.adapter.model import Connector, BaseConnection
+from gofer.messaging.adapter.connect import retry
 
 
 log = getLogger(__name__)
@@ -30,11 +29,6 @@ USERID = 'guest'
 PASSWORD = 'guest'
 
 CONNECTION_EXCEPTIONS = (IOError, SocketError, ConnectionError, AttributeError)
-
-DELAY = 10
-MAX_DELAY = 90
-RETRIES = YEAR / MAX_DELAY
-DELAY_MULTIPLIER = 1.2
 
 
 class Connection(BaseConnection):
@@ -85,46 +79,27 @@ class Connection(BaseConnection):
         """
         return self._impl is not None
 
-    def open(self, retries=RETRIES, delay=DELAY):
+    @retry(*CONNECTION_EXCEPTIONS)
+    def open(self):
         """
         Open a connection to the broker.
-        :param retries: The number of retries.
-        :type retries: int
-        :param delay: The delay between retries in seconds.
-        :type delay: int
         """
         if self.is_open():
             # already open
             return
-        delay = float(delay)
         connector = Connector.find(self.url)
         host = ':'.join((connector.host, str(connector.port)))
         virtual_host = connector.virtual_host or VIRTUAL_HOST
         domain = self.ssl_domain(connector)
         userid = connector.userid or USERID
         password = connector.password or PASSWORD
-        while not Thread.aborted():
-            try:
-                log.info('connecting: %s', connector)
-                self._impl = RealConnection(
-                    host=host,
-                    virtual_host=virtual_host,
-                    ssl=domain,
-                    userid=userid,
-                    password=password,
-                    confirm_publish=True)
-                log.info('connected: %s', connector.url)
-                break
-            except CONNECTION_EXCEPTIONS, e:
-                log.error('connect: %s, failed: %s', self.url, e)
-                if retries > 0:
-                    log.info('retry in %d seconds', delay)
-                    sleep(delay)
-                    if delay < MAX_DELAY:
-                        delay *= DELAY_MULTIPLIER
-                    retries -= 1
-                else:
-                    raise
+        self._impl = RealConnection(
+            host=host,
+            virtual_host=virtual_host,
+            ssl=domain,
+            userid=userid,
+            password=password,
+            confirm_publish=True)
 
     def channel(self):
         """
