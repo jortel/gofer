@@ -103,7 +103,6 @@ class Connection(BaseConnection):
         connector = Connector.find(self.url)
         Connection.add_transports()
         domain = self.ssl_domain(connector)
-        log.info('connecting: %s', connector)
         impl = RealConnection(
             host=connector.host,
             port=connector.port,
