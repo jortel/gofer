@@ -20,12 +20,15 @@ class ConnectError(Exception):
     pass
 
 
+URL = 'amqp://host'
+
+
 class TestRetry(TestCase):
 
     @patch('gofer.messaging.adapter.connect.sleep')
     def test_open(self, sleep):
         fn = Mock()
-        connection = Mock(retry=True)
+        connection = Mock(url=URL, retry=True)
         fx = retry(ConnectError)(fn)
         fx(connection)
         fn.assert_called_once_with(connection)
@@ -35,7 +38,7 @@ class TestRetry(TestCase):
     def test_open_failed_no_retry(self, sleep):
         fn = Mock()
         fn.side_effect = [ConnectError]
-        connection = Mock(retry=False)
+        connection = Mock(url=URL, retry=False)
         fx = retry(ConnectError)(fn)
         self.assertRaises(ConnectError, fx, connection)
         self.assertFalse(sleep.called)
@@ -45,7 +48,7 @@ class TestRetry(TestCase):
     def test_retried(self, sleep):
         fn = Mock()
         fn.side_effect = [ConnectError, ConnectError, None]
-        connection = Mock(retry=True)
+        connection = Mock(url=URL, retry=True)
         fx = retry(ConnectError)(fn)
         fx(connection)
         self.assertEqual(
@@ -67,7 +70,7 @@ class TestRetry(TestCase):
     def test_exceeded(self, sleep):
         fn = Mock()
         fn.side_effect = [ConnectError, ConnectError, ConnectError]
-        connection = Mock(retry=True)
+        connection = Mock(url=URL, retry=True)
         fx = retry(ConnectError)(fn)
         self.assertRaises(ConnectError, fx, connection)
         self.assertEqual(

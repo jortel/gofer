@@ -83,9 +83,10 @@ class Connection(BaseConnection):
             # already open
             return
         connector = Connector.find(self.url)
-        url = connector.url.canonical
         domain = self.ssl_domain(connector)
-        self._impl = BlockingConnection(url, ssl_domain=domain)
+        log.info('open: %s', connector)
+        self._impl = BlockingConnection(connector.url.canonical, ssl_domain=domain)
+        log.info('opened: %s', self.url)
 
     def sender(self, address):
         """
@@ -124,7 +125,6 @@ class Connection(BaseConnection):
         self._impl = None
         try:
             connection.close()
-            connector = Connector.find(self.url)
-            log.info('closed: %s', connector.url)
+            log.info('closed: %s', self.url)
         except Exception:
             pass

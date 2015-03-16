@@ -103,6 +103,7 @@ class Connection(BaseConnection):
         connector = Connector.find(self.url)
         Connection.add_transports()
         domain = self.ssl_domain(connector)
+        log.info('open: %s', connector)
         impl = RealConnection(
             host=connector.host,
             port=connector.port,
@@ -114,6 +115,7 @@ class Connection(BaseConnection):
             **domain)
         impl.open()
         self._impl = impl
+        log.info('opened: %s', self.url)
 
     def session(self):
         """
@@ -131,7 +133,6 @@ class Connection(BaseConnection):
         self._impl = None
         try:
             connection.close()
-            connector = Connector.find(self.url)
-            log.info('closed: %s', connector.url)
+            log.info('closed: %s', self.url)
         except Exception:
             pass

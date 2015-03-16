@@ -93,6 +93,7 @@ class Connection(BaseConnection):
         domain = self.ssl_domain(connector)
         userid = connector.userid or USERID
         password = connector.password or PASSWORD
+        log.info('open: %s', connector)
         self._impl = RealConnection(
             host=host,
             virtual_host=virtual_host,
@@ -100,6 +101,7 @@ class Connection(BaseConnection):
             userid=userid,
             password=password,
             confirm_publish=True)
+        log.info('opened: %s', self.url)
 
     def channel(self):
         """
@@ -116,7 +118,6 @@ class Connection(BaseConnection):
         self._impl = None
         try:
             connection.close()
-            connector = Connector.find(self.url)
-            log.info('closed: %s', connector.url)
+            log.info('closed: %s', self.url)
         except Exception:
             pass
