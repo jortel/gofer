@@ -17,7 +17,7 @@ from logging import getLogger
 
 from uuid import uuid4
 
-from gofer.common import Thread, valid_path
+from gofer.common import Thread, valid_path, utf8
 from gofer.messaging.model import VERSION, Document
 from gofer.messaging.adapter.url import URL
 from gofer.messaging.adapter.factory import Adapter
@@ -174,8 +174,11 @@ class Node(Model):
         """
         raise NotImplementedError()
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
+
+    def __str__(self):
+        return utf8(self)
     
 
 class BaseExchange(Node):
@@ -501,8 +504,11 @@ class Message(Model):
         """
         self._reader.reject(self._impl, requeue)
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self._body)
+
+    def __str__(self):
+        return utf8(self)
 
 
 class BaseReader(Messenger):
@@ -884,8 +890,11 @@ class BaseConnection(Model):
         """
         raise NotImplementedError()
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.url)
+
+    def __str__(self):
+        return utf8(self)
 
     def __enter__(self):
         self.open()
@@ -974,13 +983,16 @@ class SSL(Model):
                 self.client_certificate or
                 self.client_key) is not None
 
-    def __str__(self):
+    def __unicode__(self):
         s = list()
         s.append('ca: %s' % self.ca_certificate)
         s.append('key: %s' % self.client_key)
         s.append('certificate: %s' % self.client_certificate)
         s.append('host-validation: %s' % self.host_validation)
         return '|'.join(s)
+
+    def __str__(self):
+        return utf8(self)
 
 
 class Connector(Model):
@@ -1102,11 +1114,14 @@ class Connector(Model):
         """
         return self.url.is_ssl()
 
-    def __str__(self):
+    def __unicode__(self):
         s = list()
         s.append('URL: %s' % self.url)
         s.append('SSL: %s' % self.ssl)
         return '|'.join(s)
+
+    def __str__(self):
+        return utf8(self)
 
 
 class Broker(Connector):

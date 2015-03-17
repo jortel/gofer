@@ -23,6 +23,8 @@ import time
 from math import modf
 from datetime import datetime
 
+from gofer.common import utf8
+
 
 def timestamp():
     dt = datetime.utcnow()
@@ -48,7 +50,7 @@ class Timer:
     def duration(self):
         return self.stopped - self.started
 
-    def __str__(self):
+    def __unicode__(self):
         if self.started == 0:
             return 'not-running'
         if self.started > 0 and self.stopped == 0:
@@ -63,3 +65,6 @@ class Timer:
             return '%d.%.3d (seconds)' % jmod(m)
         m = modf(duration/60)
         return '%d.%.3d (minutes)' % jmod(m)
+
+    def __str__(self):
+        return utf8(self)

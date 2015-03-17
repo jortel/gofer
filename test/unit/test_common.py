@@ -381,6 +381,10 @@ class TestOptions(TestCase):
         options = Options(a=1, b=2)
         self.assertEqual(repr(options), repr(options.__dict__))
 
+    def test_unicode(self):
+        options = Options(a=1, b=2)
+        self.assertEqual(str(options), unicode(options.__dict__))
+
     def test_str(self):
         options = Options(a=1, b=2)
         self.assertEqual(str(options), str(options.__dict__))

@@ -99,6 +99,17 @@ class TestAction(TestCase):
         # validation
         self.assertFalse(target.called)
 
+    def test_unicode(self):
+        action = Action(Mock(), hours=24)
+        action.name = Mock(return_value='1234')
+
+        # test
+        s = unicode(action)
+
+        # validation
+        action.name.assert_called_once_with()
+        self.assertEqual(s, action.name.return_value)
+
     def test_str(self):
         action = Action(Mock(), hours=24)
         action.name = Mock(return_value='1234')

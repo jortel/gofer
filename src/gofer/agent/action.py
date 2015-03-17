@@ -19,6 +19,8 @@ from logging import getLogger
 from datetime import datetime as dt
 from datetime import timedelta
 
+from gofer.common import utf8
+
 
 log = getLogger(__name__)
 
@@ -81,5 +83,8 @@ class Action:
         except Exception, e:
             log.exception(e)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name()
+
+    def __str__(self):
+        return utf8(self)

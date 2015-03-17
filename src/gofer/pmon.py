@@ -23,7 +23,7 @@ from threading import RLock
 from logging import getLogger
 from time import sleep
 
-from gofer import Thread, synchronized
+from gofer.common import Thread, synchronized, utf8
 
 
 log = getLogger(__name__)
@@ -128,8 +128,11 @@ class Tracker(object):
     def __hash__(self):
         return hash((self.path, self.target))
 
-    def __str__(self):
+    def __unicode__(self):
         return self.path
+
+    def __str__(self):
+        return utf8(self)
 
 
 class PathMonitor(Thread):

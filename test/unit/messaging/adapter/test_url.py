@@ -121,6 +121,18 @@ class TestURL(TestCase):
         url = URL('test')
         self.assertEqual(hash(url), hash(url.canonical))
 
+    def test_unicode(self):
+        urls = [
+            'qpid+amqp://elmer:fudd@test-host:5000/all',
+            'amqp://elmer:fudd@test-host:5000/all',
+            'amqp://test-host:5000/all',
+            'amqp://test-host:5000',
+            'amqp://test-host',
+        ]
+        for _url in urls:
+            url = URL(_url)
+            self.assertEqual(unicode(url), url.canonical)
+
     def test_str(self):
         urls = [
             'qpid+amqp://elmer:fudd@test-host:5000/all',

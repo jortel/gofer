@@ -22,7 +22,7 @@ import inspect
 import traceback as tb
 
 from gofer import NAME
-from gofer.common import Options
+from gofer.common import Options, utf8
 from gofer.messaging import Document
 from gofer.pam import authenticate as pam_authenticate
 
@@ -457,8 +457,11 @@ class RMI(object):
             log.exception(str(self.method))
             return Return.exception()
 
-    def __str__(self):
+    def __unicode__(self):
         return str(self.request)
+
+    def __str__(self):
+        return utf8(self)
 
     def __repr__(self):
         return str(self)

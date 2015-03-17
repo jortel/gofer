@@ -20,7 +20,7 @@ Contains request delivery policies.
 from logging import getLogger
 from uuid import uuid4
 
-from gofer.common import Thread, Options, nvl
+from gofer.common import Thread, Options, nvl, utf8
 from gofer.messaging import Document, InvalidDocument
 from gofer.messaging import Producer, Reader, Queue, Exchange
 from gofer.rmi.dispatcher import Return, RemoteException
@@ -385,5 +385,8 @@ class Trigger:
             queue.purge(self._policy.url)
             queue.delete(self._policy.url)
 
-    def __str__(self):
+    def __unicode__(self):
         return self._sn
+
+    def __str__(self):
+        return utf8(self)

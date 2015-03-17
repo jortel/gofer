@@ -17,6 +17,9 @@
 Defined URL objects.
 """
 
+from gofer.common import utf8
+
+
 AMQP = {
     'tcp':  5672,
     'amqp': 5672,
@@ -123,8 +126,11 @@ class URL(Part):
     def __eq__(self, other):
         return self.canonical == other.canonical
 
-    def __str__(self):
+    def __unicode__(self):
         return self.canonical
+
+    def __str__(self):
+        return utf8(self)
 
 
 class Scheme(Part):

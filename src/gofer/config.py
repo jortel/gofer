@@ -52,7 +52,7 @@ import re
 
 from threading import RLock
 
-from gofer.common import json
+from gofer.common import json, utf8
 
 
 # -- constants ----------------------------------------------------------------
@@ -488,13 +488,16 @@ class Graph(object):
     def __repr__(self):
         return repr(self.__dict)
 
-    def __str__(self):
+    def __unicode__(self):
         s = []
         for name, section in sorted(self.__dict.items()):
             s.append('\n[%s]' % name)
             gs = GraphSection(section)
             s.append(str(gs))
         return '\n'.join(s)
+
+    def __str__(self):
+        return utf8(self)
 
 
 class GraphSection(object):

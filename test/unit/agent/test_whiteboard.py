@@ -59,5 +59,5 @@ class TestWhiteboard(TestCase):
         self.assertEqual(mutex.release.call_count, 11)
         # repr
         self.assertEqual(str(wb), str(wb._Whiteboard__dict))
-        self.assertEqual(mutex.acquire.call_count, 12)
-        self.assertEqual(mutex.release.call_count, 12)
+        self.assertEqual(mutex.acquire.call_count, 13)
+        self.assertEqual(mutex.release.call_count, 13)

@@ -21,7 +21,7 @@ from uuid import uuid4
 from Queue import Queue, Empty
 from logging import getLogger
 
-from gofer.common import Thread, released
+from gofer.common import Thread, released, utf8
 
 
 log = getLogger(__name__)
@@ -139,7 +139,7 @@ class Call:
         except Exception:
             log.exception(self.id)
 
-    def __str__(self):
+    def __unicode__(self):
         s = list()
         s.append('call: ')
         s.append(str(self.fn))
@@ -149,6 +149,9 @@ class Call:
         s.append(str(self.kwargs))
         s.append(')')
         return ''.join(s)
+
+    def __str__(self):
+        return utf8(self)
 
 
 class ThreadPool:

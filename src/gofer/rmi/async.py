@@ -19,8 +19,8 @@ Provides async AMQP message consumer classes.
 
 from logging import getLogger
 
-from gofer.messaging import Document
-from gofer.messaging import Consumer
+from gofer.common import utf8
+from gofer.messaging import Document, Consumer
 from gofer.rmi.dispatcher import Reply, Return, RemoteException
 
 
@@ -134,7 +134,7 @@ class AsyncReply:
         """
         pass
 
-    def __str__(self):
+    def __unicode__(self):
         s = list()
         s.append(self.__class__.__name__)
         s.append('  sn : %s' % self.sn)
@@ -142,6 +142,9 @@ class AsyncReply:
         s.append('  timestamp : %s' % self.timestamp)
         s.append('  user data : %s' % self.data)
         return '\n'.join(s)
+
+    def __str__(self):
+        return utf8(self)
 
 
 class FinalReply(AsyncReply):
@@ -201,12 +204,15 @@ class Succeeded(FinalReply):
     def succeeded(self):
         return True
 
-    def __str__(self):
+    def __unicode__(self):
         s = list()
         s.append(AsyncReply.__str__(self))
         s.append('  retval:')
         s.append(str(self.retval))
         return '\n'.join(s)
+
+    def __str__(self):
+        return utf8(self)
 
 
 class Failed(FinalReply):
@@ -234,7 +240,7 @@ class Failed(FinalReply):
     def throw(self):
         raise self.exval
 
-    def __str__(self):
+    def __unicode__(self):
         s = list()
         s.append(AsyncReply.__str__(self))
         s.append('  exval: %s' % str(self.exval))
@@ -243,6 +249,9 @@ class Failed(FinalReply):
         s.append('  xstate: %s' % self.xstate)
         s.append('  xargs: %s' % self.xargs)
         return '\n'.join(s)
+
+    def __str__(self):
+        return utf8(self)
 
 
 class Accepted(AsyncReply):
@@ -257,11 +266,14 @@ class Accepted(AsyncReply):
         else:
             listener.accepted(self)
 
-    def __str__(self):
+    def __unicode__(self):
         s = list()
         s.append(AsyncReply.__str__(self))
         s.append('accepted')
         return '\n'.join(s)
+
+    def __str__(self):
+        return utf8(self)
 
 
 class Rejected(AsyncReply):
@@ -276,11 +288,14 @@ class Rejected(AsyncReply):
         else:
             listener.rejected(self)
 
-    def __str__(self):
+    def __unicode__(self):
         s = list()
         s.append(AsyncReply.__str__(self))
         s.append('rejected')
         return '\n'.join(s)
+
+    def __str__(self):
+        return utf8(self)
 
 
 class Started(AsyncReply):
@@ -295,11 +310,14 @@ class Started(AsyncReply):
         else:
             listener.started(self)
 
-    def __str__(self):
+    def __unicode__(self):
         s = list()
         s.append(AsyncReply.__str__(self))
         s.append('started')
         return '\n'.join(s)
+
+    def __str__(self):
+        return utf8(self)
 
 
 class Progress(AsyncReply):
@@ -330,13 +348,16 @@ class Progress(AsyncReply):
         else:
             listener.progress(self)
 
-    def __str__(self):
+    def __unicode__(self):
         s = list()
         s.append(AsyncReply.__str__(self))
         s.append('     total: %s' % str(self.total))
         s.append(' completed: %s' % str(self.completed))
         s.append('   details: %s' % str(self.details))
         return '\n'.join(s)
+
+    def __str__(self):
+        return utf8(self)
 
 
 class Listener:

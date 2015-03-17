@@ -32,6 +32,16 @@ except ImportError:
 log = getLogger(__name__)
 
 
+def utf8(thing):
+    """
+    Get a utf-8 representation of an object.
+    :param thing: An object.
+    :return: A utf-8 representation.
+    :rtype: str
+    """
+    return unicode(thing).encode('utf-8')
+
+
 def mkdir(path):
     """
     Make a directory at the specified path.
@@ -310,7 +320,10 @@ class Options(object):
         return repr(self.__dict__)
 
     def __str__(self):
-        return str(self.__dict__)
+        return utf8(self.__dict__)
+
+    def __unicode__(self):
+        return unicode(self.__dict__)
 
 
 class List(object):

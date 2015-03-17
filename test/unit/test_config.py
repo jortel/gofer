@@ -502,6 +502,11 @@ class TestGraph(TestCase):
         self.assertEqual(sections[0], (VALID.items()[0]))
         self.assertEqual(sections[1], (VALID.items()[1]))
 
+    def test_unicode(self):
+        graph = Graph(clone(MINIMAL))
+        s = unicode(graph)
+        self.assertEqual(s, '\n[section1]\nproperty1=10\nproperty2=http://redhat.com\nproperty3=howdy')
+
     def test_str(self):
         graph = Graph(clone(MINIMAL))
         s = str(graph)
@@ -544,6 +549,11 @@ class TestGraphSection(TestCase):
             self.assertTrue(False, msg='AttributeError not raised')
         except AttributeError:
             pass
+
+    def test_unicode(self):
+        graph = Graph(clone(MINIMAL))
+        s = unicode(graph.section1)
+        self.assertEqual(s, 'property1=10\nproperty2=http://redhat.com\nproperty3=howdy')
 
     def test_str(self):
         graph = Graph(clone(MINIMAL))

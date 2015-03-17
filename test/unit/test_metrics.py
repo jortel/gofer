@@ -56,6 +56,26 @@ class TestTimer(TestCase):
         t.stopped = 100.0
         self.assertEqual(t.duration(), 90.0)
 
+    def test_unicode(self):
+        t = Timer()
+        # not started
+        self.assertEqual(unicode(t), 'not-running')
+        # started but not stopped
+        t.started = 1
+        self.assertEqual(unicode(t), 'started: %d (running)' % t.started)
+        # milliseconds
+        t.started = 0.10
+        t.stopped = 0.25
+        self.assertEqual(unicode(t), '150 (ms)')
+        # seconds
+        t.started = 10.0
+        t.stopped = 25.0
+        self.assertEqual(unicode(t), '15.000 (seconds)')
+        # minutes
+        t.started = 10.0
+        t.stopped = 100.0
+        self.assertEqual(unicode(t), '1.500 (minutes)')
+
     def test_str(self):
         t = Timer()
         # not started

@@ -14,7 +14,7 @@
 #
 
 from threading import RLock
-from gofer import Singleton, synchronized
+from gofer import Singleton, synchronized, utf8
 
 
 class Whiteboard:
@@ -50,5 +50,9 @@ class Whiteboard:
         return repr(self.__dict)
     
     @synchronized
-    def __str__(self):
+    def __unicode__(self):
         return str(self.__dict)
+
+    @synchronized
+    def __str__(self):
+        return utf8(self)
