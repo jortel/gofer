@@ -19,6 +19,7 @@ URL = 'amqp+amqp://localhost:5673'
 
 
 def run():
+    print URL
     test = Test(URL)
     test()
 

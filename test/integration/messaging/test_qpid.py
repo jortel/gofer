@@ -19,6 +19,7 @@ URL = 'qpid+amqp://localhost'
 
 
 def run():
+    print URL
     test = Test(URL)
     test()
 

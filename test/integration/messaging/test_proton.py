@@ -19,6 +19,7 @@ URL = 'proton+amqp://localhost'
 
 
 def run():
+    print URL
     test = Test(URL)
     test.test_crud()
     test.test_no_exchange()
