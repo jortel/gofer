@@ -301,7 +301,7 @@ class Trigger:
         :param request: A request to send.
         :type request: object
         """
-        self._sn = str(uuid4())
+        self._sn = utf8(uuid4())
         self._policy = policy
         self._request = request
         self._pending = True

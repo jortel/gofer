@@ -14,6 +14,7 @@ from logging import getLogger
 
 from proton import Message
 
+from gofer.common import utf8
 from gofer.messaging.adapter.model import Messenger, BaseExchange, BaseQueue
 from gofer.messaging.adapter.proton.connection import Connection
 from gofer.messaging.adapter.proton.reliability import reliable, resend
@@ -188,7 +189,7 @@ class Method(Messenger):
                 body=self.body,
                 reply_to=reply_to,
                 properties=self.properties,
-                correlation_id=str(uuid4()),
+                correlation_id=utf8(uuid4()),
                 subject=SUBJECT)
             self.send(request)
             reply = self.receiver.receive()

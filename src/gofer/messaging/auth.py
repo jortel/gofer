@@ -20,6 +20,7 @@ from hashlib import sha256
 from logging import getLogger
 from base64 import b64encode, b64decode
 
+from gofer.common import utf8
 from gofer.messaging.model import Document, InvalidDocument
 
 
@@ -99,7 +100,7 @@ def sign(authenticator, message):
         signed = Document(message=message, signature=encode(signature))
         message = signed.dump()
     except Exception, e:
-        log.info(str(e))
+        log.info(utf8(e))
         log.debug(message, exc_info=True)
     return message
 
@@ -134,7 +135,7 @@ def validate(authenticator, message):
         failed.document = original
         raise failed
     except Exception, e:
-        details = str(e)
+        details = utf8(e)
         log.info(details)
         log.debug(details, exc_info=True)
         failed = ValidationFailed(details)

@@ -493,7 +493,7 @@ class Graph(object):
         for name, section in sorted(self.__dict.items()):
             s.append('\n[%s]' % name)
             gs = GraphSection(section)
-            s.append(str(gs))
+            s.append(unicode(gs))
         return '\n'.join(s)
 
     def __str__(self):
@@ -538,8 +538,8 @@ class GraphSection(object):
         def _str(self):
             s = []
             for k, v in content.items():
-                s.append('%s=%s' % (k, v))
-            return '\n'.join(s)
+                s.append('%s=%s' % (utf8(k), utf8(v)))
+            return utf8('\n'.join(s))
 
         gs.__getattr__ = _get
         gs.__setattr__ = _set

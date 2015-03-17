@@ -16,9 +16,12 @@
 from yum import YumBase
 from optparse import OptionParser
 from yum.plugins import TYPE_CORE, TYPE_INTERACTIVE
+from logging import getLogger, Logger
+
+from gofer.common import utf8
 from gofer.decorators import *
 from gofer.agent.plugin import Plugin
-from logging import getLogger, Logger
+
 
 log = getLogger(__name__)
 plugin = Plugin.find(__name__)
@@ -112,7 +115,7 @@ class Package:
         for t in tsInfo:
             if t.ts_state not in states:
                 continue
-            qname = str(t.po)
+            qname = utf8(t.po)
             package = dict(
                 qname=qname,
                 repoid=t.repoid,

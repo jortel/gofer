@@ -22,7 +22,7 @@ from tempfile import mktemp
 
 from gofer.common import Singleton, ThreadSingleton, Options
 from gofer.common import synchronized, conditional, released
-from gofer.common import mkdir, rmdir, unlink, nvl, valid_path
+from gofer.common import mkdir, rmdir, unlink, nvl, valid_path, utf8
 from gofer.common import List
 
 
@@ -36,6 +36,13 @@ class Thing(object):
         self.n2 = n2
         self.a = a
         self.b = b
+
+    def __unicode__(self):
+        description = 'my dog' + unichr(255) + 'is fun'
+        return description
+
+    def __str__(self):
+        return utf8(self)
 
 
 class Thing2(object):
@@ -92,6 +99,14 @@ class Thing4(object):
     @released
     def bar(self):
         pass
+
+
+class TestUtf8(TestCase):
+
+    def test_utf8(self):
+        thing = Thing(1, 2)
+        s = utf8(thing)
+        self.assertEqual(s, unicode(thing).encode('utf-8'))
 
 
 class TestMkdir(TestCase):

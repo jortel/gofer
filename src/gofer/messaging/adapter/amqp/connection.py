@@ -17,7 +17,7 @@ from socket import error as SocketError
 from amqp import Connection as RealConnection
 from amqp import ConnectionError
 
-from gofer.common import ThreadSingleton
+from gofer.common import ThreadSingleton, utf8
 from gofer.messaging.adapter.model import Connector, BaseConnection
 from gofer.messaging.adapter.connect import retry
 
@@ -88,7 +88,7 @@ class Connection(BaseConnection):
             # already open
             return
         connector = Connector.find(self.url)
-        host = ':'.join((connector.host, str(connector.port)))
+        host = ':'.join((connector.host, utf8(connector.port)))
         virtual_host = connector.virtual_host or VIRTUAL_HOST
         domain = self.ssl_domain(connector)
         userid = connector.userid or USERID

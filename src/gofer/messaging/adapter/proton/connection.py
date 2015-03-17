@@ -17,7 +17,7 @@ from proton import SSLDomain, SSLException
 from proton.utils import BlockingConnection
 from proton.reactor import DynamicNodeProperties
 
-from gofer.common import ThreadSingleton
+from gofer.common import ThreadSingleton, utf8
 from gofer.messaging.adapter.model import Connector, BaseConnection
 from gofer.messaging.adapter.connect import retry
 
@@ -96,7 +96,7 @@ class Connection(BaseConnection):
         :return: A sender.
         :rtype: proton.utils.BlockingSender
         """
-        name = str(uuid4())
+        name = utf8(uuid4())
         return self._impl.create_sender(address, name=name)
 
     def receiver(self, address=None, dynamic=False):
@@ -110,7 +110,7 @@ class Connection(BaseConnection):
         :rtype: proton.utils.BlockingReceiver
         """
         options = None
-        name = str(uuid4())
+        name = utf8(uuid4())
         if dynamic:
             # needed by dispatch router
             options = DynamicNodeProperties({'x-opt-qd.address': unicode(address)})

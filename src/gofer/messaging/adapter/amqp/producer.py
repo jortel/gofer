@@ -13,6 +13,7 @@ from logging import getLogger
 
 from amqp import Message
 
+from gofer.common import utf8
 from gofer.messaging.adapter.model import BaseSender
 from gofer.messaging.adapter.amqp.connection import Connection
 from gofer.messaging.adapter.amqp.reliability import reliable
@@ -36,7 +37,7 @@ def build_message(body, ttl, durable):
 
     if ttl:
         ms = ttl * 1000  # milliseconds
-        properties.update(expiration=str(ms))
+        properties.update(expiration=utf8(ms))
 
     if durable:
         properties.update(delivery_mode=2)

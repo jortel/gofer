@@ -19,8 +19,10 @@ System plugin.
 from subprocess import Popen, PIPE, call
 from logging import getLogger
 
+from gofer.common import utf8
 from gofer.decorators import pam, remote
 from gofer.pam import authenticate
+
 
 log = getLogger(__name__)
 
@@ -97,7 +99,7 @@ class Service(object):
             status = p.wait()
             return status, result
         except OSError, e:
-            return -1, str(e)
+            return -1, utf8(e)
 
     @remote
     @pam(user='root')
@@ -117,7 +119,7 @@ class Service(object):
             status = p.wait()
             return status, result
         except OSError, e:
-            return -1, str(e)
+            return -1, utf8(e)
 
     @remote
     @pam(user='root')
@@ -137,7 +139,7 @@ class Service(object):
             status = p.wait()
             return status, result
         except OSError, e:
-            return -1, str(e)
+            return -1, utf8(e)
 
     @remote
     @pam(user='root')
@@ -157,7 +159,7 @@ class Service(object):
             status = p.wait()
             return status, result
         except OSError, e:
-            return -1, str(e)
+            return -1, utf8(e)
 
 
 class Shell:
@@ -186,6 +188,6 @@ class Shell:
                 status = p.wait()
                 return status, result
             except OSError, e:
-                return -1, str(e)
+                return -1, utf8(e)
         else:
             return -1, 'user "%s" not authenticated' % user

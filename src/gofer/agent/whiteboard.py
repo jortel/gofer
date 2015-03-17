@@ -51,7 +51,7 @@ class Whiteboard:
     
     @synchronized
     def __unicode__(self):
-        return str(self.__dict)
+        return unicode(self.__dict)
 
     @synchronized
     def __str__(self):

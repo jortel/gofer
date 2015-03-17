@@ -14,6 +14,7 @@ from logging import getLogger
 
 from qpid.messaging import Message
 
+from gofer.common import utf8
 from gofer.messaging.adapter.model import Messenger, BaseExchange, BaseQueue
 from gofer.messaging.adapter.qpid.connection import Connection
 from gofer.messaging.adapter.qpid.reliability import reliable
@@ -190,7 +191,7 @@ class Method(Messenger):
                 content=self.content,
                 reply_to=self.reply_to,
                 properties=self.properties,
-                correlation_id=str(uuid4()),
+                correlation_id=utf8(uuid4()),
                 subject=SUBJECT)
             self.sender.send(request)
             reply = self.receiver.fetch()

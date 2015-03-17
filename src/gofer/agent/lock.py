@@ -22,6 +22,8 @@ import fcntl
 
 from threading import RLock
 
+from gofer.common import utf8
+
 
 class LockFailed(Exception):
     pass
@@ -102,7 +104,7 @@ class LockFile:
         :type pid: int
         """
         self.__fp.seek(0)
-        self.__fp.write(str(pid))
+        self.__fp.write(utf8(pid))
         self.__fp.flush()
         
     def __mkdir(self, path):

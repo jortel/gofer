@@ -26,7 +26,7 @@ LogHandler.install()
 
 from gofer import NAME
 from gofer import pam
-from gofer.common import Thread, released
+from gofer.common import Thread, released, utf8
 from gofer.config import get_bool
 from gofer.agent.plugin import Plugin, PluginLoader
 from gofer.agent.manager import Manager
@@ -171,7 +171,7 @@ def setup_logging():
             level = getattr(logging, level.upper())
             logger.setLevel(level)
         except Exception, e:
-            log.error(str(e))
+            log.error(utf8(e))
 
 
 def main():

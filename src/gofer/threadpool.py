@@ -64,7 +64,7 @@ class Worker(Thread):
             try:
                 call()
             except Exception:
-                log.exception(str(call))
+                log.exception(utf8(call))
 
     def put(self, call):
         """
@@ -142,11 +142,11 @@ class Call:
     def __unicode__(self):
         s = list()
         s.append('call: ')
-        s.append(str(self.fn))
+        s.append(unicode(self.fn))
         s.append('(')
-        s.append(str(self.args))
+        s.append(unicode(self.args))
         s.append(', ')
-        s.append(str(self.kwargs))
+        s.append(unicode(self.kwargs))
         s.append(')')
         return ''.join(s)
 

@@ -454,17 +454,17 @@ class RMI(object):
             retval = self.method(*self.args, **self.kwargs)
             return Return.succeed(retval)
         except Exception:
-            log.exception(str(self.method))
+            log.exception(utf8(self.method))
             return Return.exception()
 
     def __unicode__(self):
-        return str(self.request)
+        return unicode(self.request)
 
     def __str__(self):
         return utf8(self)
 
     def __repr__(self):
-        return str(self)
+        return utf8(self)
 
 
 # --- Security classes -------------------------------------------------------
@@ -636,7 +636,7 @@ class Dispatcher:
             log.debug('method: %s', method)
             return method()
         except Exception:
-            log.exception(str(document))
+            log.exception(utf8(document))
             return Return.exception()
 
     def __iadd__(self, other):

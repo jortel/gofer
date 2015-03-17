@@ -19,6 +19,7 @@ Action class for gofer agent.
 
 from logging import getLogger
 
+from gofer.common import utf8
 from gofer.collator import Collator
 from gofer.agent.action import Action
 
@@ -94,4 +95,4 @@ class Delegate(object):
             try:
                 fn()
             except Exception:
-                log.exception(str(fn))
+                log.exception(utf8(fn))

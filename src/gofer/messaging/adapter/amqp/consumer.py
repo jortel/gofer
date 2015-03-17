@@ -15,6 +15,7 @@ from Queue import Empty
 from Queue import Queue as Inbox
 from logging import getLogger
 
+from gofer.common import utf8
 from gofer.messaging.adapter.model import BaseReader, Message
 from gofer.messaging.adapter.amqp.connection import Connection
 from gofer.messaging.adapter.amqp.reliability import reliable
@@ -201,7 +202,7 @@ class Receiver(object):
             channel = self.channel()
             channel.basic_cancel(self.tag)
         except Exception, e:
-            log.debug(str(e))
+            log.debug(utf8(e))
 
     def fetch(self, timeout=None):
         """

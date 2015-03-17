@@ -40,7 +40,7 @@ def model(fn):
         except ModelError:
             raise
         except Exception, e:
-            log.exception(str(e))
+            log.exception(utf8(e))
             raise ModelError(*e.args)
     return _fn
 
@@ -66,7 +66,7 @@ class Model(object):
         :return: A unique domain ID.
         :rtype: str
         """
-        return '::'.join((self.__class__.__name__, str(id(self))))
+        return '::'.join((self.__class__.__name__, utf8(id(self))))
 
 
 class _Domain(object):
@@ -347,7 +347,7 @@ class Queue(BaseQueue):
         :param url: The (optional) broker URL.
         :type url: str
         """
-        BaseQueue.__init__(self, name or str(uuid4()))
+        BaseQueue.__init__(self, name or utf8(uuid4()))
         self.url = url
 
     @model
@@ -505,7 +505,7 @@ class Message(Model):
         self._reader.reject(self._impl, requeue)
 
     def __unicode__(self):
-        return str(self._body)
+        return unicode(self._body)
 
     def __str__(self):
         return utf8(self)
@@ -839,7 +839,7 @@ class Producer(Messenger):
         :rtype: str
         :raise: ModelError
         """
-        sn = str(uuid4())
+        sn = utf8(uuid4())
         routing = (None, address)
         document = Document(sn=sn, version=VERSION, routing=routing)
         document += body
@@ -891,7 +891,7 @@ class BaseConnection(Model):
         raise NotImplementedError()
 
     def __unicode__(self):
-        return str(self.url)
+        return unicode(self.url)
 
     def __str__(self):
         return utf8(self)

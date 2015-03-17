@@ -18,6 +18,7 @@ import inspect
 
 from logging import getLogger
 
+from gofer.common import utf8
 from gofer.rmi.tracker import Tracker
 from gofer.rmi.criteria import Builder
 from gofer.agent.plugin import Container
@@ -43,7 +44,7 @@ def indent(value, indent, *args):
     s = []
     for n in range(0, indent):
         s.append(' ')
-    s.append(str(value) % args)
+    s.append(utf8(value) % args)
     return ''.join(s)
 
 

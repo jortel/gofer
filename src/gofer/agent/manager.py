@@ -20,7 +20,7 @@ from socket import socket as Socket
 from socket import AF_INET, SOCK_STREAM, IPPROTO_TCP
 from socket import TCP_NODELAY, SOL_SOCKET, SO_REUSEADDR, SO_LINGER
 
-from gofer.common import Thread
+from gofer.common import Thread, utf8
 from gofer.messaging import Document
 from gofer.agent.plugin import Container, Builtin
 
@@ -122,7 +122,7 @@ class Manager(Thread):
             reply = self.dispatch(call)
             client.send(reply)
         except Exception, e:
-            log.error(str(e))
+            log.error(utf8(e))
 
     def run(self):
         """
@@ -148,7 +148,7 @@ class Manager(Thread):
             reply.result = result
         except Exception, e:
             reply.code = 1
-            reply.result = str(e)
+            reply.result = utf8(e)
         return reply.dump()
 
 
@@ -194,7 +194,7 @@ class Method(object):
         except Exception, e:
             reply = Document()
             reply.code = 1
-            reply.result = str(e)
+            reply.result = utf8(e)
             result = reply
         return result
 

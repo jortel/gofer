@@ -97,10 +97,10 @@ class Container(object):
         return getattr(self, name)
 
     def __unicode__(self):
-        return '{%s} options: %s' % (self.__address, str(self.__options))
+        return '{%s} options: %s' % (self.__address, unicode(self.__options))
 
     def __str__(self):
         return utf8(self)
     
     def __repr__(self):
-        return str(self)
+        return utf8(self)
