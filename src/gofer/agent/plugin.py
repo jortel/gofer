@@ -58,7 +58,7 @@ class Builtin(object):
     The builtin plugin.
     """
 
-    PATH = '/var/lib/%s/.builtin.conf' % NAME
+    PATH = '/tmp/%s/.builtin.conf' % NAME
 
     NAME = '__builtin__'
 
@@ -76,6 +76,7 @@ class Builtin(object):
         """
         Install the descriptor.
         """
+        mkdir(os.path.dirname(Builtin.PATH))
         fp = open(Builtin.PATH, 'w+')
         try:
             for line in Builtin.DESCRIPTOR.split('\n'):

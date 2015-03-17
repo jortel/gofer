@@ -59,10 +59,6 @@ AgentLock.PATH = os.path.join(ROOT, 'gofer.pid')
 from gofer.rmi.store import Pending
 Pending.PENDING = os.path.join(ROOT, 'messaging/pending')
 
-# builtin
-from gofer.agent.plugin import Builtin
-Builtin.PATH = os.path.join(ROOT, 'plugins', '.builtin.conf')
-
 # misc
 from gofer.agent.plugin import PluginDescriptor, PluginLoader
 from gofer.agent.main import Agent, setup_logging
