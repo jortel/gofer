@@ -206,7 +206,7 @@ class Succeeded(FinalReply):
 
     def __unicode__(self):
         s = list()
-        s.append(AsyncReply.__str__(self))
+        s.append(AsyncReply.__unicode__(self))
         s.append('  retval:')
         s.append(unicode(self.retval))
         return '\n'.join(s)
@@ -242,7 +242,7 @@ class Failed(FinalReply):
 
     def __unicode__(self):
         s = list()
-        s.append(AsyncReply.__str__(self))
+        s.append(AsyncReply.__unicode__(self))
         s.append('  exval: %s' % unicode(self.exval))
         s.append('  xmodule: %s' % self.xmodule)
         s.append('  xclass: %s' % self.xclass)
@@ -268,7 +268,7 @@ class Accepted(AsyncReply):
 
     def __unicode__(self):
         s = list()
-        s.append(AsyncReply.__str__(self))
+        s.append(AsyncReply.__unicode__(self))
         s.append('accepted')
         return '\n'.join(s)
 
@@ -290,7 +290,7 @@ class Rejected(AsyncReply):
 
     def __unicode__(self):
         s = list()
-        s.append(AsyncReply.__str__(self))
+        s.append(AsyncReply.__unicode__(self))
         s.append('rejected')
         return '\n'.join(s)
 
@@ -312,7 +312,7 @@ class Started(AsyncReply):
 
     def __unicode__(self):
         s = list()
-        s.append(AsyncReply.__str__(self))
+        s.append(AsyncReply.__unicode__(self))
         s.append('started')
         return '\n'.join(s)
 
@@ -350,7 +350,7 @@ class Progress(AsyncReply):
 
     def __unicode__(self):
         s = list()
-        s.append(AsyncReply.__str__(self))
+        s.append(AsyncReply.__unicode__(self))
         s.append('     total: %s' % unicode(self.total))
         s.append(' completed: %s' % unicode(self.completed))
         s.append('   details: %s' % unicode(self.details))
