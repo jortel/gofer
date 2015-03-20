@@ -13,287 +13,74 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-from yum import YumBase
-from optparse import OptionParser
-from yum.plugins import TYPE_CORE, TYPE_INTERACTIVE
-from logging import getLogger, Logger
+from subprocess import Popen, PIPE
 
-from gofer.common import utf8
-from gofer.decorators import *
-from gofer.agent.plugin import Plugin
+from gofer import utf8
+from gofer.agent.rmi import Context
+from gofer.decorators import remote
 
 
-log = getLogger(__name__)
-plugin = Plugin.find(__name__)
-
-
-class Yum(YumBase):
+class Package(object):
     """
-    Provides custom configured yum object.
+    RPM package management using YUM.
     """
 
-    def __init__(self, importkeys=False):
+    @remote
+    def install(self, name):
         """
-        :param importkeys: Allow the import of GPG keys.
-        :type importkeys: bool
-        """
-        parser = OptionParser()
-        parser.parse_args([])
-        self.__parser = parser
-        YumBase.__init__(self)
-        self.preconf.optparser = self.__parser
-        self.preconf.plugin_types = (TYPE_CORE, TYPE_INTERACTIVE)
-        self.conf.assumeyes = importkeys
-        
-    def doPluginSetup(self, *args, **kwargs):
-        """
-        Set command line arguments.
-        Support TYPE_INTERACTIVE plugins.
-        """
-        YumBase.doPluginSetup(self, *args, **kwargs)
-        p = self.__parser
-        options, args = p.parse_args([])
-        self.plugins.setCmdLine(options, args)
-
-    def registerCommand(self, command):
-        """
-        Support TYPE_INTERACTIVE plugins.
-        Commands ignored.
-        """
-        pass
-    
-    def cleanLoggers(self):
-        """
-        Clean handlers leaked by yum.
-        """
-        for n,lg in Logger.manager.loggerDict.items():
-            if not n.startswith('yum.'):
-                continue
-            for h in lg.handlers:
-                lg.removeHandler(h)
-    
-    def close(self):
-        """
-        This should be handled by __del__() but YumBase
-        objects never seem to completely go out of scope and
-        garbage collected.
-        """
-        YumBase.close(self)
-        self.closeRpmDB()
-        self.cleanLoggers()
-
-#
-# API
-#
-
-class Package:
-    """
-    Package management.
-    Returned *Package* NEVRA+ objects:
-      - qname   : qualified name
-      - repoid  : repository id
-      - name    : package name
-      - epoch   : package epoch
-      - version : package version
-      - release : package release
-      - arch    : package arch
-    """
-    
-    @classmethod
-    def summary(cls, tsInfo, states=('i','u')):
-        """
-        Get transaction summary.
-        :param tsInfo: A yum transaction.
-        :type tsInfo: YumTransaction
-        :param states: A list of yum transaction states.
-        :type states: tuple|list
-        :return: (resolved[],deps[])
+        Install a package by name.
+        :param name: A complete or partial package name.
+        :type name: str
+        :return: tuple (status, output)
         :rtype: tuple
         """
-        resolved = []
-        deps = []
-        for t in tsInfo:
-            if t.ts_state not in states:
-                continue
-            qname = utf8(t.po)
-            package = dict(
-                qname=qname,
-                repoid=t.repoid,
-                name=t.po.name,
-                version=t.po.ver,
-                release=t.po.rel,
-                arch=t.po.arch,
-                epoch=t.po.epoch)
-            if t.isDep:
-                deps.append(package)
-            else:
-                resolved.append(package)
-        return (resolved, deps)
-    
-    @classmethod
-    def installed(cls, tsInfo):
+        command = ('yum', 'install', name, '-y')
+        return self.run(command)
+
+    @remote
+    def update(self, name=''):
         """
-        Get transaction summary for installed packages.
-        :param tsInfo: A yum transaction.
-        :type tsInfo: YumTransaction
-        :return: (resolved[],deps[])
+        Update a package by (optional) name.
+        Update ALL when name is not specified.
+        :param name: A complete or partial package name.
+        :type name: str
+        :return: tuple (status, output)
         :rtype: tuple
         """
-        return cls.summary(tsInfo)
-    
-    @classmethod
-    def erased(cls, tsInfo):
+        command = ('yum', 'update', name, '-y')
+        return self.run(command)
+
+    @remote
+    def remove(self, name):
         """
-        Get transaction summary for erased packages.
-        :param tsInfo: A yum transaction.
-        :type tsInfo: YumTransaction
-        :return: (resolved[],deps[])
+        Remove a package by name.
+        :param name: A complete or partial package name.
+        :type name: str
+        :return: tuple (status, output)
         :rtype: tuple
         """
-        return cls.summary(tsInfo, ('e',))
+        command = ('yum', 'remove', name, '-y')
+        return self.run(command)
 
-    def __init__(self, apply=True, importkeys=False):
-        """
-        :param apply: Apply changes (not dry-run).
-        :type apply: bool
-        :param importkeys: Allow the import of GPG keys.
-        :type importkeys: bool
-        """
-        self.apply = apply
-        self.importkeys = importkeys
-
-    @remote
-    @pam(user='root')
-    def install(self, names):
-        """
-        Install packages by name.
-        :param names: A list of package names.
-        :type names: [str,]
-        :return: Packages installed.
-            {resolved=[Package,],deps=[Package,]}
-        :rtype: dict
-        """
-        yb = Yum(self.importkeys)
+    def run(self, command):
+        context = Context.current()
+        context.progress.details = ''
+        p = Popen(command, stdout=PIPE, stderr=PIPE)
         try:
-            for info in names:
-                yb.install(pattern=info)
-            yb.resolveDeps()
-            resolved, deps = self.installed(yb.tsInfo)
-            if self.apply and resolved:
-                yb.processTransaction()
-        finally:
-            yb.close()
-        return dict(resolved=resolved, deps=deps)
-
-    @remote
-    @pam(user='root')
-    def uninstall(self, names):
-        """
-        Uninstall (erase) packages by name.
-        :param names: A list of package names to be removed.
-        :type names: list
-        :return: Packages uninstalled (erased).
-            {resolved=[Package,],deps=[Package,]}
-        :rtype: dict
-        """
-        yb = Yum()
-        try:
-            for info in names:
-                yb.remove(pattern=info)
-            yb.resolveDeps()
-            resolved, deps = self.erased(yb.tsInfo)
-            if self.apply and resolved:
-                yb.processTransaction()
-        finally:
-            yb.close()
-        return dict(resolved=resolved, deps=deps)
-            
-    @remote
-    @pam(user='root')
-    def update(self, names=None):
-        """
-        Update installed packages.
-        When (names) is not specified, all packages are updated.
-        :param names: A list of package names.
-        :type names: [str,]
-        :return: Packages installed (updated).
-            {resolved=[Package,],deps=[Package,]}
-        :rtype: dict
-        """
-        yb = Yum(self.importkeys)
-        try:
-            if names:
-                for info in names:
-                    yb.update(pattern=info)
-            else:
-                yb.update()
-            yb.resolveDeps()
-            resolved, deps = self.installed(yb.tsInfo)
-            if self.apply and resolved:
-                yb.processTransaction()
-        finally:
-            yb.close()
-        return dict(resolved=resolved, deps=deps)
-
-
-class PackageGroup:
-    """
-    PackageGroup management.
-    """
-    
-    def __init__(self, apply=True, importkeys=False):
-        """
-        :param apply: Apply changes (not dry-run).
-        :type apply: bool
-        :param importkeys: Allow the import of GPG keys.
-        :type importkeys: bool
-        """
-        self.apply = apply
-        self.importkeys = importkeys
-
-    @remote
-    @pam(user='root')
-    def install(self, names):
-        """
-        Install package groups by name.
-        :param names: A list of package group names.
-        :type names: list
-        :return: Packages installed.
-            {resolved=[Package,],deps=[Package,]}
-        :rtype: dict
-        """
-        yb = Yum(self.importkeys)
-        try:
-            for name in names:
-                yb.selectGroup(name)
-            yb.resolveDeps()
-            resolved, deps = Package.installed(yb.tsInfo)
-            if self.apply and resolved:
-                yb.processTransaction()
-        finally:
-            yb.close()
-        return dict(resolved=resolved, deps=deps)
-
-    @remote
-    @pam(user='root')
-    def uninstall(self, names):
-        """
-        Uninstall package groups by name.
-        :param names: A list of package group names.
-        :type names: [str,]
-        :return: Packages uninstalled.
-            {resolved=[Package,],deps=[Package,]}
-        :rtype: dict
-        """
-        removed = {}
-        yb = Yum()
-        try:
-            for name in names:
-                yb.groupRemove(name)
-            yb.resolveDeps()
-            resolved, deps = Package.erased(yb.tsInfo)
-            if self.apply and resolved:
-                yb.processTransaction()
-        finally:
-            yb.close()
-        return dict(resolved=resolved, deps=deps)
+            while True:
+                if context.cancelled():
+                    p.terminate()
+                    break
+                output = p.stdout.read(120)
+                if output:
+                    context.progress.details += output
+                    context.progress.report()
+                else:
+                    break
+            result = context.progress.details
+            p.stdout.close()
+            p.stderr.close()
+            status = p.wait()
+            return status, result
+        except OSError, e:
+            return -1, utf8(e)
