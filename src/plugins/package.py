@@ -13,11 +13,8 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-from subprocess import Popen, PIPE
-
-from gofer import utf8
-from gofer.agent.rmi import Context
 from gofer.decorators import remote
+from gofer.rmi.shell import Shell
 
 
 class Package(object):
@@ -31,24 +28,23 @@ class Package(object):
         Install a package by name.
         :param name: A complete or partial package name.
         :type name: str
-        :return: tuple (status, output)
+        :return: (status, {stdout:<str>, stderr:<str>})
         :rtype: tuple
         """
-        command = ('yum', 'install', name, '-y')
-        return self.run(command)
+        shell = Shell()
+        return shell.run('yum', 'install', name, '-y')
 
     @remote
     def update(self, name=''):
         """
         Update a package by (optional) name.
-        Update ALL when name is not specified.
         :param name: A complete or partial package name.
         :type name: str
-        :return: tuple (status, output)
+        :return: (status, {stdout:<str>, stderr:<str>})
         :rtype: tuple
         """
-        command = ('yum', 'update', name, '-y')
-        return self.run(command)
+        shell = Shell()
+        return shell.run('yum', 'update', name, '-y')
 
     @remote
     def remove(self, name):
@@ -56,31 +52,8 @@ class Package(object):
         Remove a package by name.
         :param name: A complete or partial package name.
         :type name: str
-        :return: tuple (status, output)
+        :return: (status, {stdout:<str>, stderr:<str>})
         :rtype: tuple
         """
-        command = ('yum', 'remove', name, '-y')
-        return self.run(command)
-
-    def run(self, command):
-        context = Context.current()
-        context.progress.details = ''
-        p = Popen(command, stdout=PIPE, stderr=PIPE)
-        try:
-            while True:
-                if context.cancelled():
-                    p.terminate()
-                    break
-                output = p.stdout.read(120)
-                if output:
-                    context.progress.details += output
-                    context.progress.report()
-                else:
-                    break
-            result = context.progress.details
-            p.stdout.close()
-            p.stderr.close()
-            status = p.wait()
-            return status, result
-        except OSError, e:
-            return -1, utf8(e)
+        shell = Shell()
+        return shell.run('yum', 'remove', name, '-y')

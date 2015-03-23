@@ -16,15 +16,11 @@
 System plugin.
 """
 
-from subprocess import Popen, PIPE, call
-from logging import getLogger
+import os
 
-from gofer.common import utf8
 from gofer.decorators import pam, remote
+from gofer.rmi.shell import Shell as _Shell
 from gofer.pam import authenticate
-
-
-log = getLogger(__name__)
 
 
 class System(object):
@@ -40,12 +36,12 @@ class System(object):
             - +m    : where m is minutes.
             - hh:mm : time (hours:minutes) 24hr clock.
         :type when: str
-        :return: The exit code.
-        :rtype: int
+        :return: (status, {stdout:<str>, stderr:<str>})
+        :rtype: tuple
         :see: shutdown(8)
         """
-        command = 'shutdown -h %s &' % when
-        return call(command, shell=True)
+        shell = _Shell()
+        return shell.run('shutdown', '-h', when, '&')
 
     @remote
     @pam(user='root')
@@ -58,22 +54,24 @@ class System(object):
             - +m    : where m is minutes.
             - hh:mm : time (hours:minutes) 24hr clock.
         :type when: str
-        :return: The exit code.
-        :rtype: int
+        :return: (status, {stdout:<str>, stderr:<str>})
+        :rtype: tuple
         :see: shutdown(8)
         """
-        command = 'shutdown -r %s &' % when
-        return call(command, shell=True)
+        shell = _Shell()
+        return shell.run('shutdown', '-r', when, '&')
         
     @remote
     @pam(user='root')
     def cancel(self):
         """
         Cancel a scheduled shutdown; halt() or reboot().
-        :return: The exit code.
-        :rtype: int
+        :return: (status, {stdout:<str>, stderr:<str>})
+        :rtype: tuple
+        :see: shutdown(8)
         """
-        return call('shutdown -c', shell=True)
+        shell = _Shell()
+        return shell.run('shutdown', '-c')
 
 
 class Service(object):
@@ -81,85 +79,55 @@ class Service(object):
     Services management.
     """
 
+    def __init__(self, name):
+        """
+        :param name: The service name.
+        :rtype name: str
+        """
+        self.name = name
+
     @remote
     @pam(user='root')
-    def start(self, name):
+    def start(self):
         """
         Start the named service.
-        :param name: The service name.
-        :rtype name: str
-        :return: The exit code and stdout.
+        :return: (status, {stdout:<str>, stderr:<str>})
         :rtype: tuple
         """
-        command = ('service', name, 'start')
-        p = Popen(command, stdout=PIPE)
-        try:
-            result = p.stdout.read()
-            p.stdout.close()
-            status = p.wait()
-            return status, result
-        except OSError, e:
-            return -1, utf8(e)
+        shell = _Shell()
+        return shell.run('service', self.name, 'start')
 
     @remote
     @pam(user='root')
-    def stop(self, name):
+    def stop(self):
         """
         Stop the named service.
-        :param name: The service name.
-        :rtype name: str
-        :return: The exit code and stdout.
+        :return: (status, {stdout:<str>, stderr:<str>})
         :rtype: tuple
         """
-        command = ('service', name, 'stop')
-        p = Popen(command, stdout=PIPE)
-        try:
-            result = p.stdout.read()
-            p.stdout.close()
-            status = p.wait()
-            return status, result
-        except OSError, e:
-            return -1, utf8(e)
+        shell = _Shell()
+        return shell.run('service', self.name, 'stop')
 
     @remote
     @pam(user='root')
-    def restart(self, name):
+    def restart(self):
         """
         Restart the named service.
-        :param name: The service name.
-        :rtype name: str
-        :return: The exit code and stdout.
+        :return: (status, {stdout:<str>, stderr:<str>})
         :rtype: tuple
         """
-        command = ('service', name, 'restart')
-        p = Popen(command, stdout=PIPE)
-        try:
-            result = p.stdout.read()
-            p.stdout.close()
-            status = p.wait()
-            return status, result
-        except OSError, e:
-            return -1, utf8(e)
+        shell = _Shell()
+        return shell.run('service', self.name, 'restart')
 
     @remote
-    @pam(user='root')
-    def status(self, name):
+    def status(self):
         """
         Get the *status* of the named service.
-        :param name: The service name.
-        :rtype name: str
-        :return: The exit code and stdout.
+        :return: (status, {stdout:<str>, stderr:<str>})
         :rtype: tuple
         """
-        command = ('service', name, 'status')
-        p = Popen(command, stdout=PIPE)
-        try:
-            result = p.stdout.read()
-            p.stdout.close()
-            status = p.wait()
-            return status, result
-        except OSError, e:
-            return -1, utf8(e)
+        shell = _Shell()
+        return shell.run('service', self.name, 'status')
 
 
 class Shell:
@@ -180,14 +148,7 @@ class Shell:
         :rtype: tuple
         """
         if authenticate(user, password):
-            command = ('su', '-', user, '-c', cmd)
-            p = Popen(command, stdout=PIPE)
-            try:
-                result = p.stdout.read()
-                p.stdout.close()
-                status = p.wait()
-                return status, result
-            except OSError, e:
-                return -1, utf8(e)
+            shell = _Shell()
+            return shell.run('su', '-', user, '-c', cmd)
         else:
-            return -1, 'user "%s" not authenticated' % user
+            return os.EX_NOPERM, {}
