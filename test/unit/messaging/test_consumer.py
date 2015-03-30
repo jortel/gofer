@@ -14,24 +14,18 @@ from unittest import TestCase
 
 from mock import Mock, patch
 
-
+from gofer.messaging import Node
 from gofer.messaging.consumer import ConsumerThread, Consumer
 from gofer.messaging import InvalidDocument, ValidationFailed
-
-
-class Queue(object):
-
-    def __init__(self, name):
-        self.name = name
 
 
 class TestConsumerThread(TestCase):
 
     def test_init(self):
         url = 'test-url'
-        queue = Queue('test-queue')
-        consumer = ConsumerThread(queue, url)
-        self.assertEqual(consumer.queue, queue)
+        node = Node('test-queue')
+        consumer = ConsumerThread(node, url)
+        self.assertEqual(consumer.node, node)
         self.assertEqual(consumer.url, url)
         self.assertTrue(isinstance(consumer, Thread))
         self.assertTrue(consumer.daemon)
@@ -40,16 +34,16 @@ class TestConsumerThread(TestCase):
     @patch('gofer.common.Thread.abort')
     def test_shutdown(self, abort):
         url = 'test-url'
-        queue = Queue('test-queue')
-        consumer = ConsumerThread(queue, url)
+        node = Node('test-queue')
+        consumer = ConsumerThread(node, url)
         consumer.shutdown()
         abort.assert_called_once_with()
 
     @patch('gofer.messaging.consumer.Reader')
     def test_run(self, reader):
         url = 'test-url'
-        queue = Queue('test-queue')
-        consumer = ConsumerThread(queue, url)
+        node = Node('test-queue')
+        consumer = ConsumerThread(node, url)
         consumer._open = Mock()
         consumer._close = Mock()
         consumer._read = Mock(side_effect=StopIteration)
@@ -61,15 +55,15 @@ class TestConsumerThread(TestCase):
             pass
 
         # validation
-        reader.assert_called_once_with(queue, url)
+        reader.assert_called_once_with(node, url)
         consumer._open.assert_called_once_with()
         consumer._read.assert_called_once_with()
         consumer._close.assert_called_once_with()
 
     def test_open(self):
         url = 'test-url'
-        queue = Queue('test-queue')
-        consumer = ConsumerThread(queue, url)
+        node = Node('test-queue')
+        consumer = ConsumerThread(node, url)
         consumer._reader = Mock()
 
         # test
@@ -80,8 +74,8 @@ class TestConsumerThread(TestCase):
 
     def test_close(self):
         url = 'test-url'
-        queue = Queue('test-queue')
-        consumer = ConsumerThread(queue, url)
+        node = Node('test-queue')
+        consumer = ConsumerThread(node, url)
         consumer._reader = Mock()
 
         # test
@@ -92,8 +86,8 @@ class TestConsumerThread(TestCase):
 
     def test_close_exception(self):
         url = 'test-url'
-        queue = Queue('test-queue')
-        consumer = ConsumerThread(queue, url)
+        node = Node('test-queue')
+        consumer = ConsumerThread(node, url)
         consumer._reader = Mock()
         consumer._reader.close.side_effect = ValueError
 
@@ -106,8 +100,8 @@ class TestConsumerThread(TestCase):
     @patch('gofer.messaging.consumer.sleep')
     def test_open_exception(self, sleep):
         url = 'test-url'
-        queue = Queue('test-queue')
-        consumer = ConsumerThread(queue, url)
+        node = Node('test-queue')
+        consumer = ConsumerThread(node, url)
         consumer._reader = Mock()
         consumer._reader.open.side_effect = [ValueError, None]
 
@@ -120,10 +114,10 @@ class TestConsumerThread(TestCase):
 
     def test_read(self):
         url = 'test-url'
-        queue = Queue('test-queue')
+        node = Node('test-queue')
         message = Mock()
         document = Mock()
-        consumer = ConsumerThread(queue, url)
+        consumer = ConsumerThread(node, url)
         consumer._reader = Mock()
         consumer._reader.next.return_value = (message, document)
         consumer.dispatch = Mock()
@@ -137,8 +131,8 @@ class TestConsumerThread(TestCase):
 
     def test_read_nothing(self):
         url = 'test-url'
-        queue = Queue('test-queue')
-        consumer = ConsumerThread(queue, url)
+        node = Node('test-queue')
+        consumer = ConsumerThread(node, url)
         consumer._reader = Mock()
         consumer._reader.next.return_value = (None, None)
         consumer.dispatch = Mock()
@@ -151,9 +145,9 @@ class TestConsumerThread(TestCase):
 
     def test_read_validation_failed(self):
         url = 'test-url'
-        queue = Queue('test-queue')
+        node = Node('test-queue')
         failed = ValidationFailed(details='test')
-        consumer = ConsumerThread(queue, url)
+        consumer = ConsumerThread(node, url)
         consumer._reader = Mock()
         consumer._reader.next.side_effect = failed
         consumer._rejected = Mock()
@@ -167,13 +161,13 @@ class TestConsumerThread(TestCase):
 
     def test_read_invalid_document(self):
         url = 'test-url'
-        queue = Queue('test-queue')
+        node = Node('test-queue')
         code = 12
         description = 'just up and failed'
         document = Mock()
         details = 'crashed'
         ir = InvalidDocument(code, description, document, details)
-        consumer = ConsumerThread(queue, url)
+        consumer = ConsumerThread(node, url)
         consumer._reader = Mock()
         consumer._reader.next.side_effect = ir
         consumer._rejected = Mock()
@@ -188,8 +182,8 @@ class TestConsumerThread(TestCase):
     @patch('gofer.messaging.consumer.sleep')
     def test_read_exception(self, sleep):
         url = 'test-url'
-        queue = Queue('test-queue')
-        consumer = ConsumerThread(queue, url)
+        node = Node('test-queue')
+        consumer = ConsumerThread(node, url)
         consumer._reader = Mock()
         consumer._reader.next.side_effect = IndexError
         consumer._open = Mock()
@@ -205,27 +199,27 @@ class TestConsumerThread(TestCase):
 
     def test_rejected(self):
         url = 'test-url'
-        queue = Queue('test-queue')
-        consumer = ConsumerThread(queue, url)
+        node = Node('test-queue')
+        consumer = ConsumerThread(node, url)
         consumer._rejected('1', '2', '3', '4')
 
     def test_dispatch(self):
         url = 'test-url'
-        queue = Queue('test-queue')
-        consumer = ConsumerThread(queue, url)
+        node = Node('test-queue')
+        consumer = ConsumerThread(node, url)
         consumer.dispatch(Mock())
 
 
 class TestConsumer(TestCase):
 
-    @patch('gofer.messaging.consumer.Reader')
-    def test_init(self, reader):
-        queue = Mock()
+    @patch('gofer.messaging.consumer.Reader', Mock())
+    def test_init(self):
         url = 'test-url'
+        node = Node('test-queue')
 
         # test
-        consumer = Consumer(queue, url)
+        consumer = Consumer(node, url)
 
         # validation
-        self.assertEqual(consumer.queue, queue)
+        self.assertEqual(consumer.node, node)
         self.assertEqual(consumer.url, url)

@@ -201,7 +201,7 @@ class TestPlugin(TestCase):
         self.assertEqual(plugin.connector, connector.return_value)
         connector.assert_called_once_with(descriptor.messaging.url)
         # queue
-        self.assertEqual(plugin.queue, model.return_value.queue)
+        self.assertEqual(plugin.node, model.return_value.node)
         model.assert_called_once_with(plugin)
         # forward
         _list = descriptor.main.forward
@@ -315,16 +315,17 @@ class TestPlugin(TestCase):
         self.assertEqual(connector.ssl.client_certificate, descriptor.messaging.clientcert)
         self.assertEqual(connector.ssl.host_validation, descriptor.messaging.host_validation)
 
+    @patch('gofer.agent.plugin.Node')
     @patch('gofer.agent.plugin.RequestConsumer')
     @patch('gofer.agent.plugin.BrokerModel')
     @patch('gofer.agent.plugin.ThreadPool')
     @patch('gofer.agent.plugin.Scheduler', Mock())
     @patch('gofer.agent.plugin.Whiteboard', Mock())
-    def test_attach(self, pool, model, consumer):
-        queue = Mock()
+    def test_attach(self, pool, model, consumer, node):
+        queue = 'test'
         descriptor = Mock(main=Mock(threads=4))
         pool.return_value.run.side_effect = lambda fn: fn()
-        model.return_value.setup.return_value = queue
+        model.return_value.queue = queue
 
         # test
         plugin = Plugin(descriptor, '')
@@ -335,9 +336,10 @@ class TestPlugin(TestCase):
 
         # validation
         plugin.detach.assert_called_once_with(False)
-        model.assert_called_once_with(plugin)
+        model.assert_called_with(plugin)
         model.return_value.setup.assert_called_once_with()
-        consumer.assert_called_once_with(queue, plugin)
+        node.assert_called_once_with(queue)
+        consumer.assert_called_once_with(node.return_value, plugin)
         consumer = consumer.return_value
         consumer.start.assert_called_once_with()
         self.assertEqual(consumer.authenticator, plugin.authenticator)
@@ -359,7 +361,7 @@ class TestPlugin(TestCase):
         # validation
         consumer.shutdown.assert_called_once_with()
         consumer.join.assert_called_once_with()
-        model.assert_called_once_with(plugin)
+        model.assert_called_with(plugin)
         model = model.return_value
         model.teardown.assert_called_once_with()
         self.assertEqual(plugin.consumer, None)
@@ -394,7 +396,7 @@ class TestPlugin(TestCase):
         # validation
         consumer.shutdown.assert_called_once_with()
         consumer.join.assert_called_once_with()
-        self.assertFalse(model.called)
+        self.assertFalse(model.teardown.called)
         self.assertEqual(plugin.consumer, None)
 
     @patch('gofer.agent.plugin.ThreadPool', Mock())

@@ -29,14 +29,14 @@ class RequestConsumer(Consumer):
     to local pending queue to be consumed by the scheduler.
     """
 
-    def __init__(self, queue, plugin):
+    def __init__(self, node, plugin):
         """
-        :param queue: An AMQP queue.
-        :type queue: gofer.messaging.Queue
+        :param node: An AMQP node.
+        :type node: gofer.messaging.Node
         :param plugin: A plugin.
         :type plugin: gofer.agent.plugin.Plugin
         """
-        super(RequestConsumer, self).__init__(queue, plugin.url)
+        super(RequestConsumer, self).__init__(node, plugin.url)
         self.scheduler = plugin.scheduler
 
     def _rejected(self, code, description, document, details):
@@ -96,8 +96,4 @@ class RequestConsumer(Consumer):
         :type request: Document
         """
         self._send(request, 'accepted')
-        inbound = Options()
-        inbound.url = self.url
-        inbound.queue = self.queue.name
-        request.inbound = inbound
         self.scheduler.add(request)

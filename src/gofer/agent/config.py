@@ -91,13 +91,13 @@ AGENT_SCHEMA = (
 #        - 0 = none
 #        - 1 = declare and bind queue.
 #        - 2 = declare and bind queue; drain and delete queue on explicit detach.
+#   node
+#      The (optional) AMQP node address.  This has precedent over uuid.
 #   queue
-#      The (optional) AMQP queue name.  This overrides the uuid.
+#      The (optional) AMQP queue name.  This has precedent over uuid.
+#      Format: <exchange>/<queue> where *exchange* is optional.
 #   expiration
 #      The (optional) auto-deleted queue expiration (seconds).
-#   exchange
-#      The (optional) AMQP exchange.
-#
 #
 
 PLUGIN_SCHEMA = (
@@ -125,8 +125,8 @@ PLUGIN_SCHEMA = (
     ('model', OPTIONAL,
         (
             ('managed', OPTIONAL, '(0|1|2)'),
+            ('node', OPTIONAL, ANY),
             ('queue', OPTIONAL, ANY),
-            ('exchange', OPTIONAL, ANY),
             ('expiration', OPTIONAL, NUMBER)
         )
     ),

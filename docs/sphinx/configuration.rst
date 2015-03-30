@@ -134,8 +134,10 @@ File extensions just be (.conf|.json).
    - 2: The queue is declared on *attach* and bound the the exchange as needed and
      drained and deleted on explicit *detach*.
 
-- **queue** - The queue name.  Overrides the [messaging] uuid.
-- **exchange** - The exchange name.  Default:''.
+- **node** - The (optional) AMQP node address.  This has precedent over uuid.
+- **queue** - The (optional) AMQP queue name.  This has precedent over uuid.
+  Format: <exchange>/<queue> where *exchange* is optional.
+- **expiration** - The (optional) auto-deleted queue expiration (seconds).
 
 Examples
 ^^^^^^^^

@@ -33,7 +33,7 @@ from gofer.agent.whiteboard import Whiteboard
 from gofer.common import nvl, mkdir
 from gofer.common import released
 from gofer.config import Config, Graph, Reader, get_bool
-from gofer.messaging import Document, Connector, Queue, Exchange
+from gofer.messaging import Document, Connector, Node, Queue, Exchange
 from gofer.messaging import NotFound
 from gofer.rmi.consumer import RequestConsumer
 from gofer.rmi.decorator import Remote
@@ -47,7 +47,7 @@ log = getLogger(__name__)
 def attach(fn):
     def _fn(plugin):
         def call():
-            if plugin.url and plugin.queue:
+            if plugin.url and plugin.node:
                 fn(plugin)
         plugin.pool.run(call)
     return _fn
@@ -321,9 +321,9 @@ class Plugin(object):
         return Connector(self.url)
 
     @property
-    def queue(self):
+    def node(self):
         model = BrokerModel(self)
-        return model.queue
+        return model.node
 
     @property
     def forward(self):
@@ -398,12 +398,13 @@ class Plugin(object):
         self.detach(False)
         self.refresh()
         model = BrokerModel(self)
-        queue = model.setup()
-        consumer = RequestConsumer(queue, self)
+        model.setup()
+        node = Node(model.queue)
+        consumer = RequestConsumer(node, self)
         consumer.authenticator = self.authenticator
         consumer.start()
         self.consumer = consumer
-        log.info('plugin:%s, attached => %s', self.name, self.queue)
+        log.info('plugin:%s, attached => %s', self.name, self.node)
 
     @synchronized
     def detach(self, teardown=True):
@@ -418,7 +419,7 @@ class Plugin(object):
         self.consumer.shutdown()
         self.consumer.join()
         self.consumer = None
-        log.info('plugin:%s, detached [%s]', self.name, self.queue)
+        log.info('plugin:%s, detached [%s]', self.name, self.node)
         if teardown:
             model = BrokerModel(self)
             model.teardown()
@@ -530,6 +531,25 @@ class BrokerModel(object):
     :type plugin: Plugin
     """
 
+    @staticmethod
+    def split(node):
+        """
+        Split the AMQP node specification.
+        Format: <exchange>/<queue|key> where exchange is optional.
+        :param node: A node specification.
+        :type node: str
+        :return: tuple of: (exchange, queue)
+        :rtype tuple
+        """
+        if node:
+            parts = node.split('/', 1)
+            if len(parts) == 2:
+                return parts
+            else:
+                return None, parts[0]
+        else:
+            return None, None
+
     def __init__(self, plugin):
         """
         :param plugin: A gofer plugin.
@@ -550,29 +570,33 @@ class BrokerModel(object):
         return int(nvl(self.cfg.expiration, 0))
 
     @property
-    def queue(self):
-        return self.cfg.queue or self.plugin.uuid
+    def node(self):
+        return self.cfg.node or self.cfg.queue or self.plugin.uuid
 
     @property
     def exchange(self):
-        return self.cfg.exchange
+        return BrokerModel.split(self.node)[0]
+
+    @property
+    def queue(self):
+        return BrokerModel.split(self.node)[1]
 
     @released
     def setup(self):
         """
         Setup the broker model.
         """
+        if not self.managed:
+            # not managed
+            return
+        url = self.plugin.url
         queue = Queue(self.queue)
-        if self.managed:
-            url = self.plugin.url
-            queue = Queue(self.queue)
-            queue.auto_delete = self.expiration > 0
-            queue.expiration = self.expiration
-            queue.declare(url)
-            if self.exchange:
-                exchange = Exchange(self.exchange)
-                exchange.bind(queue, url)
-        return queue
+        queue.auto_delete = self.expiration > 0
+        queue.expiration = self.expiration
+        queue.declare(url)
+        if self.exchange:
+            exchange = Exchange(self.exchange)
+            exchange.bind(queue, url)
 
     @released
     def teardown(self):

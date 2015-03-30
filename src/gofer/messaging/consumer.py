@@ -25,16 +25,16 @@ class ConsumerThread(Thread):
     An AMQP (abstract) consumer.
     """
 
-    def __init__(self, queue, url):
+    def __init__(self, node, url):
         """
-        :param queue: An AMQP queue.
-        :type queue: gofer.messaging.adapter.model.Queue
+        :param node: An AMQP queue.
+        :type node: gofer.messaging.adapter.model.Node
         :param url: The broker URL.
         :type url: str
         """
-        Thread.__init__(self, name=queue.name)
+        Thread.__init__(self, name=node.name)
         self.url = url
-        self.queue = queue
+        self.node = node
         self.authenticator = None
         self._reader = None
         self.setDaemon(True)
@@ -50,7 +50,7 @@ class ConsumerThread(Thread):
         """
         Main consumer loop.
         """
-        self._reader = Reader(self.queue, self.url)
+        self._reader = Reader(self.node, self.url)
         self._reader.authenticator = self.authenticator
         self._open()
         try:
@@ -132,13 +132,11 @@ class Consumer(ConsumerThread):
     and passed to dispatch().
     """
 
-    def __init__(self, queue, url=None):
+    def __init__(self, node, url=None):
         """
-        :param queue: The AMQP node.
-        :type queue: gofer.messaging.adapter.model.Queue
+        :param node: The AMQP node.
+        :type node: gofer.messaging.adapter.model.Node
         :param url: The broker URL.
         :type url: str
         """
-        super(Consumer, self).__init__(queue, url)
-        self.url = url
-        self.queue = queue
+        super(Consumer, self).__init__(node, url)
