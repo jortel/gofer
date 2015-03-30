@@ -47,7 +47,7 @@ log = getLogger(__name__)
 def attach(fn):
     def _fn(plugin):
         def call():
-            if plugin.url and plugin.uuid:
+            if plugin.url and plugin.queue:
                 fn(plugin)
         plugin.pool.run(call)
     return _fn
@@ -403,7 +403,7 @@ class Plugin(object):
         consumer.authenticator = self.authenticator
         consumer.start()
         self.consumer = consumer
-        log.info('plugin:%s queue:%s, attached', self.name, self.uuid)
+        log.info('plugin:%s, attached => %s', self.name, self.queue)
 
     @synchronized
     def detach(self, teardown=True):
@@ -418,7 +418,7 @@ class Plugin(object):
         self.consumer.shutdown()
         self.consumer.join()
         self.consumer = None
-        log.info('plugin:%s queue:%s, detached', self.name, self.uuid)
+        log.info('plugin:%s, detached [%s]', self.name, self.queue)
         if teardown:
             model = BrokerModel(self)
             model.teardown()
