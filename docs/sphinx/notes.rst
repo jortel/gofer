@@ -195,3 +195,33 @@ Notes:
 Deprecated:
 
  - The *maintenance window* feature and associated properties.
+
+
+gofer 2.7
+^^^^^^^^^
+
+Notes:
+
+- Add ``gofer`` command for interaction with goferd.  See: ``man gofer`` for
+  details.  Packaged in gofer-tools.
+
+- Plugin monitoring removed.  Use gofer.agent.PluginContainer.load()
+  and gofer.agent.PluginContainer.unload() instead.
+
+- Added ``@load`` and ``@unload`` decorators.  Plugins can participate in
+  plugin loading and unloading.
+
+Deprecated:
+
+- The ``uuid`` in the [messaging] section of the plugin descriptor has been
+  deprecated.  Use [model] ``queue`` instead.
+
+- The ``@initializer`` decorator has been deprecated.  Use ``@load`` instead.
+
+- The *package* plugin has been rewritten to shell out instead of using the
+  yum library.  Much simpler.
+
+- The gofer.rmi.shell module added.  This can be used by plugins to easily and
+  consistently provide functionality when using external commands is needed.
+  Supports cancellation, progress reporting and returns stdout and stderr.
+  The *system* and *package* plugins converted to use this.
