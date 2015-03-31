@@ -18,6 +18,7 @@ from subprocess import Popen, PIPE
 from gofer import utf8
 from gofer.agent.rmi import Context
 
+
 STDOUT = 'stdout'
 STDERR = 'stderr'
 
@@ -25,7 +26,25 @@ STDERR = 'stderr'
 class Shell(object):
     """
     Shell used to execute commands.
+    :ivar progress_reported: Enables progress reporting.
+    :type progress_reported: bool
     """
+
+    def __init__(self):
+        self.progress_reported = True
+
+    def report(self, details):
+        """
+        Report progress.
+        :param details: The details to report.
+        :type details: dict
+        """
+        if not self.progress_reported:
+            # not enabled
+            return
+        context = Context.current()
+        context.progress.details = details
+        context.progress.report()
 
     def run(self, *command):
         """
@@ -44,7 +63,6 @@ class Shell(object):
             STDERR: '',
         }
         context = Context.current()
-        context.progress.details = details
         p = Popen(command, stdout=PIPE, stderr=PIPE)
         try:
             while True:
@@ -58,7 +76,7 @@ class Shell(object):
                         n_read += len(line)
                         details[key] = line
                         result[key] += line
-                        context.progress.report()
+                        self.report(details)
                 if not n_read:
                     #  EOF
                     break
