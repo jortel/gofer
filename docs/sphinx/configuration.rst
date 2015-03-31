@@ -48,7 +48,7 @@ Gofer packages:
 
 - agent
 - messaging
-- plugins
+- rmi
 
 Examples:
 
@@ -116,9 +116,12 @@ Defines basic plugin properties.
    - (amqps|ssl) port:5671
 
 - **cacert** - The (optional) SSL CA certificate used to validate the server certificate.
+
 - **clientkey** - The (optional) SSL client private key.
+
 - **clientcert** - The (optional) SSL client certificate.
   A (PEM) file may contain **both** the private key and certificate.
+
 - **host_validation** - The (optional) flag indicates SSL host validation should be performed.
   Default to (1) when not specified.
 
@@ -134,9 +137,9 @@ File extensions just be (.conf|.json).
    - 2: The queue is declared on *attach* and bound the the exchange as needed and
      drained and deleted on explicit *detach*.
 
-- **node** - The (optional) AMQP node address.  This has precedent over uuid.
 - **queue** - The (optional) AMQP queue name.  This has precedent over uuid.
   Format: <exchange>/<queue> where *exchange* is optional.
+
 - **expiration** - The (optional) auto-deleted queue expiration (seconds).
 
 Examples
@@ -150,21 +153,21 @@ This example enables messaging and defines the uuid:
  enabled = 1
 
  [messaging]
- enabled = 1
- uuid=123
+ url=qpid+amqp://localhost
+
+ [model]
+ queue=123
 
 
 This example enables messaging and does **not** define the uuid.  It is expected
-that the plugin defines an @identity decorated method/function that provides the
-uuid:
+that the plugin defines an @load decorated method/function that provides the
+url and queue:
 
 ::
 
  [main]
  enabled = 1
-
- [messaging]
- enabled = 1
+ accept=*
 
 
 This example does **not** enable messaging for this plugin.  This would be done when the
@@ -177,7 +180,10 @@ sections to be used by the plugin:
  enabled = 1
 
  [messaging]
- enabled = 0
+ url=qpid+amqp://localhost
+
+ [model]
+ queue=123
 
  [foobar]
  timeout = 100

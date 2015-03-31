@@ -20,12 +20,14 @@ Then,
 
    ::
 
-     [main]
-     enabled=1
+   [main]
+   enabled = 1
 
-     [messaging]
-     url=amqp://localhost
-     uuid=123
+   [messaging]
+   url=qpid+amqp://localhost
+
+   [model]
+   queue=123
 
 3. Start the goferd service.
 
@@ -83,7 +85,10 @@ Create your plugin descriptor (myplugin.conf) as follows:
  enabled = 1
 
  [messaging]
- uuid=123
+ url=qpid+amqp://localhost
+
+ [model]
+ queue=123
 
 
 Step 2
@@ -229,7 +234,7 @@ Another useful tool, it invoke *Admin.help()* from within interactive python as 
  >>> from gofer.proxy import Agent
  >>>
  >>> url = 'amqp://localhost'
- >>> uuid = '124'
+ >>> uuid = '123'
  >>> agent = Agent(url, uuid)
  >>> admin = agent.Admin()
  >>> print admin.help()

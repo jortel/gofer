@@ -571,7 +571,7 @@ class BrokerModel(object):
 
     @property
     def node(self):
-        return self.cfg.node or self.cfg.queue or self.plugin.uuid
+        return self.cfg.queue or self.plugin.uuid
 
     @property
     def exchange(self):
