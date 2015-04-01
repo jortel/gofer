@@ -16,6 +16,7 @@
 import os
 import logging
 
+from gofer import utf8
 from gofer.messaging.model import ModelError
 from gofer.messaging.adapter.url import URL
 
@@ -101,8 +102,8 @@ class Loader:
                 catalog[package] = pkg
                 for capability in pkg.PROVIDES:
                     catalog[capability] = pkg
-            except (ImportError, AttributeError):
-                log.exception(package)
+            except (ImportError, AttributeError), e:
+                log.warn('Import: %s, failed: %s', package, utf8(e))
         return _list, catalog
 
     def load(self):

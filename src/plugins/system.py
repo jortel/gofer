@@ -20,6 +20,7 @@ import os
 
 from gofer.decorators import pam, remote
 from gofer.rmi.shell import Shell as _Shell
+from gofer.agent.rmi import Context
 from gofer.pam import authenticate
 
 
@@ -144,7 +145,7 @@ class Shell:
         :type user: str
         :param password: The password.
         :type password: str
-        :return: tuple (status, output)
+        :return: (status, {stdout:<str>, stderr:<str>})
         :rtype: tuple
         """
         if authenticate(user, password):
@@ -152,3 +153,48 @@ class Shell:
             return shell.run('su', '-', user, '-c', cmd)
         else:
             return os.EX_NOPERM, {}
+
+
+class Script:
+
+    def __init__(self, content):
+        """
+        The script content.
+        :param content: The script content.
+        :type content: str
+        """
+        self.content = content
+
+    @remote
+    def run(self, user, password, *options):
+        """
+        Run a shell command.
+        The command is executed as: "su - <user> -c <cmd>" and the
+        user/password is authenticated using PAM.
+        :param user: A user name.
+        :type user: str
+        :param password: The password.
+        :type password: str
+        :param options: List of options.
+        :type options: list
+        :return: (status, {stdout:<str>, stderr:<str>})
+        :rtype: tuple
+        """
+        if not authenticate(user, password):
+            return os.EX_NOPERM, {}
+        shell = _Shell()
+        context = Context.current()
+        path = os.path.join('/tmp', context.sn)
+        fp = open(path, 'w+')
+        try:
+            fp.write(self.content)
+        finally:
+            fp.close()
+        try:
+            os.chmod(path, 0755)
+            cmd = [path]
+            cmd += options
+            cmd = ' '.join(cmd)
+            return shell.run('su', '-', user, '-c', cmd)
+        finally:
+            os.unlink(path)
