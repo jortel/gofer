@@ -133,24 +133,31 @@ class Service(object):
 
 class Shell:
 
+    def __init__(self, user, password):
+        """
+        :param user: A user name.
+        :type user: str
+        :param password: The password.
+        :type password: str
+        """
+        self.user = user
+        self.password = password
+
     @remote
-    def run(self, cmd, user, password):
+    def run(self, cmd):
         """
         Run a shell command.
         The command is executed as: "su - <user> -c <cmd>" and the
         user/password is authenticated using PAM.
         :param cmd: The command & arguments.
         :type cmd: str
-        :param user: A user name.
-        :type user: str
-        :param password: The password.
-        :type password: str
+
         :return: (status, {stdout:<str>, stderr:<str>})
         :rtype: tuple
         """
-        if authenticate(user, password):
+        if authenticate(self.user, self.password):
             shell = _Shell()
-            return shell.run('su', '-', user, '-c', cmd)
+            return shell.run('su', '-', self.user, '-c', cmd)
         else:
             return os.EX_NOPERM, {}
 
@@ -159,7 +166,6 @@ class Script:
 
     def __init__(self, content):
         """
-        The script content.
         :param content: The script content.
         :type content: str
         """
