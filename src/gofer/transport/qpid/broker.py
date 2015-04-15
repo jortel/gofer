@@ -72,6 +72,7 @@ class Qpid(Broker):
                 port=self.port,
                 tcp_nodelay=True,
                 reconnect=True,
+                heartbeat=10,
                 transport=self.transport,
                 username=self.userid,
                 password=self.password,
