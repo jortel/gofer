@@ -19,7 +19,7 @@ from gofer.messaging import Document
 from gofer.agent.manager import Client, HOST, PORT
 
 
-parser = OptionParser()
+parser = OptionParser(description='Management')
 parser.add_option('-H', '--host', default=HOST, help='host')
 parser.add_option('-p', '--port', default=PORT, type='int', help='port')
 parser.add_option('-s', '--show', action='store_true', default=False, help='show loaded plugins')

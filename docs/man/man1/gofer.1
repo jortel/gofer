@@ -8,20 +8,25 @@ gofer \- The goferd management tool.
 
 .SH SYNOPSIS
 
-gofer [ -h ] [ -H \fIHOST\fR ] [ -p \fIPORT\fR ]
-         [ -s ] [ -l \fIPATH\fR ] [ -r \fIPATH\fR ] [ -u \fIPATH\fR ]
+gofer mgt  [ -h ] [ -H \fIHOST\fR ] [ -p \fIPORT\fR ]
+           [ -s ] [ -l \fIPATH\fR ] [ -r \fIPATH\fR ] [ -u \fIPATH\fR ]
+
+gofer call [ -h ] [ -u \fIURL\fR ] [ -a \fIADDRESS\fR ] [ -t \fITARGET\fR ]
+           [ -r \fIREPLY\fR ] [ -w \fISECONDS\fR ] [ -p \fIPREFIX\fR ]
+           [ -S \fISECRET\fR ] [ -T \fISECONDS\fR ] [ -A \fIPATH\fR ]
+           [ -U \fINAME\fR ] [ -A \fIPASSWORD\fR ]
 
 .SH DESCRIPTION
 
 .B gofer
-is the command line tool for managing goferd.
+is the command line tool for managing goferd and performing RMI calls.
 
 .PP
 See: https://github.com/jortel/gofer for more information.
 
 .SH OPTIONS
 
-The following options are supported by \fBgofer\fR
+The following options are supported by \fBgofer mgt\fR
 
 .TP
 -h [ --help ]
@@ -46,6 +51,45 @@ The \fIPATH\fR can also be the plugin name.
 -u [ --unload ] \fIPATH\fR
 Unload the plugin using the specified \fIPATH\fR to the descriptor.
 The \fIPATH\fR can also be the plugin name.
+
+The following options are supported by \fBgofer call\fR
+
+.TP
+-h [ --help ]
+Displays the help message.
+.TP
+-u [ --url ] \fIURL\fR
+The broker URL.
+.TP
+-a [ --address ] \fIADDRESS\fR
+The AMQP address for the agent.
+.TP
+-r [ --reply ] \fIADDRESS\fR
+The AMQP reply address.
+.TP
+-t [ --target ] \fITARGET\fR
+The RMI target.  Format is: <class>.<method>.  Eg: Dog.bark
+.TP
+-w [ --wait ] \fISECONDS\fR
+The time in seconds to wait the RMI to complete.
+.TP
+-p [ --progress ] \fIPREFIX\fR
+The progress output prefix.  Enables progress reporting to STDOUT
+with the prepended prefix.
+.TP
+-S [ --secret ] \fISECRET\fR
+The shared secret to include with the RMI request.
+.TP
+-T [ --ttl ] \fISECONDS\fR
+The request TTL in seconds.
+.TP
+-A [ --authenticator ] \fIPATH\fR
+The python path to a message \fIAuthenticator\fR.  Eg: redhat.gofer.Authenticator.
+.TP
+-U [ --user ] \fINAME\fR
+The user name passed in the RMI request.
+-U [ --user ] \fINAME\fR
+The password passed in the RMI request.
 
 .SH SEE ALSO
 

@@ -22,14 +22,14 @@ from gofer.messaging.adapter.model import DEFAULT_URL
 from gofer.proxy import Agent
 
 
-parser = OptionParser()
+parser = OptionParser(description='Remote method invocation')
 parser.add_option('-u', '--url', default=DEFAULT_URL, help='url')
 parser.add_option('-a', '--address', help='agent (amqp) address')
 parser.add_option('-r', '--reply', help='reply (amqp) address')
 parser.add_option('-t', '--target', help='RMI target')
 parser.add_option('-w', '--wait', help='seconds to wait for a synchronous reply')
 parser.add_option('-p', '--progress', help='progress prefix')
-parser.add_option('-s', '--secret', help='shared secret')
+parser.add_option('-S', '--secret', help='shared secret')
 parser.add_option('-T', '--ttl', help='shared secret')
 parser.add_option('-A', '--authenticator', help='authenticator python package')
 parser.add_option('-U', '--user', help='user')
