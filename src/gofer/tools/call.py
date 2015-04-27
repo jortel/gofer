@@ -16,8 +16,9 @@
 import sys
 
 from optparse import OptionParser
-from logging import basicConfig
+from logging import basicConfig, CRITICAL
 
+from gofer.messaging import Connection
 from gofer.messaging.adapter.model import DEFAULT_URL
 from gofer.proxy import Agent
 
@@ -94,6 +95,7 @@ def validate(options):
 def main():
     g_opt = {}
     options, arguments, keywords = get_options()
+    basicConfig(level=CRITICAL)
     validate(options)
 
     if options.ttl:
@@ -115,10 +117,10 @@ def main():
     if options.reply:
         g_opt['reply'] = options.reply
 
-    basicConfig()
-    agent = Agent(options.url, options.address, **g_opt)
-    target = options.target.split('.', 1)
-    stub = getattr(agent, target[0])
-    method = getattr(stub, target[1])
-    retval = method(*arguments, **keywords)
-    print retval
+    with Connection(options.url, retry=False):
+        agent = Agent(options.url, options.address, **g_opt)
+        target = options.target.split('.', 1)
+        stub = getattr(agent, target[0])
+        method = getattr(stub, target[1])
+        retval = method(*arguments, **keywords)
+        print retval
