@@ -16,7 +16,29 @@
 
 import sys
 
-from gofer.tools.gcmd import main
+from gofer.tools import mgt, call
+
+
+COMMAND = {
+    'mgt': mgt,
+    'call': call
+}
+
+
+def usage():
+    for cmd in COMMAND.values():
+        parser = cmd.parser
+        parser.print_help()
+
 
 if __name__ == '__main__':
-    sys.exit(main())
+    if len(sys.argv) < 2:
+        usage()
+        sys.exit(0)
+    try:
+        cmd = COMMAND[sys.argv[1]]
+        del sys.argv[1]
+        sys.exit(cmd.main())
+    except KeyError:
+        usage()
+        sys.exit(1)

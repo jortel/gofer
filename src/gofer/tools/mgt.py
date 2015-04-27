@@ -19,14 +19,16 @@ from gofer.messaging import Document
 from gofer.agent.manager import Client, HOST, PORT
 
 
+parser = OptionParser()
+parser.add_option('-H', '--host', default=HOST, help='host')
+parser.add_option('-p', '--port', default=PORT, type='int', help='port')
+parser.add_option('-s', '--show', action='store_true', default=False, help='show loaded plugins')
+parser.add_option('-l', '--load', help='load plugin: <path>')
+parser.add_option('-r', '--reload', help='reload plugin: <path>')
+parser.add_option('-u', '--unload', help='unload plugin: <path>')
+
+
 def get_options():
-    parser = OptionParser()
-    parser.add_option('-H', '--host', default=HOST, help='host')
-    parser.add_option('-p', '--port', default=PORT, type='int', help='port')
-    parser.add_option('-s', '--show', action='store_true', default=False, help='show loaded plugins')
-    parser.add_option('-l', '--load', help='load plugin: <path>')
-    parser.add_option('-r', '--reload', help='reload plugin: <path>')
-    parser.add_option('-u', '--unload', help='unload plugin: <path>')
     options, _ = parser.parse_args()
     return options
 
