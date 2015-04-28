@@ -12,19 +12,21 @@ gofer mgt  [ -h ] [ -H \fIHOST\fR ] [ -p \fIPORT\fR ]
            [ -s ] [ -l \fIPATH\fR ] [ -r \fIPATH\fR ] [ -u \fIPATH\fR ]
 
 gofer call [ -h ] [ -u \fIURL\fR ] [ -a \fIADDRESS\fR ] [ -t \fITARGET\fR ]
-           [ -r \fIREPLY\fR ] [ -w \fISECONDS\fR ] [ -p \fIPREFIX\fR ]
-           [ -S \fISECRET\fR ] [ -T \fISECONDS\fR ] [ -A \fIPATH\fR ]
-           [ -U \fINAME\fR ] [ -A \fIPASSWORD\fR ]
+           [ -i \fIINPUT\fR ] [ -r \fIREPLY\fR ] [ -w \fISECONDS\fR ]
+           [ -p \fIPREFIX\fR ] [ -S \fISECRET\fR ] [ -T \fISECONDS\fR ]
+           [ -A \fIPATH\fR ] [ -U \fINAME\fR ] [ -A \fIPASSWORD\fR ]
 
 .SH DESCRIPTION
 
 .B gofer
 is the command line tool for managing goferd and performing RMI calls.
+All unmapped arguments are considered arguments to the RMI target.
+Keyword arguments have the form of: <name>=<value>.
 
 .PP
 See: https://github.com/jortel/gofer for more information.
 
-.SH OPTIONS
+.SH MANAGEMENT OPTIONS
 
 The following options are supported by \fBgofer mgt\fR
 
@@ -52,6 +54,8 @@ The \fIPATH\fR can also be the plugin name.
 Unload the plugin using the specified \fIPATH\fR to the descriptor.
 The \fIPATH\fR can also be the plugin name.
 
+.SH CALL OPTIONS
+
 The following options are supported by \fBgofer call\fR
 
 .TP
@@ -68,7 +72,10 @@ The AMQP address for the agent.
 The AMQP reply address.
 .TP
 -t [ --target ] \fITARGET\fR
-The RMI target.  Format is: <class>.<method>.  Eg: Dog.bark
+The RMI target.  Format is: <class>.<method>. Eg: Dog.bark
+.TP
+-i [ --input ] \fIINPUT\fR
+The RMI input (json) document. Format is: [[], {}].
 .TP
 -w [ --wait ] \fISECONDS\fR
 The time in seconds to wait the RMI to complete.
@@ -88,8 +95,18 @@ The python path to a message \fIAuthenticator\fR.  Eg: redhat.gofer.Authenticato
 .TP
 -U [ --user ] \fINAME\fR
 The user name passed in the RMI request.
--U [ --user ] \fINAME\fR
+.TP
+-P [ --password ] \fIPASSWORD\fR
 The password passed in the RMI request.
+
+.SH EXAMPLES
+
+.TP
+$ gofer call -u qpid+amqp://localhost -a xyz -t Dog.bark "hello master"
+.TP
+$ gofer call -u qpid+amqp://localhost -a xyz -t Dog.bark words="hello master"
+.TP
+$ gofer call -u qpid+amqp://localhost -a xyz -t Dog.bark -i '[["hello master"],{}]'
 
 .SH SEE ALSO
 

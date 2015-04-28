@@ -28,11 +28,12 @@ COMMAND = {
 
 
 def usage():
-    for cmd, mod in COMMAND.items():
-        root = os.path.basename(sys.argv[0])
-        parser = mod.parser
-        parser.set_usage('%s %s {options}' % (root, cmd))
+    for name, cmd in sorted(COMMAND.items()):
+        program = os.path.basename(sys.argv[0])
+        parser = cmd.parser
+        parser.set_usage('%s %s %s' % (program, name, cmd.USAGE))
         parser.print_help()
+        print '\n'
 
 
 if __name__ == '__main__':

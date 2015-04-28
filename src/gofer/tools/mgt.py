@@ -19,6 +19,9 @@ from gofer.messaging import Document
 from gofer.agent.manager import Client, HOST, PORT
 
 
+USAGE = '[options]'
+
+
 parser = OptionParser(description='Management')
 parser.add_option('-H', '--host', default=HOST, help='host')
 parser.add_option('-p', '--port', default=PORT, type='int', help='port')

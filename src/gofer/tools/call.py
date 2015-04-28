@@ -18,9 +18,14 @@ import sys
 from optparse import OptionParser
 from logging import basicConfig, CRITICAL
 
+from gofer import utf8
 from gofer.messaging import Connection
 from gofer.messaging.adapter.model import DEFAULT_URL
+from gofer.messaging.model import json
 from gofer.proxy import Agent
+
+
+USAGE = '[options] [<argument>... [<keyword>=<value>...]'
 
 
 parser = OptionParser(description='Remote method invocation')
@@ -28,6 +33,7 @@ parser.add_option('-u', '--url', default=DEFAULT_URL, help='url')
 parser.add_option('-a', '--address', help='agent (amqp) address')
 parser.add_option('-r', '--reply', help='reply (amqp) address')
 parser.add_option('-t', '--target', help='RMI target')
+parser.add_option('-i', '--input', help='RMI input (json) document')
 parser.add_option('-w', '--wait', help='seconds to wait for a synchronous reply')
 parser.add_option('-p', '--progress', help='progress prefix')
 parser.add_option('-S', '--secret', help='shared secret')
@@ -54,7 +60,7 @@ def get_parameters(passed):
             keywords[parts[0]] = cast(parts[1])
         else:
             arguments.append(cast(parts[0]))
-    return arguments, keywords
+    return tuple(arguments), keywords
 
 
 def get_options():
@@ -90,6 +96,22 @@ def validate(options):
             print 'Wait must be <int>'
             parser.print_help()
             sys.exit(1)
+    if options.input:
+        try:
+            document = json.loads(options.input)
+            if not isinstance(document, list):
+                raise ValueError()
+            if len(document) != 2:
+                raise ValueError()
+            if not isinstance(document[0], list):
+                raise ValueError()
+            if not isinstance(document[1], dict):
+                raise ValueError()
+        except ValueError, e:
+            print utf8(e)
+            print 'Input must be valid json: [[], {}]'
+            parser.print_help()
+            sys.exit(1)
 
 
 def main():
@@ -116,6 +138,10 @@ def main():
         g_opt['password'] = options.password
     if options.reply:
         g_opt['reply'] = options.reply
+    if options.input:
+        document = json.loads(options.input)
+        arguments = tuple(document[0])
+        keywords = document[1]
 
     with Connection(options.url, retry=False):
         agent = Agent(options.url, options.address, **g_opt)
