@@ -18,7 +18,7 @@ from gofer.config import Config, Graph
 from gofer.config import REQUIRED, OPTIONAL, ANY, BOOL, NUMBER
 
 #
-# [manager]
+# [management]
 #   enabled
 #      The manager is (enabled|disabled).
 #   host
@@ -36,7 +36,7 @@ from gofer.config import REQUIRED, OPTIONAL, ANY, BOOL, NUMBER
 #
 
 AGENT_SCHEMA = (
-    ('manager', REQUIRED,
+    ('management', REQUIRED,
         (
             ('enabled', OPTIONAL, BOOL),
             ('host', OPTIONAL, ANY),
@@ -131,7 +131,7 @@ PLUGIN_SCHEMA = (
 
 
 AGENT_DEFAULTS = {
-    'manager': {
+    'management': {
         'enabled': '0',
         'host': 'localhost',
         'port': '5650',

@@ -17,7 +17,7 @@
 ROOT = '/opt/gofer'
 
 AGENT_CONF = """
-[manager]
+[management]
 enabled=1
 port=5651
 

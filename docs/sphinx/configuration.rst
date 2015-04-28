@@ -13,12 +13,12 @@ files located in ``/etc/gofer/conf.d``.  During startup, gofer first reads
 
 All configuration files support the following sections and properties:
 
-[manager]
----------
+[management]
+------------
 
-Defines agent manager properties.
+Defines agent management properties.
 
-- **enabled** - The manager is (1=enabled|0=disabled).
+- **enabled** - Management is (1=enabled|0=disabled).
 - **host** - The host (interface) the manager listens on.  Defaults to: `localhost`.
 - **port** - The port the manager listens on.  Defaults to: `9000`.
 

@@ -77,9 +77,9 @@ class Agent:
         cfg = AgentConfig()
         for plugin in Plugin.all():
             plugin.start()
-        if get_bool(cfg.manager.enabled):
-            host = cfg.manager.host
-            port = int(cfg.manager.port)
+        if get_bool(cfg.management.enabled):
+            host = cfg.management.host
+            port = int(cfg.management.port)
             manager = Manager(host, port)
             manager.start()
         actions = ActionThread()
