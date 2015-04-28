@@ -8,13 +8,15 @@ gofer \- The goferd management tool.
 
 .SH SYNOPSIS
 
-gofer mgt  [ -h ] [ -H \fIHOST\fR ] [ -p \fIPORT\fR ]
-           [ -s ] [ -l \fIPATH\fR ] [ -r \fIPATH\fR ] [ -u \fIPATH\fR ]
+gofer [-h]
 
-gofer call [ -h ] [ -u \fIURL\fR ] [ -a \fIADDRESS\fR ] [ -t \fITARGET\fR ]
-           [ -i \fIINPUT\fR ] [ -r \fIREPLY\fR ] [ -w \fISECONDS\fR ]
-           [ -p \fIPREFIX\fR ] [ -S \fISECRET\fR ] [ -T \fISECONDS\fR ]
-           [ -A \fIPATH\fR ] [ -U \fINAME\fR ] [ -A \fIPASSWORD\fR ]
+gofer mgt [ -h ] [ -H \fIHOST\fR ] [ -p \fIPORT\fR ]
+          [ -s ] [ -l \fIPATH\fR ] [ -r \fIPATH\fR ] [ -u \fIPATH\fR ]
+
+gofer rmi [ -h ] [ -u \fIURL\fR ] [ -a \fIADDRESS\fR ] [ -t \fITARGET\fR ]
+          [ -i \fIINPUT\fR ] [ -r \fIREPLY\fR ] [ -w \fISECONDS\fR ]
+          [ -p \fIPREFIX\fR ] [ -S \fISECRET\fR ] [ -T \fISECONDS\fR ]
+          [ -A \fIPATH\fR ] [ -U \fINAME\fR ] [ -A \fIPASSWORD\fR ]
 
 .SH DESCRIPTION
 
@@ -56,7 +58,7 @@ The \fIPATH\fR can also be the plugin name.
 
 .SH CALL OPTIONS
 
-The following options are supported by \fBgofer call\fR
+The following options are supported by \fBgofer rmi\fR
 
 .TP
 -h [ --help ]
@@ -102,11 +104,11 @@ The password passed in the RMI request.
 .SH EXAMPLES
 
 .TP
-$ gofer call -u qpid+amqp://localhost -a xyz -t Dog.bark "hello master"
+$ gofer rmi -u qpid+amqp://localhost -a xyz -t Dog.bark "hello master"
 .TP
-$ gofer call -u qpid+amqp://localhost -a xyz -t Dog.bark words="hello master"
+$ gofer rmi -u qpid+amqp://localhost -a xyz -t Dog.bark words="hello master"
 .TP
-$ gofer call -u qpid+amqp://localhost -a xyz -t Dog.bark -i '[["hello master"],{}]'
+$ gofer rmi -u qpid+amqp://localhost -a xyz -t Dog.bark -i '[["hello master"],{}]'
 
 .SH SEE ALSO
 

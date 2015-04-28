@@ -23,7 +23,7 @@ from gofer.tools import mgt, call
 
 COMMAND = {
     'mgt': mgt,
-    'call': call
+    'rmi': call
 }
 
 
