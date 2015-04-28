@@ -20,7 +20,7 @@ Defines agent management properties.
 
 - **enabled** - Management is (1=enabled|0=disabled).
 - **host** - The host (interface) the manager listens on.  Defaults to: `localhost`.
-- **port** - The port the manager listens on.  Defaults to: `9000`.
+- **port** - The port the manager listens on.  Defaults to: `5650`.
 
 
 [logging]
