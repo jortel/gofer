@@ -8,18 +8,21 @@ Command Line Interface
 
 The ``gofer`` CLI provides both management (MGT) of *goferd* and remote method invocation (RMI).
 The management tool may be used to get the status of *goferd* and to dynamically load, reload and
-unload plugins.  The management tool connects to *goferd* on the management TCP port.  In order
-to do this, management must be enabled in ``/etc/gofer/agent.conf``.  Management is not enabled
-by default.
-
-.. note:: The CLI is new in gofer 2.7
+unload plugins.  The management tool connects to *goferd* on the management port as defined in
+``/etc/gofer/agent.conf``.  Management must be explicitly enabled.
 
 ::
 
  [management]
  enabled=1
- # host=localhost
- # port=5650
+ host=localhost
+ port=5650
+
+The RMI tool may be used to remotely invoke methods provided by plugins.  It does not need management
+to be enabled.
+
+.. note::
+  The CLI is new in gofer 2.7
 
 Examples
 --------

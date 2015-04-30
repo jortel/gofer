@@ -15,8 +15,8 @@ Contents:
    main
    installation
    quickstart
-   cli
    design
+   tools
    adapter
    configuration
    options
