@@ -27,7 +27,7 @@ Cloning the repository::
  $ git clone https://github.com/jortel/gofer.git
 
 
-In the examples below, *<git>* is the directory containing the cloned repository.
+In the examples below, *<git>* is the cloned repository.
 
 Files can be link or copied.
 
@@ -36,7 +36,7 @@ goferd
 
 To install goferd::
 
- # cp <git>/gofer/bin/goferd /usr/bin
+ # cp <git>/bin/goferd /usr/bin/goferd
 
 
 systemd
@@ -44,7 +44,7 @@ systemd
 
 To register goferd with systemd::
 
- # cp <git>/gofer/usr/lib/systemd/system/goferd.service /usr/lib/systemd/system
+ # cp <git>/usr/lib/systemd/system/goferd.service /usr/lib/systemd/system/goferd.service
 
 
 upstart
@@ -52,6 +52,6 @@ upstart
 
 To register goferd with upstart::
 
- # cp <git>/gofer/etc/init.d/goferd /etc/init.d
+ # cp <git>/etc/init.d/goferd /etc/init.d/goferd
  # chkconfig --add goferd
 
