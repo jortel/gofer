@@ -18,7 +18,7 @@ Sample server-side code:
 Define Agent-side
 ^^^^^^^^^^^^^^^^^
 
-Sample agent-side code.  This module is placed in ``/var/lib/gofer/plugins/`` along with a plugin
+Sample agent-side code.  This module is placed in ``/user/share/gofer/plugins/`` along with a plugin
 descriptor in ``/etc/gofer/plugins/``
 
 Plugin descriptor: ``/etc/gofer/plugins/plugin.conf``
@@ -33,11 +33,11 @@ Plugin descriptor: ``/etc/gofer/plugins/plugin.conf``
  uuid=test
 
 
-Code:   ``/var/lib/gofer/plugins/plugin.py``
+Code:   ``/user/share/gofer/plugins/plugin.py``
 
 ::
 
- from gofer.decorators import *
+ from gofer.decorators import remote
  from gofer.agent.plugin import Plugin
 
  # (optional) access to the plugin descriptor
@@ -80,6 +80,9 @@ Synchronous Invocation
 Sample of server code invoking synchronously methods (remotely) on the agent.  This is the default
 behaviour and the timeout is 90 seconds by default.
 
+Python
+------
+
 ::
 
  from gofer.proxy import Agent
@@ -106,18 +109,31 @@ behaviour and the timeout is 90 seconds by default.
     print repr(e)
 
 
+Using the CLI
+-------------
+
+::
+
+ $ gofer rmi -u 'amqp://localhost' -a test -t Dog.bark hello
+ $ gofer rmi -u 'amqp://localhost' -a test -t Dog.wag 3
+ $ gofer rmi -u 'amqp://localhost' -a test -t Dog.bark hello
+
+
 Synchronous Invocation (specify timeout)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Sample of server code invoking synchronously methods (remotely) on the agent with a
 timeout of 180 seconds.
 
+Python
+------
+
 ::
 
  from gofer.proxy import Agent
 
  amqp://localhost
- agent = Agent('amqp://localhost', 'test', timeout=180)  # specify timeout
+ agent = Agent('amqp://localhost', 'test', wait=180)  # specify timeout
 
  # invoke methods on the agent (remotely)
  dog = agent.Dog()
@@ -126,12 +142,25 @@ timeout of 180 seconds.
  dog.bark('hello')
 
 
+Using the CLI
+-------------
+
+::
+
+ $ gofer rmi -u 'amqp://localhost' -a test -w 180 -t Dog.bark hello
+ $ gofer rmi -u 'amqp://localhost' -a test -w 180 -t Dog.wag 3
+ $ gofer rmi -u 'amqp://localhost' -a test -w 180 -t Dog.bark hello
+
+
 Asynchronous (fire & forget) Invocation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Sample of server code invoking synchronously methods (remotely) on the agent.  This works the same for
 asynchronous *fire-and-forget* where not reply is wanted.  Asynchronous invocation returns the serial
 number of the request.
+
+Python
+------
 
 ::
 
@@ -159,6 +188,15 @@ number of the request.
     print repr(e)
 
 
+Using the CLI
+-------------
+
+::
+
+ $ gofer rmi -u 'amqp://localhost' -a test -w 0 -t Dog.bark hello
+ e688f50b-3108-43dd-9a57-813f434749a8
+
+
 Asynchronous (callback) Invocation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -166,6 +204,9 @@ Sample of server code invoking asynchronously methods (remotely) on the agent.  
 form of asynchronous invocation.  This example uses a *Listener* class.   But, the *listener* can also
 be any *callable*.  Asynchronous invocation returns the serial number of the request to be used by
 the caller to further correlate request & response.
+
+Python
+------
 
 ::
 
@@ -276,6 +317,19 @@ method on reply.
  reader = ReplyConsumer(reply_to)
  reader.start(callback)
  ...
+
+
+Using the CLI
+-------------
+
+Note: ``-r tasks``
+
+::
+
+ $ gofer rmi -u 'amqp://localhost' -a test -w 0 -r tasks -t Dog.bark hello
+ e688f50b-3108-43dd-9a57-813f434749a8
+
+
 
 Class Constructor Arguments
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
