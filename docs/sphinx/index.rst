@@ -15,6 +15,7 @@ Contents:
    main
    installation
    quickstart
+   cli
    design
    adapter
    configuration
