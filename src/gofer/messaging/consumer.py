@@ -25,18 +25,21 @@ class ConsumerThread(Thread):
     An AMQP (abstract) consumer.
     """
 
-    def __init__(self, node, url):
+    def __init__(self, node, url, wait=3):
         """
         :param node: An AMQP queue.
         :type node: gofer.messaging.adapter.model.Node
         :param url: The broker URL.
         :type url: str
+        :param wait: Number of seconds to wait for a message.
+        :type wait: int
         """
         Thread.__init__(self, name=node.name)
         self.url = url
         self.node = node
+        self.wait = wait
         self.authenticator = None
-        self._reader = None
+        self.reader = None
         self.setDaemon(True)
 
     def shutdown(self):
@@ -50,56 +53,59 @@ class ConsumerThread(Thread):
         """
         Main consumer loop.
         """
-        self._reader = Reader(self.node, self.url)
-        self._reader.authenticator = self.authenticator
-        self._open()
+        self.reader = Reader(self.node, self.url)
+        self.reader.authenticator = self.authenticator
+        self.open()
         try:
             while not Thread.aborted():
-                self._read()
+                self.read()
         finally:
-            self._close()
+            self.close()
 
-    def _open(self):
+    def open(self):
         """
         Open the reader.
         """
         while not Thread.aborted():
             try:
-                self._reader.open()
+                self.reader.open()
                 break
             except Exception:
                 log.exception(self.getName())
-                sleep(60)
+                sleep(30)
 
-    def _close(self):
+    def close(self):
         """
         Close the reader.
         """
         try:
-            self._reader.close()
+            self.reader.close()
         except Exception:
             log.exception(self.getName())
 
-    def _read(self):
+    def read(self):
         """
         Read and process incoming documents.
         """
         try:
-            message, document = self._reader.next(10)
+            wait = self.wait
+            reader = self.reader
+            message, document = reader.next(wait)
             if message is None:
+                # wait expired
                 return
             log.debug('{%s} read: %s', self.getName(), document)
             self.dispatch(document)
             message.ack()
         except InvalidDocument, invalid:
-            self._rejected(invalid.code, invalid.description, invalid.document, invalid.details)
+            self.rejected(invalid.code, invalid.description, invalid.document, invalid.details)
         except Exception:
             log.exception(self.getName())
             sleep(60)
-            self._close()
-            self._open()
+            self.close()
+            self.open()
 
-    def _rejected(self, code, description, document, details):
+    def rejected(self, code, description, document, details):
         """
         Called to process the received (invalid) document.
         This method intended to be overridden by subclasses.

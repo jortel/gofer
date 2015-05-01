@@ -27,9 +27,10 @@ class TestConsumerThread(TestCase):
         consumer = ConsumerThread(node, url)
         self.assertEqual(consumer.node, node)
         self.assertEqual(consumer.url, url)
+        self.assertEqual(consumer.wait, 3)
         self.assertTrue(isinstance(consumer, Thread))
         self.assertTrue(consumer.daemon)
-        self.assertEqual(consumer._reader,  None)
+        self.assertEqual(consumer.reader,  None)
 
     @patch('gofer.common.Thread.abort')
     def test_shutdown(self, abort):
@@ -44,9 +45,9 @@ class TestConsumerThread(TestCase):
         url = 'test-url'
         node = Node('test-queue')
         consumer = ConsumerThread(node, url)
-        consumer._open = Mock()
-        consumer._close = Mock()
-        consumer._read = Mock(side_effect=StopIteration)
+        consumer.open = Mock()
+        consumer.close = Mock()
+        consumer.read = Mock(side_effect=StopIteration)
 
         # test
         try:
@@ -56,61 +57,61 @@ class TestConsumerThread(TestCase):
 
         # validation
         reader.assert_called_once_with(node, url)
-        consumer._open.assert_called_once_with()
-        consumer._read.assert_called_once_with()
-        consumer._close.assert_called_once_with()
+        consumer.open.assert_called_once_with()
+        consumer.read.assert_called_once_with()
+        consumer.close.assert_called_once_with()
 
     def test_open(self):
         url = 'test-url'
         node = Node('test-queue')
         consumer = ConsumerThread(node, url)
-        consumer._reader = Mock()
+        consumer.reader = Mock()
 
         # test
-        consumer._open()
+        consumer.open()
 
         # validation
-        consumer._reader.open.assert_called_once_with()
+        consumer.reader.open.assert_called_once_with()
 
     def test_close(self):
         url = 'test-url'
         node = Node('test-queue')
         consumer = ConsumerThread(node, url)
-        consumer._reader = Mock()
+        consumer.reader = Mock()
 
         # test
-        consumer._close()
+        consumer.close()
 
         # validation
-        consumer._reader.close.assert_called_once_with()
+        consumer.reader.close.assert_called_once_with()
 
     def test_close_exception(self):
         url = 'test-url'
         node = Node('test-queue')
         consumer = ConsumerThread(node, url)
-        consumer._reader = Mock()
-        consumer._reader.close.side_effect = ValueError
+        consumer.reader = Mock()
+        consumer.reader.close.side_effect = ValueError
 
         # test
-        consumer._close()
+        consumer.close()
 
         # validation
-        consumer._reader.close.assert_called_once_with()
+        consumer.reader.close.assert_called_once_with()
 
     @patch('gofer.messaging.consumer.sleep')
     def test_open_exception(self, sleep):
         url = 'test-url'
         node = Node('test-queue')
         consumer = ConsumerThread(node, url)
-        consumer._reader = Mock()
-        consumer._reader.open.side_effect = [ValueError, None]
+        consumer.reader = Mock()
+        consumer.reader.open.side_effect = [ValueError, None]
 
         # test
-        consumer._open()
+        consumer.open()
 
         # validation
-        sleep.assert_called_once_with(60)
-        self.assertEqual(consumer._reader.open.call_count, 2)
+        sleep.assert_called_once_with(30)
+        self.assertEqual(consumer.reader.open.call_count, 2)
 
     def test_read(self):
         url = 'test-url'
@@ -118,14 +119,15 @@ class TestConsumerThread(TestCase):
         message = Mock()
         document = Mock()
         consumer = ConsumerThread(node, url)
-        consumer._reader = Mock()
-        consumer._reader.next.return_value = (message, document)
+        consumer.reader = Mock()
+        consumer.reader.next.return_value = (message, document)
         consumer.dispatch = Mock()
 
         # test
-        consumer._read()
+        consumer.read()
 
         # validate
+        consumer.reader.next.assert_called_once_with(consumer.wait)
         consumer.dispatch.assert_called_once_with(document)
         message.ack.assert_called_once_with()
 
@@ -133,12 +135,12 @@ class TestConsumerThread(TestCase):
         url = 'test-url'
         node = Node('test-queue')
         consumer = ConsumerThread(node, url)
-        consumer._reader = Mock()
-        consumer._reader.next.return_value = (None, None)
+        consumer.reader = Mock()
+        consumer.reader.next.return_value = (None, None)
         consumer.dispatch = Mock()
 
         # test
-        consumer._read()
+        consumer.read()
 
         # validate
         self.assertFalse(consumer.dispatch.called)
@@ -148,15 +150,15 @@ class TestConsumerThread(TestCase):
         node = Node('test-queue')
         failed = ValidationFailed(details='test')
         consumer = ConsumerThread(node, url)
-        consumer._reader = Mock()
-        consumer._reader.next.side_effect = failed
-        consumer._rejected = Mock()
+        consumer.reader = Mock()
+        consumer.reader.next.side_effect = failed
+        consumer.rejected = Mock()
 
         # test
-        consumer._read()
+        consumer.read()
 
         # validate
-        consumer._rejected.assert_called_once_with(
+        consumer.rejected.assert_called_once_with(
             failed.code, failed.description, failed.document, failed.details)
 
     def test_read_invalid_document(self):
@@ -168,15 +170,15 @@ class TestConsumerThread(TestCase):
         details = 'crashed'
         ir = InvalidDocument(code, description, document, details)
         consumer = ConsumerThread(node, url)
-        consumer._reader = Mock()
-        consumer._reader.next.side_effect = ir
-        consumer._rejected = Mock()
+        consumer.reader = Mock()
+        consumer.reader.next.side_effect = ir
+        consumer.rejected = Mock()
 
         # test
-        consumer._read()
+        consumer.read()
 
         # validate
-        consumer._rejected.assert_called_once_with(
+        consumer.rejected.assert_called_once_with(
             ir.code, ir.description, ir.document, ir.details)
 
     @patch('gofer.messaging.consumer.sleep')
@@ -184,24 +186,24 @@ class TestConsumerThread(TestCase):
         url = 'test-url'
         node = Node('test-queue')
         consumer = ConsumerThread(node, url)
-        consumer._reader = Mock()
-        consumer._reader.next.side_effect = IndexError
-        consumer._open = Mock()
-        consumer._close = Mock()
+        consumer.reader = Mock()
+        consumer.reader.next.side_effect = IndexError
+        consumer.open = Mock()
+        consumer.close = Mock()
 
         # test
-        consumer._read()
+        consumer.read()
 
         # validation
-        consumer._close.assert_called_once_with()
-        consumer._open.assert_called_once_with()
+        consumer.close.assert_called_once_with()
+        consumer.open.assert_called_once_with()
         sleep.assert_called_once_with(60)
 
     def test_rejected(self):
         url = 'test-url'
         node = Node('test-queue')
         consumer = ConsumerThread(node, url)
-        consumer._rejected('1', '2', '3', '4')
+        consumer.rejected('1', '2', '3', '4')
 
     def test_dispatch(self):
         url = 'test-url'

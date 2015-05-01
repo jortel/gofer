@@ -15,7 +15,6 @@
 
 from logging import getLogger
 
-from gofer import Options
 from gofer.messaging import Consumer, Producer, Document
 from gofer.metrics import timestamp
 
@@ -39,7 +38,7 @@ class RequestConsumer(Consumer):
         super(RequestConsumer, self).__init__(node, plugin.url)
         self.scheduler = plugin.scheduler
 
-    def _rejected(self, code, description, document, details):
+    def rejected(self, code, description, document, details):
         """
         Called to process the received (invalid) document.
         This method intended to be overridden by subclasses.
@@ -58,9 +57,9 @@ class RequestConsumer(Consumer):
             details=details)
         request = Document()
         request.load(document)
-        self._send(request, 'rejected', **details)
+        self.send(request, 'rejected', **details)
 
-    def _send(self, request, status, **details):
+    def send(self, request, status, **details):
         """
         Send a status update.
         :param request: The received (json) request.
@@ -95,5 +94,5 @@ class RequestConsumer(Consumer):
         :param request: The received request.
         :type request: Document
         """
-        self._send(request, 'accepted')
+        self.send(request, 'accepted')
         self.scheduler.add(request)
