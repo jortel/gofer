@@ -193,7 +193,25 @@ Synchronous RMI
 
 ::
 
- $ gofer rmi -u qpid+amqp://localhost -a demo -t Dog.bark "hello master"
- Yes master.  I will bark because that is what dogs do. "hello master"
+ $ gofer rmi -u qpid+amqp://localhost -a demo -t Dog.bark howdy
+
+   Yes master.  I will bark because that is what dogs do. "howdy"
+
+ $ gofer rmi -u qpid+amqp://localhost -a demo -t Dog.wag 3
+
+   Yes master.  I will wag my tail because that is what dogs do.
+
+
+Asynchronous RMI
+++++++++++++++++
+
+The following uses the ``-r <address`` option to specify that the reply is to
+be sent to the *replies* AMQP address (queue).
+
+::
+
+ $ gofer rmi -u qpid+amqp://localhost -a demo -r replies -t Dog.bark howdy
+
+   719d234f-480d-4035-9c2b-b08d17d77f13
 
 
