@@ -131,7 +131,11 @@ def main():
     if options.secret:
         g_opt['secret'] = options.secret
     if options.authenticator:
-        g_opt['authenticator'] = options.authenticator
+        parts = options.authenticator.split('.')
+        path = '.'.join(parts[:-1])
+        name = parts[-1]
+        mod = __import__(path, {}, {}, [name])
+        g_opt['authenticator'] = getattr(mod, name)()
     if options.user:
         g_opt['user'] = options.user
     if options.password:
