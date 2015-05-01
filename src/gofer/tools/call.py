@@ -36,6 +36,7 @@ parser.add_option('-t', '--target', help='RMI target')
 parser.add_option('-i', '--input', help='RMI input (json) document')
 parser.add_option('-w', '--wait', help='seconds to wait for a synchronous reply')
 parser.add_option('-p', '--progress', help='progress prefix')
+parser.add_option('-d', '--data', help='user (json) data')
 parser.add_option('-S', '--secret', help='shared secret')
 parser.add_option('-T', '--ttl', help='shared secret')
 parser.add_option('-A', '--authenticator', help='authenticator python package')
@@ -96,6 +97,13 @@ def validate(options):
             print 'Wait must be <int>'
             parser.print_help()
             sys.exit(1)
+    if options.data:
+        try:
+            json.loads(options.data)
+        except ValueError:
+            print 'data must be valid json'
+            parser.print_help()
+            sys.exit(1)
     if options.input:
         try:
             document = json.loads(options.input)
@@ -128,6 +136,8 @@ def main():
         def print_report(report):
             print ''.join((options.progress, str(report['details'])))
         g_opt['progress'] = print_report
+    if options.data:
+        g_opt['data'] = json.loads(options.data)
     if options.secret:
         g_opt['secret'] = options.secret
     if options.authenticator:

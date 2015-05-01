@@ -15,7 +15,7 @@ gofer mgt [ -h ] [ -H \fIHOST\fR ] [ -p \fIPORT\fR ]
 
 gofer rmi [ -h ] [ -u \fIURL\fR ] [ -a \fIADDRESS\fR ] [ -t \fITARGET\fR ]
           [ -i \fIINPUT\fR ] [ -r \fIREPLY\fR ] [ -w \fISECONDS\fR ]
-          [ -p \fIPREFIX\fR ] [ -S \fISECRET\fR ] [ -T \fISECONDS\fR ]
+          [ -p \fIPREFIX\fR ] [ -d \fIDATA\fR ] [ -S \fISECRET\fR ] [ -T \fISECONDS\fR ]
           [ -A \fIPATH\fR ] [ -U \fINAME\fR ] [ -A \fIPASSWORD\fR ]
 
 .SH DESCRIPTION
@@ -86,6 +86,9 @@ The time in seconds to wait the RMI to complete.
 The progress output prefix.  Enables progress reporting to STDOUT
 with the prepended prefix.
 .TP
+-d [ --data ] \fIDATA\fR
+User data round-tripped with the RMI request.
+.TP
 -S [ --secret ] \fISECRET\fR
 The shared secret to include with the RMI request.
 .TP
@@ -109,6 +112,8 @@ $ gofer rmi -u qpid+amqp://localhost -a xyz -t Dog.bark "hello master"
 $ gofer rmi -u qpid+amqp://localhost -a xyz -t Dog.bark words="hello master"
 .TP
 $ gofer rmi -u qpid+amqp://localhost -a xyz -t Dog.bark -i '[["hello master"],{}]'
+.TP
+$ gofer rmi -u qpid+amqp://localhost -a xyz -d '{"id": "1234"}' -t Dog.bark howdy
 
 .SH SEE ALSO
 
