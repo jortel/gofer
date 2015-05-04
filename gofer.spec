@@ -3,7 +3,7 @@
 
 Name: gofer
 Version: 0.78
-Release: 1%{?dist}
+Release: 2%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
 License: LGPLv2
@@ -143,7 +143,7 @@ Group: Development/Languages
 BuildRequires: ruby
 Requires: rubygems
 Requires: rubygem(json)
-Requires: rubygem(qpid) >= 0.16.0
+Requires: rubygem(qpid_messaging) >= 0.16.0
 
 %description -n ruby-%{name}
 Contains gofer ruby lib modules.
