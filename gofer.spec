@@ -247,6 +247,9 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Mon May 04 2015 Jeff Ortel <jortel@redhat.com> 0.78-2
+- Fix broken dependency on rubygem(qpid). (jortel@redhat.com)
+
 * Tue Feb 11 2014 Jeff Ortel <jortel@redhat.com> 0.78-1
 - Add support for skipping SSL validation. (jortel@redhat.com)
 - Merge pull request #7 from jortel/gofer-0.77 (jortel@redhat.com)
