@@ -214,14 +214,14 @@ class TestPlugin(TestCase):
             plugin.accept,
             set([p.strip() for p in _list.split(',')]))
         # is_started
-        self.assertEqual(plugin.is_started, plugin.scheduler.is_alive.return_value)
+        self.assertEqual(plugin.is_started, plugin.scheduler.isAlive.return_value)
 
     @patch('gofer.agent.plugin.Scheduler')
     @patch('gofer.agent.plugin.Whiteboard', Mock())
     @patch('gofer.agent.plugin.ThreadPool', Mock())
     def test_start(self, scheduler):
         descriptor = Mock(main=Mock(threads=4))
-        scheduler.return_value.is_alive.return_value = False
+        scheduler.return_value.isAlive.return_value = False
 
         # test
         plugin = Plugin(descriptor, '')
@@ -237,7 +237,7 @@ class TestPlugin(TestCase):
     @patch('gofer.agent.plugin.ThreadPool', Mock())
     def test_start_already_started(self, scheduler):
         descriptor = Mock(main=Mock(threads=4))
-        scheduler.return_value.is_alive.return_value = True
+        scheduler.return_value.isAlive.return_value = True
 
         # test
         plugin = Plugin(descriptor, '')
@@ -253,7 +253,7 @@ class TestPlugin(TestCase):
     @patch('gofer.agent.plugin.Whiteboard', Mock())
     def test_shutdown(self, pool, scheduler):
         descriptor = Mock(main=Mock(threads=4))
-        scheduler.return_value.is_alive.return_value = True
+        scheduler.return_value.isAlive.return_value = True
 
         # test
         plugin = Plugin(descriptor, '')
@@ -271,7 +271,7 @@ class TestPlugin(TestCase):
     @patch('gofer.agent.plugin.Whiteboard', Mock())
     def test_shutdown_not_running(self, pool, scheduler):
         descriptor = Mock(main=Mock(threads=4))
-        scheduler.return_value.is_alive.return_value = False
+        scheduler.return_value.isAlive.return_value = False
 
         # test
         plugin = Plugin(descriptor, '')

@@ -340,7 +340,7 @@ class Plugin(object):
 
     @property
     def is_started(self):
-        return self.scheduler.is_alive()
+        return self.scheduler.isAlive()
 
     @synchronized
     def start(self):
