@@ -225,3 +225,10 @@ Deprecated:
   consistently provide functionality when using external commands is needed.
   Supports cancellation, progress reporting and returns stdout and stderr.
   The *system* and *package* plugins converted to use this.
+
+- Authorization has been support. It will continue to support
+  authentication.  This includes:
+    - Shared secret.  The *secret* option in the @remote decorator.
+    - The @pam decorator.
+    - The @user decorator.
+    - The *pam* property in the message.

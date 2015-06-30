@@ -33,12 +33,15 @@ Options:
     - required: No
     - type: str|callable
     - default: None
+    - note: **DEPRECATED** in 2.7
 
 @pam
 ----
 
 The *pam* decorator is used to specify PAM authentication criteria for access to a function or class
 method.  This additional authentication may be used in conjunction with shared secrets.
+
+**DEPRECATED** in 2.7
 
 Options:
 
@@ -57,6 +60,8 @@ Options:
 The *user* decorator is used to specify PAM authentication criteria for access to a function or class
 method.  This additional authentication may be used in conjunction with shared secrets.  This is an
 alias for the @pam decorator.
+
+**DEPRECATED** in 2.7
 
 Options:
 

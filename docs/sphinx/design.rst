@@ -64,8 +64,8 @@ The message format is json:
    - **sn** - Serial Number (uuid)
    - **version** - The API version.
    - **routing** - A tuple containing the amqp (sender, destination).
-   - **secret** - The (optional) shared secret used for request authentication.
-   - **pam** - The (optional) PAM authentication credentials.
+   - **secret** - The (optional) shared secret used for request authentication. **DEPRECATED** in 2.7
+   - **pam** - The (optional) PAM authentication credentials. **DEPRECATED** in 2.7
    - **replyto** - The reply amqp address (optional)
    - **(request|result|status|progress)** The payload.
        (request is type: Request, result is type: Result, status is type: string)
@@ -79,11 +79,7 @@ The message format is json:
    - **kws{}** - The named keyword arguments passed to method.
 - Result (RMI):
    - **retval** - The returned data (optional).
-   - **retex** - The returned exception (optoinal).
-- *Internal*:
-   - **ts** - Timestamp injected when added to the journal.
-   - **ttl** - Time-to-live (seconds) injected on receipt.
-   - **url** - The URL on which the request was received.
+   - **retex** - The returned exception (optional).
 
 
 Example RMI request message:
