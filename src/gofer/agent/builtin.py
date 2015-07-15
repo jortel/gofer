@@ -35,12 +35,12 @@ class Admin:
     Provides administration.
     """
 
-    def __init__(self, plugin):
+    def __init__(self, container):
         """
-        :param plugin: A real plugin.
-        :type plugin: gofer.agent.plugin.Plugin
+        :param container: The plugin container.
+        :type container: gofer.agent.plugin.Container
         """
-        self.plugin = plugin
+        self.container = container
 
     @remote
     def cancel(self, sn=None, criteria=None):
@@ -98,7 +98,7 @@ class Admin:
         :return: Information
         :rtype: str
         """
-        return loaded(self.plugin.container, Actions())
+        return loaded(self.container, Actions())
 
     @property
     def __name__(self):
@@ -120,7 +120,7 @@ class Builtin(object):
         """
         self.pool = ThreadPool(3)
         self.dispatcher = Dispatcher()
-        self.dispatcher += [Admin(plugin)]
+        self.dispatcher += [Admin(plugin.container)]
         self.authenticator = plugin.authenticator
         self.url = plugin.url
 
