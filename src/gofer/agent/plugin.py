@@ -167,7 +167,7 @@ class Plugin(object):
     """
     Represents a plugin.
     :ivar descriptor: descriptor.
-    :type descriptor: Graph
+    :type descriptor: PluginDescriptor
     :param path: The descriptor path.
     :type path: str
     :ivar pool: The main thread pool.
@@ -236,7 +236,7 @@ class Plugin(object):
     def __init__(self, descriptor, path):
         """
         :param descriptor: The plugin descriptor.
-        :type descriptor: Graph
+        :type descriptor: PluginDescriptor
         :param path: The plugin descriptor path.
         :type path: str
         """
