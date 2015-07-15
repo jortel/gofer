@@ -26,6 +26,7 @@ from gofer.transport import Transport
 from gofer.messaging.model import Document
 from gofer.transport.model import Destination
 from gofer.metrics import Timer
+from gofer.agent.builtin import Builtin
 
 
 log = getLogger(__name__)
@@ -238,7 +239,11 @@ class Scheduler(Thread):
         while True:
             request = self.pending.get()
             try:
+                call = Document(request.request)
                 plugin = self.find_plugin(request)
+                builtin = Builtin(plugin)
+                if builtin.provides(call.classname):
+                    plugin = builtin
                 task = Task(plugin, request, self.pending.commit)
                 plugin.pool.run(task)
             except Exception:

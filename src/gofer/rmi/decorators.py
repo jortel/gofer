@@ -64,7 +64,7 @@ class Remote:
         return collated
 
 
-def __options(fn):
+def options(fn):
     """
     Ensure function has the gofer options attribute
     and return it.
@@ -90,7 +90,7 @@ def remote(*args, **kwargs):
     """
     secret = kwargs.get('secret', ())
     def df(fn):
-        opt = __options(fn)
+        opt = options(fn)
         if secret:
             required = Options()
             required.secret = secret
@@ -116,7 +116,7 @@ def pam(*args, **kwargs):
     if not user:
         raise Exception('(user) must be specified')
     def df(fn):
-        opt = __options(fn)
+        opt = options(fn)
         required = Options()
         required.user = user
         required.service = service
@@ -137,7 +137,7 @@ def user(*args, **kwargs):
     """
     name = kwargs.get('name')
     def df(fn):
-        opt = __options(fn)
+        opt = options(fn)
         required = Options()
         required.user = name
         auth = ('pam', required) 

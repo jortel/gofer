@@ -35,6 +35,8 @@ from gofer.agent.action import Actions
 from gofer.agent.whiteboard import Whiteboard
 from gofer.transport import Transport
 from gofer.collator import Module
+from gofer.messaging.model import Document
+from gofer.common import mkdir
 
 
 log = getLogger(__name__)
@@ -167,6 +169,18 @@ class Plugin(object):
         self.authenticator = None
         self.consumer = None
         self.imported = {}
+
+    @property
+    def forward(self):
+        _list = self.descriptor.main.forward or ''
+        _list = [p.strip() for p in _list.split(',')]
+        return set(_list)
+
+    @property
+    def accept(self):
+        _list = self.descriptor.main.accept or ''
+        _list = [p.strip() for p in _list.split(',')]
+        return set(_list)
     
     def enabled(self):
         """
@@ -300,10 +314,41 @@ class Plugin(object):
         """
         Dispatch (invoke) the specified RMI request.
         :param request: An RMI request
-        :type request: Document
+        :type request: gofer.Document
         :return: The RMI returned.
         """
-        return self.dispatcher.dispatch(request)
+        call = Document(request.request)
+        dispatcher = self.dispatcher
+        if not self.provides(call.classname):
+            for plugin in Plugin.all():
+                if not plugin.provides(call.classname):
+                    # not provided
+                    continue
+                valid = set()
+                valid.add('*')
+                valid.add(plugin.name)
+                if not valid.intersection(self.forward):
+                    # (forwarding) not approved
+                    continue
+                valid = set()
+                valid.add('*')
+                valid.add(self.name)
+                if not valid.intersection(plugin.accept):
+                    # (accept) not approved
+                    continue
+                dispatcher = plugin.dispatcher
+                break
+        return dispatcher.dispatch(request)
+
+    def provides(self, name):
+        """
+        Get whether the plugin provides the name.
+        :param name: A class name.
+        :type name: str
+        :return: True if provides.
+        :raise: bool
+        """
+        return self.dispatcher.provides(name)
 
     def extend(self):
         """
@@ -390,12 +435,13 @@ class PluginDescriptor(Graph):
     
     @staticmethod
     def __list():
-        files = os.listdir(PluginDescriptor.ROOT)
-        for fn in sorted(files):
-            plugin, ext = fn.split('.', 1)
-            if not ext in ('conf',):
+        root = PluginDescriptor.ROOT
+        paths = [os.path.join(root, fn) for fn in os.listdir(root)]
+        for path in sorted(paths):
+            fn = os.path.basename(path)
+            plugin, ext = fn.rsplit('.', 1)
+            if ext not in ('conf',):
                 continue
-            path = os.path.join(PluginDescriptor.ROOT, fn)
             if os.path.isdir(path):
                 continue
             yield (plugin, path)
@@ -453,9 +499,6 @@ class PluginLoader:
         '/usr/lib64/%s/plugins' % NAME,
         '/opt/%s/plugins' % NAME,
     ]
-
-    BUILTIN = __import__('gofer.agent.builtin')
-    BUILTINS = Remote.collated()
 
     @staticmethod
     def find_plugin(plugin):
@@ -524,7 +567,6 @@ class PluginLoader:
                 fn.gofer.plugin = plugin
             if plugin.enabled():
                 collated = Remote.collated()
-                collated += PluginLoader.BUILTINS
                 plugin.dispatcher += collated
                 plugin.actions = Actions.collated()
                 plugin.extend()
