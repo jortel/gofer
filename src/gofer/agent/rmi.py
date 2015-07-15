@@ -21,6 +21,7 @@ from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import Pending
 from gofer.messaging import Document, Producer
 from gofer.metrics import Timer, timestamp
+from gofer.agent.builtin import Builtin
 
 
 log = getLogger(__name__)
@@ -160,11 +161,17 @@ class Scheduler(Thread):
         Read the pending queue and dispatch requests
         to the plugin thread pool.
         """
+        builtin = Builtin(self.plugin)
         while not Thread.aborted():
             request = self.pending.get()
             try:
-                task = Task(self.plugin, request, self.pending.commit)
-                self.plugin.pool.run(task)
+                call = Document(request.request)
+                if builtin.provides(call.classname):
+                    plugin = builtin
+                else:
+                    plugin = self.plugin
+                task = Task(plugin, request, self.pending.commit)
+                plugin.pool.run(task)
             except Exception:
                 self.pending.commit(request.sn)
                 log.exception(request.sn)
