@@ -53,49 +53,6 @@ def attach(fn):
     return _fn
 
 
-class Builtin(object):
-    """
-    The builtin plugin.
-    """
-
-    PATH = '/tmp/%s/.builtin.conf' % NAME
-
-    NAME = '__builtin__'
-
-    DESCRIPTOR = """
-    [main]
-    enabled=1
-    name=%s
-    threads=3
-    plugin=gofer.agent.builtin
-    accept=*
-    """ % NAME
-
-    @staticmethod
-    def install():
-        """
-        Install the descriptor.
-        """
-        mkdir(os.path.dirname(Builtin.PATH))
-        fp = open(Builtin.PATH, 'w+')
-        try:
-            for line in Builtin.DESCRIPTOR.split('\n'):
-                fp.write(line.strip())
-                fp.write('\n')
-        finally:
-            fp.close()
-
-    @staticmethod
-    def find():
-        """
-        Find this plugin.
-        :return: This plugin.
-        :rtype: Plugin
-        """
-        container = Container()
-        return container.find(Builtin.NAME)
-
-
 class Container(object):
     """
     Plugin container.
@@ -210,10 +167,10 @@ class Plugin(object):
     """
     Represents a plugin.
     :ivar descriptor: descriptor.
-    :type descriptor: PluginDescriptor
+    :type descriptor: Graph
     :param path: The descriptor path.
     :type path: str
-    :ivar pool: The plugin thread pool.
+    :ivar pool: The main thread pool.
     :type pool: ThreadPool
     :ivar impl: The plugin implementation.
     :ivar impl: module
@@ -279,7 +236,7 @@ class Plugin(object):
     def __init__(self, descriptor, path):
         """
         :param descriptor: The plugin descriptor.
-        :type descriptor: PluginDescriptor
+        :type descriptor: Graph
         :param path: The plugin descriptor path.
         :type path: str
         """
@@ -329,7 +286,6 @@ class Plugin(object):
     def forward(self):
         _list = self.cfg.main.forward
         _list = [p.strip() for p in _list.split(',')]
-        _list.append(Builtin.NAME)
         return set(_list)
 
     @property
@@ -441,10 +397,12 @@ class Plugin(object):
         :type request: gofer.Document
         :return: The RMI returned.
         """
-        call = Document(request.request)
         dispatcher = self.dispatcher
+        call = Document(request.request)
         if not self.provides(call.classname):
             for plugin in Plugin.all():
+                if plugin == self:
+                    continue
                 if not plugin.provides(call.classname):
                     # not provided
                     continue
@@ -643,12 +601,9 @@ class PluginLoader:
         """
         loaded = []
         root = PluginDescriptor.ROOT
-        Builtin.install()
         mkdir(root)
         paths = [os.path.join(root, fn) for fn in os.listdir(root)]
-        paths = sorted(paths)
-        paths.append(Builtin.PATH)
-        for path in paths:
+        for path in sorted(paths):
             _, ext = os.path.splitext(path)
             if ext not in Reader.EXTENSION:
                 continue
@@ -714,7 +669,6 @@ class PluginLoader:
         Actions.clear()
         Plugin.add(plugin)
         try:
-
             path = plugin.descriptor.main.plugin
             if path:
                 Plugin.add(plugin, path)
