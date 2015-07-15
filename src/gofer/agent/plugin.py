@@ -36,7 +36,6 @@ from gofer.agent.whiteboard import Whiteboard
 from gofer.transport import Transport
 from gofer.collator import Module
 from gofer.messaging.model import Document
-from gofer.common import mkdir
 
 
 log = getLogger(__name__)
