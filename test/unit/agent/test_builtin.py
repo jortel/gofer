@@ -105,3 +105,10 @@ class TestBuiltin(TestCase):
         result = builtin.dispatch(request)
         builtin.dispatcher.dispatch.assert_called_once_with(request)
         self.assertEqual(result, builtin.dispatcher.dispatch.return_value)
+
+    @patch('gofer.agent.builtin.ThreadPool')
+    def test_shutdown(self, pool):
+        plugin = Mock(container=Mock())
+        builtin = Builtin(plugin)
+        builtin.shutdown()
+        pool.return_value.shutdown.assert_called_once_with()

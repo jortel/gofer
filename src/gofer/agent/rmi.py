@@ -154,6 +154,7 @@ class Scheduler(Thread):
         Thread.__init__(self, name='scheduler:%s' % plugin.name)
         self.plugin = plugin
         self.pending = Pending(plugin.name)
+        self.builtin = Builtin(plugin)
         self.setDaemon(True)
 
     def run(self):
@@ -161,20 +162,30 @@ class Scheduler(Thread):
         Read the pending queue and dispatch requests
         to the plugin thread pool.
         """
-        builtin = Builtin(self.plugin)
         while not Thread.aborted():
             request = self.pending.get()
             try:
-                call = Document(request.request)
-                if builtin.provides(call.classname):
-                    plugin = builtin
-                else:
-                    plugin = self.plugin
+                plugin = self.find_plugin(request)
                 task = Task(plugin, request, self.pending.commit)
                 plugin.pool.run(task)
             except Exception:
                 self.pending.commit(request.sn)
                 log.exception(request.sn)
+
+    def find_plugin(self, request):
+        """
+        Find the plugin based on the request.
+        :param request: A request to be scheduled.
+        :rtype request: gofer.messaging.Document
+        :return: The appropriate plugin.
+        :rtype: gofer.agent.plugin.Plugin
+        """
+        call = Document(request.request)
+        if self.builtin.provides(call.classname):
+            plugin = self.builtin
+        else:
+            plugin = self.plugin
+        return plugin
 
     def add(self, request):
         """
@@ -188,6 +199,7 @@ class Scheduler(Thread):
         """
         Shutdown the scheduler.
         """
+        self.builtin.shutdown()
         self.abort()
         
 

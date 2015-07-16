@@ -142,3 +142,9 @@ class Builtin(object):
         :return: The RMI returned.
         """
         return self.dispatcher.dispatch(request)
+
+    def shutdown(self):
+        """
+        Shutdown the plugin.
+        """
+        self.pool.shutdown()
