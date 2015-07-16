@@ -33,12 +33,12 @@ class TestScheduler(TestCase):
         self.assertEqual(scheduler.builtin, builtin.return_value)
 
     @patch('gofer.common.Thread.aborted')
-    @patch('gofer.agent.rmi.Scheduler.find_plugin')
+    @patch('gofer.agent.rmi.Scheduler.select_plugin')
     @patch('gofer.agent.rmi.Task')
     @patch('gofer.agent.rmi.Pending')
     @patch('gofer.agent.rmi.Builtin')
     @patch('threading.Thread.setDaemon', Mock())
-    def test_run(self, builtin, pending, task, find_plugin, aborted):
+    def test_run(self, builtin, pending, task, select_plugin, aborted):
         plugin = Mock()
         task_list = [
             Mock(name='task-1'),
@@ -52,7 +52,7 @@ class TestScheduler(TestCase):
         aborted.side_effect = [False, False, True]
         pending.return_value.get.side_effect = request_list
         builtin.return_value.provides.side_effect = [True, False]
-        find_plugin.side_effect = [builtin.return_value, plugin]
+        select_plugin.side_effect = [builtin.return_value, plugin]
 
         # test
         scheduler = Scheduler(plugin)
@@ -62,7 +62,7 @@ class TestScheduler(TestCase):
         builtin.return_value.pool.run.assert_called_once_with(task_list[0])
         plugin.pool.run.assert_called_once_with(task_list[1])
         self.assertEqual(
-            find_plugin.call_args_list,
+            select_plugin.call_args_list,
             [
                 ((request_list[0],), {}),
                 ((request_list[1],), {}),
@@ -75,16 +75,16 @@ class TestScheduler(TestCase):
             ])
 
     @patch('gofer.agent.rmi.Pending')
-    @patch('gofer.agent.rmi.Scheduler.find_plugin')
+    @patch('gofer.agent.rmi.Scheduler.select_plugin')
     @patch('gofer.common.Thread.aborted')
     @patch('gofer.agent.rmi.Task', Mock())
     @patch('gofer.agent.rmi.Builtin', Mock())
     @patch('threading.Thread.setDaemon', Mock())
-    def test_run_raised(self, aborted, find_plugin, pending):
+    def test_run_raised(self, aborted, select_plugin, pending):
         plugin = Mock()
         sn = 1234
         pending.return_value.get.return_value = Document(sn=sn)
-        find_plugin.side_effect = ValueError
+        select_plugin.side_effect = ValueError
         aborted.side_effect = [False, True]
 
         # test
@@ -97,17 +97,17 @@ class TestScheduler(TestCase):
     @patch('gofer.agent.rmi.Builtin')
     @patch('gofer.agent.rmi.Pending', Mock())
     @patch('threading.Thread.setDaemon', Mock())
-    def test_find_plugin(self, builtin):
+    def test_select_plugin(self, builtin):
         plugin = Mock()
         request = Document(request={'classname': 'A'})
         scheduler = Scheduler(plugin)
         # find builtin
         builtin.return_value.provides.return_value = True
-        selected = scheduler.find_plugin(request)
+        selected = scheduler.select_plugin(request)
         self.assertEqual(selected, builtin.return_value)
         # find plugin
         builtin.return_value.provides.return_value = False
-        selected = scheduler.find_plugin(request)
+        selected = scheduler.select_plugin(request)
         self.assertEqual(selected, plugin)
         self.assertEqual(
             builtin.return_value.provides.call_args_list,

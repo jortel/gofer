@@ -165,16 +165,16 @@ class Scheduler(Thread):
         while not Thread.aborted():
             request = self.pending.get()
             try:
-                plugin = self.find_plugin(request)
+                plugin = self.select_plugin(request)
                 task = Task(plugin, request, self.pending.commit)
                 plugin.pool.run(task)
             except Exception:
                 self.pending.commit(request.sn)
                 log.exception(request.sn)
 
-    def find_plugin(self, request):
+    def select_plugin(self, request):
         """
-        Find the plugin based on the request.
+        Select the plugin based on the request.
         :param request: A request to be scheduled.
         :rtype request: gofer.messaging.Document
         :return: The appropriate plugin.
