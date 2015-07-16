@@ -81,6 +81,18 @@ class TestBuiltin(TestCase):
         admin.assert_called_once_with(plugin.container)
         self.assertEqual(builtin.pool, pool.return_value)
         self.assertEqual(builtin.dispatcher, dispatcher.return_value.__iadd__.return_value)
+        self.assertEqual(builtin.plugin, plugin)
+
+    @patch('gofer.agent.builtin.ThreadPool')
+    def test_properties(self, dispatcher):
+        dispatcher.__iadd__ = Mock()
+        plugin = Mock(
+            container=Mock(),
+            authenticator=Mock(),
+            url='http://1234')
+        builtin = Builtin(plugin)
+        self.assertEqual(builtin.url, builtin.url)
+        self.assertEqual(builtin.authenticator, builtin.authenticator)
 
     @patch('gofer.agent.builtin.Dispatcher')
     @patch('gofer.agent.builtin.Admin', Mock())

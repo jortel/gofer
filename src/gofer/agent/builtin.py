@@ -121,8 +121,15 @@ class Builtin(object):
         self.pool = ThreadPool(3)
         self.dispatcher = Dispatcher()
         self.dispatcher += [Admin(plugin.container)]
-        self.authenticator = plugin.authenticator
-        self.url = plugin.url
+        self.plugin = plugin
+
+    @property
+    def url(self):
+        return self.plugin.url
+
+    @property
+    def authenticator(self):
+        return self.plugin.authenticator
 
     def provides(self, name):
         """
