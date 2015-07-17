@@ -24,6 +24,7 @@ import sys
 from logging import getLogger
 from threading import RLock
 
+from gofer import Singleton
 from gofer.agent.config import PLUGIN_SCHEMA, PLUGIN_DEFAULTS
 from gofer.agent.decorator import Actions
 from gofer.agent.decorator import Delegate
@@ -33,7 +34,7 @@ from gofer.common import nvl, mkdir
 from gofer.common import released
 from gofer.config import Config, Graph, Reader, get_bool
 from gofer import NAME, synchronized
-from gofer.messaging import Document, Connector, Queue, Exchange
+from gofer.messaging import NotFound, Document, Connector, Queue, Exchange
 from gofer.rmi.consumer import RequestConsumer
 from gofer.rmi.decorator import Remote
 from gofer.rmi.dispatcher import Dispatcher
@@ -56,6 +57,8 @@ class Container(object):
     """
     Plugin container.
     """
+
+    __metaclass__ = Singleton
 
     def __init__(self):
         self.__mutex = RLock()
@@ -122,7 +125,7 @@ class Plugin(object):
     :type descriptor: PluginDescriptor
     :param path: The descriptor path.
     :type path: str
-    :ivar pool: The plugin thread pool.
+    :ivar pool: The main thread pool.
     :type pool: ThreadPool
     :ivar impl: The plugin implementation.
     :ivar impl: module
@@ -352,10 +355,12 @@ class Plugin(object):
         :type request: gofer.Document
         :return: The RMI returned.
         """
-        call = Document(request.request)
         dispatcher = self.dispatcher
+        call = Document(request.request)
         if not self.provides(call.classname):
             for plugin in Plugin.all():
+                if plugin == self:
+                    continue
                 if not plugin.provides(call.classname):
                     # not provided
                     continue
@@ -493,10 +498,13 @@ class BrokerModel(object):
         """
         if self.managed < 2:
             return
-        url = self.plugin.url
-        queue = Queue(self.queue)
-        queue.purge(url)
-        queue.delete(url)
+        try:
+            url = self.plugin.url
+            queue = Queue(self.queue)
+            queue.purge(url)
+            queue.delete(url)
+        except NotFound:
+            pass
 
 
 class PluginDescriptor(Graph):
@@ -519,9 +527,6 @@ class PluginLoader:
         '/opt/%s/plugins' % NAME,
     ]
 
-    BUILTIN = __import__('gofer.agent.builtin')
-    BUILTINS = Remote.collated()
-
     @staticmethod
     def load_all():
         """
@@ -530,13 +535,13 @@ class PluginLoader:
         :rtype: list
         """
         loaded = []
-        mkdir(PluginDescriptor.ROOT)
-        files = os.listdir(PluginDescriptor.ROOT)
-        for fn in sorted(files):
-            _, ext = os.path.splitext(fn)
+        root = PluginDescriptor.ROOT
+        mkdir(root)
+        paths = [os.path.join(root, fn) for fn in os.listdir(root)]
+        for path in sorted(paths):
+            _, ext = os.path.splitext(path)
             if ext not in Reader.EXTENSION:
                 continue
-            path = os.path.join(PluginDescriptor.ROOT, fn)
             if os.path.isdir(path):
                 continue
             plugin = PluginLoader.load(path)
@@ -612,9 +617,7 @@ class PluginLoader:
             for fn in Remote.find(plugin.impl.__name__):
                 fn.gofer.plugin = plugin
 
-            collated = Remote.collated()
-            collated += PluginLoader.BUILTINS
-            plugin.dispatcher += collated
+            plugin.dispatcher += Remote.collated()
             plugin.actions = Actions.collated()
             plugin.delegate = Delegate()
             plugin.load()

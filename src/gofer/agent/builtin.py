@@ -1,58 +1,46 @@
-# Copyright (c) 2014 Red Hat, Inc.
 #
-# This software is licensed to you under the GNU General Public
+# Copyright (c) 2015 Red Hat, Inc.
+#
+# This software is licensed to you under the GNU Lesser General Public
 # License as published by the Free Software Foundation; either version
-# 2 of the License (GPLv2) or (at your option) any later version.
+# 2 of the License (LGPLv2) or (at your option) any later version.
 # There is NO WARRANTY for this software, express or implied,
 # including the implied warranties of MERCHANTABILITY,
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
-# have received a copy of GPLv2 along with this software; if not, see
-# http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+# have received a copy of LGPLv2 along with this software; if not, see
+# http://www.gnu.org/licenses/old-licenses/lgpl-2.0.txt.
+#
 # Jeff Ortel <jortel@redhat.com>
+#
 
-"""
-Builtin plugin.
-"""
-
-import inspect
-
-from logging import getLogger
-
-from gofer.decorators import remote
+from gofer.agent.decorator import Actions
+from gofer.agent.reporting import loaded
+from gofer.decorators import options
 from gofer.rmi.tracker import Tracker
 from gofer.rmi.criteria import Builder
-from gofer.agent.plugin import Plugin
-from gofer.agent.decorator import Actions
+from gofer.rmi.dispatcher import Dispatcher
+from gofer.threadpool import ThreadPool
 
 
-log = getLogger(__name__)
-
-
-def indent(v, n, *args):
-    s = []
-    for n in range(0, n):
-        s.append(' ')
-    s.append(str(v) % args)
-    return ''.join(s)
-
-
-def signature(n, fn):
-    s = list()
-    s.append(n)
-    s.append('(')
-    spec = inspect.getargspec(fn)
-    if 'self' in spec[0]:
-        spec[0].remove('self')
-    if spec[1]:
-        spec[0].append('*%s' % spec[1])
-    if spec[2]:
-        spec[0].append('**%s' % spec[2])
-    s.append(', '.join(spec[0]))
-    s.append(')')
-    return ''.join(s)
+def remote(fn):
+    """
+    Minimum needed for remote invocation.
+    """
+    options(fn)
+    return fn
 
 
 class Admin:
+    """
+    Provides administration.
+    """
+
+    def __init__(self, container):
+        """
+        :param container: The plugin container.
+        :type container: gofer.agent.plugin.Container
+        """
+        self.container = container
 
     @remote
     def cancel(self, sn=None, criteria=None):
@@ -84,43 +72,86 @@ class Admin:
         return cancelled
 
     @remote
+    def echo(self, text):
+        """
+        Echo the specified text.
+        :param text: Any text.
+        :type text: str
+        :return: The specified text.
+        :rtype: str
+        """
+        return text
+
+    @remote
     def hello(self):
+        """
+        Get hello message.
+        :return: The message.
+        :rtype: str
+        """
         return 'Hello, I am gofer agent'
 
     @remote
     def help(self):
-        s = list()
-        s.append('Plugins:')
-        for p in Plugin.all():
-            if not p.enabled:
-                continue
-            # plugin
-            s.append('')
-            s.append(indent('<plugin> %s', 2, p.name))
-            # classes
-            s.append(indent('Classes:', 4))
-            for n, v in p.dispatcher.catalog.items():
-                if inspect.ismodule(v):
-                    continue
-                s.append(indent('<class> %s', 6, n))
-                s.append(indent('methods:', 8))
-                for n, v in inspect.getmembers(v, inspect.ismethod):
-                    fn = v.im_func
-                    if not hasattr(fn, 'gofer'):
-                        continue
-                    s.append(indent(signature(n, fn), 10))
-            # functions
-            s.append(indent('Functions:', 4))
-            for n, v in p.dispatcher.catalog.items():
-                if not inspect.ismodule(v):
-                    continue
-                for n, v in inspect.getmembers(v, inspect.isfunction):
-                    fn = v
-                    if not hasattr(fn, 'gofer'):
-                        continue
-                    s.append(indent(signature(n, fn), 6))
-        s.append('')
-        s.append('Actions:')
-        for a in [(a.name(), a.interval) for a in Actions().collated()]:
-            s.append('  %s %s' % a)
-        return '\n'.join(s)
+        """
+        Show information about loaded plugins.
+        :return: Information
+        :rtype: str
+        """
+        return loaded(self.container, Actions())
+
+    @property
+    def __name__(self):
+        return self.__class__.__name__
+
+    def __call__(self):
+        return self
+
+
+class Builtin(object):
+    """
+    The builtin pseudo-plugin.
+    """
+
+    def __init__(self, plugin):
+        """
+        :param plugin: A real plugin.
+        :type plugin: gofer.agent.plugin.Plugin
+        """
+        self.pool = ThreadPool(3)
+        self.dispatcher = Dispatcher()
+        self.dispatcher += [Admin(plugin.container)]
+        self.plugin = plugin
+
+    @property
+    def url(self):
+        return self.plugin.url
+
+    @property
+    def authenticator(self):
+        return self.plugin.authenticator
+
+    def provides(self, name):
+        """
+        Get whether the plugin provides the name.
+        :param name: A class name.
+        :type name: str
+        :return: True if provides.
+        :raise: bool
+        """
+        return self.dispatcher.provides(name)
+
+    def dispatch(self, request):
+        """
+        Dispatch (invoke) the specified RMI request.
+        :param request: An RMI request
+        :type request: gofer.Document
+        :return: The RMI returned.
+        """
+        return self.dispatcher.dispatch(request)
+
+    def shutdown(self):
+        """
+        Shutdown the plugin.
+        """
+        self.pool.shutdown()

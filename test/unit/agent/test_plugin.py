@@ -13,6 +13,7 @@ from unittest import TestCase
 
 from mock import patch, Mock, ANY
 
+from gofer.common import Singleton
 from gofer.agent.plugin import attach
 from gofer.agent.plugin import Container, Plugin
 
@@ -45,6 +46,12 @@ class TestAttach(TestCase):
 
 
 class TestContainer(TestCase):
+
+    def setUp(self):
+        Singleton._inst.clear()
+
+    def tearDown(self):
+        Singleton._inst.clear()
 
     def test_init(self):
         cnt = Container()
@@ -364,7 +371,7 @@ class TestPlugin(TestCase):
         # validation
         consumer.shutdown.assert_called_once_with()
         consumer.join.assert_called_once_with()
-        self.assertFalse(model.called)
+        self.assertFalse(model.teardown.called)
         self.assertEqual(plugin.consumer, None)
 
     @patch('gofer.agent.plugin.ThreadPool', Mock())

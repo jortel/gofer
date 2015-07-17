@@ -21,6 +21,7 @@ from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import Pending
 from gofer.messaging import Document, Producer
 from gofer.metrics import Timer, timestamp
+from gofer.agent.builtin import Builtin
 
 
 log = getLogger(__name__)
@@ -153,6 +154,7 @@ class Scheduler(Thread):
         Thread.__init__(self, name='scheduler:%s' % plugin.stream)
         self.plugin = plugin
         self.pending = Pending(plugin.stream)
+        self.builtin = Builtin(plugin)
         self.setDaemon(True)
 
     def run(self):
@@ -163,16 +165,41 @@ class Scheduler(Thread):
         while not Thread.aborted():
             request = self.pending.get()
             try:
-                task = Task(self.plugin, request, self.pending.commit)
-                self.plugin.pool.run(task)
+                plugin = self.select_plugin(request)
+                task = Task(plugin, request, self.pending.commit)
+                plugin.pool.run(task)
             except Exception:
                 self.pending.commit(request.sn)
                 log.exception(request.sn)
+
+    def select_plugin(self, request):
+        """
+        Select the plugin based on the request.
+        :param request: A request to be scheduled.
+        :rtype request: gofer.messaging.Document
+        :return: The appropriate plugin.
+        :rtype: gofer.agent.plugin.Plugin
+        """
+        call = Document(request.request)
+        if self.builtin.provides(call.classname):
+            plugin = self.builtin
+        else:
+            plugin = self.plugin
+        return plugin
+
+    def add(self, request):
+        """
+        Add a request to be scheduled.
+        :param request: A request to be scheduled.
+        :rtype request: gofer.messaging.Document
+        """
+        self.pending.put(request)
 
     def shutdown(self):
         """
         Shutdown the scheduler.
         """
+        self.builtin.shutdown()
         self.abort()
         
 
