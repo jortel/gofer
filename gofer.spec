@@ -196,7 +196,7 @@ Summary: Gofer Qpid proton messaging adapter python package
 Group: Development/Languages
 BuildRequires: python
 Requires: python-%{name} = %{version}
-Requires: python-qpid-proton >= 0.9-1.20150219
+Requires: python-qpid-proton >= 0.9-3
 
 %description -n python-%{name}-proton
 Provides the gofer qpid proton messaging adapter package.
