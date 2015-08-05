@@ -3,69 +3,138 @@ from collections import deque
 from uuid import uuid4
 
 from proton import ConnectionException, Url, Timeout, Endpoint, LinkException
-from proton.reactor import Container, Delivery
-from proton.handlers import MessagingHandler
+from proton.reactor import Container, Delivery, DynamicNodeProperties
+from proton.handlers import Handler, MessagingHandler
 
 from gofer.common import utf8
 from gofer.messaging.adapter.reliability import YEAR
 
 
 class Condition(object):
+    """
+    Base wait condition.
+    """
     pass
 
 
-class RemoteConnectionOpened(Condition):
+class ConnectionOpened(Condition):
+    """
+    Condition used to wait for the remote endpoint to be initialised.
+    :ivar connection: The connection being opened.
+    :type connection: proton.Connection
+    """
+    
+    DESCRIPTION = 'connection opened'
 
     def __init__(self, connection):
-        super(RemoteConnectionOpened, self).__init__()
+        """
+        :param connection: The connection being opened.
+        :type connection: proton.Connection
+        """
+        super(ConnectionOpened, self).__init__()
         self.connection = connection
 
     def __call__(self):
+        """
+        Test the remote endpoint is initialized.
+        :return: True if initialized.
+        :rtype: bool
+        """
         return not (self.connection.state & Endpoint.REMOTE_UNINIT)
 
     def __str__(self):
-        return '[wait] remote connection opened: %s' % self.connection.url
+        return self.DESCRIPTION
 
 
-class RemoteConnectionClosed(Condition):
+class ConnectionClosed(Condition):
+    """
+    Condition used to wait for the remote endpoint to be inactive.
+    :ivar connection: The connection being opened.
+    :type connection: proton.Connection
+    """
+    
+    DESCRIPTION = 'connection closed'
 
     def __init__(self, connection):
-        super(RemoteConnectionClosed, self).__init__()
+        """
+        :param connection: The connection being closed.
+        :type connection: proton.Connection
+        """
+        super(ConnectionClosed, self).__init__()
         self.connection = connection
 
     def __call__(self):
+        """
+        Test the remote endpoint is no longer active.
+        :return: True if initialized.
+        :rtype: bool
+        """
         return not (self.connection.state & Endpoint.REMOTE_ACTIVE)
 
     def __str__(self):
-        return '[wait] remote connection closed: %s' % self.connection.url
+        return self.DESCRIPTION
 
 
-class RemoteLinkClosed(Condition):
+class LinkOpened(Condition):
+
+    DESCRIPTION = 'link attached: %s'
 
     def __init__(self, link):
-        super(RemoteLinkClosed, self).__init__()
+        super(LinkOpened, self).__init__()
+        self.link = link
+
+    def __call__(self):
+        return not (self.link.state & Endpoint.REMOTE_UNINIT)
+
+    def __str__(self):
+        return self.DESCRIPTION % self.link.name
+
+
+class LinkClosed(Condition):
+    
+    DESCRIPTION = 'link detached: %s'
+
+    def __init__(self, link):
+        super(LinkClosed, self).__init__()
         self.link = link
 
     def __call__(self):
         return not (self.link.state & Endpoint.REMOTE_ACTIVE)
 
     def __str__(self):
-        return '[wait] remote link closed: %s' % self.link.name
+        return self.DESCRIPTION % self.link.name
 
 
 class HasMessage(Condition):
-    def __init__(self, handler):
+    
+    DESCRIPTION = 'next message: %s/%s'
+
+    def __init__(self, receiver):
         super(HasMessage, self).__init__()
-        self.handler = handler
+        self.receiver = receiver
+
+    @property
+    def name(self):
+        return self.link.name
+
+    @property
+    def address(self):
+        return self.link.source.address
+
+    @property
+    def link(self):
+        return self.receiver.link
 
     def __call__(self):
-        return self.handler.has_message()
+        return len(self.receiver.handler)
 
     def __str__(self):
-        return '[wait] next message: %s' % self.handler.link.name
+        return self.DESCRIPTION % (self.name, self.address)
 
 
 class DeliverySettled(Condition):
+    
+    DESCRIPTION = 'delivery settled: %s'
 
     def __init__(self, link, delivery):
         super(DeliverySettled, self).__init__()
@@ -73,54 +142,85 @@ class DeliverySettled(Condition):
         self.delivery = delivery
 
     def __call__(self):
-        return self.delivery.settled()
+        return self.delivery.settled
 
     def __str__(self):
-        return '[wait] delivery settled: %s' % self.link.name
+        return self.DESCRIPTION % self.link.name
 
 
-class LinkDetached(LinkException):
-
-    def __init__(self, link):
-        super(LinkDetached, self).__init__(link.name)
-
-
-class ConnectionClosed(ConnectionException):
+class ConnectionFailed(ConnectionException):
 
     def __init__(self, connection):
-        super(ConnectionClosed, self).__init__(connection.url)
+        super(ConnectionFailed, self).__init__(connection.url)
 
 
-class Connection(object):
+class LinkFailed(LinkException):
 
-    def __init__(self):
+    DESCRIPTION = 'link: %s/%s failed: %s'
+
+    def __init__(self, link):
+        super(LinkFailed, self).__init__(repr(link))
+        self.link = link
+
+    @property
+    def name(self):
+        return self.link.name
+
+    @property
+    def address(self):
+        if self.link.is_sender:
+            return self.link.target.address
+        else:
+            return self.link.source.address
+
+    @property
+    def reason(self):
+        if self.link.remote_condition:
+            return self.link.remote_condition
+        else:
+            return 'by peer'
+
+    def __str__(self):
+        return self.DESCRIPTION % (self.name, self.address, self.reason)
+
+
+class SendFailed(Exception):
+    pass
+
+
+class Connection(Handler):
+
+    def __init__(self, url):
+        self.url = utf8(url)
         self.container = Container()
+        self.container.start()
         self.impl = None
 
     def is_open(self):
         return self.impl is not None
 
-    def open(self, url, timeout=None, ssl_domain=None, heartbeat=None):
+    def open(self, timeout=None, ssl_domain=None, heartbeat=None):
         if self.is_open():
             return
         impl = self.container.connect(
-            url=Url(utf8(url)),
+            url=Url(self.url),
             handler=self,
             ssl_domain=ssl_domain,
             heartbeat=heartbeat,
             reconnect=False)
-        condition = RemoteConnectionOpened(impl)
+        condition = ConnectionOpened(impl)
         self.wait(condition, timeout)
         self.impl = impl
 
     def wait(self, condition, timeout=None):
-        started = time()
         remaining = timeout or YEAR
         while not condition():
+            print 'wait on: %s' % condition
+            started = time()
             self.container.timeout = remaining
             self.container.process()
-            duration = time() - started
-            remaining -= duration
+            elapsed = time() - started
+            remaining -= elapsed
             if remaining <= 0:
                 raise Timeout(str(condition))
 
@@ -129,24 +229,39 @@ class Connection(object):
             return
         try:
             self.impl.close()
-            condition = RemoteConnectionClosed(self.impl)
+            condition = ConnectionClosed(self.impl)
             self.wait(condition)
         finally:
             self.impl = None
 
     def sender(self, address):
-        sender = self.container.create_sender(self.impl, utf8(address), str(uuid4()))
+        name = str(uuid4())
+        sender = self.container.create_sender(self.impl, utf8(address), name=name)
         return Sender(self, sender)
 
     def receiver(self, address, credit=1, dynamic=False):
-        handler = InboundHandler(self, credit)
+        options = None
+        name = str(uuid4())
+        handler = ReceiverHandler(self, credit)
+        if dynamic:
+            # needed by dispatch router
+            options = DynamicNodeProperties({'x-opt-qd.address': utf8(address)})
+            address = None
         receiver = self.container.create_receiver(
-            self.impl,
-            utf8(address),
-            name=str(uuid4()),
+            context=self.impl,
+            source=utf8(address),
+            name=name,
             dynamic=dynamic,
-            handler=handler)
+            handler=handler,
+            options=options)
         return Receiver(self, receiver, handler, credit)
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self):
+        self.close()
 
 
 class Messenger(object):
@@ -154,12 +269,13 @@ class Messenger(object):
     def __init__(self, connection, link):
         self.connection = connection
         self.link = link
+        self.connection.wait(LinkOpened(link))
         self.detect_closed()
 
     def detect_closed(self):
         if self.link.state & Endpoint.REMOTE_CLOSED:
             self.link.close()
-            raise LinkDetached(self.link)
+            raise LinkFailed(self.link)
 
 
 class Sender(Messenger):
@@ -171,18 +287,16 @@ class Sender(Messenger):
         delivery = self.link.send(message)
         condition = DeliverySettled(self.link, delivery)
         self.connection.wait(condition, timeout)
+        if delivery.remote_state in [Delivery.REJECTED, Delivery.RELEASED]:
+            raise SendFailed()
 
 
-class InboundHandler(MessagingHandler):
+class ReceiverHandler(MessagingHandler):
 
     def __init__(self, connection, prefetch):
-        super(InboundHandler, self).__init__(prefetch, auto_accept=False)
+        super(ReceiverHandler, self).__init__(prefetch, auto_accept=False)
         self.connection = connection
         self.inbound = deque()
-
-    @property
-    def has_message(self):
-        return len(self.inbound)
 
     def pop(self):
         return self.inbound.popleft()
@@ -192,12 +306,15 @@ class InboundHandler(MessagingHandler):
         self.connection.container.yield_()
 
     def on_connection_error(self, event):
-        raise ConnectionClosed(event.connection)
+        raise ConnectionFailed(event.connection)
 
     def on_link_error(self, event):
         if event.link.state & Endpoint.LOCAL_ACTIVE:
             event.link.close()
-            raise LinkDetached(event.link)
+            raise LinkFailed(event.link)
+
+    def __len__(self):
+        return len(self.inbound)
 
 
 class Receiver(Messenger):
@@ -206,13 +323,15 @@ class Receiver(Messenger):
         super(Receiver, self).__init__(connection, impl)
         self.handler = handler
         self.credit = credit
-        if credit:
-            impl.flow(credit)
+        self.flow()
 
-    def get(self, timeout=None):
+    def flow(self):
         if not self.link.credit:
             self.link.flow(self.credit)
-        condition = HasMessage(self.handler)
+
+    def get(self, timeout=None):
+        self.flow()
+        condition = HasMessage(self)
         self.connection.wait(condition, timeout)
         return self.handler.pop()
 
@@ -223,3 +342,21 @@ class Receiver(Messenger):
     def reject(self, delivery):
         delivery.update(Delivery.REJECTED)
         delivery.settle()
+
+
+if __name__ == '__main__':
+    from proton import Message
+    url = 'amqp://localhost'
+    connection = Connection(url)
+    connection.open(timeout=5)
+    print 'opened'
+    sender = connection.sender('jeff')
+    message = Message(body='hello')
+    sender.send(message)
+    print 'sent'
+    receiver = connection.receiver('jeff')
+    print 'get()'
+    m, d = receiver.get(timeout=5)
+    print m.body
+    receiver.accept(d)
+    connection.close()
