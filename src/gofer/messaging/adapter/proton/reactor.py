@@ -107,7 +107,7 @@ class LinkClosed(Condition):
 
 class HasMessage(Condition):
     
-    DESCRIPTION = 'next message: %s/%s'
+    DESCRIPTION = 'fetch: %s/%s'
 
     def __init__(self, receiver):
         super(HasMessage, self).__init__()
@@ -186,82 +186,6 @@ class LinkFailed(LinkException):
 
 class SendFailed(Exception):
     pass
-
-
-class Connection(Handler):
-
-    def __init__(self, url):
-        self.url = utf8(url)
-        self.container = Container()
-        self.container.start()
-        self.impl = None
-
-    def is_open(self):
-        return self.impl is not None
-
-    def open(self, timeout=None, ssl_domain=None, heartbeat=None):
-        if self.is_open():
-            return
-        impl = self.container.connect(
-            url=Url(self.url),
-            handler=self,
-            ssl_domain=ssl_domain,
-            heartbeat=heartbeat,
-            reconnect=False)
-        condition = ConnectionOpened(impl)
-        self.wait(condition, timeout)
-        self.impl = impl
-
-    def wait(self, condition, timeout=None):
-        remaining = timeout or YEAR
-        while not condition():
-            print 'wait on: %s' % condition
-            started = time()
-            self.container.timeout = remaining
-            self.container.process()
-            elapsed = time() - started
-            remaining -= elapsed
-            if remaining <= 0:
-                raise Timeout(str(condition))
-
-    def close(self):
-        if self.is_open():
-            return
-        try:
-            self.impl.close()
-            condition = ConnectionClosed(self.impl)
-            self.wait(condition)
-        finally:
-            self.impl = None
-
-    def sender(self, address):
-        name = str(uuid4())
-        sender = self.container.create_sender(self.impl, utf8(address), name=name)
-        return Sender(self, sender)
-
-    def receiver(self, address, credit=1, dynamic=False):
-        options = None
-        name = str(uuid4())
-        handler = ReceiverHandler(self, credit)
-        if dynamic:
-            # needed by dispatch router
-            options = DynamicNodeProperties({'x-opt-qd.address': utf8(address)})
-            address = None
-        receiver = self.container.create_receiver(
-            context=self.impl,
-            source=utf8(address),
-            name=name,
-            dynamic=dynamic,
-            handler=handler,
-            options=options)
-        return Receiver(self, receiver, handler, credit)
-
-    def __enter__(self):
-        self.open()
-        return self
-
-    def __exit__(self):
-        self.close()
 
 
 class Messenger(object):
@@ -344,19 +268,110 @@ class Receiver(Messenger):
         delivery.settle()
 
 
+class Connection(Handler):
+
+    def __init__(self, url):
+        self.url = utf8(url)
+        self.container = Container()
+        self.container.start()
+        self.impl = None
+
+    def is_open(self):
+        return self.impl is not None
+
+    def open(self, timeout=None, ssl_domain=None, heartbeat=None):
+        if self.is_open():
+            return
+        impl = self.container.connect(
+            url=Url(self.url),
+            handler=self,
+            ssl_domain=ssl_domain,
+            heartbeat=heartbeat,
+            reconnect=False)
+        condition = ConnectionOpened(impl)
+        self.wait(condition, timeout)
+        self.impl = impl
+
+    def wait(self, condition, timeout=None):
+        remaining = timeout or YEAR
+        while not condition():
+            print 'wait on: %s' % condition
+            started = time()
+            self.container.timeout = remaining
+            self.container.process()
+            elapsed = time() - started
+            remaining -= elapsed
+            if remaining <= 0:
+                raise Timeout(str(condition))
+
+    def close(self):
+        if self.is_open():
+            return
+        try:
+            self.impl.close()
+            condition = ConnectionClosed(self.impl)
+            self.wait(condition)
+        finally:
+            self.impl = None
+
+    def sender(self, address):
+        name = str(uuid4())
+        sender = self.container.create_sender(self.impl, utf8(address), name=name)
+        return Sender(self, sender)
+
+    def receiver(self, address, credit=1, dynamic=False):
+        options = None
+        name = str(uuid4())
+        handler = ReceiverHandler(self, credit)
+        if dynamic:
+            # needed by dispatch router
+            options = DynamicNodeProperties({'x-opt-qd.address': utf8(address)})
+            address = None
+        receiver = self.container.create_receiver(
+            context=self.impl,
+            source=utf8(address),
+            name=name,
+            dynamic=dynamic,
+            handler=handler,
+            options=options)
+        return Receiver(self, receiver, handler, credit)
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self):
+        self.close()
+
+
+# -------------- TEST --------------------------------------------------------
+
+from proton import Message
+
+
+URL = 'amqp://localhost'
+ADDRESS = 'jeff'
+
+
+def send(connection, timeout=5):
+    print 'send()'
+    sender = connection.sender(ADDRESS)
+    message = Message(body='hello')
+    sender.send(message, timeout=timeout)
+    print 'sent'
+
+
+def receive(connection, timeout=5):
+    print 'receive()'
+    receiver = connection.receiver(ADDRESS)
+    m, d = receiver.get(timeout=timeout)
+    print m.body
+
+
 if __name__ == '__main__':
-    from proton import Message
-    url = 'amqp://localhost'
-    connection = Connection(url)
+    connection = Connection(URL)
     connection.open(timeout=5)
     print 'opened'
-    sender = connection.sender('jeff')
-    message = Message(body='hello')
-    sender.send(message)
-    print 'sent'
-    receiver = connection.receiver('jeff')
-    print 'get()'
-    m, d = receiver.get(timeout=5)
-    print m.body
-    receiver.accept(d)
+    send(connection)
+    receive(connection)
     connection.close()
