@@ -243,7 +243,7 @@ class ReceiverHandler(MessagingHandler):
 
 class Receiver(Messenger):
 
-    def __init__(self, connection, impl, handler, credit=1):
+    def __init__(self, connection, impl, handler, credit):
         super(Receiver, self).__init__(connection, impl)
         self.handler = handler
         self.credit = credit
@@ -282,8 +282,10 @@ class Connection(Handler):
     def open(self, timeout=None, ssl_domain=None, heartbeat=None):
         if self.is_open():
             return
+        url = Url(self.url)
+        url.defaults()
         impl = self.container.connect(
-            url=Url(self.url),
+            url=url,
             handler=self,
             ssl_domain=ssl_domain,
             heartbeat=heartbeat,
