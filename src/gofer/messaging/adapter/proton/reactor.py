@@ -2,7 +2,8 @@ from time import time
 from collections import deque
 from uuid import uuid4
 
-from proton import ConnectionException, Url, Timeout, Endpoint, LinkException
+from proton import Url, Timeout, Endpoint
+from proton import ProtonException, ConnectionException, LinkException
 from proton.reactor import Container, Delivery, DynamicNodeProperties
 from proton.handlers import Handler, MessagingHandler
 
@@ -66,7 +67,7 @@ class ConnectionClosed(Condition):
     def __call__(self):
         """
         Test the remote endpoint is no longer active.
-        :return: True if initialized.
+        :return: True if deactivated.
         :rtype: bool
         """
         return not (self.connection.state & Endpoint.REMOTE_ACTIVE)
@@ -76,17 +77,34 @@ class ConnectionClosed(Condition):
 
 
 class LinkCondition(Condition):
+    """
+    Condition used to wait for link changes.
+    :ivar link: The link involved.
+    :type link: proton.Link
+    """
 
     def __init__(self, link):
+        """
+        :param link: The link involved.
+        :type link: proton.Link
+        """
         super(LinkCondition, self).__init__()
         self.link = link
 
     @property
     def name(self):
+        """
+        The link name.
+        :rtype: str
+        """
         return self.link.name
 
     @property
     def address(self):
+        """
+        The relevant link address.
+        :rtype: str
+        """
         if self.link.is_sender:
             return self.link.target.address
         else:
@@ -94,10 +112,18 @@ class LinkCondition(Condition):
 
 
 class LinkAttached(LinkCondition):
+    """
+    Condition used to wait for link attached.
+    """
 
     DESCRIPTION = 'link attached: %s/%s'
 
     def __call__(self):
+        """
+        Test the remote endpoint has been initialized.
+        :return: True if initialized.
+        :rtype: bool
+        """
         return not (self.link.state & Endpoint.REMOTE_UNINIT)
 
     def __str__(self):
@@ -105,10 +131,18 @@ class LinkAttached(LinkCondition):
 
 
 class LinkDetached(LinkCondition):
+    """
+    Condition used to wait for link detached.
+    """
     
     DESCRIPTION = 'link detached: %s'
 
     def __call__(self):
+        """
+        Test the remote endpoint has been deactivated.
+        :return: True if deactivated.
+        :rtype: bool
+        """
         return not (self.link.state & Endpoint.REMOTE_ACTIVE)
 
     def __str__(self):
@@ -116,26 +150,53 @@ class LinkDetached(LinkCondition):
 
 
 class HasMessage(Condition):
+    """
+    Condition used to wait for the receiver handler has fetched
+    at least one message.
+    :ivar receiver: A receiver.
+    :type receiver: Receiver
+    """
     
     DESCRIPTION = 'fetch: %s/%s'
 
     def __init__(self, receiver):
+        """
+        :param receiver: A receiver.
+        :type receiver: Receiver
+        """
         super(HasMessage, self).__init__()
         self.receiver = receiver
 
     @property
     def name(self):
+        """
+        The link name.
+        :rtype: str
+        """
         return self.link.name
 
     @property
     def address(self):
+        """
+        The link address.
+        :rtype: str
+        """
         return self.link.source.address
 
     @property
     def link(self):
+        """
+        The link.
+        :rtype: proton.Link
+        """
         return self.receiver.link
 
     def __call__(self):
+        """
+        Test the receiver handler has at least one message.
+        :return: True if has message.
+        :rtype: bool
+        """
         return self.receiver.handler.has_message()
 
     def __str__(self):
@@ -143,15 +204,33 @@ class HasMessage(Condition):
 
 
 class DeliverySettled(Condition):
+    """
+    Condition used to wait for a delivery to be settled.
+    :ivar link: The link involved.
+    :type link: proton.Link
+    :ivar delivery: A message delivery.
+    :type delivery: proton.reactor.Delivery
+    """
     
     DESCRIPTION = 'delivery settled: %s'
 
     def __init__(self, link, delivery):
+        """
+        :param link: The link involved.
+        :type link: proton.Link
+        :ivar delivery: A message delivery.
+        :type delivery: proton.reactor.Delivery
+        """
         super(DeliverySettled, self).__init__()
         self.link = link
         self.delivery = delivery
 
     def __call__(self):
+        """
+        Test the delivery has been settled.
+        :return: True if settled.
+        :rtype: bool
+        """
         return self.delivery.settled
 
     def __str__(self):
@@ -159,25 +238,73 @@ class DeliverySettled(Condition):
 
 
 class ConnectionError(ConnectionException):
+    """
+    A connection error condition.
+    :ivar connection: The connection with an error.
+    :type connection: Connection
+    """
+
+    DESCRIPTION = 'connection: %s failed: %s'
+
+    @property
+    def url(self):
+        """
+        The connection URL.
+        :rtype: str
+        """
+        return self.connection.url
+
+    @property
+    def reason(self):
+        """
+        The cause of the error condition.
+        :rtype: str
+        """
+        return self.connection.impl.remote_condition or 'by peer'
 
     def __init__(self, connection):
+        """
+        :param connection: The connection with an error.
+        :type connection: Connection
+        """
         super(ConnectionError, self).__init__(connection.url)
+        self.connection = connection
+
+    def __str__(self):
+        return self.DESCRIPTION % (self.url, self.reason)
 
 
 class LinkError(LinkException):
+    """
+    A link error condition.
+    :ivar link: The link with an error.
+    :type link: proton.Link
+    """
 
     DESCRIPTION = 'link: %s/%s failed: %s'
 
     def __init__(self, link):
-        super(LinkError, self).__init__(repr(link))
+        """
+        :param link: The link with an error.
+        :type link: proton.Link
+        """
+        super(LinkError, self).__init__(link.name)
         self.link = link
 
     @property
     def name(self):
+        """
+        The link name.
+        :rtype: str
+        """
         return self.link.name
 
     @property
     def address(self):
+        """
+        The relevant link address.
+        :rtype: str
+        """
         if self.link.is_sender:
             return self.link.target.address
         else:
@@ -185,34 +312,61 @@ class LinkError(LinkException):
 
     @property
     def reason(self):
-        if self.link.remote_condition:
-            return self.link.remote_condition
-        else:
-            return 'by peer'
+        """
+        The reason for the link error.
+        :rtype: str
+        """
+        return self.link.remote_condition or 'by peer'
 
     def __str__(self):
         return self.DESCRIPTION % (self.name, self.address, self.reason)
 
 
-class SendError(Exception):
-    pass
+class DeliveryError(ProtonException):
+    """
+    A message delivery error.
+    :ivar delivery: The failed delivery.
+    :type delivery: proton.Delivery
+    """
+
+    def __init__(self, delivery):
+        """
+        :param delivery: The failed delivery.
+        :type delivery: proton.Delivery
+        """
+        super(DeliveryError, self).__init__(delivery.state)
+        self.delivery = delivery
 
 
 class Messenger(object):
+    """
+    Provides message send/receive operations.
+    :ivar connection: An open connection.
+    :type connection: Connection
+    :ivar link: An attached link.
+    :type link: proton.Link
+    """
 
     def __init__(self, connection, link):
+        """
+        :param connection: An open connection.
+        :type connection: Connection
+        :param link: An attached link.
+        :type link: proton.Link
+        """
         self.connection = connection
         self.link = link
         self.connection.wait(LinkAttached(link))
         self.detect_closed()
 
     def detect_closed(self):
+        """
+        Detect that the remote endpoint has been closed.
+        :raise LinkError on detection.
+        """
         if self.link.state & Endpoint.REMOTE_CLOSED:
             self.link.close()
             raise LinkError(self.link)
-
-    def __getattr__(self, name):
-        return getattr(self.link, name)
 
 
 class Sender(Messenger):
@@ -225,7 +379,7 @@ class Sender(Messenger):
         condition = DeliverySettled(self.link, delivery)
         self.connection.wait(condition, timeout)
         if delivery.remote_state in [Delivery.REJECTED, Delivery.RELEASED]:
-            raise SendError()
+            raise DeliveryError(delivery)
 
 
 class ReceiverHandler(MessagingHandler):
@@ -243,14 +397,14 @@ class ReceiverHandler(MessagingHandler):
         return self.inbound.popleft()
 
     def has_message(self):
-        return len(self.inbound) > 0
+        return len(self.inbound)
 
     def on_message(self, event):
         self.inbound.append((event.message, event.delivery))
         self.container.yield_()
 
     def on_connection_error(self, event):
-        raise ConnectionError(event.connection)
+        raise ConnectionError(self.connection)
 
     def on_link_error(self, event):
         if event.link.state & Endpoint.LOCAL_ACTIVE:
@@ -371,12 +525,14 @@ URL = 'amqp://localhost'
 ADDRESS = 'jeff'
 
 
-def send(connection, timeout=5):
+def send(connection, n=10, timeout=5):
     print 'send()'
     sender = connection.sender(ADDRESS)
-    message = Message(body='hello')
-    sender.send(message, timeout=timeout)
-    print 'sent'
+    while n > 0:
+        message = Message(body='hello: %d' % n)
+        sender.send(message, timeout=timeout)
+        print 'sent: %d' % n
+        n -= 1
 
 
 def receive(connection, n=10, timeout=5):
@@ -386,6 +542,7 @@ def receive(connection, n=10, timeout=5):
         m, d = receiver.get(timeout=timeout)
         print 'message: %s' % m.body
         n -= 1
+        receiver.accept(d)
 
 
 if __name__ == '__main__':
