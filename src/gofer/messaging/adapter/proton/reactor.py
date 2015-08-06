@@ -415,7 +415,7 @@ class ReceiverHandler(MessagingHandler):
     :type inbound: deque
     """
 
-    def __init__(self, connection, prefetch=1):
+    def __init__(self, connection, prefetch):
         """
         :param connection: An open connection.
         :type connection: Connection
@@ -546,6 +546,16 @@ class Receiver(Messenger):
         delivery.settle()
         self.connection.process()
 
+    def release(self, delivery):
+        """
+        Update the delivery state to RELEASED and settle.
+        :param delivery: A message delivery object.
+        :type delivery: proton.Delivery
+        """
+        delivery.update(Delivery.RELEASED)
+        delivery.settle()
+        self.connection.process()
+
 
 class Connection(Handler):
     """
@@ -653,7 +663,7 @@ class Connection(Handler):
         sender = self.container.create_sender(self.impl, utf8(address), name=name)
         return Sender(self, sender)
 
-    def receiver(self, address, dynamic=False, credit=1):
+    def receiver(self, address, dynamic=False, credit=10):
         """
         Create a blocking receiver used for receiving AMQP address.
         :param address: An AMQP address.
@@ -696,9 +706,11 @@ from proton import Message
 
 URL = 'amqp://localhost'
 ADDRESS = 'jeff'
+N = 10000
+TIMEOUT = 5
 
 
-def send(connection, n=10, timeout=5):
+def send(connection, n=N, timeout=TIMEOUT):
     print 'send()'
     sender = connection.sender(ADDRESS)
     while n > 0:
@@ -708,7 +720,7 @@ def send(connection, n=10, timeout=5):
         n -= 1
 
 
-def receive(connection, n=10, timeout=5):
+def receive(connection, n=N, timeout=TIMEOUT):
     print 'receive()'
     receiver = connection.receiver(ADDRESS)
     while n > 0:
@@ -720,7 +732,7 @@ def receive(connection, n=10, timeout=5):
 
 if __name__ == '__main__':
     connection = Connection(URL)
-    connection.open(timeout=5)
+    connection.open(timeout=TIMEOUT)
     print 'opened'
     send(connection)
     receive(connection)
