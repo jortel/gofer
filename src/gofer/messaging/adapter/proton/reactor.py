@@ -17,6 +17,14 @@ class Condition(object):
     """
     pass
 
+    def __call__(self):
+        """
+        Test the condition.
+        :return: True if condition is satisfied.
+        :rtype: bool
+        """
+        raise NotImplementedError()
+
 
 class ConnectionOpened(Condition):
     """
@@ -109,6 +117,14 @@ class LinkCondition(Condition):
             return self.link.target.address
         else:
             return self.link.source.address
+
+    def __call__(self):
+        """
+        Test the condition.
+        :return: True if condition is satisfied.
+        :rtype: bool
+        """
+        raise NotImplementedError()
 
 
 class LinkAttached(LinkCondition):
