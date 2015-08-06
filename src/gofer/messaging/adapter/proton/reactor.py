@@ -370,11 +370,19 @@ class Messenger(object):
 
 
 class Sender(Messenger):
-
-    def __init__(self, connection, impl):
-        super(Sender, self).__init__(connection, impl)
+    """
+    A blocking message sender.
+    """
 
     def send(self, message, timeout=None):
+        """
+        Send the specified message.
+        :param message: The message to send.
+        :type message: proton.Message
+        :param timeout: The seconds to wait for the delivery to be settled.
+        :type timeout: int
+        :raise DeliveryError: when rejected or released.
+        """
         delivery = self.link.send(message)
         condition = DeliverySettled(self.link, delivery)
         self.connection.wait(condition, timeout)
@@ -383,76 +391,185 @@ class Sender(Messenger):
 
 
 class ReceiverHandler(MessagingHandler):
+    """
+    A message handler for the receiver.
+    :ivar connection: An open connection.
+    :type connection: Connection
+    :ivar inbound: The fetched message queue.
+    :type inbound: deque
+    """
 
-    def __init__(self, connection, prefetch):
+    def __init__(self, connection, prefetch=1):
+        """
+        :param connection: An open connection.
+        :type connection: Connection
+        :param prefetch: The number of messages to prefetch.
+        :type prefetch: int
+        """
         super(ReceiverHandler, self).__init__(prefetch, auto_accept=False)
         self.connection = connection
         self.inbound = deque()
 
     @property
     def container(self):
+        """
+        The reactor container.
+        :rtype: proton.reactor.Container
+        """
         return self.connection.container
 
     def pop(self):
+        """
+        Pop the next pre-fetched message from the internal queue.
+        :return: The next message (or None)
+            tuple of: (proton.Message, proton.Delivery)
+        :rtype: tuple
+        """
         return self.inbound.popleft()
 
     def has_message(self):
+        """
+        Test if the handler has pre-fetched messages.
+        :return: True if not empty
+        :rtype: bool
+        """
         return len(self.inbound)
 
     def on_message(self, event):
+        """
+        Called by the container when a message is fetched.
+        The message is stored in the local queue as:
+            tuple of: (proton.Message, proton.Delivery)
+        :param event: A proton (message delivery) event.
+        :type event: proton.Event
+        """
         self.inbound.append((event.message, event.delivery))
         self.container.yield_()
 
     def on_connection_error(self, event):
+        """
+        Called by the container when a connection error has occurred.
+        :param event: The proton error event.
+        :type event: proton.Event
+        :raise ConnectionError:
+        """
         raise ConnectionError(self.connection)
 
     def on_link_error(self, event):
+        """
+        Called by the container when a link error has occurred.
+        The link is closed.
+        :param event: The proton error event.
+        :type event: proton.Event
+        :raise LinkError:
+        """
         if event.link.state & Endpoint.LOCAL_ACTIVE:
             event.link.close()
             raise LinkError(event.link)
 
 
 class Receiver(Messenger):
+    """
+    A blocking message receiver.
+    :ivar handler: A message handler.
+    :type handler: ReceiverHandler
+    :ivar credit: The number of flow control credits.
+    :type credit: int
+    """
 
-    def __init__(self, connection, impl, handler, credit):
+    def __init__(self, connection, impl, handler, credit=1):
+        """
+        :param handler: A message handler.
+        :type handler: ReceiverHandler
+        :param credit: The number of flow control credits.
+        :type credit: int
+        """
         super(Receiver, self).__init__(connection, impl)
         self.handler = handler
         self.credit = credit
         self.flow()
 
     def flow(self):
+        """
+        Request the link perform flow control.
+        """
         if not self.link.credit:
             self.link.flow(self.credit)
 
     def get(self, timeout=None):
+        """
+        Get the next available message.
+        :param timeout: The seconds to wait for a message.
+        :type timeout: int
+        :return: The next message (or None)
+            tuple of: (proton.Message, proton.Delivery)
+        :rtype: tuple
+        """
         self.flow()
         condition = HasMessage(self)
         self.connection.wait(condition, timeout)
         return self.handler.pop()
 
     def accept(self, delivery):
+        """
+        Update the delivery state to ACCEPTED and settle.
+        :param delivery: A message delivery object.
+        :type delivery: proton.Delivery
+        """
         delivery.update(Delivery.ACCEPTED)
         delivery.settle()
         self.connection.process()
 
     def reject(self, delivery):
+        """
+        Update the delivery state to REJECTED and settle.
+        :param delivery: A message delivery object.
+        :type delivery: proton.Delivery
+        """
         delivery.update(Delivery.REJECTED)
         delivery.settle()
         self.connection.process()
 
 
 class Connection(Handler):
+    """
+    A blocking connection.
+    :ivar url: The connection URL.
+    :type url: basestring
+    :ivar container: The reactor container.
+    :type container: proton.reactor.Container
+    :ivar impl: The actual proton connection object.
+    :type impl: proton.Connection
+    """
 
     def __init__(self, url):
+        """
+        :param url: The connection URL.
+        :type url: basestring
+        """
         self.url = utf8(url)
         self.container = Container()
         self.container.start()
         self.impl = None
 
     def is_open(self):
+        """
+        Get whether the connection has been opened.
+        :return: True if open.
+        :rtype bool
+        """
         return self.impl is not None
 
     def open(self, timeout=None, ssl_domain=None, heartbeat=None):
+        """
+        Open the connection.
+        :param timeout: The seconds to wait for the connection to be established.
+        :type timeout: int
+        :param ssl_domain: The proton SSL settings.
+        :type ssl_domain: proton.SSLDomain
+        :param heartbeat: The seconds between AMQP heartbeats. (None=disabled)
+        :type heartbeat: int
+        """
         if self.is_open():
             return
         url = Url(self.url)
@@ -468,10 +585,24 @@ class Connection(Handler):
         self.impl = impl
 
     def process(self, timeout=0):
+        """
+        Request the container process the AMQP protocol.
+        :param timeout: The container timeout.
+        :type timeout: int
+        """
         self.container.timeout = timeout
         self.container.process()
 
     def wait(self, condition, timeout=None):
+        """
+        Wait for the specified condition to be True.
+        Call Connection.process()
+        :param condition: The condition to wait for.
+        :type condition: Condition
+        :param timeout: The seconds to wait.
+        :type timeout: int
+        :raise proton.Timeout: when timeout exceeded.
+        """
         remaining = timeout or YEAR
         while not condition():
             started = time()
@@ -482,6 +613,9 @@ class Connection(Handler):
                 raise Timeout(str(condition))
 
     def close(self):
+        """
+        Close the connection.
+        """
         if self.is_open():
             return
         try:
@@ -492,11 +626,29 @@ class Connection(Handler):
             self.impl = None
 
     def sender(self, address):
+        """
+        Create a blocking sender used for sending messages.
+        :param address: An AMQP address.
+        :type address: basestring
+        :return: The configured sender.
+        :rtype: Sender
+        """
         name = str(uuid4())
         sender = self.container.create_sender(self.impl, utf8(address), name=name)
         return Sender(self, sender)
 
     def receiver(self, address, dynamic=False, credit=1):
+        """
+        Create a blocking receiver used for receiving AMQP address.
+        :param address: An AMQP address.
+        :type address: basestring
+        :param dynamic: Indicates the address is dynamically assigned.
+        :type dynamic: bool
+        :param credit: The number of flow control credits.
+        :type credit: int
+        :return: The configured receiver.
+        :rtype: Receiver
+        """
         options = None
         name = str(uuid4())
         handler = ReceiverHandler(self, credit)
