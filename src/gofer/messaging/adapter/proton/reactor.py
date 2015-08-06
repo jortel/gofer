@@ -136,7 +136,7 @@ class HasMessage(Condition):
         return self.receiver.link
 
     def __call__(self):
-        return len(self.receiver.handler)
+        return self.receiver.handler.has_message()
 
     def __str__(self):
         return self.DESCRIPTION % (self.name, self.address)
@@ -242,6 +242,9 @@ class ReceiverHandler(MessagingHandler):
     def pop(self):
         return self.inbound.popleft()
 
+    def has_message(self):
+        return len(self.inbound) > 0
+
     def on_message(self, event):
         self.inbound.append((event.message, event.delivery))
         self.container.yield_()
@@ -253,9 +256,6 @@ class ReceiverHandler(MessagingHandler):
         if event.link.state & Endpoint.LOCAL_ACTIVE:
             event.link.close()
             raise LinkError(event.link)
-
-    def __len__(self):
-        return len(self.inbound)
 
 
 class Receiver(Messenger):
@@ -316,7 +316,6 @@ class Connection(Handler):
         while not condition():
             started = time()
             self.container.timeout = remaining
-            print 'process(): wait on: %s' % condition
             self.container.process()
             elapsed = time() - started
             remaining -= elapsed
@@ -380,11 +379,13 @@ def send(connection, timeout=5):
     print 'sent'
 
 
-def receive(connection, timeout=5):
+def receive(connection, n=10, timeout=5):
     print 'receive()'
     receiver = connection.receiver(ADDRESS)
-    m, d = receiver.get(timeout=timeout)
-    print m.body
+    while n > 0:
+        m, d = receiver.get(timeout=timeout)
+        print 'message: %s' % m.body
+        n -= 1
 
 
 if __name__ == '__main__':
