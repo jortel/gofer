@@ -433,10 +433,12 @@ class Receiver(Messenger):
     def accept(self, delivery):
         delivery.update(Delivery.ACCEPTED)
         delivery.settle()
+        self.connection.process()
 
     def reject(self, delivery):
         delivery.update(Delivery.REJECTED)
         delivery.settle()
+        self.connection.process()
 
 
 class Connection(Handler):
@@ -465,12 +467,15 @@ class Connection(Handler):
         self.wait(condition, timeout)
         self.impl = impl
 
+    def process(self, timeout=0):
+        self.container.timeout = timeout
+        self.container.process()
+
     def wait(self, condition, timeout=None):
         remaining = timeout or YEAR
         while not condition():
             started = time()
-            self.container.timeout = remaining
-            self.container.process()
+            self.process(remaining)
             elapsed = time() - started
             remaining -= elapsed
             if remaining <= 0:
