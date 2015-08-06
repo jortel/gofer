@@ -75,28 +75,38 @@ class ConnectionClosed(Condition):
         return self.DESCRIPTION
 
 
-class LinkOpened(Condition):
-
-    DESCRIPTION = 'link attached: %s'
+class LinkCondition(Condition):
 
     def __init__(self, link):
-        super(LinkOpened, self).__init__()
+        super(LinkCondition, self).__init__()
         self.link = link
+
+    @property
+    def name(self):
+        return self.link.name
+
+    @property
+    def address(self):
+        if self.link.is_sender:
+            return self.link.target.address
+        else:
+            return self.link.source.address
+
+
+class LinkAttached(LinkCondition):
+
+    DESCRIPTION = 'link attached: %s/%s'
 
     def __call__(self):
         return not (self.link.state & Endpoint.REMOTE_UNINIT)
 
     def __str__(self):
-        return self.DESCRIPTION % self.link.name
+        return self.DESCRIPTION % (self.name, self.address)
 
 
-class LinkClosed(Condition):
+class LinkDetached(LinkCondition):
     
     DESCRIPTION = 'link detached: %s'
-
-    def __init__(self, link):
-        super(LinkClosed, self).__init__()
-        self.link = link
 
     def __call__(self):
         return not (self.link.state & Endpoint.REMOTE_ACTIVE)
@@ -148,18 +158,18 @@ class DeliverySettled(Condition):
         return self.DESCRIPTION % self.link.name
 
 
-class ConnectionFailed(ConnectionException):
+class ConnectionError(ConnectionException):
 
     def __init__(self, connection):
-        super(ConnectionFailed, self).__init__(connection.url)
+        super(ConnectionError, self).__init__(connection.url)
 
 
-class LinkFailed(LinkException):
+class LinkError(LinkException):
 
     DESCRIPTION = 'link: %s/%s failed: %s'
 
     def __init__(self, link):
-        super(LinkFailed, self).__init__(repr(link))
+        super(LinkError, self).__init__(repr(link))
         self.link = link
 
     @property
@@ -184,7 +194,7 @@ class LinkFailed(LinkException):
         return self.DESCRIPTION % (self.name, self.address, self.reason)
 
 
-class SendFailed(Exception):
+class SendError(Exception):
     pass
 
 
@@ -193,13 +203,16 @@ class Messenger(object):
     def __init__(self, connection, link):
         self.connection = connection
         self.link = link
-        self.connection.wait(LinkOpened(link))
+        self.connection.wait(LinkAttached(link))
         self.detect_closed()
 
     def detect_closed(self):
         if self.link.state & Endpoint.REMOTE_CLOSED:
             self.link.close()
-            raise LinkFailed(self.link)
+            raise LinkError(self.link)
+
+    def __getattr__(self, name):
+        return getattr(self.link, name)
 
 
 class Sender(Messenger):
@@ -212,7 +225,7 @@ class Sender(Messenger):
         condition = DeliverySettled(self.link, delivery)
         self.connection.wait(condition, timeout)
         if delivery.remote_state in [Delivery.REJECTED, Delivery.RELEASED]:
-            raise SendFailed()
+            raise SendError()
 
 
 class ReceiverHandler(MessagingHandler):
@@ -222,20 +235,24 @@ class ReceiverHandler(MessagingHandler):
         self.connection = connection
         self.inbound = deque()
 
+    @property
+    def container(self):
+        return self.connection.container
+
     def pop(self):
         return self.inbound.popleft()
 
     def on_message(self, event):
         self.inbound.append((event.message, event.delivery))
-        self.connection.container.yield_()
+        self.container.yield_()
 
     def on_connection_error(self, event):
-        raise ConnectionFailed(event.connection)
+        raise ConnectionError(event.connection)
 
     def on_link_error(self, event):
         if event.link.state & Endpoint.LOCAL_ACTIVE:
             event.link.close()
-            raise LinkFailed(event.link)
+            raise LinkError(event.link)
 
     def __len__(self):
         return len(self.inbound)
@@ -297,9 +314,9 @@ class Connection(Handler):
     def wait(self, condition, timeout=None):
         remaining = timeout or YEAR
         while not condition():
-            print 'wait on: %s' % condition
             started = time()
             self.container.timeout = remaining
+            print 'process(): wait on: %s' % condition
             self.container.process()
             elapsed = time() - started
             remaining -= elapsed
@@ -321,7 +338,7 @@ class Connection(Handler):
         sender = self.container.create_sender(self.impl, utf8(address), name=name)
         return Sender(self, sender)
 
-    def receiver(self, address, credit=1, dynamic=False):
+    def receiver(self, address, dynamic=False, credit=1):
         options = None
         name = str(uuid4())
         handler = ReceiverHandler(self, credit)
