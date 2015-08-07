@@ -405,6 +405,12 @@ class Messenger(object):
         condition = LinkDetached(self.link)
         self.connection.wait(condition)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self):
+        self.close()
+
 
 class Sender(Messenger):
     """
@@ -724,7 +730,7 @@ class Connection(Handler):
         sender = self.container.create_sender(self.impl, utf8(address), name=name)
         return Sender(self, sender)
 
-    def receiver(self, address, dynamic=False, credit=10):
+    def receiver(self, address=None, dynamic=False, credit=10):
         """
         Create a blocking receiver used for receiving AMQP address.
         :param address: An AMQP address.
@@ -791,10 +797,25 @@ def receive(connection, n=N, timeout=TIMEOUT):
         receiver.accept(d)
 
 
+def dynamic(connection, n=N, timeout=TIMEOUT):
+    while n > 0:
+        receiver = connection.receiver(dynamic=True)
+        sender = connection.sender(receiver.link.remote_source.address)
+        message = Message(body='(dynamic) hello: %d' % n)
+        sender.send(message)
+        m, d = receiver.get(timeout=timeout)
+        print m.body
+        n -= 1
+        receiver.accept(d)
+        sender.close()
+        receiver.close()
+
+
 if __name__ == '__main__':
     connection = Connection(URL)
     connection.open(timeout=TIMEOUT)
     print 'opened'
     send(connection)
     receive(connection)
+    dynamic(connection)
     connection.close()
