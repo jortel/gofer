@@ -98,8 +98,7 @@ class Connection(BaseConnection):
                 log.info('connecting: %s', connector)
                 ssl_domain = self.ssl_domain(connector)
                 impl = RealConnection(url, ssl_domain=ssl_domain, heartbeat=10)
-                impl.open()
-                self._impl = impl
+                self._impl = impl.open()
                 log.info('connected: %s', connector.url)
                 break
             except (ConnectionException, SSLException), e:

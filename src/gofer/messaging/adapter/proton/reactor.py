@@ -647,6 +647,8 @@ class Connection(Handler):
         Open the connection.
         :param timeout: The seconds to wait for the connection to be established.
         :type timeout: int
+        :return: self
+        :rtype: Connection
         :raise Timeout:
         :raise ConnectionException:
         """
@@ -663,6 +665,7 @@ class Connection(Handler):
         condition = ConnectionOpened(impl)
         self.wait(condition, timeout)
         self.impl = impl
+        return self
 
     def process(self, timeout=0):
         """
@@ -694,7 +697,7 @@ class Connection(Handler):
                 raise Timeout(str(condition))
             else:
                 log.debug(condition)
-                sleep(0.025)
+                sleep(0.0025)
 
     def close(self):
         """
@@ -764,7 +767,7 @@ from proton import Message
 
 URL = 'amqp://localhost'
 ADDRESS = 'jeff'
-N = 10000
+N = 100
 TIMEOUT = 5
 
 
