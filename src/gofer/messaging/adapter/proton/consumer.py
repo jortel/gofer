@@ -38,7 +38,7 @@ class Reader(BaseReader):
     :ivar connection: A proton connection
     :type connection: Connection
     :ivar receiver: An AMQP receiver to read.
-    :type receiver: proton.utils.BlockingReceiver
+    :type receiver: gofer.messaging.adapter.proton.reactor.Receiver
     """
 
     def __init__(self, node, url):
@@ -103,8 +103,8 @@ class Reader(BaseReader):
         :rtype: Message
         """
         try:
-            impl = self.receiver.receive(timeout or NO_DELAY)
-            return Message(self, impl, impl.body)
+            impl = self.receiver.get(timeout or NO_DELAY)
+            return Message(self, impl, impl[0].body)
         except Timeout:
             pass
 
@@ -113,20 +113,24 @@ class Reader(BaseReader):
         """
         Acknowledge all messages received on the session.
         :param message: The message to acknowledge.
-        :type message: proton.Message
+            message is: (message, delivery)
+        :type message: tuple
         """
-        self.receiver.accept()
+        delivery = message[1]
+        self.receiver.accept(delivery)
 
     @reliable
     def reject(self, message, requeue=True):
         """
         Reject the specified message.
         :param message: The message to reject.
-        :type message: proton.Message
+            message is: (message, delivery)
+        :type message: tuple
         :param requeue: Requeue the message or discard it.
         :type requeue: bool
         """
+        delivery = message[1]
         if requeue:
-            self.receiver.release()
+            self.receiver.release(delivery)
         else:
-            self.receiver.reject()
+            self.receiver.reject(delivery)

@@ -10,17 +10,15 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 from time import sleep
-from uuid import uuid4
 from logging import getLogger
 
 from proton import ConnectionException
 from proton import SSLDomain, SSLException
-from proton.utils import BlockingConnection
-from proton.reactor import DynamicNodeProperties
 
 from gofer.common import Thread, ThreadSingleton
 from gofer.messaging.adapter.reliability import YEAR
 from gofer.messaging.adapter.model import Connector, BaseConnection
+from gofer.messaging.adapter.proton.reactor import Connection as RealConnection
 
 
 log = getLogger(__name__)
@@ -98,8 +96,10 @@ class Connection(BaseConnection):
         while not Thread.aborted():
             try:
                 log.info('connecting: %s', connector)
-                domain = self.ssl_domain(connector)
-                self._impl = BlockingConnection(url, ssl_domain=domain)
+                ssl_domain = self.ssl_domain(connector)
+                impl = RealConnection(url, ssl_domain=ssl_domain, heartbeat=10)
+                impl.open()
+                self._impl = impl
                 log.info('connected: %s', connector.url)
                 break
             except (ConnectionException, SSLException), e:
@@ -119,10 +119,9 @@ class Connection(BaseConnection):
         :param address: An AMQP address.
         :type address: str
         :return: A sender.
-        :rtype: proton.utils.BlockingSender
+        :rtype: gofer.messaging.adapter.proton.reactor.Sender
         """
-        name = str(uuid4())
-        return self._impl.create_sender(address, name=name)
+        return self._impl.sender(address)
 
     def receiver(self, address=None, dynamic=False):
         """
@@ -132,15 +131,9 @@ class Connection(BaseConnection):
         :param dynamic: Indicates link address is dynamically assigned.
         :type dynamic: bool
         :return: A receiver.
-        :rtype: proton.utils.BlockingReceiver
+        :rtype: gofer.messaging.adapter.proton.reactor.Receiver
         """
-        options = None
-        name = str(uuid4())
-        if dynamic:
-            # needed by dispatch router
-            options = DynamicNodeProperties({'x-opt-qd.address': unicode(address)})
-            address = None
-        return self._impl.create_receiver(address, name=name, dynamic=dynamic, options=options)
+        return self._impl.receiver(address, dynamic=dynamic)
 
     def close(self):
         """

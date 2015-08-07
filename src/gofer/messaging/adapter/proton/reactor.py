@@ -1,6 +1,8 @@
-from time import time
+from time import time, sleep
 from collections import deque
 from uuid import uuid4
+
+from logging import getLogger
 
 from proton import Url, Timeout, Endpoint
 from proton import ProtonException, ConnectionException, LinkException
@@ -9,6 +11,9 @@ from proton.handlers import Handler, MessagingHandler
 
 from gofer.common import utf8
 from gofer.messaging.adapter.reliability import YEAR
+
+
+log = getLogger(__name__)
 
 
 class Condition(object):
@@ -271,7 +276,7 @@ class ConnectionError(ConnectionException):
         return self.connection.url
 
     @property
-    def reason(self):
+    def condition(self):
         """
         The cause of the error condition.
         :rtype: str
@@ -287,7 +292,7 @@ class ConnectionError(ConnectionException):
         self.connection = connection
 
     def __str__(self):
-        return self.DESCRIPTION % (self.url, self.reason)
+        return self.DESCRIPTION % (self.url, self.condition)
 
 
 class LinkError(LinkException):
@@ -327,7 +332,7 @@ class LinkError(LinkException):
             return self.link.source.address
 
     @property
-    def reason(self):
+    def condition(self):
         """
         The reason for the link error.
         :rtype: str
@@ -335,7 +340,7 @@ class LinkError(LinkException):
         return self.link.remote_condition or 'by peer'
 
     def __str__(self):
-        return self.DESCRIPTION % (self.name, self.address, self.reason)
+        return self.DESCRIPTION % (self.name, self.address, self.condition)
 
 
 class DeliveryError(ProtonException):
@@ -352,6 +357,14 @@ class DeliveryError(ProtonException):
         """
         super(DeliveryError, self).__init__(delivery.state)
         self.delivery = delivery
+
+    @property
+    def state(self):
+        """
+        The delivery disposition.
+        :rtype: int
+        """
+        return self.delivery.remote_state
 
 
 class Messenger(object):
@@ -384,11 +397,29 @@ class Messenger(object):
             self.link.close()
             raise LinkError(self.link)
 
+    def close(self):
+        """
+        Close the link associated with the messenger.
+        """
+        self.link.close()
+        condition = LinkDetached(self.link)
+        self.connection.wait(condition)
+
 
 class Sender(Messenger):
     """
     A blocking message sender.
     """
+
+    def __init__(self, connection, link):
+        """
+        :param connection: An open connection.
+        :type connection: Connection
+        :param link: An attached link.
+        :type link: proton.Link
+        """
+        super(Sender, self).__init__(connection, link)
+        self.validate()
 
     def send(self, message, timeout=None):
         """
@@ -398,12 +429,26 @@ class Sender(Messenger):
         :param timeout: The seconds to wait for the delivery to be settled.
         :type timeout: int
         :raise DeliveryError: when rejected or released.
+        :raise Timeout:
         """
         delivery = self.link.send(message)
         condition = DeliverySettled(self.link, delivery)
         self.connection.wait(condition, timeout)
         if delivery.remote_state in [Delivery.REJECTED, Delivery.RELEASED]:
             raise DeliveryError(delivery)
+
+    def validate(self):
+        """
+        Validate the link.
+        :raise LinkError:
+        """
+        if self.link.target and \
+           self.link.target.address and \
+           self.link.target.address != self.link.remote_target.address:
+            condition = LinkDetached(self.link)
+            self.connection.wait(condition, 1)
+            self.link.close()
+            raise LinkError(self.link)
 
 
 class ReceiverHandler(MessagingHandler):
@@ -520,6 +565,7 @@ class Receiver(Messenger):
         :return: The next message (or None)
             tuple of: (proton.Message, proton.Delivery)
         :rtype: tuple
+        :raise Timeout:
         """
         self.flow()
         condition = HasMessage(self)
@@ -562,18 +608,28 @@ class Connection(Handler):
     A blocking connection.
     :ivar url: The connection URL.
     :type url: basestring
+    :ivar ssl_domain: The proton SSL settings.
+    :type ssl_domain: proton.SSLDomain
+    :ivar heartbeat: The seconds between AMQP heartbeats.
+    :type heartbeat: int
     :ivar container: The reactor container.
     :type container: proton.reactor.Container
     :ivar impl: The actual proton connection object.
     :type impl: proton.Connection
     """
 
-    def __init__(self, url):
+    def __init__(self, url, ssl_domain=None, heartbeat=None):
         """
         :param url: The connection URL.
         :type url: basestring
+        :param ssl_domain: The proton SSL settings.
+        :type ssl_domain: proton.SSLDomain
+        :param heartbeat: The seconds between AMQP heartbeats.
+        :type heartbeat: int
         """
         self.url = utf8(url)
+        self.ssl_domain = ssl_domain
+        self.heartbeat = heartbeat
         self.container = Container()
         self.container.start()
         self.impl = None
@@ -586,15 +642,13 @@ class Connection(Handler):
         """
         return self.impl is not None
 
-    def open(self, timeout=None, ssl_domain=None, heartbeat=None):
+    def open(self, timeout=None):
         """
         Open the connection.
         :param timeout: The seconds to wait for the connection to be established.
         :type timeout: int
-        :param ssl_domain: The proton SSL settings.
-        :type ssl_domain: proton.SSLDomain
-        :param heartbeat: The seconds between AMQP heartbeats. (None=disabled)
-        :type heartbeat: int
+        :raise Timeout:
+        :raise ConnectionException:
         """
         if self.is_open():
             return
@@ -603,8 +657,8 @@ class Connection(Handler):
         impl = self.container.connect(
             url=url,
             handler=self,
-            ssl_domain=ssl_domain,
-            heartbeat=heartbeat,
+            ssl_domain=self.ssl_domain,
+            heartbeat=self.heartbeat,
             reconnect=False)
         condition = ConnectionOpened(impl)
         self.wait(condition, timeout)
@@ -628,6 +682,7 @@ class Connection(Handler):
         :param timeout: The seconds to wait.
         :type timeout: int
         :raise proton.Timeout: when timeout exceeded.
+        :raise Timeout:
         """
         remaining = timeout or YEAR
         while not condition():
@@ -637,6 +692,9 @@ class Connection(Handler):
             remaining -= elapsed
             if remaining <= 0:
                 raise Timeout(str(condition))
+            else:
+                log.debug(condition)
+                sleep(0.025)
 
     def close(self):
         """

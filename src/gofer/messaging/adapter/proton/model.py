@@ -65,9 +65,9 @@ class Method(Messenger):
     :ivar connection: A broker connection.
     :type connection: Connection
     :ivar sender: A message sender.
-    :type sender: proton.utils.BlockingSender
+    :type sender: gofer.messaging.adapter.proton.reactor.Sender
     :ivar receiver: A message sender.
-    :type receiver: proton.utils.BlockingReceiver
+    :type receiver: gofer.messaging.adapter.proton.reactor.Receiver
     """
 
     def __init__(self, url, name, arguments):
@@ -183,7 +183,7 @@ class Method(Messenger):
         """
         self.open()
         try:
-            reply_to = self.receiver.remote_source.address
+            reply_to = self.receiver.link.remote_source.address
             request = Message(
                 body=self.body,
                 reply_to=reply_to,
@@ -191,7 +191,8 @@ class Method(Messenger):
                 correlation_id=str(uuid4()),
                 subject=SUBJECT)
             self.send(request)
-            reply = self.receiver.receive()
+            reply, delivery = self.receiver.get()
+            self.receiver.accept(delivery)
             self.on_reply(reply)
         finally:
             self.close()
