@@ -34,6 +34,9 @@ MAX_RESEND = DAY / RESEND_DELAY
 # amqp conditions
 NOT_FOUND = 'amqp:not-found'
 
+# logging
+RELIABILITY = 'RELIABILITY (handling): %s'
+
 
 def reliable(fn):
     def _fn(messenger, *args, **kwargs):
@@ -43,16 +46,16 @@ def reliable(fn):
                 repair()
                 return fn(messenger, *args, **kwargs)
             except LinkError, le:
-                log.debug(le)
-                if le.condition != NOT_FOUND:
-                    sleep(DELAY)
+                log.debug(RELIABILITY, le)
+                if le.condition.name != NOT_FOUND:
                     repair = messenger.repair
+                    sleep(DELAY)
                 else:
                     raise NotFound(*le.args)
             except ConnectionException, le:
-                log.debug(le)
-                sleep(DELAY)
+                log.debug(RELIABILITY, le)
                 repair = messenger.repair
+                sleep(DELAY)
     return _fn
 
 
@@ -65,7 +68,7 @@ def resend(fn):
             try:
                 return fn(sender, *args, **kwargs)
             except DeliveryError, le:
-                log.debug(le)
+                log.debug(RELIABILITY, le)
                 if le.state == Delivery.RELEASED:
                     sleep(delay)
                     retry -= 1

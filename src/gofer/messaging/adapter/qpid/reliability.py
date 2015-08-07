@@ -23,6 +23,9 @@ from gofer.messaging.adapter.model import NotFound
 
 DELAY = 10   # seconds
 
+# logging
+RELIABILITY = 'RELIABILITY (handling): %s'
+
 
 log = getLogger(__name__)
 
@@ -35,14 +38,14 @@ def reliable(fn):
                 repair()
                 return fn(thing, *args, **kwargs)
             except _NotFound, le:
-                log.debug(le)
+                log.debug(RELIABILITY, le)
                 raise NotFound(*le.args)
             except LinkError, le:
-                log.debug(le)
-                sleep(DELAY)
+                log.debug(RELIABILITY, le)
                 repair = thing.repair
+                sleep(DELAY)
             except ConnectionError, le:
-                log.debug(le)
-                sleep(DELAY)
+                log.debug(RELIABILITY, le)
                 repair = thing.repair
+                sleep(DELAY)
     return _fn

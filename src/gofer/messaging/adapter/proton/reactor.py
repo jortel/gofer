@@ -1,4 +1,4 @@
-from time import time, sleep
+from time import time
 from collections import deque
 from uuid import uuid4
 
@@ -276,7 +276,7 @@ class ConnectionError(ConnectionException):
         return self.connection.url
 
     @property
-    def condition(self):
+    def reason(self):
         """
         The cause of the error condition.
         :rtype: str
@@ -292,7 +292,7 @@ class ConnectionError(ConnectionException):
         self.connection = connection
 
     def __str__(self):
-        return self.DESCRIPTION % (self.url, self.condition)
+        return self.DESCRIPTION % (self.url, self.reason)
 
 
 class LinkError(LinkException):
@@ -334,13 +334,21 @@ class LinkError(LinkException):
     @property
     def condition(self):
         """
+        The remote error condition.
+        :rtype: proton.Condition
+        """
+        return self.link.remote_condition
+
+    @property
+    def reason(self):
+        """
         The reason for the link error.
         :rtype: str
         """
-        return self.link.remote_condition or 'by peer'
+        return self.condition.name or 'by peer'
 
     def __str__(self):
-        return self.DESCRIPTION % (self.name, self.address, self.condition)
+        return self.DESCRIPTION % (self.name, self.address, self.reason)
 
 
 class DeliveryError(ProtonException):
@@ -701,9 +709,6 @@ class Connection(Handler):
             remaining -= elapsed
             if remaining <= 0:
                 raise Timeout(str(condition))
-            else:
-                log.debug(condition)
-                sleep(0.0025)
 
     def close(self):
         """

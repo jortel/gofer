@@ -22,6 +22,9 @@ from gofer.messaging.adapter.amqp.connection import Connection, CONNECTION_EXCEP
 
 DELAY = 10  # seconds
 
+# logging
+RELIABILITY = 'RELIABILITY (handling): %s'
+
 
 log = getLogger(__name__)
 
@@ -34,16 +37,16 @@ def reliable(fn):
                 repair()
                 return fn(messenger, *args, **kwargs)
             except ChannelError, le:
-                log.debug(le)
+                log.debug(RELIABILITY, le)
                 if le.code != 404:
-                    sleep(DELAY)
                     repair = messenger.repair
+                    sleep(DELAY)
                 else:
                     raise NotFound(*le.args)
             except CONNECTION_EXCEPTIONS, le:
-                log.debug(le)
-                sleep(DELAY)
+                log.debug(RELIABILITY, le)
                 repair = messenger.repair
+                sleep(DELAY)
     return _fn
 
 
