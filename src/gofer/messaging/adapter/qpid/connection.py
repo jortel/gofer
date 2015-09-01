@@ -111,7 +111,7 @@ class Connection(BaseConnection):
             transport=connector.url.scheme,
             username=connector.userid,
             password=connector.password,
-            heartbeat=10,
+            heartbeat=connector.heartbeat,
             **domain)
         impl.open()
         self._impl = impl

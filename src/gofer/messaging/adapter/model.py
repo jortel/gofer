@@ -1000,6 +1000,8 @@ class Connector(Model):
     Represents an AMQP connector.
     :ivar url: The URL.
     :type url: URL
+    :ivar heartbeat: The connection heartbeat in seconds.
+    :type heartbeat: int|None
     :ivar ssl: The SSL configuration.
     :type ssl: SSL
     """
@@ -1026,6 +1028,7 @@ class Connector(Model):
         :type url: str
         """
         self.url = URL(url or DEFAULT_URL)
+        self.heartbeat = None
         self.ssl = SSL()
 
     @property
@@ -1128,6 +1131,7 @@ class Broker(Connector):
     """
     Backwards comparability.
     """
+    pass
 
 
 # --- domain -----------------------------------------------------------------

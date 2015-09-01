@@ -87,6 +87,7 @@ class TestConnection(TestCase):
         connector.ssl.ca_certificate = 'test-ca'
         connector.ssl.client_key = 'test-key'
         connector.ssl.client_certificate = 'test-crt'
+        connector.heartbeat = '4'
         find.return_value = connector
 
         ssl_properties = {'A': 1, 'B': 2}
@@ -106,7 +107,7 @@ class TestConnection(TestCase):
             transport=connector.scheme,
             username=connector.userid,
             password=connector.password,
-            heartbeat=10,
+            heartbeat=connector.heartbeat,
             **ssl_properties)
 
         ssl_domain.assert_called_once_with(connector)

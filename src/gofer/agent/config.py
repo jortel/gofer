@@ -118,6 +118,7 @@ PLUGIN_SCHEMA = (
             ('clientkey', OPTIONAL, ANY),
             ('host_validation', OPTIONAL, BOOL),
             ('authenticator', OPTIONAL, ANY),
+            ('heartbeat', OPTIONAL, NUMBER),
         )
     ),
     ('model', OPTIONAL,
@@ -152,6 +153,7 @@ PLUGIN_DEFAULTS = {
         'forward': ','
     },
     'messaging': {
+        'heartbeat': '10'
     },
     'model': {
         'managed': '2'

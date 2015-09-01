@@ -12,6 +12,7 @@
 from unittest import TestCase
 
 from gofer.messaging.adapter.url import URL
+from gofer.messaging.adapter.url import PORT, Scheme
 
 
 class Test(object):
@@ -145,3 +146,10 @@ class TestURL(TestCase):
             url = URL(_url)
             self.assertEqual(str(url), url.canonical)
 
+
+class TestScheme(TestCase):
+
+    def test_validated(self):
+        for n in PORT:
+            self.assertEqual(Scheme.validated(n), n.lower())
+        self.assertRaises(ValueError, Scheme.validated, 'unsupported')

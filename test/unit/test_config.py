@@ -164,6 +164,12 @@ class TestUtils(TestCase):
         self.assertFalse(get_bool(''))
         self.assertRaises(ValueError, get_bool, 'hello')
 
+    def test_get_integer(self):
+        self.assertEqual(get_integer(None), None)
+        self.assertEqual(get_integer(''), None)
+        self.assertEqual(get_integer('0'), 0)
+        self.assertEqual(get_integer('123'), 123)
+
 
 class TestExceptions(TestCase):
 

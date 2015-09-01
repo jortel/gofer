@@ -88,6 +88,21 @@ def get_bool(value):
         raise ValueError('%s: must be <bool>' % value)
 
 
+def get_integer(value):
+    """
+    Parses the given value into its integer representation.
+    :param value: value to test
+    :type value: str|None
+    :return: The integer value.
+    :rtype: int|None
+    :raise ValueError: if the value is not an integer.
+    """
+    if value:
+        return int(value)
+    else:
+        return None
+
+
 # -- exceptions ---------------------------------------------------------------
 
 

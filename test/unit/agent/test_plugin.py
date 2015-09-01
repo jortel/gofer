@@ -274,7 +274,8 @@ class TestPlugin(TestCase):
                 url='amqp://localhost',
                 cacert='ca',
                 clientkey='key',
-                clientcert='crt')
+                clientcert='crt',
+                heartbeat='8')
         )
 
         # test

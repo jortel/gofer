@@ -32,7 +32,7 @@ from gofer.agent.rmi import Scheduler
 from gofer.agent.whiteboard import Whiteboard
 from gofer.common import nvl, mkdir
 from gofer.common import released
-from gofer.config import Config, Graph, Reader, get_bool
+from gofer.config import Config, Graph, Reader, get_bool, get_integer
 from gofer.messaging import Document, Connector, Node, Queue, Exchange
 from gofer.messaging import NotFound
 from gofer.rmi.consumer import RequestConsumer
@@ -339,6 +339,7 @@ class Plugin(object):
         """
         connector = Connector(self.url)
         messaging = self.cfg.messaging
+        connector.heartbeat = get_integer(messaging.heartbeat)
         connector.ssl.ca_certificate = messaging.cacert
         connector.ssl.client_key = messaging.clientkey
         connector.ssl.client_certificate = messaging.clientcert

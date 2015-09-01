@@ -125,6 +125,8 @@ Defines basic plugin properties.
 - **host_validation** - The (optional) flag indicates SSL host validation should be performed.
   Default to (1) when not specified.
 
+- **heartbeat** - The (optional) AMQP heartbeat in seconds.  (default:10).
+
 File extensions just be (.conf|.json).
 
 [model]

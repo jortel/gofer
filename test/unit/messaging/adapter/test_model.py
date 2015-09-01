@@ -1022,6 +1022,7 @@ class TestConnector(TestCase):
         self.assertEqual(b.userid, URL(url).userid)
         self.assertEqual(b.password, URL(url).password)
         self.assertEqual(b.virtual_host, URL(url).path)
+        self.assertEqual(b.heartbeat, None)
         self.assertEqual(b.ssl.ca_certificate, None)
         self.assertEqual(b.ssl.client_key, None)
         self.assertEqual(b.ssl.client_certificate, None)
