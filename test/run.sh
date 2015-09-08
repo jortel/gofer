@@ -14,12 +14,30 @@
 #
 
 dir="$(mktemp -d -t)"
-echo $dir
-virtualenv $dir
-source $dir/bin/activate
-pip install nose
-pip install nose-cov
-pip install mock
-pip install iniparse
-pip install -e ../src/
-nosetests --with-coverage --cover-package=gofer `find unit -type d` 
+
+clean()
+{
+  find ../ -name .coverage -exec rm -rf {} \;
+}
+
+run()
+{
+  echo $dir
+  virtualenv $dir
+  source $dir/bin/activate
+  pip install nose
+  pip install nose-cov
+  pip install mock
+  pip install iniparse
+  pip install -e ../src/
+  nosetests --with-coverage --cover-package=gofer `find unit -type d`
+}
+
+main()
+{
+  clean
+  run
+  clean
+}
+
+main

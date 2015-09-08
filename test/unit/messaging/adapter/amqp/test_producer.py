@@ -134,6 +134,9 @@ class TestSender(TestCase):
     def test_close(self):
         connection = Mock()
         channel = Mock()
+
+        channel.close.side_effect = ValueError
+
         # test
         sender = Sender(None)
         sender.connection = connection

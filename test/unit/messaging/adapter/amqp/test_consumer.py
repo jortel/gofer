@@ -126,6 +126,9 @@ class TestReader(TestCase):
         channel = Mock()
         receiver = Mock()
 
+        channel.close.side_effect = ValueError
+        receiver.close.side_effect = ValueError
+
         # test
         reader = Reader(None, '')
         reader.connection = connection
@@ -263,7 +266,7 @@ class TestReceiver(TestCase):
         channel.wait.assert_called_once_with()
 
     @patch('select.epoll')
-    def test_wait(self, epoll):
+    def test_wait_with_queued(self, epoll):
         fd = 0
         channel = Mock(method_queue=[Mock()])
         timeout = 10

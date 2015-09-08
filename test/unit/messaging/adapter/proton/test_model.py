@@ -139,6 +139,13 @@ class TestMethod(TestCase):
         self.assertEqual(method.sender, sender)
         self.assertEqual(method.receiver, receiver)
 
+    @patch('gofer.messaging.adapter.proton.model.Connection', Mock())
+    def test_open_already(self):
+        method = Method('', '', {})
+        method.is_open = Mock(return_value=True)
+        method.open()
+        self.assertFalse(method.connection.open.called)
+
     @patch('gofer.messaging.adapter.proton.model.uuid4')
     @patch('gofer.messaging.adapter.proton.model.Connection')
     def test_repair(self, _connection, uuid):
@@ -176,6 +183,9 @@ class TestMethod(TestCase):
         method.connection = connection
         method.sender = sender
         method.receiver = receiver
+
+        sender.close.side_effect = ValueError
+        receiver.close.side_effect = ValueError
 
         # test
         method.close()

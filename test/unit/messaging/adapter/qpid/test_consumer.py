@@ -115,6 +115,9 @@ class TestReader(TestCase):
         session = Mock(connection=connection)
         receiver = Mock()
 
+        session.close.side_effect = ValueError
+        receiver.close.side_effect = ValueError
+
         # test
         reader = Reader(None, '')
         reader.connection = connection

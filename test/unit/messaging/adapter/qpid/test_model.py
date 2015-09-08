@@ -141,6 +141,16 @@ class TestMethod(TestCase):
         self.assertEqual(method.sender, sender)
         self.assertEqual(method.receiver, receiver)
 
+    @patch('gofer.messaging.adapter.qpid.model.Connection', Mock())
+    def test_open_already(self):
+        # test
+        method = Method('', '', {})
+        method.is_open = Mock(return_value=True)
+        method.open()
+
+        # validation
+        self.assertFalse(method.connection.open.called)
+
     @patch('gofer.messaging.adapter.qpid.model.uuid4')
     @patch('gofer.messaging.adapter.qpid.model.Method.close')
     @patch('gofer.messaging.adapter.qpid.model.Connection')
@@ -184,6 +194,10 @@ class TestMethod(TestCase):
         method.session = session
         method.sender = sender
         method.receiver = receiver
+
+        session.close.side_effect = ValueError
+        sender.close.side_effect = ValueError
+        receiver.close.side_effect = ValueError
 
         # test
         method.close()

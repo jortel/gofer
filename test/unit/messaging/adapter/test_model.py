@@ -135,6 +135,10 @@ class TestNode(TestCase):
         n = Node('test')
         self.assertEqual(n.domain_id, 'Node::test')
 
+    def test_address(self):
+        n = Node('test')
+        self.assertEqual(n.address, n.name)
+
     def test_unicode(self):
         n = Node('test')
         self.assertEqual(unicode(n), n.name)

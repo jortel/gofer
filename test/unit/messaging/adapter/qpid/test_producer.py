@@ -92,6 +92,8 @@ class TestSender(TestCase):
         connection = Mock()
         session = Mock(connection=connection)
 
+        session.close.side_effect = ValueError()
+
         # test
         sender = Sender(None)
         sender.connection = connection

@@ -97,7 +97,6 @@ class Reader(BaseReader):
         except Exception:
             pass
 
-
     @reliable
     def get(self, timeout=None):
         """
