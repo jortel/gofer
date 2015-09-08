@@ -278,7 +278,7 @@ def released(fn):
 class Options(object):
     """
     Provides a dict-like object that also provides
-    (.) dot notation accessors.
+    (.) dot notation accessor.
     """
 
     def __init__(self, *things, **keywords):

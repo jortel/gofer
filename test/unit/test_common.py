@@ -13,13 +13,14 @@ import os
 import errno
 
 from Queue import Queue
-from threading import Thread
+from threading import Thread, Event
 
 from unittest import TestCase
 
 from mock import Mock, patch
 from tempfile import mktemp
 
+from gofer.common import Thread as GThread
 from gofer.common import Singleton, ThreadSingleton, Options
 from gofer.common import synchronized, conditional, released
 from gofer.common import mkdir, rmdir, unlink, nvl, valid_path, utf8
@@ -238,6 +239,31 @@ class TestSingleton(TestCase):
             "['A', 1, 1.0, True, ('bool', True), ('float', 1.0), ('int', 1), ('string', '')]")
 
 
+class TestThread(TestCase):
+
+    def test_init(self):
+        thread = GThread()
+        event = getattr(thread, thread.ABORT)
+        self.assertTrue(isinstance(event, type(Event())))
+
+    @patch('gofer.common.current_thread')
+    def test_aborted(self, current):
+        thread = GThread()
+        current.return_value = thread
+        event = getattr(thread, thread.ABORT)
+        self.assertEqual(GThread.aborted(), event.isSet())
+        # abort
+        event.set()
+        self.assertEqual(GThread.aborted(), event.isSet())
+
+    def test_abort(self):
+        thread = GThread()
+        event = getattr(thread, thread.ABORT)
+        self.assertFalse(event.isSet())
+        thread.abort()
+        self.assertTrue(event.isSet())
+
+
 class TestThreadSingleton(TestCase):
 
     def test_call(self):
@@ -398,7 +424,7 @@ class TestOptions(TestCase):
 
     def test_unicode(self):
         options = Options(a=1, b=2)
-        self.assertEqual(str(options), unicode(options.__dict__))
+        self.assertEqual(unicode(options), unicode(options.__dict__))
 
     def test_str(self):
         options = Options(a=1, b=2)
