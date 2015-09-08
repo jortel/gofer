@@ -51,6 +51,12 @@ class TestAdmin(TestCase):
         admin = Admin(container)
         self.assertEqual(admin.hello(), 'Hello, I am gofer agent')
 
+    def test_echo(self):
+        text = 'hello'
+        container = Mock()
+        admin = Admin(container)
+        self.assertEqual(admin.echo(text), text)
+
     @patch('gofer.agent.builtin.Actions')
     @patch('gofer.agent.builtin.loaded')
     def test_help(self, loaded, actions):

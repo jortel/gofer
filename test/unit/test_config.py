@@ -622,6 +622,11 @@ class TestJsonReader(TestCase):
                     'property5': '',
                 }})
 
+    def test_read_invalid_json(self):
+        fp = StringIO('[')
+        reader = JsonReader()
+        self.assertEqual(reader.read(fp), {})
+
 
 class TestReader(TestCase):
 

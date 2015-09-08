@@ -209,8 +209,6 @@ class Config(dict):
         :type other: dict
         """
         for s, v in other.items():
-            if isinstance(v, unicode):
-                v = v.encode('utf-8')
             section = self.setdefault(s, {})
             section.update(v)
 
