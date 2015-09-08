@@ -262,18 +262,18 @@ class ConnectionError(ConnectionException):
     """
     A connection error condition.
     :ivar connection: The connection with an error.
-    :type connection: Connection
+    :type connection: proton.Connection
     """
 
-    DESCRIPTION = 'connection: %s failed: %s'
+    DESCRIPTION = 'connection failed: %s'
 
-    @property
-    def url(self):
+    def __init__(self, connection):
         """
-        The connection URL.
-        :rtype: str
+        :param connection: The connection with an error.
+        :type connection: proton.Connection
         """
-        return self.connection.url
+        super(ConnectionError, self).__init__()
+        self.connection = connection
 
     @property
     def reason(self):
@@ -281,18 +281,15 @@ class ConnectionError(ConnectionException):
         The cause of the error condition.
         :rtype: str
         """
-        return self.connection.impl.remote_condition or 'by peer'
-
-    def __init__(self, connection):
-        """
-        :param connection: The connection with an error.
-        :type connection: Connection
-        """
-        super(ConnectionError, self).__init__(connection.url)
-        self.connection = connection
+        transport = self.connection.transport
+        if not transport:
+            return 'no transport'
+        if transport.condition:
+            return transport.condition.description
+        return 'closed by peer'
 
     def __str__(self):
-        return self.DESCRIPTION % (self.url, self.reason)
+        return self.DESCRIPTION % self.reason
 
 
 class LinkError(LinkException):
@@ -528,7 +525,7 @@ class ReceiverHandler(MessagingHandler):
         :type event: proton.Event
         :raise ConnectionError:
         """
-        raise ConnectionError(self.connection)
+        raise ConnectionError(event.connection)
 
     def on_link_error(self, event):
         """
@@ -621,7 +618,7 @@ class Connection(Handler):
     """
     A blocking connection.
     :ivar url: The connection URL.
-    :type url: basestring
+    :type url: str
     :ivar ssl_domain: The proton SSL settings.
     :type ssl_domain: proton.SSLDomain
     :ivar heartbeat: The seconds between AMQP heartbeats.
@@ -635,7 +632,7 @@ class Connection(Handler):
     def __init__(self, url, ssl_domain=None, heartbeat=None):
         """
         :param url: The connection URL.
-        :type url: basestring
+        :type url: str
         :param ssl_domain: The proton SSL settings.
         :type ssl_domain: proton.SSLDomain
         :param heartbeat: The seconds between AMQP heartbeats.
@@ -727,7 +724,7 @@ class Connection(Handler):
         """
         Create a blocking sender used for sending messages.
         :param address: An AMQP address.
-        :type address: basestring
+        :type address: str
         :return: The configured sender.
         :rtype: Sender
         """
@@ -739,7 +736,7 @@ class Connection(Handler):
         """
         Create a blocking receiver used for receiving AMQP address.
         :param address: An AMQP address.
-        :type address: basestring
+        :type address: str
         :param dynamic: Indicates the address is dynamically assigned.
         :type dynamic: bool
         :param credit: The number of flow control credits.
@@ -762,6 +759,47 @@ class Connection(Handler):
             handler=handler,
             options=options)
         return Receiver(self, receiver, handler, credit)
+
+    def on_link_remote_close(self, event):
+        """
+        Notified by the container that a link has been detached.
+        :param event: A proton event.
+        :type event: proton.Event
+        :raise LinkError:
+        """
+        if event.link.state & Endpoint.LOCAL_ACTIVE:
+            event.link.close()
+            raise LinkError(event.link)
+
+    def on_connection_remote_close(self, event):
+        """
+        Notified by the container that a connection has been closed.
+        :param event: A proton event.
+        :type event: proton.Event
+        :raise ConnectionClosed:
+        """
+        if event.connection.state & Endpoint.LOCAL_ACTIVE:
+            event.connection.close()
+            raise ConnectionError(event.connection)
+
+    def on_transport_tail_closed(self, event):
+        """
+        Notified by the container that a transport tail has been closed.
+        :param event: A proton event.
+        :type event: proton.Event
+        :raise ConnectionClosed:
+        """
+        self.on_transport_closed(event)
+
+    def on_transport_closed(self, event):
+        """
+        Notified by the container that a transport has been closed.
+        :param event: A proton event.
+        :type event: proton.Event
+        :raise ConnectionClosed:
+        """
+        if event.connection.state & Endpoint.LOCAL_ACTIVE:
+            raise ConnectionError(event.connection)
 
     def __enter__(self):
         self.open()
