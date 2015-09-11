@@ -107,6 +107,11 @@ PLUGIN_SCHEMA = (
             ('authenticator', OPTIONAL, ANY),
         )
     ),
+    ('pending', OPTIONAL,
+        (
+            ('depth', REQUIRED, NUMBER),
+        )
+    ),
     ('model', OPTIONAL,
         (
             ('managed', OPTIONAL, '(0|1|2)'),
@@ -133,6 +138,9 @@ PLUGIN_DEFAULTS = {
         'threads': '1',
         'accept': ',',
         'forward': ','
+    },
+    'pending': {
+        'depth': '100000'
     },
     'model': {
         'managed': '2'

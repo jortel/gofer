@@ -203,7 +203,7 @@ class Plugin(object):
         self.actions = []
         self.dispatcher = Dispatcher()
         self.whiteboard = Whiteboard()
-        self.scheduler = Scheduler(self)
+        self.scheduler = Scheduler(self, int(descriptor.pending.depth))
         self.delegate = Delegate()
         self.authenticator = None
         self.consumer = None

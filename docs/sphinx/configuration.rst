@@ -115,6 +115,11 @@ Defines basic plugin properties.
 
 File extensions just be (.conf|.json).
 
+[pending]
+
+- **depth** - The pending queue depth.  Default: 100K
+
+
 [model]
 -------
 
