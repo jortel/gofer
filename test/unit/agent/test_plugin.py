@@ -121,7 +121,8 @@ class TestPlugin(TestCase):
     @patch('gofer.agent.plugin.ThreadPool')
     def test_init(self, pool, dispatcher, whiteboard, scheduler, delegate):
         threads = 4
-        descriptor = Mock(main=Mock(threads=threads))
+        depth = 1234
+        descriptor = Mock(main=Mock(threads=threads), pending=Mock(depth=depth))
         path = '/tmp/path'
 
         # test
@@ -130,7 +131,7 @@ class TestPlugin(TestCase):
         # validation
         pool.assert_called_once_with(threads)
         dispatcher.assert_called_once_with()
-        scheduler.assert_called_once_with(plugin)
+        scheduler.assert_called_once_with(plugin, depth)
         delegate.assert_called_once_with()
         self.assertEqual(plugin.descriptor, descriptor)
         self.assertEqual(plugin.path, path)
@@ -156,6 +157,8 @@ class TestPlugin(TestCase):
                 threads=4,
                 forward='a, b, c',
                 accept='d, e, f'),
+            pending=Mock(
+                depth=1234),
             messaging=Mock(
                 uuid='x99',
                 url='amqp://localhost')
@@ -195,7 +198,7 @@ class TestPlugin(TestCase):
     @patch('gofer.agent.plugin.Whiteboard', Mock())
     @patch('gofer.agent.plugin.ThreadPool', Mock())
     def test_start(self, scheduler):
-        descriptor = Mock(main=Mock(threads=4))
+        descriptor = Mock(main=Mock(threads=4), pending=Mock(depth=1234))
         scheduler.return_value.isAlive.return_value = False
 
         # test
@@ -211,7 +214,7 @@ class TestPlugin(TestCase):
     @patch('gofer.agent.plugin.Whiteboard', Mock())
     @patch('gofer.agent.plugin.ThreadPool', Mock())
     def test_start_already_started(self, scheduler):
-        descriptor = Mock(main=Mock(threads=4))
+        descriptor = Mock(main=Mock(threads=4), pending=Mock(depth=1234))
         scheduler.return_value.isAlive.return_value = True
 
         # test
@@ -227,7 +230,7 @@ class TestPlugin(TestCase):
     @patch('gofer.agent.plugin.ThreadPool')
     @patch('gofer.agent.plugin.Whiteboard', Mock())
     def test_shutdown(self, pool, scheduler):
-        descriptor = Mock(main=Mock(threads=4))
+        descriptor = Mock(main=Mock(threads=4), pending=Mock(depth=1234))
         scheduler.return_value.isAlive.return_value = True
 
         # test
@@ -245,7 +248,7 @@ class TestPlugin(TestCase):
     @patch('gofer.agent.plugin.ThreadPool')
     @patch('gofer.agent.plugin.Whiteboard', Mock())
     def test_shutdown_not_running(self, pool, scheduler):
-        descriptor = Mock(main=Mock(threads=4))
+        descriptor = Mock(main=Mock(threads=4), pending=Mock(depth=1234))
         scheduler.return_value.isAlive.return_value = False
 
         # test
@@ -269,6 +272,8 @@ class TestPlugin(TestCase):
             main=Mock(
                 enabled='1',
                 threads=4),
+            pending=Mock(
+                depth=1234),
             messaging=Mock(
                 uuid='x99',
                 url='amqp://localhost',
@@ -299,7 +304,7 @@ class TestPlugin(TestCase):
     @patch('gofer.agent.plugin.Whiteboard', Mock())
     def test_attach(self, pool, model, consumer, node):
         queue = 'test'
-        descriptor = Mock(main=Mock(threads=4))
+        descriptor = Mock(main=Mock(threads=4), pending=Mock(depth=1234))
         pool.return_value.run.side_effect = lambda fn: fn()
         model.return_value.queue = queue
 
@@ -326,7 +331,7 @@ class TestPlugin(TestCase):
     @patch('gofer.agent.plugin.Scheduler', Mock())
     @patch('gofer.agent.plugin.Whiteboard', Mock())
     def test_detach(self, model):
-        descriptor = Mock(main=Mock(threads=4))
+        descriptor = Mock(main=Mock(threads=4), pending=Mock(depth=1234))
         consumer = Mock()
 
         # test
@@ -347,7 +352,7 @@ class TestPlugin(TestCase):
     @patch('gofer.agent.plugin.Scheduler', Mock())
     @patch('gofer.agent.plugin.Whiteboard', Mock())
     def test_detach_not_attached(self, model):
-        descriptor = Mock(main=Mock(threads=4))
+        descriptor = Mock(main=Mock(threads=4), pending=Mock(depth=1234))
 
         # test
         plugin = Plugin(descriptor, '')
@@ -361,7 +366,7 @@ class TestPlugin(TestCase):
     @patch('gofer.agent.plugin.Scheduler', Mock())
     @patch('gofer.agent.plugin.Whiteboard', Mock())
     def test_detach_no_teardown(self, model):
-        descriptor = Mock(main=Mock(threads=4))
+        descriptor = Mock(main=Mock(threads=4), pending=Mock(depth=1234))
         consumer = Mock()
 
         # test
@@ -379,7 +384,7 @@ class TestPlugin(TestCase):
     @patch('gofer.agent.plugin.Scheduler', Mock())
     @patch('gofer.agent.plugin.Whiteboard', Mock())
     def test_provides(self):
-        descriptor = Mock(main=Mock(threads=4))
+        descriptor = Mock(main=Mock(threads=4), pending=Mock(depth=1234))
 
         # test
         plugin = Plugin(descriptor, '')

@@ -23,9 +23,10 @@ class TestScheduler(TestCase):
     @patch('gofer.agent.rmi.Pending')
     @patch('gofer.agent.rmi.Builtin')
     def test_init(self, builtin, pending, set_daemon):
+        depth = 1234
         plugin = Mock()
-        scheduler = Scheduler(plugin)
-        pending.assert_called_once_with(plugin.name)
+        scheduler = Scheduler(plugin, depth)
+        pending.assert_called_once_with(plugin.name, depth)
         builtin.assert_called_once_with(plugin)
         set_daemon.assert_called_with(True)
         self.assertEqual(scheduler.plugin, plugin)
@@ -55,7 +56,7 @@ class TestScheduler(TestCase):
         select_plugin.side_effect = [builtin.return_value, plugin]
 
         # test
-        scheduler = Scheduler(plugin)
+        scheduler = Scheduler(plugin, 243)
         scheduler.run()
 
         # validation
@@ -88,7 +89,7 @@ class TestScheduler(TestCase):
         aborted.side_effect = [False, True]
 
         # test
-        scheduler = Scheduler(plugin)
+        scheduler = Scheduler(plugin, 243)
         scheduler.run()
 
         # validation
@@ -100,7 +101,7 @@ class TestScheduler(TestCase):
     def test_select_plugin(self, builtin):
         plugin = Mock()
         request = Document(request={'classname': 'A'})
-        scheduler = Scheduler(plugin)
+        scheduler = Scheduler(plugin, 243)
         # find builtin
         builtin.return_value.provides.return_value = True
         selected = scheduler.select_plugin(request)
@@ -122,7 +123,7 @@ class TestScheduler(TestCase):
     def test_add(self, pending):
         plugin = Mock()
         request = Mock()
-        scheduler = Scheduler(plugin)
+        scheduler = Scheduler(plugin, 243)
         scheduler.add(request)
         pending.return_value.put.assert_called_once_with(request)
 
@@ -132,7 +133,7 @@ class TestScheduler(TestCase):
     @patch('threading.Thread.setDaemon', Mock())
     def test_shutdown(self, abort, builtin):
         plugin = Mock()
-        scheduler = Scheduler(plugin)
+        scheduler = Scheduler(plugin, 243)
         scheduler.shutdown()
         builtin.return_value.shutdown.assert_called_once_with()
         abort.assert_called_once_with()
