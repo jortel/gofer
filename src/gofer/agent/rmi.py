@@ -146,14 +146,16 @@ class Scheduler(Thread):
     Processes the *pending* queue.
     """
     
-    def __init__(self, plugin):
+    def __init__(self, plugin, depth):
         """
         :param plugin: A plugin.
         :type plugin: gofer.agent.plugin.Plugin
+        :param depth: The max queue depth.
+        :type depth: int
         """
         Thread.__init__(self, name='scheduler:%s' % plugin.name)
         self.plugin = plugin
-        self.pending = Pending(plugin.name)
+        self.pending = Pending(plugin.name, depth)
         self.builtin = Builtin(plugin)
         self.setDaemon(True)
 

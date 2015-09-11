@@ -84,6 +84,11 @@ AGENT_SCHEMA = (
 #   authenticator
 #      The (optional) fully qualified Authenticator to be loaded from the PYTHON path.
 #
+# [pending]
+#
+#   depth
+#     The pending queue depth.  Default: 100K
+#
 # [model]
 #
 #   managed
@@ -121,6 +126,11 @@ PLUGIN_SCHEMA = (
             ('heartbeat', OPTIONAL, NUMBER),
         )
     ),
+    ('pending', OPTIONAL,
+        (
+            ('depth', REQUIRED, NUMBER),
+        )
+    ),
     ('model', OPTIONAL,
         (
             ('managed', OPTIONAL, '(0|1|2)'),
@@ -154,6 +164,9 @@ PLUGIN_DEFAULTS = {
     },
     'messaging': {
         'heartbeat': '10'
+    },
+    'pending': {
+        'depth': '100000'
     },
     'model': {
         'managed': '2'

@@ -23,7 +23,9 @@ from time import sleep, time
 from logging import getLogger
 from Queue import Queue, Empty
 
+
 from gofer import NAME, Thread
+from gofer.common import utf8
 from gofer.common import mkdir, rmdir, unlink
 from gofer.messaging import Document
 from gofer.rmi.tracker import Tracker
@@ -32,12 +34,35 @@ from gofer.rmi.tracker import Tracker
 log = getLogger(__name__)
 
 
+class FileCorrupted(Exception):
+    """
+    File corrupted and likely discarded.
+    """
+
+    def __init__(self, path):
+        super(FileCorrupted, self).__init__(path)
+
+    @property
+    def path(self):
+        return self.args[0]
+
+    def __str__(self):
+        return "File %s corrupted.  Discarded" % self.path
+
+
 class Pending(object):
     """
     Persistent store and queuing for pending requests.
     """
 
     PENDING = '/var/lib/%s/messaging/pending' % NAME
+
+    # The queue depth
+    MAX_DEPTH = 100000
+
+    # The soft threshold determines when the journal
+    # file path is queued instead of the actual request
+    SOFT_THRESHOLD = 50
 
     @staticmethod
     def _write(request, path):
@@ -52,7 +77,7 @@ class Pending(object):
         try:
             body = request.dump()
             fp.write(body)
-            log.debug('wrote [%s]: %s', path, body)
+            log.debug('Writing [%s]: %s', path, body)
         finally:
             fp.close()
 
@@ -64,6 +89,7 @@ class Pending(object):
         :type path: str
         :return: The read request.
         :rtype: Document
+        :raise FileCorrupted:
         """
         fp = open(path)
         try:
@@ -71,11 +97,11 @@ class Pending(object):
                 request = Document()
                 body = fp.read()
                 request.load(body)
-                log.debug('read [%s]: %s', path, body)
+                log.debug('Read [%s]: %s', path, body)
                 return request
             except ValueError:
-                log.error('%s corrupt (discarded)', path)
                 os.unlink(path)
+                raise FileCorrupted(path)
         finally:
             fp.close()
 
@@ -89,13 +115,15 @@ class Pending(object):
         paths = [os.path.join(path, name) for name in os.listdir(path)]
         return sorted(paths)
 
-    def __init__(self, stream):
+    def __init__(self, stream, depth=MAX_DEPTH):
         """
         :param stream: The stream name.
         :type stream: str
+        :param depth: The queue depth.
+        :type depth: int
         """
         self.stream = stream
-        self.queue = Queue(maxsize=100)
+        self.queue = Queue(maxsize=depth)
         self.is_open = False
         self.sequential = Sequential()
         self.journal = {}
@@ -114,11 +142,11 @@ class Pending(object):
         log.info('Using: %s', path)
         for path in self._list():
             log.info('Restoring: %s', path)
-            request = Pending._read(path)
-            if not request:
-                # read failed
-                continue
-            self._put(request, path)
+            try:
+                request = Pending._read(path)
+                self._put(request, path)
+            except FileCorrupted, fe:
+                log.debug(utf8(fe))
         self.is_open = True
 
     def put(self, request):
@@ -145,7 +173,7 @@ class Pending(object):
         """
         while not Thread.aborted():
             try:
-                return self.queue.get(timeout=10)
+                return self._get(timeout=10)
             except Empty:
                 pass
 
@@ -159,9 +187,9 @@ class Pending(object):
         try:
             path = self.journal[sn]
             unlink(path)
-            log.debug('%s committed', sn)
+            log.debug('Request %s committed', sn)
         except KeyError:
-            log.warn('%s not found for commit', sn)
+            log.warn('Request %s not found for commit', sn)
 
     def delete(self):
         """
@@ -173,7 +201,7 @@ class Pending(object):
         self._drain()
         path = os.path.join(Pending.PENDING, self.stream)
         rmdir(path)
-        log.info('%s, deleted', path)
+        log.info('File %s deleted', path)
 
     def _drain(self):
         """
@@ -182,24 +210,55 @@ class Pending(object):
         self.is_open = False
         while not Thread.aborted():
             try:
-                request = self.queue.get(timeout=1)
+                request = self._get(timeout=1)
                 self.commit(request.sn)
             except Empty:
                 break
 
+    def _get(self, timeout=10):
+        """
+        Get the next pending request to be dispatched.
+        The queued *thing* can be either a request or the path to
+        a journal file.  When a path is detected, the file is read
+        and the actual request is read.
+        :return: The next pending request.
+        :rtype: Document
+        :raise Empty: when queue empty.
+        """
+        while True:
+            if Thread.aborted():
+                raise Empty()
+            thing = self.queue.get(timeout=timeout)
+            if isinstance(thing, str):
+                try:
+                    request = Pending._read(thing)
+                except (IOError, OSError, FileCorrupted), fe:
+                    log.warn(utf8(fe))
+                    continue
+            else:
+                request = thing
+            request.ts = time()
+            return request
+
     def _put(self, request, jnl_path):
         """
         Enqueue the request.
+        When the queue depth threshold is exceeded, the path to the
+        journal file is queued instead of the actual request. This
+        is done to reduce memory footprint for long backlogs.
         :param request: An AMQP request.
         :type request: Document
         :param jnl_path: Path to the associated journal file.
         :type jnl_path: str
         """
-        request.ts = time()
         tracker = Tracker()
         tracker.add(request.sn, request.data)
         self.journal[request.sn] = jnl_path
-        self.queue.put(request)
+        if self.queue.qsize() > Pending.SOFT_THRESHOLD:
+            thing = jnl_path
+        else:
+            thing = request
+        self.queue.put(thing)
 
 
 class Sequential(object):
