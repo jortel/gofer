@@ -93,7 +93,7 @@ class TestConnection(TestCase):
     @patch('gofer.messaging.adapter.proton.connection.Connection.ssl_domain')
     def test_open(self, ssl_domain, blocking, find):
         url = 'proton+amqps://localhost'
-        find.return_value = Mock(url=URL(url))
+        find.return_value = Mock(url=URL(url), heartbeat=12)
 
         # test
         connection = Connection(url)
@@ -102,7 +102,10 @@ class TestConnection(TestCase):
         # validation
         canonical = URL(url).canonical
         find.assert_called_once_with(url)
-        blocking.assert_called_once_with(canonical, ssl_domain=ssl_domain.return_value)
+        blocking.assert_called_once_with(
+            canonical,
+            heartbeat=find.return_value.heartbeat,
+            ssl_domain=ssl_domain.return_value)
 
     @patch('gofer.messaging.adapter.proton.connection.BlockingConnection')
     def test_open_already(self, blocking):

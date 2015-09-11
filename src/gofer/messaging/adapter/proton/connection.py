@@ -85,7 +85,10 @@ class Connection(BaseConnection):
         connector = Connector.find(self.url)
         domain = self.ssl_domain(connector)
         log.info('open: %s', connector)
-        self._impl = BlockingConnection(connector.url.canonical, ssl_domain=domain)
+        self._impl = BlockingConnection(
+            connector.url.canonical,
+            heartbeat=connector.heartbeat,
+            ssl_domain=domain)
         log.info('opened: %s', self.url)
 
     def sender(self, address):
