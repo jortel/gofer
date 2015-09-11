@@ -106,7 +106,7 @@ class TestConnection(TestCase):
         # validation
         canonical = URL(url).canonical
         find.assert_called_once_with(url)
-        blocking.assert_called_once_with(canonical, ssl_domain=ssl_domain.return_value)
+        blocking.assert_called_once_with(canonical, ssl_domain=ssl_domain.return_value, heartbeat=10)
 
     @patch('gofer.messaging.adapter.proton.connection.sleep')
     @patch('gofer.messaging.adapter.proton.connection.BlockingConnection')

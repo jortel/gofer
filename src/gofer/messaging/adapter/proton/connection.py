@@ -99,7 +99,7 @@ class Connection(BaseConnection):
             try:
                 log.info('connecting: %s', connector)
                 domain = self.ssl_domain(connector)
-                self._impl = BlockingConnection(url, ssl_domain=domain)
+                self._impl = BlockingConnection(url, ssl_domain=domain, heartbeat=10)
                 log.info('connected: %s', connector.url)
                 break
             except (ConnectionException, SSLException), e:
