@@ -87,7 +87,7 @@ AGENT_SCHEMA = (
 # [pending]
 #
 #   depth
-#     The pending queue depth.  Default: 100K
+#     The pending queue depth.  Default: 10K
 #
 # [model]
 #
@@ -166,7 +166,7 @@ PLUGIN_DEFAULTS = {
         'heartbeat': '10'
     },
     'pending': {
-        'depth': '100000'
+        'depth': '10000'
     },
     'model': {
         'managed': '2'

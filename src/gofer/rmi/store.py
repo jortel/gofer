@@ -58,7 +58,7 @@ class Pending(object):
     PENDING = '/var/lib/%s/messaging/pending' % NAME
 
     # The queue depth
-    MAX_DEPTH = 100000
+    MAX_DEPTH = 10000
 
     # The soft threshold determines when the journal
     # file path is queued instead of the actual request
