@@ -46,8 +46,8 @@ class RequestConsumer(Consumer):
         :type code: str
         :param description: rejection description
         :type description: str
-        :param document: The received (json) document.
-        :type document: str
+        :param document: The received document.
+        :type document: Document
         :param details: The explanation.
         :type details: str
         """
@@ -55,9 +55,7 @@ class RequestConsumer(Consumer):
             code=code,
             description=description,
             details=details)
-        request = Document()
-        request.load(document)
-        self.send(request, 'rejected', **details)
+        self.send(document, 'rejected', **details)
 
     def send(self, request, status, **details):
         """

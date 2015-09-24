@@ -12,8 +12,8 @@
 from gofer.messaging.model import \
     Document, \
     ModelError, \
-    InvalidDocument, \
-    InvalidVersion
+    DocumentError, \
+    VersionError
 
 from gofer.messaging.auth import \
     Authenticator, \

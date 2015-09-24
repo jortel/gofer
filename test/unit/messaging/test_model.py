@@ -12,7 +12,7 @@
 from unittest import TestCase
 
 from gofer.messaging.model import VERSION, Document, validate
-from gofer.messaging.model import ModelError, InvalidDocument, InvalidVersion
+from gofer.messaging.model import ModelError, DocumentError, VersionError
 
 
 class TestExceptions(TestCase):
@@ -28,7 +28,7 @@ class TestExceptions(TestCase):
         details = '4'
 
         # test
-        exception = InvalidDocument(code, description, document, details=details)
+        exception = DocumentError(code, description, document, details=details)
 
         # validation
         self.assertEqual(exception.code, code)
@@ -44,12 +44,12 @@ class TestExceptions(TestCase):
         details = 'expected:1.0, found:2.0'
 
         # test
-        exception = InvalidVersion(document, expected, found)
+        exception = VersionError(document, expected, found)
 
         # validation
-        self.assertEqual(exception.code, InvalidVersion.CODE)
-        self.assertEqual(exception.args, ('%s : %s' % (InvalidVersion.DESCRIPTION, details),))
-        self.assertEqual(exception.description, InvalidVersion.DESCRIPTION)
+        self.assertEqual(exception.code, VersionError.CODE)
+        self.assertEqual(exception.args, ('%s : %s' % (VersionError.DESCRIPTION, details),))
+        self.assertEqual(exception.description, VersionError.DESCRIPTION)
         self.assertEqual(exception.document, document)
         self.assertEqual(exception.details, details)
         self.assertTrue(isinstance(exception, ModelError))
@@ -63,7 +63,7 @@ class TestValidate(TestCase):
 
     def test_invalid(self):
         document = Document(version=VERSION+'.0')
-        self.assertRaises(InvalidVersion, validate, document)
+        self.assertRaises(VersionError, validate, document)
 
 
 class TestDocument(TestCase):

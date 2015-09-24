@@ -16,7 +16,7 @@ from mock import Mock, patch
 
 from gofer.messaging import Node
 from gofer.messaging.consumer import ConsumerThread, Consumer
-from gofer.messaging import InvalidDocument, ValidationFailed
+from gofer.messaging import DocumentError, ValidationFailed
 
 
 class TestConsumerThread(TestCase):
@@ -168,7 +168,7 @@ class TestConsumerThread(TestCase):
         description = 'just up and failed'
         document = Mock()
         details = 'crashed'
-        ir = InvalidDocument(code, description, document, details)
+        ir = DocumentError(code, description, document, details)
         consumer = ConsumerThread(node, url)
         consumer.reader = Mock()
         consumer.reader.next.side_effect = ir
