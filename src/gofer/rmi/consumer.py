@@ -48,19 +48,16 @@ class RequestConsumer(Consumer):
         :type code: str
         :param description: rejection description
         :type description: str
-        :param document: The received (json) document.
-        :type document: str
+        :param document: The received document.
+        :type document: Document
         :param details: The explanation.
         :type details: str
         """
         details = dict(
             code=code,
             description=description,
-            details=details
-        )
-        request = Document()
-        request.load(document)
-        self._send(request, 'rejected', **details)
+            details=details)
+        self._send(document, 'rejected', **details)
 
     def _send(self, request, status, **details):
         """
