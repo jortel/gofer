@@ -643,7 +643,7 @@ class Reader(BaseReader):
         :type timeout: int
         :return: The next document.
         :rtype: tuple: (Message, Document)
-        :raises: model.InvalidDocument
+        :raises: model.DocumentError
         """
         message = self.get(timeout)
         if message:

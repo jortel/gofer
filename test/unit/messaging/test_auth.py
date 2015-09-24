@@ -14,18 +14,28 @@ from unittest import TestCase
 
 from mock import patch, Mock
 
+from gofer.messaging import Document
 from gofer.messaging.auth import ValidationFailed, Authenticator
 from gofer.messaging.auth import sign, validate
-from gofer.messaging.auth import peal, encode, decode
+from gofer.messaging.auth import peal, load, encode, decode
 
 
 class Test(TestCase):
 
-    def test_validation_failed(self):
+    @patch('gofer.messaging.auth.Document')
+    def test_validation_failed(self, _document):
         details = 'just failed'
         f = ValidationFailed(details=details)
         self.assertEqual(f.code, ValidationFailed.CODE)
-        self.assertEqual(f.document, '{}')
+        self.assertEqual(f.document, _document.return_value)
+        self.assertEqual(f.args[0], ' : '.join((ValidationFailed.DESCRIPTION, details)))
+
+    def test_validation_failed_document_passed(self):
+        details = 'just failed'
+        document = Document(sn=1)
+        f = ValidationFailed(details=details, document=document)
+        self.assertEqual(f.code, ValidationFailed.CODE)
+        self.assertEqual(f.document, document)
         self.assertEqual(f.args[0], ' : '.join((ValidationFailed.DESCRIPTION, details)))
 
 
@@ -87,7 +97,9 @@ class TestValidation(TestCase):
         decode.assert_called_once_with(signature)
         self.assertEqual(1, validated['A'])
 
-    def test_validate_failed(self):
+    @patch('gofer.messaging.auth.Document')
+    def test_validate_failed(self, _document):
+        _document.return_value = Document()
         message = '[]'
         authenticator = Mock()
         authenticator.validate.side_effect = ValidationFailed
@@ -97,7 +109,7 @@ class TestValidation(TestCase):
             validate(authenticator, message)
             self.assertTrue(False, msg='validation exception expected')
         except ValidationFailed, e:
-            self.assertEqual(e.document, message)
+            self.assertEqual(e.document, _document.return_value)
 
     def test_validate_exception(self):
         message = '[]'
@@ -113,9 +125,10 @@ class TestValidation(TestCase):
             self.assertEqual(e.details, reason)
             self.assertEqual(e.document, message)
 
-    def test_no_message(self):
+    @patch('gofer.messaging.auth.Document')
+    def test_no_message(self, _document):
         validated = validate(None, None)
-        self.assertEqual(validated, None)
+        self.assertEqual(validated, _document.return_value)
 
 
 class TestPeal(TestCase):
@@ -131,8 +144,40 @@ class TestPeal(TestCase):
         message = '{"A":1}'
         document, original, signature = peal(message)
         self.assertEqual(document['A'], 1)
-        self.assertEqual(original, '{"A":1}')
+        self.assertEqual(original, message)
         self.assertEqual(signature, None)
+
+    @patch('gofer.messaging.auth.Document')
+    def test_none(self, _document):
+        _document.return_value = Document()
+        message = None
+        document, original, signature = peal(message)
+        self.assertEqual(document, _document.return_value)
+        self.assertEqual(original, message)
+        self.assertEqual(signature, None)
+
+    @patch('gofer.messaging.auth.Document')
+    def test_trash(self, _document):
+        _document.return_value = Document()
+        message = 123
+        document, original, signature = peal(message)
+        self.assertEqual(document, _document.return_value)
+        self.assertEqual(original, message)
+        self.assertEqual(signature, None)
+
+    def test_load(self):
+        document = load('{"A": 1}')
+        self.assertTrue(isinstance(document, Document))
+        self.assertEqual(document['A'], 1)
+
+    @patch('gofer.messaging.auth.Document')
+    def test_failed(self, _document):
+        # TypeError
+        document = load(1234)
+        self.assertEqual(document, _document.return_value)
+        # ValueError
+        document = load('[[[')
+        self.assertEqual(document, _document.return_value)
 
 
 class TestEncoding(TestCase):
