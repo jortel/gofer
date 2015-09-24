@@ -13,7 +13,7 @@ from time import sleep
 from logging import getLogger
 
 from gofer.common import Thread, released
-from gofer.messaging.model import InvalidDocument
+from gofer.messaging.model import DocumentError
 from gofer.messaging.adapter.model import Reader
 
 
@@ -97,8 +97,8 @@ class ConsumerThread(Thread):
             log.debug('{%s} read: %s', self.getName(), document)
             self.dispatch(document)
             message.ack()
-        except InvalidDocument, invalid:
-            self.rejected(invalid.code, invalid.description, invalid.document, invalid.details)
+        except DocumentError, de:
+            self.rejected(de.code, de.description, de.document, de.details)
         except Exception:
             log.exception(self.getName())
             sleep(60)

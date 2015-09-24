@@ -11,7 +11,7 @@
 
 from logging import getLogger
 
-from gofer.common import json, Options, utf8
+from gofer.common import utf8, json, Options
 
 
 log = getLogger(__name__)
@@ -32,7 +32,7 @@ class ModelError(Exception):
     pass
 
 
-class InvalidDocument(ModelError):
+class DocumentError(ModelError):
     """
     Base for all message/document validation.
     """
@@ -41,8 +41,8 @@ class InvalidDocument(ModelError):
         """
         :param code: The validation code.
         :type code: str
-        :param document: The invalid *json* document.
-        :type document: str
+        :param document: The document.
+        :type document: Document
         :param details: A detailed description of what failed.
         :type details: str
         """
@@ -53,27 +53,26 @@ class InvalidDocument(ModelError):
         self.details = details
 
 
-class InvalidVersion(InvalidDocument):
+class VersionError(DocumentError):
 
     CODE = 'model.version'
     DESCRIPTION = 'MODEL: document version not matched'
+    DETAILS = 'expected:%s, found:%s'
 
     def __init__(self, document, expected, found):
         """
-        :param document: The invalid *json* document.
-        :type document: str
+        :param document: The invalid document.
+        :type document: Document
         :param expected: The expected version.
         :type expected: str
         :param found: The version found in the document.
         :type found: str
         """
-        details = 'expected:%s, found:%s' % (expected, found)
-        InvalidDocument.__init__(
-            self,
-            code=self.CODE,
-            description=self.DESCRIPTION,
-            document=document,
-            details=details)
+        super(VersionError, self).__init__(
+            self.CODE,
+            self.DESCRIPTION,
+            document,
+            self.DETAILS % (expected, found))
 
 
 # --- utils ------------------------------------------------------------------
@@ -84,12 +83,12 @@ def validate(document):
     Determine whether the specified document is valid.
     :param document: The document to evaluate.
     :type document: Document
-    :raises InvalidDocument: when invalid.
+    :raises DocumentError: when invalid.
     """
     if document.version != VERSION:
-        failed = InvalidVersion(document.dump(), VERSION, document.version)
-        log.warn(utf8(failed))
-        raise failed
+        error = VersionError(document, VERSION, document.version)
+        log.warn(utf8(error))
+        raise error
 
 
 # --- model ------------------------------------------------------------------

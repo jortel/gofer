@@ -21,13 +21,13 @@ from logging import getLogger
 from base64 import b64encode, b64decode
 
 from gofer.common import utf8
-from gofer.messaging.model import Document, InvalidDocument
+from gofer.messaging.model import Document, DocumentError
 
 
 log = getLogger(__name__)
 
 
-class ValidationFailed(InvalidDocument):
+class ValidationFailed(DocumentError):
     """
     Message validation failed.
     """
@@ -35,17 +35,18 @@ class ValidationFailed(InvalidDocument):
     CODE = 'security.authentication'
     DESCRIPTION = 'SECURITY: message authentication failed'
 
-    def __init__(self, details=None):
+    def __init__(self, details=None, document=None):
         """
         :param details: A detailed description.
         :type details: str
+        :param document: The (optional) invalid document.
+        :type document: Document
         """
-        InvalidDocument.__init__(
-            self,
-            code=self.CODE,
-            description=self.DESCRIPTION,
-            document='{}',
-            details=details)
+        super(ValidationFailed, self).__init__(
+            self.CODE,
+            self.DESCRIPTION,
+            document or Document(),
+            details)
 
 
 class Authenticator(object):
@@ -121,8 +122,6 @@ def validate(authenticator, message):
     :rtype: Document
     :raises ValidationFailed: when message is not valid.
     """
-    if not message:
-        return
     document, original, signature = peal(message)
     try:
         if authenticator:
@@ -131,16 +130,16 @@ def validate(authenticator, message):
             digest = h.hexdigest()
             authenticator.validate(document, digest, decode(signature))
         return document
-    except ValidationFailed, failed:
-        failed.document = original
-        raise failed
+    except ValidationFailed, de:
+        de.document = document
+        log.info(utf8(de))
+        raise de
     except Exception, e:
         details = utf8(e)
         log.info(details)
         log.debug(details, exc_info=True)
-        failed = ValidationFailed(details)
-        failed.document = original
-        raise failed
+        de = ValidationFailed(details, original)
+        raise de
 
 
 def peal(message):
@@ -161,16 +160,31 @@ def peal(message):
     :return: tuple of: (document, original, signature)
     :rtype: tuple
     """
-    document = Document()
-    document.load(message)
+    document = load(message)
     signature = document.signature
     original = document.message
     if original:
-        document = Document()
-        document.load(original)
+        document = load(original)
     else:
         original = message
     return document, original, signature
+
+
+def load(json):
+    """
+    Load the json document.
+    Decoding errors are intentionally ignored.
+    :param json: A json string.
+    :type json: str
+    :return: The loaded document.
+    :rtype: Document
+    """
+    document = Document()
+    try:
+        document.load(json)
+    except (TypeError, ValueError):
+        pass
+    return document
 
 
 def encode(signature):

@@ -21,7 +21,7 @@ from logging import getLogger
 from uuid import uuid4
 
 from gofer.common import Thread, Options, nvl, utf8
-from gofer.messaging import Document, InvalidDocument
+from gofer.messaging import Document, DocumentError
 from gofer.messaging import Producer, Reader, Queue, Exchange
 from gofer.rmi.dispatcher import Return, RemoteException
 from gofer.metrics import Timer
@@ -212,7 +212,7 @@ class Policy(object):
 
             # rejected
             if document.status == 'rejected':
-                raise InvalidDocument(
+                raise DocumentError(
                     document.code,
                     document.description,
                     document.document,
