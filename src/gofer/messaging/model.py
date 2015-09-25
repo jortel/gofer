@@ -46,7 +46,7 @@ class DocumentError(ModelError):
         :param details: A detailed description of what failed.
         :type details: str
         """
-        Exception.__init__(self, ' : '.join((description or code, details or '')))
+        ModelError.__init__(self, ' : '.join((description or code, details or '')))
         self.code = code
         self.description = description
         self.document = document
@@ -68,7 +68,8 @@ class VersionError(DocumentError):
         :param found: The version found in the document.
         :type found: str
         """
-        super(VersionError, self).__init__(
+        DocumentError.__init__(
+            self,
             self.CODE,
             self.DESCRIPTION,
             document,

@@ -51,7 +51,7 @@ class Error(Exception):
         :param code: The qpid error code.
         :type code: int
         """
-        super(Error, self).__init__(description)
+        Exception.__init__(self, description)
         self.code = code
 
 

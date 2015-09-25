@@ -42,7 +42,8 @@ class ValidationFailed(DocumentError):
         :param document: The (optional) invalid document.
         :type document: Document
         """
-        super(ValidationFailed, self).__init__(
+        DocumentError.__init__(
+            self,
             self.CODE,
             self.DESCRIPTION,
             document or Document(),
