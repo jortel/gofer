@@ -717,6 +717,9 @@ class Connection(Handler):
             self.impl.close()
             condition = ConnectionClosed(self.impl)
             self.wait(condition)
+            while self.container.process():
+                # Drain (and close socket)
+                pass
         finally:
             self.impl = None
 

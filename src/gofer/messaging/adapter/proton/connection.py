@@ -97,7 +97,7 @@ class Connection(BaseConnection):
             try:
                 log.info('connecting: %s', connector)
                 ssl_domain = self.ssl_domain(connector)
-                impl = RealConnection(url, ssl_domain=ssl_domain)
+                impl = RealConnection(url, heartbeat=10, ssl_domain=ssl_domain)
                 self._impl = impl.open()
                 log.info('connected: %s', connector.url)
                 break
