@@ -13,7 +13,7 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-from time import time
+from time import time, sleep
 from logging import getLogger
 
 from gofer.common import Thread, Local
@@ -32,10 +32,8 @@ class Task:
     An RMI task to be scheduled on the plugin thread pool.
     :ivar plugin: A plugin.
     :type plugin: gofer.agent.plugin.Plugin
-    :ivar request: A gofer messaging request.
-    :type request: Document
-    :ivar commit: Transaction commit function.
-    :type commit: callable
+    :ivar transaction: A pending transaction.
+    :type transaction: Transaction
     :ivar ts: Timestamp
     :type ts: float
     """
@@ -55,25 +53,27 @@ class Task:
         producer.authenticator = plugin.authenticator
         return producer
 
-    def __init__(self, plugin, request, commit):
+    def __init__(self, plugin, transaction):
         """
         :param plugin: A plugin.
         :type plugin: gofer.agent.plugin.Plugin
-        :param request: The inbound request to be dispatched.
-        :type request: Document
-        :param commit: Transaction commit function.
-        :type commit: callable
+        :param transaction: A pending transaction.
+        :type transaction: Transaction
         """
         self.plugin = plugin
-        self.request = request
-        self.commit = commit
+        self.transaction = transaction
         self.producer = None
         self.ts = time()
+
+    @property
+    def request(self):
+        return self.transaction.request
 
     def __call__(self):
         """
         Dispatch received request.
         """
+        self.is_ready()
         request = self.request
         self.context.sn = request.sn
         self.context.progress = Progress(self)
@@ -83,13 +83,30 @@ class Task:
         try:
             self.send_started(request)
             result = self.plugin.dispatch(request)
-            self.commit(request.sn)
+            self.commit()
             self.send_reply(request, result)
         finally:
             self.context.sn = None
             self.context.progress = None
             self.context.cancelled = None
             self.producer.close()
+
+    def is_ready(self):
+        """
+        Wait for the plugin to be ready.
+        """
+        while True:
+            if not self.plugin.url:
+                log.info('Plugin: %s, not-ready', self.plugin.name)
+                sleep(10)
+            else:
+                break
+
+    def commit(self):
+        """
+        Commit the task.
+        """
+        self.transaction.commit()
 
     def send_started(self, request):
         """
@@ -110,7 +127,7 @@ class Task:
                 status='started',
                 timestamp=timestamp())
         except Exception:
-            log.exception('send (started), failed')
+            log.exception('Send (started), failed')
             
     def send_reply(self, request, result):
         """
@@ -126,7 +143,7 @@ class Task:
         now = time()
         duration = Timer(ts, now)
         address = request.replyto
-        log.info('sn=%s processed in: %s', sn, duration)
+        log.info('Request sn: %s processed in: %s', sn, duration)
         if not address:
             return
         try:
@@ -137,7 +154,40 @@ class Task:
                 result=result,
                 timestamp=timestamp())
         except Exception:
-            log.exception('send failed: %s', result)
+            log.exception('Send failed: %s', result)
+
+
+class Transaction(object):
+    """
+    A request transaction.
+    :ivar pending: A pending queue.
+    :type pending: Pending
+    :ivar request: The subject of the transaction.
+    :type request: Document
+    """
+
+    def __init__(self, pending, request):
+        """
+        :param pending: A pending queue.
+        :type pending: Pending
+        :param request: The subject of the transaction.
+        :type request: Document
+        """
+        self.pending = pending
+        self.request = request
+
+    def commit(self):
+        """
+        Commit the transaction.
+        The commit is propagated to the pending queue.
+        """
+        self.pending.commit(self.request.sn)
+
+    def discard(self):
+        """
+        Discard the transaction.
+        """
+        pass
 
 
 class Scheduler(Thread):
@@ -164,12 +214,13 @@ class Scheduler(Thread):
         """
         while not Thread.aborted():
             request = self.pending.get()
+            transaction = Transaction(self.pending, request)
             try:
                 plugin = self.select_plugin(request)
-                task = Task(plugin, request, self.pending.commit)
+                task = Task(plugin, transaction)
                 plugin.pool.run(task)
             except Exception:
-                self.pending.commit(request.sn)
+                transaction.commit()
                 log.exception(request.sn)
 
     def select_plugin(self, request):
@@ -265,7 +316,7 @@ class Progress:
                 completed=self.completed,
                 details=self.details)
         except Exception:
-            log.exception('send (progress), failed')
+            log.exception('Send (progress), failed')
 
 
 class Cancelled:
