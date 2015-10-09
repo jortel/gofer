@@ -28,7 +28,7 @@ from gofer import Singleton, synchronized, NAME
 from gofer.agent.config import PLUGIN_SCHEMA, PLUGIN_DEFAULTS
 from gofer.agent.decorator import Actions
 from gofer.agent.decorator import Delegate
-from gofer.agent.rmi import Scheduler
+from gofer.agent.rmi import Scheduler, Task
 from gofer.agent.whiteboard import Whiteboard
 from gofer.common import nvl, mkdir
 from gofer.common import released
@@ -241,8 +241,8 @@ class Plugin(object):
         :type path: str
         """
         self.__mutex = RLock()
-        self.descriptor = descriptor
         self.path = path
+        self.descriptor = descriptor
         self.pool = ThreadPool(int(descriptor.main.threads or 1))
         self.impl = None
         self.actions = []
@@ -463,22 +463,19 @@ class Plugin(object):
         - Abort scheduled requests.
         - Plugin shutdown.
         - Reload plugin.
-        - Reschedule pending requests to reloaded plugin.
+        - Reschedule pending work to reloaded plugin.
         """
         Plugin.delete(self)
-        pending = self.shutdown(False)
+        scheduled = self.shutdown(False)
         self.delegate.unloaded()
         plugin = PluginLoader.load(self.path)
         if plugin:
-            for call in pending:
-                task = call.fn
-                task.plugin = self
-                plugin.pool.run(task)
+            for call in scheduled:
+                if isinstance(call.fn, Task):
+                    task = call.fn
+                    task.transaction.plugin = plugin
+                plugin.pool.schedule(call)
             plugin.start()
-        else:
-            for call in pending:
-                task = call.fn
-                task.commit()
         log.info('plugin:%s, reloaded', self.name)
         return plugin
 

@@ -13,7 +13,7 @@ from unittest import TestCase
 
 from mock import patch, Mock
 
-from gofer.agent.rmi import Scheduler
+from gofer.agent.rmi import Scheduler, Transaction
 from gofer.messaging import Document
 
 
@@ -33,33 +33,41 @@ class TestScheduler(TestCase):
         self.assertEqual(scheduler.builtin, builtin.return_value)
 
     @patch('gofer.common.Thread.aborted')
+    @patch('gofer.agent.rmi.Transaction')
     @patch('gofer.agent.rmi.Scheduler.select_plugin')
     @patch('gofer.agent.rmi.Task')
     @patch('gofer.agent.rmi.Pending')
     @patch('gofer.agent.rmi.Builtin')
     @patch('threading.Thread.setDaemon', Mock())
-    def test_run(self, builtin, pending, task, select_plugin, aborted):
-        plugin = Mock()
+    def test_run(self, builtin, pending, task, select_plugin, tx, aborted):
+        _builtin = Mock(name='builtin')
+        plugin = Mock(name='plugin')
         task_list = [
             Mock(name='task-1'),
             Mock(name='task-2'),
+        ]
+        tx_list = [
+            Mock(name='tx-1'),
+            Mock(name='tx-2'),
         ]
         request_list = [
             Document(sn=1),
             Document(sn=2),
         ]
         task.side_effect = task_list
+        tx.side_effect = tx_list
         aborted.side_effect = [False, False, True]
         pending.return_value.get.side_effect = request_list
+        builtin.return_value = _builtin
         builtin.return_value.provides.side_effect = [True, False]
-        select_plugin.side_effect = [builtin.return_value, plugin]
+        select_plugin.side_effect = [_builtin, plugin]
 
         # test
         scheduler = Scheduler(plugin)
         scheduler.run()
 
         # validation
-        builtin.return_value.pool.run.assert_called_once_with(task_list[0])
+        _builtin.pool.run.assert_called_once_with(task_list[0])
         plugin.pool.run.assert_called_once_with(task_list[1])
         self.assertEqual(
             select_plugin.call_args_list,
@@ -68,10 +76,16 @@ class TestScheduler(TestCase):
                 ((request_list[1],), {}),
             ])
         self.assertEqual(
+            tx.call_args_list,
+            [
+                ((_builtin, pending.return_value, request_list[0]), {}),
+                ((plugin, pending.return_value, request_list[1]), {})
+            ])
+        self.assertEqual(
             task.call_args_list,
             [
-                ((builtin.return_value, request_list[0], pending.return_value.commit), {}),
-                ((plugin, request_list[1], pending.return_value.commit), {})
+                ((tx_list[0],), {}),
+                ((tx_list[1],), {}),
             ])
 
     @patch('gofer.agent.rmi.Pending')
@@ -136,3 +150,41 @@ class TestScheduler(TestCase):
         scheduler.shutdown()
         builtin.return_value.shutdown.assert_called_once_with()
         abort.assert_called_once_with()
+
+
+class TestTransaction(TestCase):
+
+    def test_init(self):
+        plugin = Mock()
+        pending = Mock()
+        request = Mock()
+        tx = Transaction(plugin, pending, request)
+        self.assertEqual(tx.plugin, plugin)
+        self.assertEqual(tx.pending, pending)
+        self.assertEqual(tx.request, request)
+
+    def test_id(self):
+        sn = 1234
+        plugin = Mock()
+        pending = Mock()
+        request = Mock(sn=sn)
+        tx = Transaction(plugin, pending, request)
+        self.assertEqual(tx.id, sn)
+
+    def test_commit(self):
+        sn = 1234
+        plugin = Mock()
+        pending = Mock()
+        request = Mock(sn=sn)
+        tx = Transaction(plugin, pending, request)
+        tx.commit()
+        pending.commit.assert_called_once_with(sn)
+
+    def test_discard(self):
+        sn = 1234
+        plugin = Mock()
+        pending = Mock()
+        request = Mock(sn=sn)
+        tx = Transaction(plugin, pending, request)
+        tx.discard()
+        pending.commit.assert_called_once_with(sn)
