@@ -30,16 +30,12 @@ log = getLogger(__name__)
 class Task:
     """
     An RMI task to be scheduled on the plugin thread pool.
-    :ivar plugin: A plugin.
-    :type plugin: gofer.agent.plugin.Plugin
-    :ivar request: A gofer messaging request.
-    :type request: Document
-    :ivar commit: Transaction commit function.
-    :type commit: callable
+    :ivar transaction: A pending transaction.
+    :type transaction: Transaction
     :ivar ts: Timestamp
     :type ts: float
     """
-    
+
     context = Local()
 
     @staticmethod
@@ -55,25 +51,30 @@ class Task:
         producer.authenticator = plugin.authenticator
         return producer
 
-    def __init__(self, plugin, request, commit):
+    def __init__(self, transaction):
         """
-        :param plugin: A plugin.
-        :type plugin: gofer.agent.plugin.Plugin
-        :param request: The inbound request to be dispatched.
-        :type request: Document
-        :param commit: Transaction commit function.
-        :type commit: callable
+        :param transaction: A pending transaction.
+        :type transaction: Transaction
         """
-        self.plugin = plugin
-        self.request = request
-        self.commit = commit
+        self.transaction = transaction
         self.producer = None
         self.ts = time()
+
+    @property
+    def plugin(self):
+        return self.transaction.plugin
+
+    @property
+    def request(self):
+        return self.transaction.request
 
     def __call__(self):
         """
         Dispatch received request.
         """
+        if not self.plugin.url:
+            self.discard()
+            return
         request = self.request
         self.context.sn = request.sn
         self.context.progress = Progress(self)
@@ -83,13 +84,25 @@ class Task:
         try:
             self.send_started(request)
             result = self.plugin.dispatch(request)
-            self.commit(request.sn)
+            self.commit()
             self.send_reply(request, result)
         finally:
             self.context.sn = None
             self.context.progress = None
             self.context.cancelled = None
             self.producer.close()
+
+    def commit(self):
+        """
+        Commit the transaction.
+        """
+        self.transaction.commit()
+
+    def discard(self):
+        """
+        Discard the transaction.
+        """
+        self.transaction.discard()
 
     def send_started(self, request):
         """
@@ -110,8 +123,8 @@ class Task:
                 status='started',
                 timestamp=timestamp())
         except Exception:
-            log.exception('send (started), failed')
-            
+            log.exception('Send: started, failed')
+
     def send_reply(self, request, result):
         """
         Send the reply if requested.
@@ -126,7 +139,7 @@ class Task:
         now = time()
         duration = Timer(ts, now)
         address = request.replyto
-        log.info('sn=%s processed in: %s', sn, duration)
+        log.info('Request: %s processed in: %s', sn, duration)
         if not address:
             return
         try:
@@ -137,7 +150,49 @@ class Task:
                 result=result,
                 timestamp=timestamp())
         except Exception:
-            log.exception('send failed: %s', result)
+            log.exception('Send: reply, failed: %s', result)
+
+
+class Transaction(object):
+    """
+    A request transaction.
+    :ivar pending: A pending queue.
+    :type pending: Pending
+    :ivar request: The subject of the transaction.
+    :type request: Document
+    """
+
+    def __init__(self, plugin, pending, request):
+        """
+        :param plugin: A plugin.
+        :type plugin: gofer.agent.plugin.Plugin
+        :param pending: A pending queue.
+        :type pending: Pending
+        :param request: An RMI request.
+        :type request: Document
+        """
+        self.plugin = plugin
+        self.pending = pending
+        self.request = request
+
+    @property
+    def id(self):
+        return self.request.sn
+
+    def commit(self):
+        """
+        Commit the transaction.
+        The commit is propagated to the pending queue.
+        """
+        self.pending.commit(self.request.sn)
+        log.info('Request: %s, committed', self.id)
+
+    def discard(self):
+        """
+        Discard the transaction.
+        """
+        self.pending.commit(self.request.sn)
+        log.info('Request: %s, discarded', self.id)
 
 
 class Scheduler(Thread):
@@ -145,7 +200,7 @@ class Scheduler(Thread):
     The pending request scheduler.
     Processes the *pending* queue.
     """
-    
+
     def __init__(self, plugin):
         """
         :param plugin: A plugin.
@@ -165,8 +220,10 @@ class Scheduler(Thread):
         while not Thread.aborted():
             request = self.pending.get()
             try:
+                pending = self.pending
                 plugin = self.select_plugin(request)
-                task = Task(plugin, request, self.pending.commit)
+                transaction = Transaction(plugin, pending, request)
+                task = Task(transaction)
                 plugin.pool.run(task)
             except Exception:
                 self.pending.commit(request.sn)
@@ -201,14 +258,14 @@ class Scheduler(Thread):
         """
         self.builtin.shutdown()
         self.abort()
-        
+
 
 class Context:
     """
     Remote method invocation context.
     Provides call context to method implementations.
     """
-    
+
     @staticmethod
     def current():
         return Task.context
@@ -226,7 +283,7 @@ class Progress:
     :ivar details: The reported details.
     :type details: object
     """
-    
+
     def __init__(self, task):
         """
         :param task: The current task.
@@ -265,7 +322,7 @@ class Progress:
                 completed=self.completed,
                 details=self.details)
         except Exception:
-            log.exception('send (progress), failed')
+            log.exception('Send: progress, failed')
 
 
 class Cancelled:
