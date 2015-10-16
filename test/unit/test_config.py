@@ -10,9 +10,8 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 from unittest import TestCase
-from StringIO import StringIO
 
-from mock import patch, Mock
+from mock import call, patch, Mock
 
 from copy import deepcopy as clone
 
@@ -151,6 +150,23 @@ JSON_READER = """
 }
 """
 
+INLINE_INI_CONTENT = """
+# :format=ini:
+[section]
+name=Elvis
+age=53
+"""
+
+INLINE_JSON_CONTENT = """
+# :format=json:
+{
+    "section": {
+        "name": "Elvis",
+        "age": "53"
+    }
+}
+"""
+
 
 class TestUtils(TestCase):
 
@@ -237,20 +253,26 @@ class TestConfig(TestCase):
     @patch('gofer.config.Config.open')
     @patch('gofer.config.Config.update')
     def test_init(self, _update, _open):
+        r = TextReader(INLINE_INI_CONTENT)
         path = '/path.conf'
         d = {'A': 1}
-        Config(path, d)
-        _update.assert_called_with(d)
-        _open.assert_called_with([path])
+        Config(path, d, r)
+        _open.assert_called_with(path)
+        self.assertEqual(
+            _update.call_args_list,
+            [
+                call(d),
+                call(r())
+            ])
 
     @patch('gofer.config.Config.update')
-    @patch('gofer.config.Reader')
+    @patch('gofer.config.FileReader')
     def test_open_conf(self, _reader, _update):
         path = '/path.conf'
         cfg = Config()
         cfg.open(path)
         _reader.assert_called_with(path)
-        _update.assert_called_with(_reader.return_value.read.return_value)
+        _update.assert_called_with(_reader.return_value.return_value)
 
     @patch('__builtin__.open')
     @patch('gofer.config.Config.update')
@@ -577,12 +599,19 @@ class TestGraphSection(TestCase):
         self.assertEqual(properties, MINIMAL['section1'].items())
 
 
+class TestReader(TestCase):
+
+    def test_abstract(self):
+        r = Reader()
+        self.assertRaises(NotImplementedError, r)
+
+
 class TestIReader(TestCase):
 
     def test_read(self):
         fp = StringIO(I_READER)
-        reader = IReader()
-        d = reader.read(fp)
+        reader = IReader(fp)
+        d = reader()
         self.assertEqual(
             d,
             {
@@ -604,8 +633,8 @@ class TestJsonReader(TestCase):
 
     def test_read(self):
         fp = StringIO(JSON_READER)
-        reader = JsonReader()
-        d = reader.read(fp)
+        reader = JReader(fp)
+        d = reader()
         self.assertEqual(
             d,
             {
@@ -624,23 +653,23 @@ class TestJsonReader(TestCase):
 
     def test_read_invalid_json(self):
         fp = StringIO('[')
-        reader = JsonReader()
-        self.assertEqual(reader.read(fp), {})
+        reader = JReader(fp)
+        self.assertEqual(reader(), {})
 
 
-class TestReader(TestCase):
+class TestFileReader(TestCase):
 
     @patch('__builtin__.open', Mock())
     def test_unsupported(self):
-        reader = Reader('test.unsupported')
-        self.assertRaises(ValueError, reader.read)
+        reader = FileReader('test.unsupported')
+        self.assertRaises(ValueError, reader)
 
     @patch('__builtin__.open')
     def test_iread(self, _open):
         path = 'test.conf'
         _open.return_value = StringIO(I_READER)
-        reader = Reader(path)
-        d = reader.read()
+        reader = FileReader(path)
+        d = reader()
         _open.assert_called_with(path)
         self.assertEqual(
             d,
@@ -661,8 +690,8 @@ class TestReader(TestCase):
     @patch('__builtin__.open')
     def test_jread(self, _open):
         _open.return_value = StringIO(JSON_READER)
-        reader = Reader('test.json')
-        d = reader.read()
+        reader = FileReader('test.json')
+        d = reader()
         self.assertEqual(
             d,
             {
@@ -678,3 +707,44 @@ class TestReader(TestCase):
                     'property4': '4',
                     'property5': '',
                 }})
+
+
+class TestTextReader(TestCase):
+
+    def test_init(self):
+        content = '12345'
+        reader = TextReader(content)
+        self.assertEqual(reader.content, content)
+
+    def test_match(self):
+        line = INLINE_INI_CONTENT.split('\n')[1]
+        encoding = TextReader.match(line)
+        self.assertEqual(encoding, line[10:13])
+
+    def test_not_matched(self):
+        line = ':jpg:'
+        encoding = TextReader.match(line)
+        self.assertEqual(encoding, '')
+
+    def test_split(self):
+        content = INLINE_INI_CONTENT
+        encoding, body = TextReader.split(content)
+        lines = content.split('\n')
+        self.assertEqual(encoding, lines[1][10:13])
+        self.assertEqual(body, '\n'.join(lines[2:]))
+
+    def test_read_ini(self):
+        content = INLINE_INI_CONTENT
+        reader = TextReader(content)
+        d = reader()
+        self.assertEqual(d, {'section': {'age': '53', 'name': 'Elvis'}})
+
+    def test_read_json(self):
+        content = INLINE_JSON_CONTENT
+        reader = TextReader(content)
+        d = reader()
+        self.assertEqual(d, {'section': {'age': '53', 'name': 'Elvis'}})
+
+    def test_read_invalid(self):
+        reader = TextReader('This is bad')
+        self.assertRaises(ValueError, reader)
