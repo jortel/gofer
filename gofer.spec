@@ -240,6 +240,9 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Tue Nov 03 2015 Jeff Ortel <jortel@redhat.com> 0.65.1-1
+- 1277581 - pass heartbeat option on connect. (jortel@redhat.com)
+
 * Fri Feb 03 2012 Jeff Ortel <jortel@redhat.com> 0.65-1
 - Initial add of hmac classes; add synchronized decorator. (jortel@redhat.com)
 - python 2.4 compat for __import__(). (jortel@redhat.com)
