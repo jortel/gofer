@@ -27,7 +27,7 @@ from gofer.messaging import Producer
 log = getLogger(__name__)
 plugin = Plugin.find(__name__)
 
-HEARTBEAT = 500
+HEARTBEAT = 10
 
 # whiteboard
 plugin.whiteboard['secret'] = 'garfield'

@@ -19,6 +19,8 @@ from logging import getLogger
 from datetime import datetime as dt
 from datetime import timedelta
 
+from gofer.common import released
+
 
 log = getLogger(__name__)
 
@@ -31,7 +33,7 @@ class Action:
     :ivar interval: The run interval.
     :type interval: dt
     :ivar last: The last run timestamp.
-    :type last: datetime
+    :type last: timedelta
     """
 
     def __init__(self, target, **interval):
@@ -67,6 +69,7 @@ class Action:
         method = t.__name__
         return '%s.%s()' % (cls, method)
 
+    @released
     def __call__(self):
         """
         Invoke the action.
