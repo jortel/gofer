@@ -23,7 +23,7 @@ from qpid.messaging import Connection as RealConnection
 from qpid.messaging.transports import TRANSPORTS
 from qpid.messaging import ConnectionError
 
-from gofer.common import ThreadSingleton
+from gofer.common import ThreadSingleton, utf8
 from gofer.messaging.adapter.model import Connector, BaseConnection
 from gofer.messaging.adapter.connect import retry
 
@@ -134,5 +134,5 @@ class Connection(BaseConnection):
         try:
             connection.close()
             log.info('closed: %s', self.url)
-        except Exception:
-            pass
+        except Exception, pe:
+            log.debug(utf8(pe))

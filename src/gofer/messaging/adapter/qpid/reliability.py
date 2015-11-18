@@ -12,12 +12,16 @@
 # Jeff Ortel (jortel@redhat.com)
 
 from time import sleep
+from logging import getLogger
 
 from qpid.messaging import NotFound as _NotFound
 from qpid.messaging import ConnectionError, LinkError
 
-from gofer.common import Thread
+from gofer.common import Thread, utf8
 from gofer.messaging.adapter.model import NotFound
+
+
+log = getLogger(__name__)
 
 
 DELAY = 10   # seconds
@@ -32,10 +36,12 @@ def reliable(fn):
                 return fn(thing, *args, **kwargs)
             except _NotFound, e:
                 raise NotFound(*e.args)
-            except LinkError:
-                sleep(DELAY)
+            except LinkError, le:
+                log.error(utf8(le))
                 repair = thing.repair
-            except ConnectionError:
                 sleep(DELAY)
+            except ConnectionError, pe:
+                log.error(utf8(pe))
                 repair = thing.repair
+                sleep(DELAY)
     return _fn
