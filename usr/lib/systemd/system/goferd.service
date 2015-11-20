@@ -5,6 +5,7 @@ After=network.target
 [Service]
 ExecStart=/usr/bin/goferd --foreground
 Restart=on-abort
+EnvironmentFile=/etc/sysconfig/goferd
 
 [Install]
 WantedBy=multi-user.target

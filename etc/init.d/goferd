@@ -16,6 +16,8 @@ PROG=goferd
 LOCK=/var/lock/subsys/$PROG
 PID=/var/run/$PROG.pid
 
+. /etc/sysconfig/$PROG
+
 start() {
   if [ -e $PID ]; then
     pid=$(cat $PID)
