@@ -72,13 +72,14 @@ class Task:
         """
         Dispatch received request.
         """
-        if not self.plugin.url:
+        request = self.request
+        cancelled = Cancelled(request.sn)
+        if not self.plugin.url or cancelled():
             self.discard()
             return
-        request = self.request
         self.context.sn = request.sn
         self.context.progress = Progress(self)
-        self.context.cancelled = Cancelled(request.sn)
+        self.context.cancelled = cancelled
         self.producer = self._producer(self.plugin)
         self.producer.open()
         try:
