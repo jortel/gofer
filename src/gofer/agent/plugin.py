@@ -32,7 +32,7 @@ from gofer.agent.rmi import Scheduler, Task
 from gofer.agent.whiteboard import Whiteboard
 from gofer.common import nvl, mkdir
 from gofer.common import released
-from gofer.config import Config, Graph, Reader, get_bool, get_integer
+from gofer.config import Config, Graph, FileReader, get_bool, get_integer
 from gofer.messaging import Document, Connector, Node, Queue, Exchange
 from gofer.messaging import NotFound
 from gofer.rmi.consumer import RequestConsumer
@@ -603,7 +603,7 @@ class PluginLoader:
         paths = [os.path.join(root, fn) for fn in os.listdir(root)]
         for path in sorted(paths):
             _, ext = os.path.splitext(path)
-            if ext not in Reader.EXTENSION:
+            if ext not in FileReader.EXTENSION:
                 continue
             if os.path.isdir(path):
                 continue

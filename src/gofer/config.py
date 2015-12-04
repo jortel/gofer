@@ -51,6 +51,7 @@ import os
 import re
 
 from threading import RLock
+from StringIO import StringIO
 
 from gofer.common import json, utf8
 
@@ -171,22 +172,23 @@ class Config(dict):
 
     def __init__(self, *inputs):
         """
-        Creates a blank configuration and loads one or more files
-        or existing data.
+        Creates a blank configuration and loads using the specified inputs.
         Values to the inputs parameter can be one of three things:
-         - the full path to a file to load (str)
-         - file object to read from
-         - dictionary whose values will be merged into this instance
+         - The full path to a file to load (str)
+         - A configured *Reader*.
+         - A loaded *dict*
         :param inputs: one or more files to load (see above)
         :param options: see above
         """
         super(Config, self).__init__()
-        for input in inputs:
-            if isinstance(input, basestring):
-                self.open([input])
+        for _input in inputs:
+            if isinstance(_input, basestring):
+                self.open(_input)
                 continue
-            if isinstance(input, dict):
-                self.update(input)
+            if isinstance(_input, Reader):
+                self.update(_input())
+            if isinstance(_input, dict):
+                self.update(_input)
                 continue
 
     def open(self, paths):
@@ -195,11 +197,11 @@ class Config(dict):
         :param paths: A path or list of paths to (.conf|.json) files
         :type paths: str|list
         """
-        if isinstance(paths, basestring):
+        if not isinstance(paths, (list, tuple)):
             paths = (paths,)
         for path in paths:
-            reader = Reader(path)
-            d = reader.read()
+            reader = FileReader(path)
+            d = reader()
             self.update(d)
 
     def update(self, other):
@@ -563,7 +565,13 @@ class GraphSection(object):
         return gs()
 
 
-class IReader(object):
+class Reader(object):
+    
+    def __call__(self):
+        raise NotImplementedError()
+
+
+class IReader(Reader):
     """
     INI Reader
     """
@@ -571,15 +579,21 @@ class IReader(object):
     SECTION = re.compile(r'(\[)([^]]+)(])')
     PROPERTY = re.compile(r'(:|=)')
 
-    def read(self, fp):
+    def __init__(self, fp):
         """
-        Read the file and return a dictionary.
         :param fp: An open file descriptor.
         :type fp: file
+        """
+        self.fp = fp
+
+    def __call__(self):
+        """
+        Read the file and return a dictionary.
         :return: The parsed file.
         :rtype: dict
         """
         d = {}
+        fp = self.fp
         section = None
         while True:
             line = fp.readline()
@@ -603,31 +617,114 @@ class IReader(object):
         return d
 
 
-class JsonReader(object):
+class JReader(object):
     """
     JSON Reader
     """
 
-    def read(self, fp):
+    def __init__(self, fp):
         """
-        Read the file and return a dictionary.
         :param fp: An open file descriptor.
         :type fp: file
+        """
+        self.fp = fp
+
+    def __call__(self):
+        """
+        Read the file and return a dictionary.
+
         :return: The parsed file.
         :rtype: dict
         """
         try:
+            fp = self.fp
             return json.load(fp)
-        except ValueError:
+        except (TypeError, ValueError):
             return {}
 
 
-class Reader(object):
+class TextReader(Reader):
+    """
+    A text configuration reader.
+    The content *must* specify the format on the 1st line of the content
+    using: # :format=<format>:
+    Example:
+    #
+    # :format=json:
+    #
+    """
+
+    READER = {
+        'ini': IReader,
+        'json': JReader,
+    }
+
+    FORMAT = re.compile(r'(#\s+:format=)(%s)(:)' % '|'.join(READER))
+
+    @staticmethod
+    def match(line):
+        """
+        Match the formatting and return the named format.
+        :param line: A line to match.
+        :type line: str
+        :return: The matched formatting (name) or ''.
+        :rtype: str
+        """
+        match = TextReader.FORMAT.match(line)
+        if match:
+            return match.group(2)
+        else:
+            return ''
+
+    @staticmethod
+    def split(content):
+        """
+        Split the formatting and body.
+        :param content: The content to split.
+        :type content: str
+        :return: The (formatting, body)
+        :rtype: tuple
+        """
+        lines = map(lambda s: s.strip(), content.split('\n'))
+        while lines[0] == '':
+            lines = lines[1:]
+        body = '\n'.join(lines[1:])
+        formatting = TextReader.match(lines[0])
+        return formatting, body
+
+    def __init__(self, content):
+        """
+        :param content: The configuration content.
+        :type content: str
+        """
+        self.content = content
+
+    def __call__(self):
+        """
+        Read and return the configuration.
+        :return: The configuration.
+        :rtype: dict
+        :raise ValueError: on parsing error.
+        """
+        formatting, body = self.split(self.content)
+        try:
+            _T = TextReader.READER[formatting]
+            fp = StringIO(body)
+            reader = _T(fp)
+            return reader()
+        except KeyError:
+            raise ValueError('%s not supported' % formatting)
+
+
+class FileReader(Reader):
+    """
+    A configuration reader.
+    """
 
     EXTENSION = {
-        '.ini': IReader(),
-        '.conf': IReader(),
-        '.json': JsonReader()
+        '.ini': IReader,
+        '.conf': IReader,
+        '.json': JReader
     }
 
     def __init__(self, path):
@@ -637,13 +734,20 @@ class Reader(object):
         """
         self.path = path
 
-    def read(self):
+    def __call__(self):
+        """
+        Read and return the configuration.
+        :return: The configuration.
+        :rtype: dict
+        :raise ValueError: on parsing error.
+        """
         _, ext = os.path.splitext(self.path)
         fp = open(self.path)
         try:
             try:
-                reader = Reader.EXTENSION[ext]
-                return reader.read(fp)
+                _T = FileReader.EXTENSION[ext]
+                reader = _T(fp)
+                return reader()
             except KeyError:
                 raise ValueError('%s not supported' % ext)
         finally:
