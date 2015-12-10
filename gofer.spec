@@ -57,6 +57,7 @@ mkdir -p %{buildroot}/%{_sysconfdir}/%{name}
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/plugins
 mkdir -p %{buildroot}/%{_sysconfdir}/%{name}/conf.d
 mkdir -p %{buildroot}/%{_sysconfdir}/init.d
+mkdir -p %{buildroot}/%{_sysconfdir}/sysconfig
 mkdir -p %{buildroot}/%{_unitdir}
 mkdir -p %{buildroot}/%{_usr}/lib/%{name}/plugins
 mkdir -p %{buildroot}/%{_usr}/share/%{name}/plugins
@@ -65,6 +66,7 @@ mkdir -p %{buildroot}/%{_mandir}/man1
 cp bin/* %{buildroot}/usr/bin
 cp etc/%{name}/*.conf %{buildroot}/%{_sysconfdir}/%{name}
 cp etc/%{name}/plugins/*.conf %{buildroot}/%{_sysconfdir}/%{name}/plugins
+cp etc/sysconfig/%{name}d %{buildroot}/%{_sysconfdir}/sysconfig
 cp src/plugins/*.py %{buildroot}/%{_usr}/share/%{name}/plugins
 cp docs/man/man1/* %{buildroot}/%{_mandir}/man1
 
@@ -92,8 +94,10 @@ rm -rf %{buildroot}
 %else
 %attr(755,root,root) %{_sysconfdir}/init.d/%{name}d
 %endif
+%attr(644,root,root) %{_sysconfdir}/sysconfig/%{name}d
 %config(noreplace) %{_sysconfdir}/%{name}/agent.conf
 %config(noreplace) %{_sysconfdir}/%{name}/plugins/builtin.conf
+%config(noreplace) %{_sysconfdir}/sysconfig/%{name}d
 %{_usr}/share/%{name}/plugins/builtin.*
 %doc LICENSE
 %doc %{_mandir}/man1/goferd.*
