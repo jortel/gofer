@@ -16,7 +16,10 @@ PROG=goferd
 LOCK=/var/lock/subsys/$PROG
 PID=/var/run/$PROG.pid
 
-. /etc/sysconfig/$PROG
+[ -f /etc/sysconfig/$PROG ] && . /etc/sysconfig/$PROG
+
+# this is a no-op if the env var isn't set
+export PYTHONOPTIMIZE
 
 start() {
   if [ -e $PID ]; then
