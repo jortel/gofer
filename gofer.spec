@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.6.7
+Version: 2.6.8
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -270,6 +270,9 @@ This plug-in provides RMI access to package (RPM) management.
 
 
 %changelog
+* Thu Dec 10 2015 Jeff Ortel <jortel@redhat.com> 2.6.8-1
+- export PYTHONOPTIMIZE in the init script (sean.myers@redhat.com)
+
 * Fri Nov 20 2015 Jeff Ortel <jortel@redhat.com> 2.6.7-1
 - Run goferd optimized by default (sean.myers@redhat.com)
 
