@@ -178,7 +178,7 @@ def main():
     daemon = True
     setup_logging()
     try:
-        opts, args = getopt(sys.argv[1:], 'hf:', ['help', 'foreground'])
+        opts, args = getopt(sys.argv[1:], 'hf', ['help', 'foreground'])
         for opt,arg in opts:
             if opt in ('-h', '--help'):
                 usage()
