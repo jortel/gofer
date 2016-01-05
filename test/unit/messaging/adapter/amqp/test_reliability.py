@@ -140,6 +140,12 @@ class TestEndpoint(TestCase):
         self.assertEqual(messenger.channel, None)
 
     @patch('gofer.messaging.adapter.amqp.reliability.Connection', Mock())
+    def test_is_open(self):
+        url = Mock()
+        messenger = Endpoint(url)
+        self.assertTrue(messenger.is_open())
+
+    @patch('gofer.messaging.adapter.amqp.reliability.Connection', Mock())
     def test_open(self):
         url = Mock()
         messenger = Endpoint(url)

@@ -11,12 +11,16 @@
 # Jeff Ortel (jortel@redhat.com)
 
 from time import sleep
+from logging import getLogger
 
 from amqp import ChannelError
 
-from gofer import Thread
+from gofer.common import Thread, utf8
 from gofer.messaging.adapter.model import Messenger, NotFound
 from gofer.messaging.adapter.amqp.connection import Connection, CONNECTION_EXCEPTIONS
+
+
+log = getLogger(__name__)
 
 
 DELAY = 10  # seconds
@@ -29,15 +33,17 @@ def reliable(fn):
             try:
                 repair()
                 return fn(messenger, *args, **kwargs)
-            except ChannelError, e:
-                if e.code != 404:
-                    sleep(DELAY)
+            except ChannelError, le:
+                if le.code != 404:
+                    log.error(utf8(le))
                     repair = messenger.repair
+                    sleep(DELAY)
                 else:
-                    raise NotFound(*e.args)
-            except CONNECTION_EXCEPTIONS:
-                sleep(DELAY)
+                    raise NotFound(*le.args)
+            except CONNECTION_EXCEPTIONS, pe:
+                log.error(utf8(pe))
                 repair = messenger.repair
+                sleep(DELAY)
     return _fn
 
 
@@ -58,6 +64,9 @@ class Endpoint(Messenger):
         super(Endpoint, self).__init__(url)
         self.connection = Connection(url)
         self.channel = None
+
+    def is_open(self):
+        return True
 
     def open(self):
         self.connection.open()

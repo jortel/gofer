@@ -119,5 +119,5 @@ class Connection(BaseConnection):
         try:
             connection.close()
             log.info('closed: %s', self.url)
-        except Exception:
-            pass
+        except Exception, pe:
+            log.exception(utf8(pe))
