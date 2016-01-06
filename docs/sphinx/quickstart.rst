@@ -14,8 +14,8 @@ Then,
 
      yum install gofer python-gofer-qpid
 
-2. Edit the ``/etc/gofer/plugins/builtin.conf`` and set the url to point at your broker.
-   Then, set uuid=123. Or, look in ``/var/log/messages`` to find the auto-assigned UUID
+2. Edit the ``/etc/gofer/plugins/demo.conf`` and set the url to point at your broker.
+   Then, set queue=123. Or, look in ``/var/log/messages`` to find the auto-assigned UUID
    for your system.
 
    ::
@@ -35,7 +35,7 @@ Then,
 
      service goferd start
 
-4. Now, invoke the remote operations provided by the builtin plugin:
+4. Now, invoke the remote operations provided by the demo plugin:
 
 Python
 ------
@@ -49,15 +49,15 @@ Python
      >>> admin = agent.Admin()
      >>> print admin.help()
          Plugins:
-           builtin
+           demo
          Actions:
-           builtin.TestAction.hello() 0:10:00
+           demo.TestAction.hello() 0:10:00
          Methods:
           Admin.hello()
           Admin.help()
           Shell.run()
         Functions:
-          builtin.echo()
+          demo.echo()
 
 
 Writing A Plugin
@@ -240,17 +240,17 @@ Another useful tool, it invoke *Admin.help()* from within interactive python as 
  >>> print admin.help()
 
  Plugins:
-   builtin
+   demo
    myplugin
  Actions:
-   builtin.TestAction 0:10:00
+   demo.TestAction 0:10:00
  Methods:
    myplugin.MyClass.hello()
-   builtin.AgentAdmin.hello()
-   builtin.AgentAdmin.help()
-   builtin.Shell.run()
+   demo.AgentAdmin.hello()
+   demo.AgentAdmin.help()
+   demo.Shell.run()
  Functions:
-   builtin.echo()
+   demo.echo()
  >>>
 
 

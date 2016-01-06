@@ -560,18 +560,18 @@ Another useful tool, it invoke *Admin.help()* from within interactive python as 
  >>> print admin.help()
 
  Plugins:
-   builtin
+   demo
    pulp [pulp_admin]
  Actions:
-   builtin.TestAction 0:10:00
+   demo.TestAction 0:10:00
  Methods:
    custom.Dog.bark()
    custom.Dog.wag()
-   builtin.Admin.hello()
-   builtin.Admin.help()
-   builtin.Shell.run()
+   demo.Admin.hello()
+   demo.Admin.help()
+   demo.Shell.run()
  Functions:
-   builtin.echo()
+   demo.echo()
  >>>
 
 

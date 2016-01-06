@@ -93,9 +93,9 @@ Show the status of goferd
               run(user, password, *options)
         Functions:
     
-      <plugin> builtin
+      <plugin> demo
         Classes:
-          <class> Builtin
+          <class> Demo
             methods:
               demo()
               echo(something)
