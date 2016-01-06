@@ -28,7 +28,7 @@ log = getLogger(__name__)
 DELAY = 10   # seconds
 
 # resend settings
-RESEND_DELAY = 10  # seconds
+RESEND_DELAY = 4  # seconds
 MAX_RESEND = DAY / RESEND_DELAY
 
 # amqp conditions
@@ -61,11 +61,11 @@ def resend(fn):
     def _fn(sender, *args, **kwargs):
         retry = MAX_RESEND
         delay = RESEND_DELAY
-        while retry > 0:
+        while not Thread.aborted() and retry > 0:
             try:
                 return fn(sender, *args, **kwargs)
             except SendException, le:
-                log.error(utf8(le))
+                log.error(utf8(le.state))
                 if le.state == Delivery.RELEASED:
                     sleep(delay)
                     retry -= 1
