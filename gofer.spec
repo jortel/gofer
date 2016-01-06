@@ -65,10 +65,11 @@ mkdir -p %{buildroot}/%{_mandir}/man1
 
 cp bin/* %{buildroot}/usr/bin
 cp etc/%{name}/*.conf %{buildroot}/%{_sysconfdir}/%{name}
-cp etc/%{name}/plugins/*.conf %{buildroot}/%{_sysconfdir}/%{name}/plugins
 cp etc/sysconfig/%{name}d %{buildroot}/%{_sysconfdir}/sysconfig
-cp src/plugins/*.py %{buildroot}/%{_usr}/share/%{name}/plugins
 cp docs/man/man1/* %{buildroot}/%{_mandir}/man1
+
+cp plugins/demo.conf %{buildroot}/%{_sysconfdir}/%{name}/plugins
+cp plugins/demo.py %{buildroot}/%{_usr}/share/%{name}/plugins
 
 %if 0%{?systemd}
 cp usr/lib/systemd/system/* %{buildroot}/%{_unitdir}
@@ -84,9 +85,10 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root,-)
 %dir %{_sysconfdir}/%{name}/
+%dir %{_sysconfdir}/%{name}/conf.d/
+%dir %{_sysconfdir}/%{name}/plugins/
 %dir %{_usr}/lib/%{name}/plugins/
 %dir %{_usr}/share/%{name}/plugins/
-%dir %{_sysconfdir}/%{name}/conf.d/
 %{python_sitelib}/%{name}/agent/
 %{_bindir}/%{name}d
 %if 0%{?systemd}
@@ -96,9 +98,9 @@ rm -rf %{buildroot}
 %endif
 %attr(644,root,root) %{_sysconfdir}/sysconfig/%{name}d
 %config(noreplace) %{_sysconfdir}/%{name}/agent.conf
-%config(noreplace) %{_sysconfdir}/%{name}/plugins/builtin.conf
+%config(noreplace) %{_sysconfdir}/%{name}/plugins/demo.conf
 %config(noreplace) %{_sysconfdir}/sysconfig/%{name}d
-%{_usr}/share/%{name}/plugins/builtin.*
+%{_usr}/share/%{name}/plugins/demo.*
 %doc LICENSE
 %doc %{_mandir}/man1/goferd.*
 
@@ -224,64 +226,6 @@ Provides the gofer amqp messaging adapter package.
 
 %files -n python-%{name}-amqp
 %{python_sitelib}/%{name}/messaging/adapter/amqp
-%doc LICENSE
-
-# --- plugin: system ---------------------------------------------------------
-
-%package -n gofer-system
-Summary: The system plug-in
-Group: Development/Languages
-BuildRequires: python
-Requires: %{name} >= %{version}
-
-%description -n gofer-system
-Provides the system plug-in.
-The system plug-in provides system functionality.
-
-%files -n gofer-system
-%defattr(-,root,root,-)
-%config(noreplace) %{_sysconfdir}/%{name}/plugins/system.conf
-%{_usr}/share/%{name}/plugins/system.*
-%doc LICENSE
-
-
-# --- plugin: virt -----------------------------------------------------------
-
-%package -n gofer-virt
-Summary: The virtualization plugin
-Group: Development/Languages
-BuildRequires: python
-Requires: libvirt-python
-Requires: %{name} >= %{version}
-
-%description -n gofer-virt
-Provides the virtualization plugin.
-This plug-in provides RMI access to libvirt functionality.
-
-%files -n gofer-virt
-%defattr(-,root,root,-)
-%config(noreplace) %{_sysconfdir}/%{name}/plugins/virt.conf
-%{_usr}/share/%{name}/plugins/virt.*
-%doc LICENSE
-
-
-# --- plugin: package --------------------------------------------------------
-
-%package -n gofer-package
-Summary: The package (RPM) plugin
-Group: Development/Languages
-BuildRequires: python
-Requires: yum
-Requires: %{name} >= %{version}
-
-%description -n gofer-package
-Provides the package plugin.
-This plug-in provides RMI access to package (RPM) management.
-
-%files -n gofer-package
-%defattr(-,root,root,-)
-%config(noreplace) %{_sysconfdir}/%{name}/plugins/package.conf
-%{_usr}/share/%{name}/plugins/package.*
 %doc LICENSE
 
 
