@@ -276,7 +276,7 @@ class Heartbeat:
     Provide agent heartbeat.
     """
 
-    # @action(seconds=HEARTBEAT)
+    @action(seconds=HEARTBEAT)
     def heartbeat(self):
         return self.send()
 
