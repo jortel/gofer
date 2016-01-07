@@ -18,7 +18,7 @@ from logging import getLogger
 
 from gofer.common import Thread, Local
 from gofer.rmi.tracker import Tracker
-from gofer.rmi.store import Pending
+from gofer.rmi.store import Pending, Empty
 from gofer.messaging import Document, Producer
 from gofer.metrics import Timer, timestamp
 from gofer.agent.builtin import Builtin
@@ -219,11 +219,14 @@ class Scheduler(Thread):
         to the plugin thread pool.
         """
         while not Thread.aborted():
-            request = self.pending.get()
             try:
-                pending = self.pending
+                request = self.pending.get()
+            except Empty:
+                # aborted
+                break
+            try:
                 plugin = self.select_plugin(request)
-                transaction = Transaction(plugin, pending, request)
+                transaction = Transaction(plugin, self.pending, request)
                 task = Task(transaction)
                 plugin.pool.run(task)
             except Exception:

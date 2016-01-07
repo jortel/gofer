@@ -142,12 +142,15 @@ class Pending(object):
         Blocks until a request is available.
         :return: The next pending request.
         :rtype: Document
+        :raise Empty: on thread aborted.
         """
         while not Thread.aborted():
             try:
                 return self.queue.get(timeout=10)
             except Empty:
                 pass
+        # aborted
+        raise Empty()
 
     def commit(self, sn):
         """

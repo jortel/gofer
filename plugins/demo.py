@@ -16,7 +16,7 @@
 from gofer.decorators import remote
 
 
-class Builtin(object):
+class Demo(object):
 
     @remote
     def hello(self):
