@@ -15,7 +15,7 @@ from proton import Message
 
 from gofer.messaging.adapter.model import BaseSender
 from gofer.messaging.adapter.proton.connection import Connection
-from gofer.messaging.adapter.proton.reliability import reliable, resend
+from gofer.messaging.adapter.proton.reliability import reliable
 
 
 log = getLogger(__name__)
@@ -85,7 +85,6 @@ class Sender(BaseSender):
         """
         pass
 
-    @resend
     def send(self, address, content, ttl=None):
         """
         Send a message.

@@ -17,7 +17,7 @@ from proton import Message
 from gofer.common import utf8
 from gofer.messaging.adapter.model import Messenger, BaseExchange, BaseQueue
 from gofer.messaging.adapter.proton.connection import Connection
-from gofer.messaging.adapter.proton.reliability import reliable, resend
+from gofer.messaging.adapter.proton.reliability import reliable
 
 
 log = getLogger(__name__)
@@ -103,7 +103,6 @@ class Method(Messenger):
             'method': 'request'
         }
 
-    @resend
     def send(self, request):
         """
         Send the request.

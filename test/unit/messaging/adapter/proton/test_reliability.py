@@ -21,8 +21,8 @@ from gofer.devel import ipatch
 from gofer.messaging.adapter.model import NotFound
 
 with ipatch('proton'):
-    from gofer.messaging.adapter.proton.reliability import reliable, resend
-    from gofer.messaging.adapter.proton.reliability import DELAY, RESEND_DELAY
+    from gofer.messaging.adapter.proton.reliability import reliable
+    from gofer.messaging.adapter.proton.reliability import DELAY
 
 
 class LinkDetached(Exception):
@@ -113,81 +113,3 @@ class TestReliable(TestCase):
         wrapped = reliable(fn)
         self.assertRaises(NotFound, wrapped, None)
         self.assertFalse(sleep.called)
-
-
-class TestResend(TestCase):
-
-    @patch('gofer.messaging.adapter.proton.reliability.Delivery')
-    @patch('gofer.messaging.adapter.proton.reliability.SendException', SendException)
-    @patch('gofer.messaging.adapter.proton.reliability.sleep')
-    def test_resend_released(self, sleep, delivery):
-        url = 'test-url'
-        delivery.RELEASED = 1
-        fn = Mock(side_effect=[SendException(delivery.RELEASED), None])
-        messenger = Mock(url=url, connection=Mock())
-        args = (messenger, 2, 3)
-        kwargs = {'A': 1}
-
-        # test
-        wrapped = resend(fn)
-        wrapped(*args, **kwargs)
-
-        # validation
-        sleep.assert_called_once_with(RESEND_DELAY)
-        self.assertEqual(
-            fn.call_args_list,
-            [
-                (args, kwargs),
-                (args, kwargs),
-            ])
-
-    @patch('gofer.messaging.adapter.proton.reliability.Delivery')
-    @patch('gofer.messaging.adapter.proton.reliability.SendException', SendException)
-    @patch('gofer.messaging.adapter.proton.reliability.sleep')
-    def test_resend_rejected(self, sleep, delivery):
-        url = 'test-url'
-        delivery.RELEASED = 1
-        delivery.REJECTED = 2
-        fn = Mock(side_effect=[SendException(delivery.REJECTED), None])
-        messenger = Mock(url=url, connection=Mock())
-        args = (messenger, 2, 3)
-        kwargs = {'A': 1}
-
-        # test
-        wrapped = resend(fn)
-        self.assertRaises(SendException, wrapped, *args, **kwargs)
-        self.assertFalse(sleep.called)
-
-    @patch('gofer.messaging.adapter.proton.reliability.Delivery')
-    @patch('gofer.messaging.adapter.proton.reliability.MAX_RESEND', 4)
-    @patch('gofer.messaging.adapter.proton.reliability.SendException', SendException)
-    @patch('gofer.messaging.adapter.proton.reliability.sleep')
-    def test_resend_exhausted(self, sleep, delivery):
-        url = 'test-url'
-        delivery.RELEASED = 1
-        fn = Mock(side_effect=SendException(delivery.RELEASED))
-        messenger = Mock(url=url, connection=Mock())
-        args = (messenger, 2, 3)
-        kwargs = {'A': 1}
-
-        # test
-        wrapped = resend(fn)
-        wrapped(*args, **kwargs)
-
-        # validation
-        self.assertEqual(
-            sleep.call_args_list,
-            [
-                ((RESEND_DELAY,), {}),
-                ((RESEND_DELAY,), {}),
-                ((RESEND_DELAY,), {}),
-                ((RESEND_DELAY,), {}),
-            ])
-        self.assertEqual(
-            fn.call_args_list,
-            [
-                (args, kwargs),
-                (args, kwargs),
-                (args, kwargs),
-                (args, kwargs),
-            ])
