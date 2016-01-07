@@ -717,9 +717,6 @@ class Connection(Handler):
             self.impl.close()
             condition = ConnectionClosed(self.impl)
             self.wait(condition)
-            while self.container.process():
-                # Drain (and close socket)
-                pass
         finally:
             self.impl = None
 
@@ -817,8 +814,8 @@ class Connection(Handler):
 from proton import Message
 
 
-URL = 'amqp://localhost'
-ADDRESS = 'jeff'
+URL = 'amqp://localhost:5647'
+ADDRESS = 'qd.jeff'
 N = 100
 TIMEOUT = 5
 

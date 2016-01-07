@@ -14,7 +14,7 @@ from logging import getLogger
 
 from proton import ConnectionException
 from proton import SSLDomain, SSLException
-
+from proton.utils import BlockingConnection
 from gofer.common import Thread, ThreadSingleton
 from gofer.messaging.adapter.reliability import YEAR
 from gofer.messaging.adapter.model import Connector, BaseConnection
