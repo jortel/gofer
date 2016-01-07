@@ -13,8 +13,8 @@
 from time import sleep
 from logging import getLogger
 
-from proton import ConnectionException, Delivery
-from proton.utils import SendException, LinkDetached
+from proton import ConnectionException
+from proton.utils import LinkDetached
 
 from gofer.common import Thread, utf8
 from gofer.messaging.adapter.model import NotFound
@@ -53,22 +53,4 @@ def reliable(fn):
                 log.error(utf8(pe))
                 repair = messenger.repair
                 sleep(DELAY)
-    return _fn
-
-
-def resend(fn):
-    @reliable
-    def _fn(sender, *args, **kwargs):
-        retry = MAX_RESEND
-        delay = RESEND_DELAY
-        while not Thread.aborted() and retry > 0:
-            try:
-                return fn(sender, *args, **kwargs)
-            except SendException, le:
-                log.error(utf8(le.state))
-                if le.state == Delivery.RELEASED:
-                    sleep(delay)
-                    retry -= 1
-                else:
-                    raise
     return _fn
