@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.7.0
+Version: 2.7.1
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -233,6 +233,24 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Mon Jan 11 2016 Jeff Ortel <jortel@redhat.com> 2.7.1-1
+- Reference plugins relocated and not packaged. (jortel@redhat.com)
+- Support runtime plugin load/unload/reload.  (jortel@redhat.com)
+- Add manager. (jortel@redhat.com)
+- Add gofer CLI for management and RMI. (jortel@redhat.com)
+- Renamed builtin plugin to demo plugin. (jortel@redhat.com)
+- Fix -f option passed to goferd. (jortel@redhat.com)
+- Resend logic removed from proton reliability. (jortel@redhat.com)
+- Added a ton of unit tests. (jortel@redhat.com)
+- Run goferd optimized by default (sean.myers@redhat.com)
+- Add additional logging in adapter reliability. (jortel@redhat.com)
+- Improved handling of malformed AMQP messages. (jortel@redhat.com)
+- In agent.rmi, add transactions; discard request for plugins without URL
+  configured. (jortel@redhat.com)
+- Support proton heartbeats; requires proton >= 0.9-5. (jortel@redhat.com)
+- Persistent canceled tracking. (jortel@redhat.com)
+- Authorization deprectated. (jortel@redhat.com)
+- Using utf8() instead of: str(). (jortel@redhat.com)
 * Mon Mar 09 2015 Jeff Ortel <jortel@redhat.com> 2.6.0-1
 - Support one-time actions. (jortel@redhat.com)
 - Support authenticator in the plugin descriptor. (jortel@redhat.com)
