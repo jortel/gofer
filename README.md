@@ -8,8 +8,8 @@ relation to the [Gofer](http://en.wikipedia.org/wiki/Gopher) protocol.
 The gofer core agent is a python daemon (service) that provides infrastructure
 for exposing a remote API and for running Recurring Actions. The APIs contributed by
 plugins are accessible by Remote Method Invocation (RMI). The transport for RMI is
-AMQP using the [QPID](http://qpid.apache.org) message broker. Actions are also provided
-by plugins and are executed at the specified interval.
+AMQP using a message broker. Actions are also provided by plugins and are executed at
+the specified interval.
 
 License: LGPLv2
 
@@ -49,6 +49,8 @@ Mailing List:
 Fedora
 ------
 
-The Gofer project started in [Fedora Hosted](https://fedorahosted.org/gofer/) and is available 
+The Gofer project originally started in [Fedora Hosted](https://fedorahosted.org/gofer/) and is available 
 in [Fedora](http://fedoraproject.org/) and [EPEL](http://fedoraproject.org/wiki/EPEL) distributions.
+Gofer can also be installed from [Copr](https://copr.fedorainfracloud.org/coprs/jortel/gofer/)
+repositories.
 
