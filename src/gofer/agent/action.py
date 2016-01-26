@@ -19,7 +19,7 @@ from logging import getLogger
 from datetime import datetime as dt
 from datetime import timedelta
 
-from gofer.common import utf8
+from gofer.common import utf8, released
 
 
 log = getLogger(__name__)
@@ -69,6 +69,7 @@ class Action:
         method = t.__name__
         return '%s.%s()' % (cls, method)
 
+    @released
     def __call__(self):
         """
         Invoke the action.

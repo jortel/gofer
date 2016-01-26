@@ -266,6 +266,22 @@ class TestThread(TestCase):
 
 class TestThreadSingleton(TestCase):
 
+    def test_all(self):
+        _all = ThreadSingleton.all()
+        self.assertTrue(isinstance(_all, dict))
+
+    def test_purge(self):
+        things = {
+            'A': 1,
+            'B': 2,
+        }
+        _all = ThreadSingleton.all()
+        _all.clear()
+        _all.update(things)
+        purged = ThreadSingleton.purge()
+        self.assertEqual(things.values(), purged)
+        self.assertEqual(ThreadSingleton.all(), {})
+
     def test_call(self):
         args = (1, 2)
         kwargs = {'a': 1, 'b': 2}

@@ -20,7 +20,7 @@ Contains request delivery policies.
 from logging import getLogger
 from uuid import uuid4
 
-from gofer.common import Thread, Options, nvl, utf8
+from gofer.common import Thread, Options, nvl, utf8, released
 from gofer.messaging import Document, DocumentError
 from gofer.messaging import Producer, Reader, Queue, Exchange
 from gofer.rmi.dispatcher import Return, RemoteException
@@ -263,6 +263,7 @@ class Policy(object):
         except Exception:
             log.error('progress callback failed', exc_info=1)
 
+    @released
     def __call__(self, request):
         """
         Send the request then read the reply.
