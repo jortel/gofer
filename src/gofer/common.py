@@ -194,6 +194,12 @@ class ThreadSingleton(type):
             ThreadSingleton._inst.d = d
             return d
 
+    @staticmethod
+    def purge():
+        d = ThreadSingleton.all()
+        ThreadSingleton._inst.d = {}
+        return d.values()
+
     def __call__(cls, *args, **kwargs):
         _all = ThreadSingleton.all()
         key = (id(cls), Singleton.key(args, kwargs))
@@ -266,8 +272,7 @@ def released(fn):
         try:
             return fn(*args, **kwargs)
         finally:
-            collection = ThreadSingleton.all()
-            for thing in collection.values():
+            for thing in ThreadSingleton.purge():
                 try:
                     thing.close()
                 except Exception:

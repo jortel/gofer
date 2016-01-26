@@ -13,6 +13,11 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
+from common import utf8
+from common import Thread, Singleton, ThreadSingleton
+from common import synchronized, conditional
+from common import Options
+
 # process name used to build the following paths:
 #   /etc/<NAME>
 #   /etc/<NAME>/agent.conf
@@ -23,9 +28,5 @@
 #   /usr/lib/<NAME>/<plugin>
 #   /var/run/<NAME>d.pid
 #   ~/.<NAME>/agent.conf
-NAME = __name__
 
-from common import utf8
-from common import Thread, Singleton, ThreadSingleton
-from common import synchronized, conditional
-from common import Options
+NAME = __name__

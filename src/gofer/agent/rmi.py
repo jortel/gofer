@@ -16,7 +16,7 @@
 from time import time
 from logging import getLogger
 
-from gofer.common import Thread, Local
+from gofer.common import Thread, Local, released
 from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import Pending, Empty
 from gofer.messaging import Document, Producer
@@ -68,6 +68,7 @@ class Task:
     def request(self):
         return self.transaction.request
 
+    @released
     def __call__(self):
         """
         Dispatch received request.
