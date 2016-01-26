@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.7.2
+Version: 2.7.3
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -233,6 +233,9 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Tue Jan 26 2016 Jeff Ortel <jortel@redhat.com> 2.7.3-1
+- Thread resources such as connections released between RMI requests.
+  (jortel@redhat.com)
 * Mon Jan 25 2016 Jeff Ortel <jortel@redhat.com> 2.7.2-1
 - Fix rpmlint complaint: E: incorrect-fsf-address in deplist.py (jortel@redhat.com)
 
