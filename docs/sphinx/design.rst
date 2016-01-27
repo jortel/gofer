@@ -60,26 +60,52 @@ Messages
 
 The message format is json:
 
+- Security-Wrapper:
+   - **signature**  - A base64 encoded signature.
+   - **message**    - A json message with stricture of: (Request | Result | Exception)
+
 - Envelope:
-   - **sn** - Serial Number (uuid)
-   - **version** - The API version.
-   - **routing** - A tuple containing the amqp (sender, destination).
-   - **secret** - The (optional) shared secret used for request authentication. **DEPRECATED** in 2.7
-   - **pam** - The (optional) PAM authentication credentials. **DEPRECATED** in 2.7
-   - **replyto** - The reply amqp address (optional)
-   - **(request|result|status|progress)** The payload.
-       (request is type: Request, result is type: Result, status is type: string)
-   - **timestamp** - An ISO-8601 reply timestamp (UTC).
-   - **data** - User defined data.
-- Request (RMI):
-   - **class** - The target class name.
-   - **cntr** - The (optional) remote class constructor arguments. format: ([],{}).
-   - **method** - The target instance method name.
-   - **args[]** - The list of parameters passed to method
-   - **kws{}** - The named keyword arguments passed to method.
-- Result (RMI):
-   - **retval** - The returned data (optional).
-   - **retex** - The returned exception (optional).
+   - **sn**         - Serial Number (uuid).
+   - **version**    - The API version.
+   - **routing**    - A tuple containing the amqp (sender, destination).
+   - **secret**     - The (optional) shared secret used for request authentication. **DEPRECATED** in 2.7.
+   - **pam**        - The (optional) PAM authentication credentials. **DEPRECATED** in 2.7.
+   - **replyto**    - The reply amqp address (optional).
+   - one of
+      - **request** - An RMI request. See: Request.
+      - **result**  - An RMI result. Has value of: (Result | Exception).
+      - **status**  - An RMI request status report.  See: Status.
+   - **timestamp**  - An ISO-8601 reply timestamp (UTC).
+   - **data**       - User defined data.
+
+- Request(Envelope):
+   - **classname**  - The target class name.
+   - **cntr**       - The (optional) remote class constructor arguments. format: ([],{}).
+   - **method**     - The target instance method name.
+   - **args[]**     - The list of parameters passed to method
+   - **kws{}**      - The named keyword arguments passed to method.
+
+- Status(Envelope):
+   - **status**     - A request status with value of
+      - *accepted*  - Accepted by the agent and queued.
+      - *rejected*  - Rejected by the agent.
+      - *started*   - The request has started execution.
+      - *progress*  - Progress is begin reported.  See: Progress.
+
+- Progress(Status):
+   - **total**      - The total number of items to be completed.
+   - **completed**  - The number of items completed.
+   - **details**    - Reported details.  Can be anything.
+
+- Result(Envelope):
+   - **retval**     - The returned data.  Can be anything.
+
+- Exception(Envelope)
+   - **exval**      - The formatted exception (including trace).
+   - **xmodule**    - The exception module name.
+   - **xclass**     - The exception class.
+   - **xstate**     - The exception state.  Contains the exception __dict__.
+   - **xargs**      - The exception *args* attribute when subclass of *Exception*.
 
 
 Example RMI request message:
@@ -108,7 +134,6 @@ Example reply:
 
  {
     "sn": "e7e91fb6-611b-4284-a9ed-ac1636b2c709",
-    "origin":"123",
     "version": "0.2",
     "result": {
         "retval": "Yes master.  I will bark because that is what dogs do."
@@ -125,6 +150,6 @@ Example status reply:
     "status": "accepted",
     "version": "0.2",
     "sn": "985cb165-d291-47de-ab34-ecb20895384e",
-    "any": "group 2"
+    "data": "group 2"
  }
 
