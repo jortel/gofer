@@ -70,7 +70,6 @@ The message format is json:
    - **routing**    - A tuple containing the amqp (sender, destination).
    - **secret**     - The (optional) shared secret used for request authentication. **DEPRECATED** in 2.7.
    - **pam**        - The (optional) PAM authentication credentials. **DEPRECATED** in 2.7.
-   - **replyto**    - The reply amqp address (optional).
    - one of
       - **request** - An RMI request. See: Request.
       - **result**  - An RMI result. Has value of: (Result | Exception).
@@ -84,6 +83,7 @@ The message format is json:
    - **method**     - The target instance method name.
    - **args[]**     - The list of parameters passed to method
    - **kws{}**      - The named keyword arguments passed to method.
+   - **replyto**    - The reply amqp address (optional).
 
 - Status(Envelope):
    - **status**     - A request status with value of
