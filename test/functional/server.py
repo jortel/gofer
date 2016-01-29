@@ -193,6 +193,23 @@ def test_performance():
     sys.exit(0)
 
 
+def test_memory():
+    N = 10000
+    with open(__file__) as fp:
+        content = fp.read()
+    agent = Agent(data=content)
+    dog = agent.Dog()
+    t = Timer()
+    t.start()
+    print 'testing memory ...'
+    for n in range(0, N):
+        dog.bark('hello!')
+        print 'tested %d' % n
+    t.stop()
+    print 'total=%s, percall=%f (ms)' % (t, (t.duration()/N)*1000)
+    sys.exit(0)
+
+
 def test_triggers():
     agent = Agent(trigger=1)
     dog = agent.Dog()
@@ -444,6 +461,8 @@ if __name__ == '__main__':
     Agent.url = url
     Agent.address = address
     Agent.base_options['authenticator'] = authenticator
+
+    # test_memory()
 
     queue = Queue(address.split('/')[-1].upper())
     queue.durable = False
