@@ -75,7 +75,7 @@ class Pending(object):
                 return request
             except ValueError:
                 log.error('%s corrupt (discarded)', path)
-                os.unlink(path)
+                unlink(path)
         finally:
             fp.close()
 
@@ -160,7 +160,7 @@ class Pending(object):
         :param sn: str
         """
         try:
-            path = self.journal[sn]
+            path = self.journal.pop(sn)
             unlink(path)
             log.debug('%s committed', sn)
         except KeyError:
