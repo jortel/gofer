@@ -232,6 +232,7 @@ class Cancel:
             log.info(ctx.sn)
             sleep(1)
             if ctx.cancelled():
+                log.info('CANCELED!')
                 return 'cancelled'
         return 'finished'
 

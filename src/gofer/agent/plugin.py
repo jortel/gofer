@@ -298,6 +298,10 @@ class Plugin(object):
     def is_started(self):
         return self.scheduler.isAlive()
 
+    @property
+    def latency(self):
+        return float(self.cfg.main.latency)
+
     @synchronized
     def start(self):
         """

@@ -122,6 +122,7 @@ class Builtin(object):
         self.dispatcher = Dispatcher()
         self.dispatcher += [Admin(plugin.container)]
         self.plugin = plugin
+        self.latency = 0
 
     @property
     def url(self):

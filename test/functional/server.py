@@ -430,6 +430,17 @@ def smoke_test(exit=0):
         sys.exit(0)
 
 
+def test_cancel():
+    agent = Agent(wait=0)
+    cancel = agent.Cancel()
+    sn = cancel.test()
+    agent = Agent()
+    admin = agent.Admin()
+    canceled = admin.cancel(sn)
+    print canceled
+    sys.exit(0)
+
+
 def get_options():
     parser = OptionParser(option_class=ListOption)
     parser.add_option('-r', '--address', default='xyz', help='address')
@@ -469,6 +480,8 @@ if __name__ == '__main__':
     queue.declare(url)
     reply_consumer = ReplyConsumer(queue, url=url, authenticator=authenticator)
     reply_consumer.start(on_reply)
+
+    # test_cancel()
 
     # demo_progress(1)
     # test_performance()

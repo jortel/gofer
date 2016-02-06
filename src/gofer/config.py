@@ -62,7 +62,9 @@ from gofer.common import json, utf8
 REQUIRED = 1
 OPTIONAL = 0
 ANY = None
-NUMBER = '^\d+$'
+INTEGER = '^\d+$'
+FLOAT = '(^\d+)(\.\d+)?$'
+NUMBER = INTEGER
 BOOL = '(^YES$|^TRUE$|^1$|^NO$|^FALSE$|^0$)', re.I
 
 # Regular expression to test if a value is a valid boolean type

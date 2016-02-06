@@ -13,7 +13,7 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-from time import time
+from time import time, sleep
 from logging import getLogger
 
 from gofer.common import Thread, Local, released
@@ -75,6 +75,9 @@ class Task:
         """
         request = self.request
         cancelled = Cancelled(request.sn)
+        latency = self.plugin.latency
+        if latency:
+            sleep(latency)
         if not self.plugin.url or cancelled():
             self.discard()
             return
