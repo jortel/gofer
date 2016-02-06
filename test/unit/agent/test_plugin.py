@@ -154,6 +154,7 @@ class TestPlugin(TestCase):
             main=Mock(
                 enabled='1',
                 threads=4,
+                latency=0.5,
                 forward='a, b, c',
                 accept='d, e, f'),
             messaging=Mock(
@@ -168,6 +169,8 @@ class TestPlugin(TestCase):
         self.assertEqual(plugin.cfg, descriptor)
         # uuid
         self.assertEqual(plugin.uuid, descriptor.messaging.uuid)
+        # latency
+        self.assertEqual(plugin.latency, descriptor.main.latency)
         # url
         self.assertEqual(plugin.url, descriptor.messaging.url)
         # enabled

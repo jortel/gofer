@@ -15,7 +15,7 @@
 
 from gofer import NAME, Singleton
 from gofer.config import Config, Graph
-from gofer.config import REQUIRED, OPTIONAL, ANY, BOOL, NUMBER
+from gofer.config import REQUIRED, OPTIONAL, ANY, BOOL, NUMBER, FLOAT
 
 #
 # [management]
@@ -105,6 +105,7 @@ PLUGIN_SCHEMA = (
             ('name', OPTIONAL, ANY),
             ('plugin', OPTIONAL, ANY),
             ('threads', OPTIONAL, NUMBER),
+            ('latency', OPTIONAL, FLOAT),
             ('accept', OPTIONAL, ANY),
             ('forward', OPTIONAL, ANY),
         )
@@ -149,6 +150,7 @@ PLUGIN_DEFAULTS = {
     'main': {
         'enabled': '0',
         'threads': '1',
+        'latency': '0',
         'accept': ',',
         'forward': ','
     },

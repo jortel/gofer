@@ -88,8 +88,13 @@ Defines basic plugin properties.
 
 - **enabled** - The plugin is (1=enabled|=0disabled).
 - **threads** - The (optional) number of threads for the RMI dispatcher.
+- **latency** - The (optional) latency (seconds) to be introduced into RMI execution.
 - **accept** - Accept forwarding list.  Comma ',' separated list of plugin names.
 - **forward** - Forwarding list.  Comma ',' separated list of plugin names.
+
+The *latency* property is intended to be used to create a cancellation window or
+provide throttling. Adding *latency*, increases the opportunity for an RMI request
+to be canceled prior to being started.
 
 [messaging]
 -----------
