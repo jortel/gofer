@@ -211,13 +211,6 @@ Notes:
 - Added ``@load`` and ``@unload`` decorators.  Plugins can participate in
   plugin loading and unloading.
 
-Deprecated:
-
-- The ``uuid`` in the [messaging] section of the plugin descriptor has been
-  deprecated.  Use [model] ``queue`` instead.
-
-- The ``@initializer`` decorator has been deprecated.  Use ``@load`` instead.
-
 - The *package* plugin has been rewritten to shell out instead of using the
   yum library.  Much simpler.
 
@@ -225,6 +218,29 @@ Deprecated:
   consistently provide functionality when using external commands is needed.
   Supports cancellation, progress reporting and returns stdout and stderr.
   The *system* and *package* plugins converted to use this.
+
+- Improved debug logging in messaging adaptor reliability packages.
+  This helps with troubleshooting AMQP issues.
+
+- Added *latency* property to the `[main]` section.
+
+Fixes:
+
+- Minor memory leak fixed.  The leak was ~384 bytes per request.
+
+- Fixes issue whereby locally stored requests are routed to a plugin that no
+  longer specifies a URL.  The requests are discarded.
+
+- Amqp connections used by plugin thread pool workers closed between requests.
+  These connections can be idle/unused for long periods.  Closing them reduces
+  the number of open network connections.
+
+Deprecated:
+
+- The ``uuid`` in the [messaging] section of the plugin descriptor has been
+  deprecated.  Use [model] ``queue`` instead.
+
+- The ``@initializer`` decorator has been deprecated.  Use ``@load`` instead.
 
 - Authorization has been support. It will continue to support
   authentication.  This includes:
