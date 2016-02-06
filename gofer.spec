@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.7.3
+Version: 2.7.4
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -233,6 +233,11 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Fri Feb 05 2016 Jeff Ortel <jortel@redhat.com> 2.7.4-1
+- Require proton 0.9-13. (jortel@redhat.com)
+- Support latency plugin descriptor property. (jortel@redhat.com)
+- Fix memory leak in Pending.journal. (jortel@redhat.com)
+- Connections closed after each request. (jortel@redhat.com)
 * Tue Jan 26 2016 Jeff Ortel <jortel@redhat.com> 2.7.3-1
 - Thread resources such as connections released between RMI requests.
   (jortel@redhat.com)
