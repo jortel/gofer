@@ -203,7 +203,8 @@ gofer 2.7
 Notes:
 
 - Add ``gofer`` command for interaction with goferd.  See: ``man gofer`` for
-  details.  Packaged in gofer-tools.
+  details.  Packaged in gofer-tools.  See newly added `[management]` section
+  of `/etc/pulp/agent.conf`.
 
 - Plugin monitoring removed.  Use gofer.agent.PluginContainer.load()
   and gofer.agent.PluginContainer.unload() instead.
@@ -211,7 +212,7 @@ Notes:
 - Added ``@load`` and ``@unload`` decorators.  Plugins can participate in
   plugin loading and unloading.
 
-- The *package* plugin has been rewritten to shell out instead of using the
+- The `package` plugin has been rewritten to shell out instead of using the
   yum library.  Much simpler.
 
 - The gofer.rmi.shell module added.  This can be used by plugins to easily and
@@ -222,7 +223,19 @@ Notes:
 - Improved debug logging in messaging adaptor reliability packages.
   This helps with troubleshooting AMQP issues.
 
-- Added *latency* property to the `[main]` section.
+- Added *latency* property to the `[main]` section of the plugin descriptor.
+  Adding latency can be used for throttling and widening the request cancellation window.
+
+- Canceled RMI requests discarded just prior to execution.  Plugin still responsible for
+  canceling requests already in progress.
+
+- Reference plugins no longer packaged.  The `test` plugin renamed to `demo` and
+  not enabled by default.
+
+- Dynamic plugin loading, reloading and unloading improved.
+
+- As with every release, better unit test coverage.
+
 
 Fixes:
 
@@ -231,7 +244,7 @@ Fixes:
 - Fixes issue whereby locally stored requests are routed to a plugin that no
   longer specifies a URL.  The requests are discarded.
 
-- Amqp connections used by plugin thread pool workers closed between requests.
+- AMQP connections used by plugin thread pool workers closed between requests.
   These connections can be idle/unused for long periods.  Closing them reduces
   the number of open network connections.
 
