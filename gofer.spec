@@ -233,6 +233,8 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Tue Feb 16 2016 Jeff Ortel <jortel@redhat.com> 2.7.4-2
+- Relax proton requirement. (jortel@redhat.com)
 * Fri Feb 05 2016 Jeff Ortel <jortel@redhat.com> 2.7.4-1
 - Require proton 0.9-13. (jortel@redhat.com)
 - Support latency plugin descriptor property. (jortel@redhat.com)
