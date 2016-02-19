@@ -18,6 +18,8 @@ Summary
    The shared secret (security)
  *ttl*
    The TTL (seconds) for the agent to accept the RMI request.
+ *expiration*
+   An ISO-8601 expiration.  Expired requests are discarded.
  *wait*
    The time (seconds) to wait (block) for a result.
  *progress*

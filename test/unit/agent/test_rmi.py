@@ -13,7 +13,7 @@ from unittest import TestCase
 
 from mock import patch, Mock
 
-from gofer.agent.rmi import Scheduler, Transaction
+from gofer.agent.rmi import Scheduler, Transaction, Expired
 from gofer.messaging import Document
 
 
@@ -188,3 +188,27 @@ class TestTransaction(TestCase):
         tx = Transaction(plugin, pending, request)
         tx.discard()
         pending.commit.assert_called_once_with(sn)
+
+
+class TestExpired(TestCase):
+
+    def test_init(self):
+        request = Document(sn=1, expiration=2)
+        exp = Expired(request)
+        self.assertEqual(exp.sn, request.sn)
+        self.assertEqual(exp.expiration, request.expiration)
+
+    @patch('gofer.agent.rmi.Timestamp')
+    def test_call(self, ts):
+        request = Document(sn=1, expiration=2)
+        exp = Expired(request)
+        self.assertEqual(exp(), ts.in_past.return_value)
+        ts.in_past.assert_called_once_with(2)
+
+    @patch('gofer.agent.rmi.Timestamp')
+    def test_call_raised(self, ts):
+        ts.in_past.side_effect = ValueError
+        request = Document(sn=1, expiration=2)
+        exp = Expired(request)
+        self.assertEqual(exp(), False)
+        ts.in_past.assert_called_once_with(2)

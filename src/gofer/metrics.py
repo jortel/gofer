@@ -20,15 +20,31 @@ designed for collecting and reporting performance metrics.
 
 import time
 
+import isodate
+
 from math import modf
 from datetime import datetime
 
 from gofer.common import utf8
 
 
-def timestamp():
-    dt = datetime.utcnow()
-    return dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+class Timestamp(object):
+
+    @staticmethod
+    def now():
+        dt = datetime.utcnow()
+        dt = dt.replace(tzinfo=isodate.UTC)
+        return isodate.strftime(dt, isodate.DT_EXT_COMPLETE)
+
+    @staticmethod
+    def parse(s):
+        return isodate.parse_datetime(s)
+
+    @staticmethod
+    def in_past(s):
+        dt = datetime.utcnow()
+        dt = dt.replace(tzinfo=isodate.UTC)
+        return Timestamp.parse(s) < dt
 
 
 class Timer:

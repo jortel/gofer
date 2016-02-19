@@ -42,6 +42,7 @@ setup(
         'Development Status :: 5 - Production/Stable',
     ],
     install_requires=[
+        'isodate >= 0.5'
     ],
 )
 

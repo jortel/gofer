@@ -14,12 +14,15 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
+import isodate
+
 from time import sleep
 from optparse import OptionParser, Option
 from hashlib import sha256
 from logging import basicConfig
 from threading import Thread
 from datetime import datetime as dt
+from datetime import timedelta
 
 from gofer.rmi.dispatcher import *
 from gofer.rmi.async import ReplyConsumer
@@ -441,6 +444,28 @@ def test_cancel():
     sys.exit(0)
 
 
+def test_expired():
+    # valid
+    expiration = dt.utcnow() + timedelta(seconds=10)
+    expiration = expiration.replace(tzinfo=isodate.UTC)
+    expiration = isodate.strftime(expiration, isodate.DT_EXT_COMPLETE)
+    agent = Agent(expiration=expiration)
+    admin = agent.Admin()
+    print admin.echo('FUTURE')
+    # invalid
+    agent = Agent(expiration='12345')
+    admin = agent.Admin()
+    print admin.echo('INVALID')
+    # expired
+    expiration = dt.utcnow() - timedelta(seconds=10)
+    expiration = expiration.replace(tzinfo=isodate.UTC)
+    expiration = isodate.strftime(expiration, isodate.DT_EXT_COMPLETE)
+    agent = Agent(wait=0, expiration=expiration)
+    admin = agent.Admin()
+    print admin.echo('EXPIRED')
+    sys.exit(0)
+
+
 def get_options():
     parser = OptionParser(option_class=ListOption)
     parser.add_option('-r', '--address', default='xyz', help='address')
@@ -482,6 +507,7 @@ if __name__ == '__main__':
     reply_consumer.start(on_reply)
 
     # test_cancel()
+    # test_expired()
 
     # demo_progress(1)
     # test_performance()

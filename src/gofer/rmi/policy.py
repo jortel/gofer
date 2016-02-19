@@ -146,6 +146,10 @@ class Policy(object):
             return None
 
     @property
+    def expiration(self):
+        return self.options.expiration
+
+    @property
     def wait(self):
         return Timeout.seconds(nvl(self.options.wait, 90))
 
@@ -326,11 +330,12 @@ class Trigger:
 
         try:
             producer.send(
-                self._policy.address,
-                self._policy.ttl,
+                address=self._policy.address,
+                ttl=self._policy.ttl,
                 # body
                 sn=self.sn,
                 replyto=reply,
+                expiration=self._policy.expiration,
                 request=self._request,
                 secret=self._policy.secret,
                 pam=self._policy.pam,

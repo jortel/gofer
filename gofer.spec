@@ -134,6 +134,7 @@ Summary: Gofer python lib modules
 Group: Development/Languages
 BuildRequires: python
 Requires: pam
+Requires: python-isodate >= 0.5
 %if 0%{?rhel} && 0%{?rhel} < 6
 Requires: python-ctypes
 Requires: python-simplejson

@@ -9,21 +9,42 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+import isodate
+
 from unittest import TestCase
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from mock import patch
 
-from gofer.metrics import Timer, timestamp
+from gofer.metrics import Timer, Timestamp
 
 
-class TestUtils(TestCase):
+class TestTimestamp(TestCase):
+
+    NOW_ST = '2014-12-25T09:30:00Z'
+    NOW_DT = datetime(2014, 12, 25, 9, 30, 0, tzinfo=isodate.UTC)
 
     @patch('gofer.metrics.datetime')
-    def test_timestamp(self, dt):
-        dt.utcnow.return_value = datetime(2014, 12, 25, 9, 30, 0)
-        ts = timestamp()
-        self.assertEqual(ts, '2014-12-25T09:30:00Z')
+    def test_now(self, dt):
+        dt.utcnow.return_value = TestTimestamp.NOW_DT
+        self.assertEqual(Timestamp.now(), TestTimestamp.NOW_ST)
+
+    def test_parse(self):
+        self.assertEqual(TestTimestamp.NOW_DT, Timestamp.parse(TestTimestamp.NOW_ST))
+
+    @patch('gofer.metrics.datetime')
+    def test_in_past(self, dt):
+        dt.utcnow.return_value = TestTimestamp.NOW_DT
+        _dt = TestTimestamp.NOW_DT - timedelta(minutes=10)
+        s = isodate.strftime(_dt, isodate.DT_EXT_COMPLETE)
+        self.assertTrue(Timestamp.in_past(s))
+
+    @patch('gofer.metrics.datetime')
+    def test_in_future(self, dt):
+        dt.utcnow.return_value = TestTimestamp.NOW_DT
+        _dt = TestTimestamp.NOW_DT + timedelta(minutes=10)
+        s = isodate.strftime(_dt, isodate.DT_EXT_COMPLETE)
+        self.assertFalse(Timestamp.in_past(s))
 
 
 class TestTimer(TestCase):

@@ -16,7 +16,7 @@
 from logging import getLogger
 
 from gofer.messaging import Consumer, Producer, Document
-from gofer.metrics import timestamp
+from gofer.metrics import Timestamp
 
 log = getLogger(__name__)
 
@@ -78,7 +78,7 @@ class RequestConsumer(Consumer):
                     sn=request.sn,
                     data=request.data,
                     status=status,
-                    timestamp=timestamp(),
+                    timestamp=Timestamp.now(),
                     **details)
             finally:
                 producer.close()

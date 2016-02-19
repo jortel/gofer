@@ -20,14 +20,14 @@ from gofer.common import Thread, Local, released
 from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import Pending, Empty
 from gofer.messaging import Document, Producer
-from gofer.metrics import Timer, timestamp
+from gofer.metrics import Timer, Timestamp
 from gofer.agent.builtin import Builtin
 
 
 log = getLogger(__name__)
 
 
-class Task:
+class Task(object):
     """
     An RMI task to be scheduled on the plugin thread pool.
     :ivar transaction: A pending transaction.
@@ -75,12 +75,13 @@ class Task:
         """
         request = self.request
         cancelled = Cancelled(request.sn)
+        expired = Expired(request)
         latency = self.plugin.latency
-        if latency:
-            sleep(latency)
-        if not self.plugin.url or cancelled():
+        if not self.plugin.url or cancelled() or expired():
             self.discard()
             return
+        if latency:
+            sleep(latency)
         self.context.sn = request.sn
         self.context.progress = Progress(self)
         self.context.cancelled = cancelled
@@ -126,7 +127,7 @@ class Task:
                 sn=sn,
                 data=data,
                 status='started',
-                timestamp=timestamp())
+                timestamp=Timestamp.now())
         except Exception:
             log.exception('Send: started, failed')
 
@@ -153,7 +154,7 @@ class Task:
                 sn=sn,
                 data=data,
                 result=result,
-                timestamp=timestamp())
+                timestamp=Timestamp.now())
         except Exception:
             log.exception('Send: reply, failed: %s', result)
 
@@ -358,3 +359,30 @@ class Cancelled:
         except KeyError:
             # already cleaned up
             pass
+
+
+class Expired(object):
+    """
+    Request expiration.
+    """
+
+    def __init__(self, request):
+        """
+        :param request: A pending request.
+        :type request: Document
+        """
+        self.sn = request.sn
+        self.expiration = request.expiration
+
+    def __call__(self):
+        """
+        Get whether the task has expired.
+        :return: True if expired.
+        :rtype: bool
+        """
+        try:
+            if self.expiration:
+                return Timestamp.in_past(self.expiration)
+        except Exception:
+            log.error('Request: %s has invalid expiration: %s', self.sn, self.expiration)
+        return False
