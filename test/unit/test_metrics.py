@@ -15,6 +15,7 @@ from datetime import datetime
 from mock import patch
 
 from gofer.metrics import Timer, timestamp
+from gofer.metrics import TimerContext, timed
 
 
 class TestUtils(TestCase):
@@ -59,10 +60,10 @@ class TestTimer(TestCase):
     def test_unicode(self):
         t = Timer()
         # not started
-        self.assertEqual(unicode(t), 'not-running')
+        self.assertEqual(unicode(t), 'idle')
         # started but not stopped
         t.started = 1
-        self.assertEqual(unicode(t), 'started: %d (running)' % t.started)
+        self.assertEqual(unicode(t), 'started')
         # milliseconds
         t.started = 0.10
         t.stopped = 0.25
@@ -79,10 +80,10 @@ class TestTimer(TestCase):
     def test_str(self):
         t = Timer()
         # not started
-        self.assertEqual(str(t), 'not-running')
+        self.assertEqual(str(t), 'idle')
         # started but not stopped
         t.started = 1
-        self.assertEqual(str(t), 'started: %d (running)' % t.started)
+        self.assertEqual(str(t), 'started')
         # milliseconds
         t.started = 0.10
         t.stopped = 0.25
@@ -95,3 +96,42 @@ class TestTimer(TestCase):
         t.started = 10.0
         t.stopped = 100.0
         self.assertEqual(str(t), '1.500 (minutes)')
+
+
+class TestContext(TestCase):
+
+    def test_list(self):
+        with TimerContext() as context:
+            with Timer(1) as t1:
+                pass
+            with Timer(2) as t2:
+                pass
+            self.assertEqual(context.timer, [t1, t2])
+        self.assertEqual(t1.name, 1)
+        self.assertEqual(t2.name, 2)
+
+    def test_add_timer(self):
+        with TimerContext() as context:
+            context.add(18)
+            context.add(28)
+            self.assertEqual(context.timer, [18, 28])
+            self.assertEqual(list(context), [18, 28])
+            self.assertEqual(len(context), 2)
+
+    def test_add_nothing_current(self):
+        context = TimerContext.current()
+        context.add(18)
+        context.add(28)
+        self.assertEqual(context.timer, [])
+
+
+class TestTimed(TestCase):
+
+    def test_call(self):
+        with TimerContext() as context:
+            @timed
+            def test(n):
+                return n
+            _n = test(18)
+            self.assertEqual(len(context), 1)
+            self.assertEqual(_n, 18)

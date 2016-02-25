@@ -21,6 +21,7 @@ designed for collecting and reporting performance metrics.
 import time
 
 from math import modf
+from threading import local as Local
 from datetime import datetime
 
 from gofer.common import utf8
@@ -31,9 +32,10 @@ def timestamp():
     return dt.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
-class Timer:
+class Timer(object):
 
-    def __init__(self, started=0, stopped=0):
+    def __init__(self, name='', started=0, stopped=0):
+        self.name = name
         self.started = started
         self.stopped = stopped
 
@@ -50,11 +52,19 @@ class Timer:
     def duration(self):
         return self.stopped - self.started
 
+    def __enter__(self):
+        self.start()
+        TimerContext.current().add(self)
+        return self
+
+    def __exit__(self, *unused):
+        self.stop()
+
     def __unicode__(self):
         if self.started == 0:
-            return 'not-running'
+            return 'idle'
         if self.started > 0 and self.stopped == 0:
-            return 'started: %d (running)' % self.started
+            return 'started'
         duration = self.duration()
         jmod = lambda m: (m[1], m[0]*1000)
         if duration < 1:
@@ -68,3 +78,72 @@ class Timer:
 
     def __str__(self):
         return utf8(self)
+
+
+class TimerContext(object):
+
+    _inst = Local()
+
+    @staticmethod
+    def list():
+        try:
+            return TimerContext._inst.list
+        except AttributeError:
+            _list = []
+            TimerContext._inst.list = _list
+            return _list
+
+    @staticmethod
+    def pop():
+        _list = TimerContext.list()
+        return _list.pop()
+
+    @staticmethod
+    def current():
+        try:
+            _list = TimerContext.list()
+            return _list[-1]
+        except IndexError:
+            return DeadContext()
+
+    def __init__(self, push=True):
+        self.timer = []
+        if push:
+            self.push()
+
+    def push(self):
+        _list = TimerContext.list()
+        _list.append(self)
+        return self
+
+    def add(self, timer):
+        self.timer.append(timer)
+
+    def __enter__(self):
+        TimerContext.push(self)
+        return self
+
+    def __exit__(self, *unused):
+        TimerContext.pop()
+
+    def __iter__(self):
+        return iter(self.timer)
+
+    def __len__(self):
+        return len(self.timer)
+
+
+class DeadContext(TimerContext):
+
+    def push(self):
+        pass
+
+    def add(self, timer):
+        return self
+
+
+def timed(fn):
+    def _fn(*args, **kwargs):
+        with Timer('{0}()'.format(fn.__name__)):
+            return fn(*args, **kwargs)
+    return _fn
