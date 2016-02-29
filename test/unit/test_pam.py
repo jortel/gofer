@@ -18,62 +18,58 @@ from gofer import pam
 
 class Test(TestCase):
 
-    @patch('gofer.pam.pam_end')
-    @patch('gofer.pam.pam_authenticate')
-    @patch('gofer.pam.pam_start')
-    def test_authenticated(self, _start, _authenticate, _end):
-        _start.return_value = 0
-        _authenticate.return_value = 0
+    @patch('gofer.pam.Lib')
+    def test_authenticated(self, lib):
+        lib.pam_start.return_value = 0
+        lib.pam_authenticate.return_value = 0
         user = 'user'
         password = 'password'
         service = 'login'
         valid = pam.authenticate(user, password, service)
-        self.assertTrue(_start.called)
-        self.assertTrue(_authenticate.called)
-        self.assertTrue(_end.called)
+        self.assertTrue(lib.pam_start.called)
+        self.assertTrue(lib.pam_authenticate.called)
+        self.assertTrue(lib.pam_end.called)
+        self.assertTrue(lib.load.called)
         self.assertTrue(valid)
 
-    @patch('gofer.pam.pam_end')
-    @patch('gofer.pam.pam_authenticate')
-    @patch('gofer.pam.pam_start')
-    def test_start_failed(self, _start, _authenticate, _end):
-        _start.return_value = -1
-        _authenticate.return_value = 0
+    @patch('gofer.pam.Lib')
+    def test_start_failed(self, lib):
+        lib.pam_start.return_value = -1
+        lib.pam_authenticate.return_value = 0
         user = 'user'
         password = 'password'
         service = 'login'
         valid = pam.authenticate(user, password, service)
-        self.assertTrue(_start.called)
-        self.assertFalse(_authenticate.called)
-        self.assertFalse(_end.called)
+        self.assertTrue(lib.load.called)
+        self.assertTrue(lib.pam_start.called)
+        self.assertFalse(lib.pam_authenticate.called)
+        self.assertFalse(lib.pam_end.called)
         self.assertFalse(valid)
 
-    @patch('gofer.pam.pam_end')
-    @patch('gofer.pam.pam_authenticate')
-    @patch('gofer.pam.pam_start')
-    def test_not_authenticated(self, _start, _authenticate, _end):
-        _start.return_value = 0
-        _authenticate.return_value = 1
+    @patch('gofer.pam.Lib')
+    def test_not_authenticated(self, lib):
+        lib.pam_start.return_value = 0
+        lib.pam_authenticate.return_value = 1
         user = 'user'
         password = 'password'
         service = 'login'
         valid = pam.authenticate(user, password, service)
-        self.assertTrue(_start.called)
-        self.assertTrue(_authenticate.called)
-        self.assertTrue(_end.called)
+        self.assertTrue(lib.load.called)
+        self.assertTrue(lib.pam_start.called)
+        self.assertTrue(lib.pam_authenticate.called)
+        self.assertTrue(lib.pam_end.called)
         self.assertFalse(valid)
 
-    @patch('gofer.pam.pam_end')
-    @patch('gofer.pam.pam_authenticate')
-    @patch('gofer.pam.pam_start')
-    def test_exception_raised(self, _start, _authenticate, _end):
-        _start.return_value = 0
-        _authenticate.side_effect = ValueError
+    @patch('gofer.pam.Lib')
+    def test_exception_raised(self, lib):
+        lib.pam_start.return_value = 0
+        lib.pam_authenticate.side_effect = ValueError
         user = 'user'
         password = 'password'
         service = 'login'
         valid = pam.authenticate(user, password, service)
-        self.assertTrue(_start.called)
-        self.assertTrue(_authenticate.called)
-        self.assertFalse(_end.called)
+        self.assertTrue(lib.load.called)
+        self.assertTrue(lib.pam_start.called)
+        self.assertTrue(lib.pam_authenticate.called)
+        self.assertFalse(lib.pam_end.called)
         self.assertFalse(valid)
