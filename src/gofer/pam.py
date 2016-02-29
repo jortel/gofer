@@ -16,25 +16,10 @@
 """
 PAM module for python
 """
-
-__all__ = ['authenticate']
-
 from ctypes import CDLL, POINTER, Structure, CFUNCTYPE, cast, byref, sizeof
 from ctypes import c_void_p, c_uint, c_char_p, c_char, c_int
 from ctypes.util import find_library
 from logging import getLogger
-
-
-libc = CDLL(find_library('c'))
-libpam = CDLL(find_library('pam'))
-
-calloc = libc.calloc
-calloc.restype = c_void_p
-calloc.argtypes = [c_uint, c_uint]
-
-strdup = libc.strdup
-strdup.argstypes = [c_char_p]
-strdup.restype = POINTER(c_char)
 
 SERVICE = 'passwd'
 PROMPT_ECHO_OFF = 1
@@ -44,6 +29,66 @@ TEXT_INFO = 4
 REINITIALIZE_CRED = 0x0008
 
 log = getLogger(__name__)
+
+
+class Lib(object):
+    """
+    Represents external libs.
+    """
+
+    libc = None
+    libpam = None
+    calloc = None
+    strdup = None
+    pam_start = None
+    pam_authenticate = None
+    pam_setcred = None
+    pam_end = None
+    loaded = False
+
+    @staticmethod
+    def load():
+        """
+        Load and initialize both libc and libpam.
+        The libs are only loaded and initialized once so this method
+        can safely be called multiple times.
+        """
+        if Lib.loaded:
+            return
+
+        Lib.libc = CDLL(find_library('c'))
+        Lib.libpam = CDLL(find_library('pam'))
+
+        Lib.calloc = Lib.libc.calloc
+        Lib.calloc.restype = c_void_p
+        Lib.calloc.argtypes = [c_uint, c_uint]
+
+        Lib.strdup = Lib.libc.strdup
+        Lib.strdup.argstypes = [c_char_p]
+        Lib.strdup.restype = POINTER(c_char)
+
+        Lib.pam_start = Lib.libpam.pam_start
+        Lib.pam_start.restype = c_int
+        Lib.pam_start.argtypes = [
+            c_char_p,
+            c_char_p,
+            POINTER(PamConversation),
+            POINTER(PamHandle)
+        ]
+
+        Lib.pam_authenticate = Lib.libpam.pam_authenticate
+        Lib.pam_authenticate.restype = c_int
+        Lib.pam_authenticate.argtypes = [PamHandle, c_int]
+
+        Lib.pam_setcred = Lib.libpam.pam_setcred
+        Lib.pam_setcred.restype = c_int
+        Lib.pam_setcred.argtypes = [PamHandle, c_int]
+
+        Lib.pam_end = Lib.libpam.pam_end
+        Lib.pam_end.restype = c_int
+        Lib.pam_end.argtypes = [PamHandle, c_int]
+
+        Lib.loaded = True
 
 
 class PamHandle(Structure):
@@ -86,28 +131,6 @@ class PamConversation(Structure):
     ]
 
 
-pam_start = libpam.pam_start
-pam_start.restype = c_int
-pam_start.argtypes = [
-    c_char_p,
-    c_char_p,
-    POINTER(PamConversation),
-    POINTER(PamHandle)
-]
-
-pam_authenticate = libpam.pam_authenticate
-pam_authenticate.restype = c_int
-pam_authenticate.argtypes = [PamHandle, c_int]
-
-pam_setcred = libpam.pam_setcred
-pam_setcred.restype = c_int
-pam_setcred.argtypes = [PamHandle, c_int]
-
-pam_end = libpam.pam_end
-pam_end.restype = c_int
-pam_end.argtypes = [PamHandle, c_int]
-
-
 def authenticate(user, password, service=None):
     """
     Authenticate using PAM.
@@ -129,23 +152,24 @@ def authenticate(user, password, service=None):
 def _authenticate(user, password, service):
     @CONVERSATION
     def dialog(n_messages, messages, p_response, data):
-        ptr = calloc(n_messages, sizeof(PamResponse))
+        ptr = Lib.calloc(n_messages, sizeof(PamResponse))
         p_response[0] = cast(ptr, POINTER(PamResponse))
         for i in range(n_messages):
             if messages[i].contents.style == PROMPT_ECHO_OFF:
-                p_response.contents[i].reply = cast(strdup(password), c_char_p)
+                p_response.contents[i].reply = cast(Lib.strdup(password), c_char_p)
                 p_response.contents[i].retval = 0
         return 0
 
+    Lib.load()
     handle = PamHandle()
     conversation = PamConversation(dialog, 0)
-    retval = pam_start(service, user, byref(conversation), byref(handle))
+    retval = Lib.pam_start(service, user, byref(conversation), byref(handle))
     if retval != 0:
         # PAM start failed
         return False
-    retval = pam_authenticate(handle, 0)
+    retval = Lib.pam_authenticate(handle, 0)
     authenticated = (retval == 0)
     if authenticated:
-        retval = pam_setcred(handle, REINITIALIZE_CRED)
-    pam_end(handle, retval)
+        retval = Lib.pam_setcred(handle, REINITIALIZE_CRED)
+    Lib.pam_end(handle, retval)
     return authenticated
