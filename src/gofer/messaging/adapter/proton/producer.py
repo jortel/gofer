@@ -85,6 +85,7 @@ class Sender(BaseSender):
         """
         pass
 
+    @reliable
     def send(self, address, content, ttl=None):
         """
         Send a message.
