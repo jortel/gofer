@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.7.5
+Version: 2.7.6
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -233,6 +233,9 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Wed Apr 13 2016 Jeff Ortel <jortel@redhat.com> 2.7.6-1
+- Fix proton reliable send. Reported on 1323726. (jortel@redhat.com)
+
 * Mon Feb 29 2016 Jeff Ortel <jortel@redhat.com> 2.7.5-1
 - Load pam libs on demand. (jortel@redhat.com)
 
