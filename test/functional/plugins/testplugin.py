@@ -13,6 +13,7 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
+import os
 
 from time import sleep
 from hashlib import sha256
@@ -23,6 +24,7 @@ from gofer.agent.plugin import Plugin
 from gofer.agent.rmi import Context
 from gofer.messaging.auth import Authenticator, ValidationFailed
 from gofer.messaging import Producer
+from gofer.rmi.shell import Shell
 
 log = getLogger(__name__)
 plugin = Plugin.find(__name__)
@@ -270,6 +272,15 @@ class Lion(object):
     @remote
     def roar(self):
         return 'Lion says ROAR!'
+
+
+class Zombie(object):
+
+    @remote
+    def sleep(self, n):
+        log.info('PID: %s', os.getpid())
+        shell = Shell()
+        shell.run('sleep', str(n))
 
 
 class Heartbeat:

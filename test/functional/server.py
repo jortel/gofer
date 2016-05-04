@@ -179,7 +179,7 @@ def test_performance():
         dog.bark('performance!')
     t.stop()
     print 'total=%s, percall=%f (ms)' % (t, (t.duration()/N)*1000)
-    #sys.exit(0)
+    # sys.exit(0)
     # ASYNCHRONOUS
     agent = Agent(wait=0)
     dog = agent.Dog()
@@ -207,6 +207,13 @@ def test_memory():
         print 'tested %d' % n
     t.stop()
     print 'total=%s, percall=%f (ms)' % (t, (t.duration()/N)*1000)
+    sys.exit(0)
+
+
+def test_zombie():
+    agent = Agent()
+    zombie = agent.Zombie()
+    zombie.sleep(240)
     sys.exit(0)
 
 
@@ -472,6 +479,8 @@ if __name__ == '__main__':
     Agent.url = url
     Agent.address = address
     Agent.base_options['authenticator'] = authenticator
+
+    # test_zombie()
 
     # test_memory()
 

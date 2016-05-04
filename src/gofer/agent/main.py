@@ -107,6 +107,8 @@ def start(daemon=True):
     Agent main.
     Add recurring, time-based actions here.
     All actions must be subclass of action.Action.
+    :param daemon: The daemon flag.
+    :type daemon: bool
     """
     lock = AgentLock()
     try:
@@ -140,10 +142,13 @@ def usage():
 def start_daemon(lock):
     """
     Daemon configuration.
+    :param lock: The agent lock.
+    :type lock: AgentLock
     """
     pid = os.fork()
     if pid == 0:  # child
         os.setsid()
+        os.setpgrp()
         os.chdir('/')
         os.close(0)
         os.close(1)
