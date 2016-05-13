@@ -437,7 +437,7 @@ def smoke_test(exit=0):
         sys.exit(0)
 
 
-def test_cancel():
+def test_cancel(exit=0):
     agent = Agent(wait=0)
     cancel = agent.Cancel()
     sn = cancel.test()
@@ -445,7 +445,26 @@ def test_cancel():
     admin = agent.Admin()
     canceled = admin.cancel(sn)
     print canceled
-    sys.exit(0)
+    if exit:
+        sys.exit(0)
+
+
+def test_shell(exit=0, with_cancel=0):
+    agent = Agent()
+    panther = agent.Panther()
+    # base
+    print panther.test()
+    print panther.test_progress()
+    if with_cancel:
+        agent = Agent(wait=0)
+        panther = agent.Panther()
+        sn = panther.sleep()
+        sleep(10)
+        print 'sleeping'
+        admin = agent.Admin()
+        print 'cancelled: {}'.format(admin.cancel(sn))
+    if exit:
+        sys.exit(0)
 
 
 def get_options():
@@ -481,7 +500,6 @@ if __name__ == '__main__':
     Agent.base_options['authenticator'] = authenticator
 
     # test_zombie()
-
     # test_memory()
 
     queue = Queue(address.split('/')[-1].upper())
@@ -491,11 +509,11 @@ if __name__ == '__main__':
     reply_consumer.start(on_reply)
 
     # test_cancel()
-
     # demo_progress(1)
     # test_performance()
 
     demo_authentication(yp)
+    test_shell()
     smoke_test()
     demo_constructors()
     test_triggers()

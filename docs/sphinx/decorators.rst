@@ -35,6 +35,13 @@ Options:
     - default: None
     - note: **DEPRECATED** in 2.7
 
+- **mode** - the RMI execution mode (direct|shell).
+  The *shell* mode spawns a child process for each call.
+    - required: No
+    - type: str
+    - default: direct
+    - note: Added in 2.8
+
 @pam
 ----
 

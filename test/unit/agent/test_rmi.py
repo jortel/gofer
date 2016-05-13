@@ -13,7 +13,7 @@ from unittest import TestCase
 
 from mock import patch, Mock
 
-from gofer.agent.rmi import Scheduler, Transaction
+from gofer.agent.rmi import Scheduler, Transaction, Context
 from gofer.messaging import Document
 
 
@@ -188,3 +188,16 @@ class TestTransaction(TestCase):
         tx = Transaction(plugin, pending, request)
         tx.discard()
         pending.commit.assert_called_once_with(sn)
+
+
+class TestContext(TestCase):
+
+    def test_set(self):
+        context = Context('', Mock(), Mock())
+        Context.set(context)
+        self.assertEqual(Context._current.inst, context)
+
+    def test_current(self):
+        context = Context('', Mock(), Mock())
+        Context.set(context)
+        self.assertEqual(context, Context.current())

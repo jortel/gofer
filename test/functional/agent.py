@@ -146,5 +146,5 @@ if __name__ == '__main__':
     threads = int(options.threads)
     auth = options.auth
     exchange = options.exchange
-    print 'starting agent, threads=%d, url=%s' % (threads, url)
+    print 'starting agent, pid=%d, threads=%d, url=%s' % (os.getpid(), threads, url)
     agent = TestAgent(url, uuid, threads, auth, exchange)

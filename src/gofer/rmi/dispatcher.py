@@ -451,7 +451,11 @@ class RMI(object):
         """
         try:
             self.permitted()
-            retval = self.method(*self.args, **self.kwargs)
+            fninfo = RMI.fninfo(self.method)
+            from gofer.rmi.mode import ALL
+            passed = (self.args, self.kwargs)
+            mode = ALL[fninfo.call.mode](self.inst, self.method, passed)
+            retval = mode()
             return Return.succeed(retval)
         except Exception:
             log.exception(utf8(self.method))

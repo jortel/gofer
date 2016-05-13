@@ -14,7 +14,9 @@ from unittest import TestCase
 from mock import patch, Mock
 
 from gofer import NAME
-from gofer.decorators import options, remote, pam, user, action, load, unload, initializer
+from gofer.decorators import options, remote, pam, user, action
+from gofer.decorators import load, unload, initializer
+from gofer.decorators import DIRECT
 
 
 class Function(object):
@@ -26,14 +28,24 @@ class TestOptions(TestCase):
     def test_options(self):
         def fn(): pass
         opt = options(fn)
-        self.assertEqual(str(opt), str({'security': []}))
+        self.assertEqual(
+            str(opt),
+            str({
+                'security': [],
+                'call': {'mode': DIRECT}
+                }))
         self.assertEqual(getattr(fn, NAME), opt)
 
     def test_options_already(self):
         def fn(): pass
         options(fn)
         opt = options(fn)
-        self.assertEqual(str(opt), str({'security': []}))
+        self.assertEqual(
+            str(opt),
+            str({
+                'security': [],
+                'call': {'mode': DIRECT}
+                }))
         self.assertEqual(getattr(fn, NAME), opt)
 
 
@@ -44,7 +56,12 @@ class TestRemote(TestCase):
         def fn(): pass
         remote(fn)
         opt = getattr(fn, NAME)
-        self.assertEqual(str(opt), str({'security': []}))
+        self.assertEqual(
+            str(opt),
+            str({
+                'security': [],
+                'call': {'mode': DIRECT}
+                }))
         _remote.add.assert_called_once_with(fn)
 
     @patch('gofer.decorators.Remote')
@@ -53,7 +70,14 @@ class TestRemote(TestCase):
         secret = 'fedex'
         remote(secret=secret)(fn)
         opt = getattr(fn, NAME)
-        self.assertEqual(str(opt), str({'security': [('secret', {'secret': 'fedex'})]}))
+        self.assertEqual(
+            str(opt),
+            str({
+                'security': [
+                    ('secret', {'secret': 'fedex'})
+                ],
+                'call': {'mode': DIRECT}
+                }))
         _remote.add.assert_called_once_with(fn)
 
 
@@ -65,7 +89,12 @@ class TestPam(TestCase):
         opt = getattr(fn, NAME)
         self.assertEqual(
             str(opt),
-            str({'security': [('pam', {'user': 'root', 'service': None})]}))
+            str({
+                'security': [
+                    ('pam', {'user': 'root', 'service': None})
+                ],
+                'call': {'mode': DIRECT}
+                }))
 
     def test_service(self):
         def fn(): pass
@@ -73,7 +102,12 @@ class TestPam(TestCase):
         opt = getattr(fn, NAME)
         self.assertEqual(
             str(opt),
-            str({'security': [('pam', {'user': 'root', 'service': 'find'})]}))
+            str({
+                'security': [
+                    ('pam', {'user': 'root', 'service': 'find'})
+                ],
+                'call': {'mode': DIRECT}
+                }))
 
 
 class TestUser(TestCase):
@@ -84,7 +118,12 @@ class TestUser(TestCase):
         opt = getattr(fn, NAME)
         self.assertEqual(
             str(opt),
-            str({'security': [('pam', {'user': 'root', 'service': None})]}))
+            str({
+                'security': [
+                    ('pam', {'user': 'root', 'service': None})
+                ],
+                'call': {'mode': DIRECT}
+                }))
 
 
 class TestAction(TestCase):

@@ -148,7 +148,6 @@ def start_daemon(lock):
     pid = os.fork()
     if pid == 0:  # child
         os.setsid()
-        os.setpgrp()
         os.chdir('/')
         os.close(0)
         os.close(1)
