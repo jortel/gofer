@@ -22,9 +22,10 @@ import inspect
 import traceback as tb
 
 from gofer import NAME
-from gofer.common import Options, utf8
+from gofer.common import Options, utf8, new
 from gofer.messaging import Document
 from gofer.pam import authenticate as pam_authenticate
+from gofer.rmi.model import ALL
 
 from logging import getLogger
 
@@ -157,33 +158,26 @@ class RemoteException(Exception):
     The re-raised (propagated) exception base class.
     """
 
-    @classmethod
-    def instance(cls, reply):
-        classname = reply.xclass
+    @staticmethod
+    def instance(reply):
+        target = reply.xclass
         mod = reply.xmodule
         state = reply.xstate
         args = reply.xargs
         try:
-            C = globals().get(classname)
-            if not C:
-                mod = __import__(mod, {}, {}, [classname,])
-                C = getattr(mod, classname)
-            inst = cls.__new(C)
-            inst.__dict__.update(state)
+            T = globals().get(target)
+            if not T:
+                mod = __import__(mod, fromlist=[target])
+                T = getattr(mod, target)
+            try:
+                inst = new(T, state)
+            except Exception:
+                inst = Exception()
             if isinstance(inst, Exception):
                 inst.args = args
         except:
             inst = RemoteException(reply.exval)
         return inst
-    
-    @classmethod
-    def __new(cls, C):
-        try:
-            import new
-            return new.instance(C)
-        except:
-            pass
-        return Exception.__new__(C)
     
 
 # --- RMI Classes ------------------------------------------------------------
@@ -451,7 +445,9 @@ class RMI(object):
         """
         try:
             self.permitted()
-            retval = self.method(*self.args, **self.kwargs)
+            fninfo = RMI.fninfo(self.method)
+            model = ALL[fninfo.call.model](self.method, *self.args, **self.kwargs)
+            retval = model()
             return Return.succeed(retval)
         except Exception:
             log.exception(utf8(self.method))

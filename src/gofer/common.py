@@ -16,6 +16,7 @@
 import os
 import inspect
 import errno
+import new as _new
 
 from threading import local as Local
 from threading import Thread as _Thread
@@ -110,6 +111,23 @@ def valid_path(path, mode=os.R_OK):
         raise ValueError('"%s" not found' % path)
     if not os.access(path, mode):
         raise ValueError('"%s" insufficient permissions' % path)
+
+
+def new(T, state=None):
+    """
+    Build objects.
+    :param T: The type of object to build.
+    :type T: type|class
+    :param state: Optional object state.
+    :type state: dict
+    :return: The new object.
+    """
+    if issubclass(T, object):
+        inst = T.__new__(T)
+        inst.__dict__.update(state or {})
+    else:
+        inst = _new.instance(T, state)
+    return inst
 
 
 class Thread(_Thread):

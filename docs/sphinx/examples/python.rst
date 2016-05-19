@@ -38,6 +38,7 @@ Code:   ``/user/share/gofer/plugins/plugin.py``
 ::
 
  from gofer.decorators import remote
+ from gofer.rmi.model.FORK
  from gofer.agent.plugin import Plugin
 
  # (optional) access to the plugin descriptor
@@ -53,7 +54,7 @@ Code:   ``/user/share/gofer/plugins/plugin.py``
         print '%s %s' % (woof, words)
         return 'Yes master.  I will bark because that is what dogs do.'
 
-    @remote
+    @remote(model=FORK)
     def wag(self, n):
         for i in range(0, n):
             print 'wag'

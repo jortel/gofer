@@ -35,6 +35,13 @@ Options:
     - default: None
     - note: **DEPRECATED** in 2.7
 
+- **model** - the RMI execution model (direct|fork).
+  The *fork* model spawns a child process for each method invocation.
+    - required: No
+    - type: str
+    - default: direct
+    - note: Added in 2.8
+
 @pam
 ----
 

@@ -46,11 +46,9 @@ start() {
 
 stop() {
   echo -n "Stopping $PROG"
-
   killproc -p $PID $PROG
   RETVAL=$?
   echo
-
   rm -f $LOCK
   return $RETVAL
 }

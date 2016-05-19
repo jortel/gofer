@@ -139,6 +139,7 @@ Requires: python-ctypes
 Requires: python-simplejson
 Requires: python-hashlib
 Requires: python-uuid
+Requires: python-multiprocessing
 %endif
 
 %description -n python-%{name}
