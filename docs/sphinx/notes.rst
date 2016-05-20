@@ -261,3 +261,26 @@ Deprecated:
     - The @pam decorator.
     - The @user decorator.
     - The *pam* property in the message.
+
+
+gofer 2.8
+^^^^^^^^^
+
+Notes:
+
+- Added support for RMI invocation models.  The ``direct`` model is the default and
+  invokes the remote method within the ``goferd`` process.  This is the model used by
+  <= 2.7.  The new ``fork`` model spawns a child process for each method invocation.
+  Invoking the method in a separate process provides isolation and better cancellation
+  behavior.  The isolation protects ``goferd`` against memory leaks and corruption
+  potentially introduced by plugins (or code used by plugins). When using the ``fork``
+  model, RMI cancellation is implemented by killing the child process.  As a result
+  cancellation is certain and immediate regardless of whether cancellation is implemented
+  by the method.
+
+Fixes:
+
+- Proton message sending reliability regression introduced in 2.7.
+
+
+Deprecated:

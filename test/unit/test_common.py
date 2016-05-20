@@ -23,7 +23,7 @@ from tempfile import mktemp
 from gofer.common import Thread as GThread
 from gofer.common import Singleton, ThreadSingleton, Options
 from gofer.common import synchronized, conditional, released
-from gofer.common import mkdir, rmdir, unlink, nvl, valid_path, utf8
+from gofer.common import mkdir, rmdir, unlink, nvl, valid_path, new, utf8
 from gofer.common import List
 
 
@@ -100,6 +100,14 @@ class Thing4(object):
     @released
     def bar(self):
         pass
+
+
+class Thing5(object):
+    pass
+
+
+class Thing6:
+    pass
 
 
 class TestUtf8(TestCase):
@@ -472,6 +480,21 @@ class TestValidPath(TestCase):
         fp.close()
         os.chmod(self.path, 0x00)
         self.assertRaises(ValueError, valid_path, self.path)
+
+
+class TestNew(TestCase):
+
+    def test_object(self):
+        thing = new(Thing5, dict(a=1, b=2))
+        self.assertTrue(isinstance(thing, Thing5))
+        self.assertEqual(thing.a, 1)
+        self.assertEqual(thing.b, 2)
+
+    def test_type(self):
+        thing = new(Thing6, dict(a=1, b=2))
+        self.assertTrue(isinstance(thing, Thing6))
+        self.assertEqual(thing.a, 1)
+        self.assertEqual(thing.b, 2)
 
 
 class TestList(TestCase):

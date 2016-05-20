@@ -17,6 +17,7 @@ import inspect
 
 from gofer import NAME, Options
 from gofer.rmi.decorator import Remote
+from gofer.rmi.model import DIRECT, valid_model
 from gofer.agent.decorator import Actions
 from gofer.agent.decorator import Delegate
 
@@ -32,22 +33,28 @@ def options(fn):
     if not hasattr(fn, NAME):
         opt = Options()
         opt.security = []
+        opt.call = Options(model=DIRECT)
         setattr(fn, NAME, opt)
     else:
         opt = getattr(fn, NAME)
     return opt
 
 
-def remote(fx=None, secret=None):
+def remote(fx=None, model=DIRECT, secret=None):
     """
     The *remote* decorator.
     Used to expose function/methods as RMI targets.
-    :param secret: An optional shared secret.
+    :param fx: The function being decorated when called without params.
+    :type fx: function
+    :param model: The RMI call model (direct|forked)
+    :type model: str
+    :param secret: An optional shared secret. *DEPRECATED*
     :type secret: str
     :return: The decorated function.
     """
     def inner(fn):
         opt = options(fn)
+        opt.call.model = valid_model(model)
         if secret:
             required = Options()
             required.secret = secret

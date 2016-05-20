@@ -14,16 +14,15 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 import os
-
-from time import sleep
 from hashlib import sha256
 from logging import getLogger
+from time import sleep
 
-from gofer.decorators import *
 from gofer.agent.plugin import Plugin
 from gofer.agent.rmi import Context
-from gofer.messaging.auth import Authenticator, ValidationFailed
+from gofer.decorators import *
 from gofer.messaging import Producer
+from gofer.messaging.auth import Authenticator, ValidationFailed
 from gofer.rmi.shell import Shell
 
 log = getLogger(__name__)

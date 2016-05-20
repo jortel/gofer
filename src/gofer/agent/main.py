@@ -17,8 +17,10 @@ import sys
 import os
 import logging
 
+from fcntl import ioctl
 from time import sleep
 from getopt import getopt, GetoptError
+from termios import TIOCSCTTY
 
 from gofer.agent.logutil import LogHandler
 
@@ -57,7 +59,7 @@ class ActionThread(Thread):
             sleep(10)
 
 
-class Agent:
+class Agent(object):
     """
     Gofer (main) agent.
     Starts (2) threads.  A thread to run actions and
@@ -73,6 +75,8 @@ class Agent:
     def start(self, block=True):
         """
         Start the agent.
+        :param block: block on spawned threads.
+        :type block: bool
         """
         cfg = AgentConfig()
         for plugin in Plugin.all():
@@ -148,7 +152,6 @@ def start_daemon(lock):
     pid = os.fork()
     if pid == 0:  # child
         os.setsid()
-        os.setpgrp()
         os.chdir('/')
         os.close(0)
         os.close(1)
@@ -156,7 +159,8 @@ def start_daemon(lock):
         fp = os.open('/dev/null', os.O_RDWR)
         os.dup(fp)
         os.dup(fp)
-        os.dup(fp)
+        pty = os.openpty()
+        ioctl(pty[0], TIOCSCTTY, 0)
     else:  # parent
         lock.setpid(pid)
         os.waitpid(pid, os.WNOHANG)

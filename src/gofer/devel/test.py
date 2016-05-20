@@ -13,7 +13,7 @@
 #
 
 
-from mock import patch
+from mock import patch, Mock
 
 
 class Module(object):
@@ -27,6 +27,22 @@ class Fake(object):
     def __init__(self, *args, **keywords):
         self.args = args
         self.keywords = keywords
+
+
+class SideEffect(object):
+
+    def __init__(self, *values):
+        self.values = iter(values)
+
+    def __call__(self, *args, **kwargs):
+        value = self.values.next()
+        if isinstance(value, Mock):
+            return value
+        if callable(value):
+            value = value(*args, **kwargs)
+        if isinstance(value, Exception):
+            raise value
+        return value
 
 
 class Import(object):

@@ -432,12 +432,14 @@ def smoke_test(exit=0):
         duck = agent.Duck()
         print duck.fly()
         print duck.quack('aflak')
+        panther = agent.Panther()
+        print panther.test_progress()
     print 'DONE'
     if exit:
         sys.exit(0)
 
 
-def test_cancel():
+def test_cancel(exit=0):
     agent = Agent(wait=0)
     cancel = agent.Cancel()
     sn = cancel.test()
@@ -445,7 +447,29 @@ def test_cancel():
     admin = agent.Admin()
     canceled = admin.cancel(sn)
     print canceled
-    sys.exit(0)
+    if exit:
+        sys.exit(0)
+
+
+def test_forked(exit=0, with_cancel=1):
+    agent = Agent()
+    panther = agent.Panther()
+    print 'forked test(): %s' % panther.test()
+    print 'forked test_progress(): %s' % panther.test_progress()
+    try:
+        panther.test_exceptions()
+    except ValueError:
+        pass
+    if with_cancel:
+        agent = Agent(wait=0)
+        panther = agent.Panther()
+        sn = panther.sleep(30)
+        print 'started: %s' % sn
+        sleep(3)
+        admin = agent.Admin()
+        print 'cancelled: {}'.format(admin.cancel(sn))
+    if exit:
+        sys.exit(0)
 
 
 def get_options():
@@ -481,8 +505,8 @@ if __name__ == '__main__':
     Agent.base_options['authenticator'] = authenticator
 
     # test_zombie()
-
     # test_memory()
+    test_forked()
 
     queue = Queue(address.split('/')[-1].upper())
     queue.durable = False
@@ -491,7 +515,6 @@ if __name__ == '__main__':
     reply_consumer.start(on_reply)
 
     # test_cancel()
-
     # demo_progress(1)
     # test_performance()
 

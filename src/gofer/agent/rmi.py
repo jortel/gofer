@@ -21,13 +21,12 @@ from gofer.rmi.tracker import Tracker
 from gofer.rmi.store import Pending, Empty
 from gofer.messaging import Document, Producer
 from gofer.metrics import Timer, timestamp
-from gofer.agent.builtin import Builtin
 
 
 log = getLogger(__name__)
 
 
-class Task:
+class Task(object):
     """
     An RMI task to be scheduled on the plugin thread pool.
     :ivar transaction: A pending transaction.
@@ -35,8 +34,6 @@ class Task:
     :ivar ts: Timestamp
     :type ts: float
     """
-
-    context = Local()
 
     @staticmethod
     def _producer(plugin):
@@ -75,15 +72,15 @@ class Task:
         """
         request = self.request
         cancelled = Cancelled(request.sn)
+        progress = Progress(self)
+        context = Context(request.sn, progress, cancelled)
         latency = self.plugin.latency
         if latency:
             sleep(latency)
         if not self.plugin.url or cancelled():
             self.discard()
             return
-        self.context.sn = request.sn
-        self.context.progress = Progress(self)
-        self.context.cancelled = cancelled
+        Context.set(context)
         self.producer = self._producer(self.plugin)
         self.producer.open()
         try:
@@ -92,9 +89,7 @@ class Task:
             self.commit()
             self.send_reply(request, result)
         finally:
-            self.context.sn = None
-            self.context.progress = None
-            self.context.cancelled = None
+            Context.set()
             self.producer.close()
 
     def commit(self):
@@ -206,6 +201,18 @@ class Scheduler(Thread):
     Processes the *pending* queue.
     """
 
+    @staticmethod
+    def load_builtin(plugin):
+        """
+        Load the builtin plugin.
+        :param plugin: A plugin.
+        :type plugin: gofer.agent.plugin.Plugin:
+        :return: The builtin.
+        :rtype: gofer.agent.builtin.Builtin
+        """
+        from gofer.agent.builtin import Builtin
+        return Builtin(plugin)
+
     def __init__(self, plugin):
         """
         :param plugin: A plugin.
@@ -214,7 +221,7 @@ class Scheduler(Thread):
         Thread.__init__(self, name='scheduler:%s' % plugin.name)
         self.plugin = plugin
         self.pending = Pending(plugin.name)
-        self.builtin = Builtin(plugin)
+        self.builtin = self.load_builtin(plugin)
         self.setDaemon(True)
 
     def run(self):
@@ -268,18 +275,56 @@ class Scheduler(Thread):
         self.abort()
 
 
-class Context:
+class Context(object):
     """
     Remote method invocation context.
-    Provides call context to method implementations.
+    Provides mode context to method implementations.
+    :ivar sn: The current request serial number.
+    :type sn: str
+    :ivar progress: Provides progress reporting.
+    :type progress: Progress
+    :ivar cancelled: Provides cancellation status.
+    :type cancelled: Cancelled
     """
+
+    _current = Local()
+
+    @staticmethod
+    def set(context=None):
+        """
+        Set the current context.
+        :param context: The current context.
+        :type context: Context
+        """
+        Context._current.inst = context
 
     @staticmethod
     def current():
-        return Task.context
+        """
+        Get the current context.
+        :return: The current context
+        :rtype: Context
+        """
+        try:
+            return Context._current.inst
+        except AttributeError:
+            return None
+
+    def __init__(self, sn, progress, cancelled):
+        """
+        :param sn: The current request serial number.
+        :type  sn: str
+        :param progress: Provides progress reporting.
+        :type  progress: Progress
+        :param cancelled: Provides cancellation status.
+        :type  cancelled: Cancelled
+        """
+        self.sn = sn
+        self.progress = progress
+        self.cancelled = cancelled
 
 
-class Progress:
+class Progress(object):
     """
     Provides support for progress reporting.
     :ivar task: The current task.
@@ -333,7 +378,7 @@ class Progress:
             log.exception('Send: progress, failed')
 
 
-class Cancelled:
+class Cancelled(object):
     """
     A callable added to the Context and used
     by plugin methods to check for cancellation.
