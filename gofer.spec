@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.7.6
+Version: 2.8.0
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -234,6 +234,10 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Thu May 19 2016 Jeff Ortel <jortel@redhat.com> 2.8.0-1
+- Support RMI invocation models. (jortel@redhat.com)
+- Use LSB common pidfile kill functions to stop (rgeorge@liveramp.com)
+
 * Wed Apr 13 2016 Jeff Ortel <jortel@redhat.com> 2.7.6-1
 - Fix proton reliable send. Reported on 1323726. (jortel@redhat.com)
 
