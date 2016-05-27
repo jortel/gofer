@@ -16,11 +16,12 @@
 from time import time, sleep
 from logging import getLogger
 
-from gofer.common import Thread, Local, released
-from gofer.rmi.tracker import Tracker
-from gofer.rmi.store import Pending, Empty
+from gofer.agent.builtin import Builtin
+from gofer.common import Thread, released
 from gofer.messaging import Document, Producer
 from gofer.metrics import Timer, timestamp
+from gofer.rmi.context import Cancelled, Context, Progress
+from gofer.rmi.store import Pending, Empty
 
 
 log = getLogger(__name__)
@@ -72,25 +73,26 @@ class Task(object):
         """
         request = self.request
         cancelled = Cancelled(request.sn)
-        progress = Progress(self)
-        context = Context(request.sn, progress, cancelled)
         latency = self.plugin.latency
         if latency:
             sleep(latency)
         if not self.plugin.url or cancelled():
             self.discard()
             return
+        producer = self._producer(self.plugin)
+        progress = Progress(request, producer)
+        context = Context(request.sn, progress, cancelled)
         Context.set(context)
-        self.producer = self._producer(self.plugin)
-        self.producer.open()
+        producer.open()
         try:
+            self.producer = producer
             self.send_started(request)
             result = self.plugin.dispatch(request)
             self.commit()
             self.send_reply(request, result)
         finally:
+            producer.close()
             Context.set()
-            self.producer.close()
 
     def commit(self):
         """
@@ -201,18 +203,6 @@ class Scheduler(Thread):
     Processes the *pending* queue.
     """
 
-    @staticmethod
-    def load_builtin(plugin):
-        """
-        Load the builtin plugin.
-        :param plugin: A plugin.
-        :type plugin: gofer.agent.plugin.Plugin:
-        :return: The builtin.
-        :rtype: gofer.agent.builtin.Builtin
-        """
-        from gofer.agent.builtin import Builtin
-        return Builtin(plugin)
-
     def __init__(self, plugin):
         """
         :param plugin: A plugin.
@@ -221,7 +211,7 @@ class Scheduler(Thread):
         Thread.__init__(self, name='scheduler:%s' % plugin.name)
         self.plugin = plugin
         self.pending = Pending(plugin.name)
-        self.builtin = self.load_builtin(plugin)
+        self.builtin = Builtin(plugin)
         self.setDaemon(True)
 
     def run(self):
@@ -273,133 +263,3 @@ class Scheduler(Thread):
         """
         self.builtin.shutdown()
         self.abort()
-
-
-class Context(object):
-    """
-    Remote method invocation context.
-    Provides mode context to method implementations.
-    :ivar sn: The current request serial number.
-    :type sn: str
-    :ivar progress: Provides progress reporting.
-    :type progress: Progress
-    :ivar cancelled: Provides cancellation status.
-    :type cancelled: Cancelled
-    """
-
-    _current = Local()
-
-    @staticmethod
-    def set(context=None):
-        """
-        Set the current context.
-        :param context: The current context.
-        :type context: Context
-        """
-        Context._current.inst = context
-
-    @staticmethod
-    def current():
-        """
-        Get the current context.
-        :return: The current context
-        :rtype: Context
-        """
-        try:
-            return Context._current.inst
-        except AttributeError:
-            return None
-
-    def __init__(self, sn, progress, cancelled):
-        """
-        :param sn: The current request serial number.
-        :type  sn: str
-        :param progress: Provides progress reporting.
-        :type  progress: Progress
-        :param cancelled: Provides cancellation status.
-        :type  cancelled: Cancelled
-        """
-        self.sn = sn
-        self.progress = progress
-        self.cancelled = cancelled
-
-
-class Progress(object):
-    """
-    Provides support for progress reporting.
-    :ivar task: The current task.
-    :type task: Task
-    :ivar total: The total work units.
-    :type total: int
-    :ivar completed: The completed work units.
-    :type completed: int
-    :ivar details: The reported details.
-    :type details: object
-    """
-
-    def __init__(self, task):
-        """
-        :param task: The current task.
-        :type task: Task
-        """
-        self.task = task
-        self.total = 0
-        self.completed = 0
-        self.details = {}
-
-    @property
-    def producer(self):
-        """
-        Get a producer.
-        :return: An AMQP producer.
-        :rtype: Producer
-        """
-        return self.task.producer
-
-    def report(self):
-        """
-        Send the progress report.
-        """
-        sn = self.task.request.sn
-        data = self.task.request.data
-        address = self.task.request.replyto
-        if not address:
-            return
-        try:
-            self.producer.send(
-                address,
-                sn=sn,
-                data=data,
-                status='progress',
-                total=self.total,
-                completed=self.completed,
-                details=self.details)
-        except Exception:
-            log.exception('Send: progress, failed')
-
-
-class Cancelled(object):
-    """
-    A callable added to the Context and used
-    by plugin methods to check for cancellation.
-    :ivar tracker: The cancellation tracker.
-    :type tracker: Tracker
-    """
-
-    def __init__(self, sn):
-        """
-        :param sn: Serial number.
-        :type sn: str
-        """
-        self.sn = sn
-        self.tracker = Tracker()
-
-    def __call__(self):
-        return self.tracker.cancelled(self.sn)
-
-    def __del__(self):
-        try:
-            self.tracker.remove(self.sn)
-        except KeyError:
-            # already cleaned up
-            pass
