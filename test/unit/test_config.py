@@ -194,12 +194,12 @@ class TestExceptions(TestCase):
         e = ValidationException('hello', '/path')
         self.assertEqual(e.description, 'hello')
         self.assertEqual(e.path, '/path')
-        self.assertEqual(e.message, 'hello in: /path')
+        self.assertEqual(str(e), 'hello in: /path')
         # no path
         e = ValidationException('hello')
         self.assertEqual(e.description, 'hello')
         self.assertEqual(e.path, None)
-        self.assertEqual(e.message, 'hello')
+        self.assertEqual(str(e), 'hello')
 
     def test_section_not_found(self):
         # path
@@ -207,13 +207,13 @@ class TestExceptions(TestCase):
         self.assertEqual(e.description, 'Required section [test], not found')
         self.assertEqual(e.path, '/path')
         self.assertEqual(e.name, 'test')
-        self.assertEqual(e.message, 'Required section [test], not found in: /path')
+        self.assertEqual(str(e), 'Required section [test], not found in: /path')
         # no path
         e = SectionNotFound('test')
         self.assertEqual(e.description, 'Required section [test], not found')
         self.assertEqual(e.path, None)
         self.assertEqual(e.name, 'test')
-        self.assertEqual(e.message, 'Required section [test], not found')
+        self.assertEqual(str(e), 'Required section [test], not found')
 
     def test_property_not_found(self):
         # path
@@ -221,13 +221,13 @@ class TestExceptions(TestCase):
         self.assertEqual(e.description, 'Required property [test], not found')
         self.assertEqual(e.path, '/path')
         self.assertEqual(e.name, 'test')
-        self.assertEqual(e.message, 'Required property [test], not found in: /path')
+        self.assertEqual(str(e), 'Required property [test], not found in: /path')
         # no path
         e = PropertyNotFound('test')
         self.assertEqual(e.description, 'Required property [test], not found')
         self.assertEqual(e.path, None)
         self.assertEqual(e.name, 'test')
-        self.assertEqual(e.message, 'Required property [test], not found')
+        self.assertEqual(str(e), 'Required property [test], not found')
 
     def test_property_not_valid(self):
         # path
@@ -237,7 +237,7 @@ class TestExceptions(TestCase):
         self.assertEqual(e.name, 'age')
         self.assertEqual(e.value, 'xxx')
         self.assertEqual(e.pattern, '[0-9]+')
-        self.assertEqual(e.message, 'Property: age value "xxx" must be: [0-9]+ in: /path')
+        self.assertEqual(str(e), 'Property: age value "xxx" must be: [0-9]+ in: /path')
         # no path
         e = PropertyNotValid('age', 'xxx', '[0-9]+')
         self.assertEqual(e.description, 'Property: age value "xxx" must be: [0-9]+')
@@ -245,7 +245,7 @@ class TestExceptions(TestCase):
         self.assertEqual(e.name, 'age')
         self.assertEqual(e.value, 'xxx')
         self.assertEqual(e.pattern, '[0-9]+')
-        self.assertEqual(e.message, 'Property: age value "xxx" must be: [0-9]+')
+        self.assertEqual(str(e), 'Property: age value "xxx" must be: [0-9]+')
 
 
 class TestConfig(TestCase):

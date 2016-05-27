@@ -16,7 +16,7 @@
 from subprocess import Popen, PIPE
 
 from gofer import utf8
-from gofer.agent.rmi import Context
+from gofer.rmi.context import Context
 
 
 STDOUT = 'stdout'

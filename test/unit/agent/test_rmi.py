@@ -19,35 +19,28 @@ from gofer.messaging import Document
 
 class TestScheduler(TestCase):
 
-    def test_load_builtin(self):
-        plugin = Mock()
-        from gofer.agent.builtin import Builtin
-        loaded = Scheduler.load_builtin(plugin)
-        self.assertTrue(isinstance(loaded, Builtin))
-        self.assertTrue(loaded.plugin, plugin)
-
     @patch('threading.Thread.setDaemon')
     @patch('gofer.agent.rmi.Pending')
-    @patch('gofer.agent.rmi.Scheduler.load_builtin')
-    def test_init(self, load_builtin, pending, set_daemon):
+    @patch('gofer.agent.rmi.Builtin')
+    def test_init(self, builtin, pending, set_daemon):
         plugin = Mock()
         scheduler = Scheduler(plugin)
         pending.assert_called_once_with(plugin.name)
-        load_builtin.assert_called_once_with(plugin)
+        builtin.assert_called_once_with(plugin)
         set_daemon.assert_called_with(True)
         self.assertEqual(scheduler.plugin, plugin)
         self.assertEqual(scheduler.pending, pending.return_value)
-        self.assertEqual(scheduler.builtin, load_builtin.return_value)
+        self.assertEqual(scheduler.builtin, builtin.return_value)
 
     @patch('gofer.common.Thread.aborted')
     @patch('gofer.agent.rmi.Transaction')
     @patch('gofer.agent.rmi.Scheduler.select_plugin')
     @patch('gofer.agent.rmi.Task')
     @patch('gofer.agent.rmi.Pending')
-    @patch('gofer.agent.rmi.Scheduler.load_builtin')
+    @patch('gofer.agent.rmi.Builtin')
     @patch('threading.Thread.setDaemon', Mock())
-    def test_run(self, load_builtin, pending, task, select_plugin, tx, aborted):
-        builtin = Mock(name='builtin')
+    def test_run(self, builtin, pending, task, select_plugin, tx, aborted):
+        builtin.return_value = Mock(name='builtin')
         plugin = Mock(name='plugin')
         task_list = [
             Mock(name='task-1'),
@@ -65,16 +58,15 @@ class TestScheduler(TestCase):
         tx.side_effect = tx_list
         aborted.side_effect = [False, False, True]
         pending.return_value.get.side_effect = request_list
-        load_builtin.return_value = builtin
-        builtin.provides.side_effect = [True, False]
-        select_plugin.side_effect = [builtin, plugin]
+        builtin.return_value.provides.side_effect = [True, False]
+        select_plugin.side_effect = [builtin.return_value, plugin]
 
         # test
         scheduler = Scheduler(plugin)
         scheduler.run()
 
         # validation
-        builtin.pool.run.assert_called_once_with(task_list[0])
+        builtin.return_value.pool.run.assert_called_once_with(task_list[0])
         plugin.pool.run.assert_called_once_with(task_list[1])
         self.assertEqual(
             select_plugin.call_args_list,
@@ -85,7 +77,7 @@ class TestScheduler(TestCase):
         self.assertEqual(
             tx.call_args_list,
             [
-                ((builtin, pending.return_value, request_list[0]), {}),
+                ((builtin.return_value, pending.return_value, request_list[0]), {}),
                 ((plugin, pending.return_value, request_list[1]), {})
             ])
         self.assertEqual(
@@ -99,7 +91,7 @@ class TestScheduler(TestCase):
     @patch('gofer.agent.rmi.Scheduler.select_plugin')
     @patch('gofer.common.Thread.aborted')
     @patch('gofer.agent.rmi.Task', Mock())
-    @patch('gofer.agent.rmi.Scheduler.load_builtin', Mock())
+    @patch('gofer.agent.rmi.Builtin', Mock())
     @patch('threading.Thread.setDaemon', Mock())
     def test_run_raised(self, aborted, select_plugin, pending):
         plugin = Mock()
@@ -117,21 +109,21 @@ class TestScheduler(TestCase):
 
     @patch('gofer.agent.rmi.Pending', Mock())
     @patch('threading.Thread.setDaemon', Mock())
-    @patch('gofer.agent.rmi.Scheduler.load_builtin')
-    def test_select_plugin(self, load_builtin):
+    @patch('gofer.agent.rmi.Builtin')
+    def test_select_plugin(self, builtin):
         plugin = Mock()
         request = Document(request={'classname': 'A'})
         scheduler = Scheduler(plugin)
         # find builtin
-        load_builtin.return_value.provides.return_value = True
+        builtin.return_value.provides.return_value = True
         selected = scheduler.select_plugin(request)
-        self.assertEqual(selected, load_builtin.return_value)
+        self.assertEqual(selected, builtin.return_value)
         # find plugin
-        load_builtin.return_value.provides.return_value = False
+        builtin.return_value.provides.return_value = False
         selected = scheduler.select_plugin(request)
         self.assertEqual(selected, plugin)
         self.assertEqual(
-            load_builtin.return_value.provides.call_args_list,
+            builtin.return_value.provides.call_args_list,
             [
                 (('A',), {}),
                 (('A',), {})
@@ -139,7 +131,7 @@ class TestScheduler(TestCase):
 
     @patch('gofer.agent.rmi.Pending')
     @patch('threading.Thread.setDaemon', Mock())
-    @patch('gofer.agent.rmi.Scheduler.load_builtin', Mock())
+    @patch('gofer.agent.rmi.Builtin', Mock())
     def test_add(self, pending):
         plugin = Mock()
         request = Mock()
@@ -150,12 +142,12 @@ class TestScheduler(TestCase):
     @patch('gofer.common.Thread.abort')
     @patch('gofer.agent.rmi.Pending', Mock())
     @patch('threading.Thread.setDaemon', Mock())
-    @patch('gofer.agent.rmi.Scheduler.load_builtin')
-    def test_shutdown(self, load_builtin, abort):
+    @patch('gofer.agent.rmi.Builtin')
+    def test_shutdown(self, builtin, abort):
         plugin = Mock()
         scheduler = Scheduler(plugin)
         scheduler.shutdown()
-        load_builtin.return_value.shutdown.assert_called_once_with()
+        builtin.return_value.shutdown.assert_called_once_with()
         abort.assert_called_once_with()
 
 

@@ -18,7 +18,7 @@ from multiprocessing import Process, Pipe
 from threading import Thread
 from time import sleep
 
-from gofer.agent.rmi import Context
+from gofer.rmi.context import Context
 from gofer.rmi.model import protocol
 from gofer.rmi.model.child import Call as Target
 
