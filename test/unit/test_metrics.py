@@ -13,11 +13,10 @@ from sys import getsizeof
 from unittest import TestCase
 from datetime import datetime
 
-from mock import patch, Mock
+from mock import patch
 
-from gofer.metrics import Timer, Timed, Memory
-from gofer.metrics import Writer, LogWriter
-from gofer.metrics import timestamp, timed
+from gofer.metrics import Timer, Memory
+from gofer.metrics import timestamp
 
 
 class TestUtils(TestCase):
@@ -106,41 +105,6 @@ class TestTimer(TestCase):
         self.assertEqual(t.stopped, 0)
         t.__exit__()
         self.assertTrue(t.stopped > 0)
-
-
-class TestDecorator(TestCase):
-
-    def test_timed(self):
-        @timed
-        def fn(a, b):
-            return a * b
-        r = fn(2, 10)
-        self.assertEqual(r, 20)
-
-    def test_timed_with_writer(self):
-        @timed(writer=Writer())
-        def fn(a, b):
-            return a * b
-        r = fn(2, 10)
-        self.assertEqual(r, 20)
-
-    def test_timed_with_log_writer(self):
-        @timed(writer=LogWriter(Mock()))
-        def fn(a, b):
-            return a * b
-        r = fn(2, 10)
-        self.assertEqual(r, 20)
-
-
-class TestTimed(TestCase):
-
-    def test_context(self):
-        writer = Mock()
-        with Timed(writer) as _timed:
-            pass
-        self.assertTrue(writer.called)
-        self.assertTrue(_timed.timer.started > 0)
-        self.assertTrue(_timed.timer.stopped > 0)
 
 
 class TestMemory(TestCase):

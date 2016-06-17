@@ -18,10 +18,8 @@ The *metrics* module defines classes and other resources
 designed for collecting and reporting performance metrics.
 """
 
-import os
 import sys
 import time
-import inspect
 
 from math import modf
 from datetime import datetime
@@ -32,54 +30,6 @@ from gofer.common import utf8
 def timestamp():
     dt = datetime.utcnow()
     return dt.strftime('%Y-%m-%dT%H:%M:%SZ')
-
-
-def timed(fx=None, writer=None):
-    def inner(fn):
-        def call(*args, **kwargs):
-            display = writer or Writer()
-            with Timer() as timer:
-                retval = fn(*args, **kwargs)
-            context = '{0}()'.format(fn.__name__)
-            display(context, timer)
-            return retval
-        return call
-    if inspect.isfunction(fx):
-        return inner(fx)
-    else:
-        return inner
-
-
-class Timed(object):
-
-    def __init__(self, writer=None):
-        self.writer = writer or Writer()
-        self.timer = Timer()
-
-    def __enter__(self):
-        self.timer.start()
-        return self
-
-    def __exit__(self, *unused):
-        self.timer.stop()
-        frame = inspect.stack()[1]
-        context = '{0}:{1}'.format(os.path.basename(frame[1]), frame[2])
-        self.writer(context, self.timer)
-
-
-class Writer(object):
-
-    def __call__(self, context, timer):
-        print '\n{0} duration: {1}\n'.format(context, timer)
-
-
-class LogWriter(Writer):
-
-    def __init__(self, log):
-        self.log = log
-
-    def __call__(self, context, timer):
-        self.log.info('%s duration: %s', context, timer)
 
 
 class Timer(object):
