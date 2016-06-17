@@ -284,3 +284,21 @@ Fixes:
 
 
 Deprecated:
+
+
+gofer 2.9
+^^^^^^^^^
+
+Notes:
+
+- Added ``direct`` and ``fork`` plugin decorators used to specify the RMI invocation model.
+  Using one of these decorators is preferred to using the ``model=`` parameter to the
+  ``remote`` decorator.
+
+- Added memory profiler to metrics.
+
+- Added context manager to Timer and associated decorator.
+
+Fixes:
+
+Deprecated:
