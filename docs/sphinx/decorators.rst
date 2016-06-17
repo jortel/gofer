@@ -42,6 +42,27 @@ Options:
     - default: direct
     - note: Added in 2.8
 
+
+@direct
+-------
+
+The *direct* decorator is used to designate a function to use the *direct* invocation model.
+With this model, the function is invoked within the goferd process.
+
+Added: 2.8
+
+
+@fork
+-----
+
+The *fork* decorator is used to designate a function to use the *fork* invocation model.
+With this model, the function is invoked in a newly spawned child process.  This model may be used
+to insulate the goferd process from unwanted side effects such as memory and filedes leaks,
+global configuration changes and core dumps.
+
+Added: 2.8
+
+
 @pam
 ----
 

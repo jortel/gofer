@@ -17,7 +17,7 @@ import inspect
 
 from gofer import NAME, Options
 from gofer.rmi.decorator import Remote
-from gofer.rmi.model import DIRECT, valid_model
+from gofer.rmi.model import DIRECT, FORK, valid_model
 from gofer.agent.decorator import Actions
 from gofer.agent.decorator import Delegate
 
@@ -66,6 +66,30 @@ def remote(fx=None, model=DIRECT, secret=None):
         return inner(fx)
     else:
         return inner
+
+
+def direct(fn):
+    """
+    The *direct* decorator used to specify the *direct* model.
+    :param fn: The function being decorated.
+    :type fn: function
+    :return: The decorated function.
+    """
+    opt = options(fn)
+    opt.call.model = valid_model(DIRECT)
+    return fn
+
+
+def fork(fn):
+    """
+    The *fork* decorator used to specify the *fork* model.
+    :param fn: The function being decorated.
+    :type fn: function
+    :return: The decorated function.
+    """
+    opt = options(fn)
+    opt.call.model = valid_model(FORK)
+    return fn
 
 
 def pam(user, service=None):

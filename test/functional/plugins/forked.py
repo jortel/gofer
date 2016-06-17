@@ -1,8 +1,7 @@
 from logging import getLogger
 from time import sleep
 
-from gofer.decorators import remote
-from gofer.rmi.model import FORK
+from gofer.decorators import remote, fork, FORK
 from gofer.agent.plugin import Plugin
 from gofer.agent.rmi import Context
 
@@ -13,11 +12,13 @@ log = getLogger(__name__)
 
 class Panther(object):
 
-    @remote(model=FORK)
+    @fork
+    @remote
     def test(self):
         return 'done'
 
-    @remote(model=FORK)
+    @fork
+    @remote
     def sleep(self, n=90):
         while n > 0:
             log.info('sleeping')
@@ -36,6 +37,7 @@ class Panther(object):
             context.progress.report()
         return 'done'
 
-    @remote(model=FORK)
+    @fork
+    @remote
     def test_exceptions(self):
         raise ValueError('That was bad')
