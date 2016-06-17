@@ -14,9 +14,9 @@ from unittest import TestCase
 from mock import patch, Mock
 
 from gofer import NAME
-from gofer.decorators import options, remote, pam, user, action
+from gofer.decorators import options, remote, direct, fork, pam, user, action
 from gofer.decorators import load, unload, initializer
-from gofer.decorators import DIRECT
+from gofer.decorators import DIRECT, FORK
 
 
 class Function(object):
@@ -65,6 +65,19 @@ class TestRemote(TestCase):
         _remote.add.assert_called_once_with(fn)
 
     @patch('gofer.decorators.Remote')
+    def test_model(self, _remote):
+        def fn(): pass
+        remote(fn, model=FORK)
+        opt = getattr(fn, NAME)
+        self.assertEqual(
+            str(opt),
+            str({
+                'security': [],
+                'call': {'model': FORK}
+                }))
+        _remote.add.assert_called_once_with(fn)
+
+    @patch('gofer.decorators.Remote')
     def test_secret(self, _remote):
         def fn(): pass
         secret = 'fedex'
@@ -79,6 +92,34 @@ class TestRemote(TestCase):
                 'call': {'model': DIRECT}
                 }))
         _remote.add.assert_called_once_with(fn)
+
+
+class TestDirect(TestCase):
+
+    def test_call(self):
+        def fn(): pass
+        direct(fn)
+        opt = getattr(fn, NAME)
+        self.assertEqual(
+            str(opt),
+            str({
+                'security': [],
+                'call': {'model': DIRECT}
+                }))
+
+
+class TestFork(TestCase):
+
+    def test_call(self):
+        def fn(): pass
+        fork(fn)
+        opt = getattr(fn, NAME)
+        self.assertEqual(
+            str(opt),
+            str({
+                'security': [],
+                'call': {'model': FORK}
+                }))
 
 
 class TestPam(TestCase):

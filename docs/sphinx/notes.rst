@@ -276,7 +276,7 @@ Notes:
   potentially introduced by plugins (or code used by plugins). When using the ``fork``
   model, RMI cancellation is implemented by killing the child process.  As a result
   cancellation is certain and immediate regardless of whether cancellation is implemented
-  by the method.
+  by the method.  See: ``direct`` and ``fork`` decorators.
 
 Fixes:
 
