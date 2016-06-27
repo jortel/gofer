@@ -66,6 +66,7 @@ class Message(object):
         :rtype: Message
         """
         try:
+            pipe.poll(None)
             message = pipe.recv()
             if not message:
                 raise EOFError()

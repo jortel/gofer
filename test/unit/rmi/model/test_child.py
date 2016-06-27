@@ -13,6 +13,7 @@ class Pipe(object):
 
     def __init__(self):
         self.pipe = []
+        self.poll = Mock()
 
     def send(self, thing):
         self.pipe.append(thing)

@@ -11,6 +11,7 @@ class Pipe(object):
 
     def __init__(self):
         self.pipe = []
+        self.poll = Mock()
 
     def send(self, thing):
         self.pipe.append(thing)
@@ -46,6 +47,7 @@ class TestMessage(TestCase):
         p = Person.read(pipe)
 
         # validation
+        pipe.poll.assert_called_once_with(None)
         self.assertTrue(isinstance(p, Person))
         self.assertEqual(p.name, p_in.name)
         self.assertEqual(p.age, p_in.age)
