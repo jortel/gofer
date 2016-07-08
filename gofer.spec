@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.9.1
+Version: 2.9.2
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -233,6 +233,9 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Fri Jul 08 2016 Jeff Ortel <jortel@redhat.com> 2.9.2-1
+- Use mp module instead of multiprocessing. (jortel@redhat.com)
+
 * Mon Jun 27 2016 Jeff Ortel <jortel@redhat.com> 2.9.1-1
 - Fix IOError errno=EAGAIN on EL5. (jortel@redhat.com)
 - python 2.4 compat. (jortel@redhat.com)
