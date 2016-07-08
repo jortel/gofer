@@ -456,6 +456,7 @@ def test_forked(exit=0, with_cancel=1):
     panther = agent.Panther()
     print 'forked test(): %s' % panther.test()
     print 'forked test_progress(): %s' % panther.test_progress()
+    print 'forked test_suicide(): %s' % panther.test_suicide()
     try:
         panther.test_exceptions()
     except ValueError:

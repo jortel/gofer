@@ -1,3 +1,18 @@
+#
+# Copyright (c) 2016 Red Hat, Inc.
+#
+# This software is licensed to you under the GNU Lesser General Public
+# License as published by the Free Software Foundation; either version
+# 2 of the License (LGPLv2) or (at your option) any later version.
+# There is NO WARRANTY for this software, express or implied,
+# including the implied warranties of MERCHANTABILITY,
+# NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
+# have received a copy of LGPLv2 along with this software; if not, see
+# http://www.gnu.org/licenses/old-licenses/lgpl-2.0.txt.
+#
+# Jeff Ortel <jortel@redhat.com>
+#
+
 from unittest import TestCase
 
 from mock import call, patch, Mock
@@ -17,14 +32,12 @@ class TestMonitor(TestCase):
         context = Mock()
         context.cancelled.side_effect = [False, True]
         child = Mock()
-        pipe = Mock()
 
         # test
-        m = Monitor(context, child, pipe)
+        m = Monitor(context, child)
         m.run()
 
         # validation
-        pipe.send.assert_called_once_with(0)
         child.terminate.assert_called_once_with()
         sleep.assert_called_once_with(0.10)
 
@@ -32,10 +45,9 @@ class TestMonitor(TestCase):
     def test_stop(self, join):
         context = Mock()
         child = Mock()
-        pipe = Mock()
 
         # test
-        m = Monitor(context, child, pipe)
+        m = Monitor(context, child)
         m.stop()
 
         # validation
@@ -98,9 +110,7 @@ class TestCall(TestCase):
     @patch(MODULE + '.Pipe')
     @patch(MODULE + '.Monitor')
     def test_call(self, monitor, pipe, process, context, target, read):
-        inbound = Mock()
-        outbound = Mock()
-        pipe.return_value = inbound, outbound
+        pipe.return_value = Mock(reader=Mock(), writer=Mock())
 
         # test
         _call = Call(Mock(), 1, 2, a=1, b=2)
@@ -108,14 +118,14 @@ class TestCall(TestCase):
 
         # validation
         pipe.assert_called_once_with()
+        pipe.return_value.writer.close.assert_called_once_with()
         target.assert_called_once_with(_call.method, *_call.args, **_call.kwargs)
-        process.assert_called_once_with(target=target.return_value, args=(outbound,))
-        monitor.assert_called_once_with(
-                context.current.return_value, process.return_value, outbound)
+        process.assert_called_once_with(target.return_value, pipe.return_value.writer)
+        monitor.assert_called_once_with(context.current.return_value, process.return_value)
         monitor.return_value.start.assert_called_once_with()
-        read.assert_called_once_with(inbound)
+        read.assert_called_once_with(pipe.return_value.reader)
         monitor.return_value.stop.assert_called_once_with()
-        process.return_value.join.assert_called_once_with()
+        process.return_value.wait.assert_called_once_with()
 
     @patch(MODULE + '.protocol.Reply')
     def test_read(self, reply):

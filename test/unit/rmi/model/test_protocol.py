@@ -1,3 +1,18 @@
+#
+# Copyright (c) 2016 Red Hat, Inc.
+#
+# This software is licensed to you under the GNU Lesser General Public
+# License as published by the Free Software Foundation; either version
+# 2 of the License (LGPLv2) or (at your option) any later version.
+# There is NO WARRANTY for this software, express or implied,
+# including the implied warranties of MERCHANTABILITY,
+# NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
+# have received a copy of LGPLv2 along with this software; if not, see
+# http://www.gnu.org/licenses/old-licenses/lgpl-2.0.txt.
+#
+# Jeff Ortel <jortel@redhat.com>
+#
+
 from unittest import TestCase
 
 from mock import Mock
@@ -13,10 +28,10 @@ class Pipe(object):
         self.pipe = []
         self.poll = Mock()
 
-    def send(self, thing):
+    def put(self, thing):
         self.pipe.append(thing)
 
-    def recv(self):
+    def get(self):
         return self.pipe.pop()
 
 
@@ -47,14 +62,14 @@ class TestMessage(TestCase):
         p = Person.read(pipe)
 
         # validation
-        pipe.poll.assert_called_once_with(None)
+        pipe.poll.assert_called_once_with()
         self.assertTrue(isinstance(p, Person))
         self.assertEqual(p.name, p_in.name)
         self.assertEqual(p.age, p_in.age)
 
     def test_read_end(self):
         pipe = Pipe()
-        pipe.send(0)
+        pipe.put(0)
         self.assertRaises(End, Person.read, pipe)
 
 
