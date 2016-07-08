@@ -15,6 +15,8 @@
 
 from logging import getLogger
 
+from gofer.common import utf8
+
 
 log = getLogger(__file__)
 
@@ -40,7 +42,7 @@ class Call(object):
     def __init__(self, method, *args, **kwargs):
         """
         :param method: The method to be invoked.
-        :type method: (method, function)
+        :type method: callable
         :param args: Passed arguments.
         :type args: tuple
         :param kwargs: Passed keyword arguments.
@@ -61,13 +63,13 @@ class Message(object):
         """
         Read the next message from the pipe.
         :param pipe: A message pipe.
-        :type  pipe: multiprocessing.Connection
+        :type  pipe: gofer.mp.Reader
         :return: The hydrated message.
         :rtype: Message
         """
         try:
-            pipe.poll(None)
-            message = pipe.recv()
+            pipe.poll()
+            message = pipe.get()
             if not message:
                 raise EOFError()
             log.debug('Received: %s', message)
@@ -79,13 +81,13 @@ class Message(object):
         """
         Put json encoded (self) into the pipe.
         :param pipe: A message pipe.
-        :type  pipe: multiprocessing.Connection
+        :type  pipe: gofer.mp.Writer
         """
-        pipe.send(self)
+        pipe.put(self)
         log.debug('Sent: %s', self)
 
     def __str__(self):
-        return ':'.join((self.__class__.__name__, str(self.__dict__)))
+        return ':'.join((self.__class__.__name__, utf8(self.__dict__)))
 
 
 class Reply(Message):
@@ -162,6 +164,12 @@ class ProgressPayload(object):
         self.total = total
         self.completed = completed
         self.details = details
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return utf8(self.__dict__)
 
 
 class Progress(Reply):

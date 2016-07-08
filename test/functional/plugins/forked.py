@@ -1,3 +1,5 @@
+import os
+
 from logging import getLogger
 from time import sleep
 
@@ -41,3 +43,9 @@ class Panther(object):
     @remote
     def test_exceptions(self):
         raise ValueError('That was bad')
+
+    @fork
+    @remote
+    def test_suicide(self):
+        log.info('Goodbye cruel world')
+        os.kill(os.getpid(), 9)

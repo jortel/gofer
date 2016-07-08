@@ -37,7 +37,7 @@ class Call(protocol.Call):
           - Send result: retval, progress, raised exception.
         All output is sent to the parent using the inter-process pipe.
         :param pipe: A message pipe.
-        :type  pipe: multiprocessing.Connection
+        :type  pipe: gofer.mp.Writer
         """
         try:
             context = Context.current()
@@ -56,7 +56,7 @@ class Progress(object):
     """
     Provides progress reporting to the parent through the pipe.
     :ivar pipe: A message pipe.
-    :type pipe: multiprocessing.Connection
+    :type pipe: gofer.mp.Writer
     :ivar total: The total work units.
     :type total: int
     :ivar completed: The completed work units.
@@ -68,7 +68,7 @@ class Progress(object):
     def __init__(self, pipe):
         """
         :param pipe: A message pipe.
-        :type  pipe: multiprocessing.Connection
+        :type  pipe: gofer.mp.Writer
         """
         self.pipe = pipe
         self.total = 0

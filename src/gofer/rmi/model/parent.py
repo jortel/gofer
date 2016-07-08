@@ -14,10 +14,10 @@
 #
 
 from logging import getLogger
-from multiprocessing import Process, Pipe
 from threading import Thread
 from time import sleep
 
+from gofer.mp import Process, Pipe
 from gofer.rmi.context import Context
 from gofer.rmi.model import protocol
 from gofer.rmi.model.child import Call as Target
@@ -44,26 +44,26 @@ class Call(protocol.Call):
           - Read and dispatch reply messages.
         :return: Whatever method returned.
         """
-        inbound, outbound = Pipe()
+        pipe = Pipe()
         target = Target(self.method, *self.args, **self.kwargs)
-        child = Process(target=target, args=(outbound,))
-        monitor = Monitor(Context.current(), child, outbound)
+        child = Process(target, pipe.writer)
+        monitor = Monitor(Context.current(), child)
         try:
             child.start()
             monitor.start()
-            retval = self.read(inbound)
+            pipe.writer.close()
+            retval = self.read(pipe.reader)
             return retval
         finally:
-            inbound.close()
-            outbound.close()
+            pipe.close()
             monitor.stop()
-            child.join()
+            child.wait()
 
     def read(self, pipe):
         """
         Read the reply queue and dispatch messages until *End* is raised..
         :param pipe: A message queue.
-        :type  pipe: multiprocessing.Connection
+        :type  pipe: gofer.mp.Reader
         """
         while True:
             try:
@@ -81,8 +81,6 @@ class Monitor(Thread):
     :type context: Context
     :ivar child: The child process.
     :type child: Process
-    :ivar pipe: A message pipe.
-    :type pipe: multiprocessing.Connection
     :ivar poll: Main polling loop boolean.
     :type poll: bool
     """
@@ -90,19 +88,16 @@ class Monitor(Thread):
     NAME = 'monitor'
     POLL = 0.10
 
-    def __init__(self, context, child, pipe):
+    def __init__(self, context, child):
         """
         :param context: The RMI context.
         :type  context: Context
         :param child: The child process.
         :type  child: Process
-        :param pipe: A message pipe.
-        :type  pipe: multiprocessing.Connection
         """
         super(Monitor, self).__init__(name=Monitor.NAME)
         self.context = context
         self.child = child
-        self.pipe = pipe
         self.poll = True
         self.setDaemon(True)
 
@@ -120,7 +115,6 @@ class Monitor(Thread):
         """
         while self.poll:
             if self.context.cancelled():
-                self.pipe.send(0)
                 self.child.terminate()
                 break
             else:
