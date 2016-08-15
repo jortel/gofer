@@ -13,8 +13,7 @@ from time import sleep
 from logging import getLogger
 
 from gofer.common import Thread, released
-from gofer.messaging.model import DocumentError
-from gofer.messaging.adapter.model import Reader
+from gofer.messaging import DocumentError, Reader, NotFound
 
 
 log = getLogger(__name__)
@@ -83,6 +82,15 @@ class ConsumerThread(Thread):
         except Exception:
             log.exception(self.getName())
 
+    def repair(self, error):
+        """
+        Repair the consumer.
+        :param error: The caught exception.
+        :type  error: Exception
+        """
+        self.close()
+        self.open()
+
     def read(self):
         """
         Read and process incoming documents.
@@ -99,11 +107,13 @@ class ConsumerThread(Thread):
             message.ack()
         except DocumentError, de:
             self.rejected(de.code, de.description, de.document, de.details)
-        except Exception:
+        except NotFound, nf:
+            log.info('{%s} queue not-found', self.getName())
+            self.repair(nf)
+        except Exception, le:
             log.exception(self.getName())
             sleep(60)
-            self.close()
-            self.open()
+            self.repair(le)
 
     def rejected(self, code, description, document, details):
         """

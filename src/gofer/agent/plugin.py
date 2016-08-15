@@ -33,7 +33,7 @@ from gofer.agent.whiteboard import Whiteboard
 from gofer.common import nvl, mkdir
 from gofer.common import released
 from gofer.config import Config, Graph, FileReader, get_bool, get_integer
-from gofer.messaging import Document, Connector, Node, Queue, Exchange
+from gofer.messaging import Document, Connector, Queue, Exchange
 from gofer.messaging import NotFound
 from gofer.rmi.consumer import RequestConsumer
 from gofer.rmi.decorator import Remote
@@ -360,8 +360,7 @@ class Plugin(object):
         self.refresh()
         model = BrokerModel(self)
         model.setup()
-        node = Node(model.queue)
-        consumer = RequestConsumer(node, self)
+        consumer = RequestConsumer(self, model)
         consumer.authenticator = self.authenticator
         consumer.start()
         self.consumer = consumer

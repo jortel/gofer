@@ -13,9 +13,10 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
+from time import sleep
 from logging import getLogger
 
-from gofer.messaging import Consumer, Producer, Document
+from gofer.messaging import Node, Consumer, Producer, Document, NotFound
 from gofer.metrics import timestamp
 
 log = getLogger(__name__)
@@ -28,15 +29,35 @@ class RequestConsumer(Consumer):
     to local pending queue to be consumed by the scheduler.
     """
 
-    def __init__(self, node, plugin):
+    def __init__(self, plugin, model):
         """
-        :param node: An AMQP node.
-        :type node: gofer.messaging.Node
-        :param plugin: A plugin.
-        :type plugin: gofer.agent.plugin.Plugin
+        :param model: An AMQP node.
+        :type model: gofer.agent.plugin.BrokerModel
         """
-        super(RequestConsumer, self).__init__(node, plugin.url)
-        self.scheduler = plugin.scheduler
+        super(RequestConsumer, self).__init__(Node(model.queue), plugin.url)
+        self.plugin = plugin
+        self.model = model
+
+    @property
+    def scheduler(self):
+        return self.plugin.scheduler
+
+    def repair(self, error):
+        """
+        Repair the consumer.
+        :param error: The caught exception.
+        :type  error: Exception
+        """
+        try:
+            raise error
+        except NotFound:
+            self.close()
+            self.model.setup()
+            self.open()
+        except Exception:
+            log.exception(self.getName())
+            sleep(10)
+            super(RequestConsumer, self).repair(error)
 
     def rejected(self, code, description, document, details):
         """

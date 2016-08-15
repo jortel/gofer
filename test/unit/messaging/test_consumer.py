@@ -19,6 +19,9 @@ from gofer.messaging.consumer import ConsumerThread, Consumer
 from gofer.messaging import DocumentError, ValidationFailed
 
 
+MODULE = 'gofer.messaging.consumer'
+
+
 class TestConsumerThread(TestCase):
 
     def test_init(self):
@@ -84,6 +87,20 @@ class TestConsumerThread(TestCase):
 
         # validation
         consumer.reader.close.assert_called_once_with()
+
+    def test_repair(self):
+        url = 'test-url'
+        node = Node('test-queue')
+        consumer = ConsumerThread(node, url)
+        consumer.close = Mock()
+        consumer.open = Mock()
+
+        # test
+        consumer.repair(IndexError())
+
+        # validation
+        consumer.close.assert_called_once_with()
+        consumer.open.assert_called_once_with()
 
     def test_close_exception(self):
         url = 'test-url'
@@ -185,18 +202,17 @@ class TestConsumerThread(TestCase):
     def test_read_exception(self, sleep):
         url = 'test-url'
         node = Node('test-queue')
+        error = IndexError()
         consumer = ConsumerThread(node, url)
         consumer.reader = Mock()
-        consumer.reader.next.side_effect = IndexError
-        consumer.open = Mock()
-        consumer.close = Mock()
+        consumer.reader.next.side_effect = error
+        consumer.repair = Mock()
 
         # test
         consumer.read()
 
         # validation
-        consumer.close.assert_called_once_with()
-        consumer.open.assert_called_once_with()
+        consumer.repair.assert_called_once_with(error)
         sleep.assert_called_once_with(60)
 
     def test_rejected(self):

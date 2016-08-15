@@ -19,9 +19,6 @@ from gofer.messaging.auth import \
     Authenticator, \
     ValidationFailed
 
-from gofer.messaging.consumer import \
-    Consumer
-
 from gofer.messaging.adapter import \
     URL, \
     SSL, \
@@ -40,3 +37,6 @@ from gofer.messaging.adapter import \
     Sender, \
     Producer, \
     NotFound
+
+from gofer.messaging.consumer import \
+    Consumer

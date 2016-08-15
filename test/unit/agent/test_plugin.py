@@ -294,13 +294,12 @@ class TestPlugin(TestCase):
         self.assertEqual(connector.ssl.client_certificate, descriptor.messaging.clientcert)
         self.assertEqual(connector.ssl.host_validation, descriptor.messaging.host_validation)
 
-    @patch('gofer.agent.plugin.Node')
     @patch('gofer.agent.plugin.RequestConsumer')
     @patch('gofer.agent.plugin.BrokerModel')
     @patch('gofer.agent.plugin.ThreadPool')
     @patch('gofer.agent.plugin.Scheduler', Mock())
     @patch('gofer.agent.plugin.Whiteboard', Mock())
-    def test_attach(self, pool, model, consumer, node):
+    def test_attach(self, pool, model, consumer):
         queue = 'test'
         descriptor = Mock(main=Mock(threads=4))
         pool.return_value.run.side_effect = lambda fn: fn()
@@ -317,8 +316,7 @@ class TestPlugin(TestCase):
         plugin.detach.assert_called_once_with(False)
         model.assert_called_with(plugin)
         model.return_value.setup.assert_called_once_with()
-        node.assert_called_once_with(queue)
-        consumer.assert_called_once_with(node.return_value, plugin)
+        consumer.assert_called_once_with(plugin, model.return_value)
         consumer = consumer.return_value
         consumer.start.assert_called_once_with()
         self.assertEqual(consumer.authenticator, plugin.authenticator)
