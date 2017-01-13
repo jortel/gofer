@@ -314,16 +314,22 @@ class Plugin(object):
             return
         self.attach()
         self.scheduler.start()
+        self.pool.start()
 
     @synchronized
-    def shutdown(self, teardown=True):
+    def shutdown(self, teardown=True, hard=False):
         """
         Shutdown the plugin.
         - detach
+        - limit messaging repairing
         - shutdown the thread pool.
         - shutdown the scheduler.
         :param teardown: Teardown the broker model.
         :type teardown: bool
+        :param hard: Abort threads in the pool.
+            When not aborted, work in progress will attempt to
+            be completed before shutdown.
+        :type hard: bool
         :return: List of pending requests.
         :rtype: list
         """
@@ -331,7 +337,7 @@ class Plugin(object):
             # not started
             return []
         self.detach(teardown)
-        pending = self.pool.shutdown()
+        pending = self.pool.shutdown(hard=hard)
         self.scheduler.shutdown()
         self.scheduler.join()
         return pending
@@ -470,7 +476,7 @@ class Plugin(object):
         - Reschedule pending work to reloaded plugin.
         """
         Plugin.delete(self)
-        scheduled = self.shutdown(False)
+        scheduled = self.shutdown(teardown=False)
         self.delegate.unloaded()
         plugin = PluginLoader.load(self.path)
         if plugin:
@@ -478,7 +484,7 @@ class Plugin(object):
                 if isinstance(call.fn, Task):
                     task = call.fn
                     task.transaction.plugin = plugin
-                plugin.pool.schedule(call)
+                plugin.pool.queue.put(call)
             plugin.start()
         log.info('plugin:%s, reloaded', self.name)
         return plugin
@@ -632,12 +638,11 @@ class PluginLoader:
         conf.validate(PLUGIN_SCHEMA)
         descriptor = PluginDescriptor(conf)
         plugin = Plugin(descriptor, path)
-        if plugin.enabled:
-            plugin = Plugin(descriptor, path)
-            plugin = PluginLoader._load(plugin)
-        else:
+        if not plugin.enabled:
             log.warn('plugin:%s, DISABLED', plugin.name)
             plugin = None
+        else:
+            plugin = PluginLoader._load(plugin)
         return plugin
 
     @staticmethod

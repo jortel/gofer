@@ -36,7 +36,7 @@ class Task:
     :type ts: float
     """
 
-    context = Local()
+    context = Local(sn=None, progress=None, cancelled=None)
 
     @staticmethod
     def _producer(plugin):
@@ -89,8 +89,8 @@ class Task:
         try:
             self.send_started(request)
             result = self.plugin.dispatch(request)
-            self.commit()
             self.send_reply(request, result)
+            self.commit()
         finally:
             self.context.sn = None
             self.context.progress = None
@@ -222,6 +222,7 @@ class Scheduler(Thread):
         Read the pending queue and dispatch requests
         to the plugin thread pool.
         """
+        self.builtin.start()
         while not Thread.aborted():
             try:
                 request = self.pending.get()

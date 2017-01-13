@@ -21,6 +21,7 @@ from mock import Mock, patch
 from tempfile import mktemp
 
 from gofer.common import Thread as GThread
+from gofer.common import Local as GLocal
 from gofer.common import Singleton, ThreadSingleton, Options
 from gofer.common import synchronized, conditional, released
 from gofer.common import mkdir, rmdir, unlink, nvl, valid_path, utf8
@@ -245,6 +246,10 @@ class TestThread(TestCase):
         thread = GThread()
         event = getattr(thread, thread.ABORT)
         self.assertTrue(isinstance(event, type(Event())))
+
+    @patch('gofer.common.current_thread')
+    def test_current(self, current):
+        self.assertEqual(GThread.current(), current.return_value)
 
     @patch('gofer.common.current_thread')
     def test_aborted(self, current):
@@ -487,3 +492,44 @@ class TestList(TestCase):
         _list.remove(2)
         self.assertEqual(_list._list, [1, 3])
         self.assertEqual(list(iter(_list)), _list._list)
+
+
+class TestLocal(TestCase):
+
+    def test_getset(self):
+        l = GLocal()
+        l.name = 'john'
+        l.age = 10
+        self.assertEqual(l.name, 'john')
+        self.assertEqual(l.age, 10)
+
+        def test():
+            l.name = 'jane'
+            l.age = 44
+            self.assertEqual(l.name, 'jane')
+            self.assertEqual(l.age, 44)
+
+        t = Thread(target=test)
+        t.start()
+        t.join()
+
+        self.assertEqual(l.name, 'john')
+        self.assertEqual(l.age, 10)
+
+    def test_default(self):
+        l = GLocal(name='john', age=10, other={})
+        self.assertEqual(l.name, 'john')
+        self.assertEqual(l.age, 10)
+        self.assertEqual(l.other, {})
+
+        def test():
+            self.assertEqual(l.name, 'john')
+            self.assertEqual(l.age, 10)
+            self.assertEqual(l.other, {})
+            l.other['weight'] = 150
+
+        t = Thread(target=test)
+        t.start()
+        t.join()
+
+        self.assertEqual(l.other, {})

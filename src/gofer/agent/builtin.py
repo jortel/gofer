@@ -151,6 +151,12 @@ class Builtin(object):
         """
         return self.dispatcher.dispatch(request)
 
+    def start(self):
+        """
+        Start the plugin.
+        """
+        self.pool.start()
+
     def shutdown(self):
         """
         Shutdown the plugin.

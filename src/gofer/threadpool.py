@@ -30,22 +30,19 @@ log = getLogger(__name__)
 class Worker(Thread):
     """
     Pool (worker) thread.
-    The *busy* marker is queued to ensure that the backlog
-    for busy workers is longer which supports better work distribution.
-    :ivar queue: A thread pool worker.
+    :ivar queue: The work input queue..
     :type queue: Queue
     """
+
+    HALT = 0
     
-    def __init__(self, worker_id, backlog=100):
+    def __init__(self, worker_id, queue):
         """
         :param worker_id: The worker id in the pool.
         :type worker_id: int
-        :param backlog: Limits the number of calls queued.
-        :type backlog: int
         """
-        name = 'worker-%d' % worker_id
-        Thread.__init__(self, name=name)
-        self.queue = Queue(backlog)
+        Thread.__init__(self, name='worker-%d' % worker_id)
+        self.queue = queue
         self.setDaemon(True)
 
     @released
@@ -54,54 +51,18 @@ class Worker(Thread):
         Main run loop; processes input queue.
         """
         while not Thread.aborted():
-            call = self.queue.get()
-            if call == 1:
-                # # busy
-                continue
-            if not call:
-                # termination requested
+            message = self.queue.get()
+            if message == Worker.HALT:
+                self.queue.put(message)
                 return
+            call = message
             try:
                 call()
             except Exception:
                 log.exception(utf8(call))
 
-    def put(self, call):
-        """
-        Enqueue a call.
-        :param call: A call to queue.
-        :type call: Call
-        """
-        self.queue.put(call)
-        self.queue.put(1)  # busy
 
-    def drain(self):
-        """
-        Drain pending calls.
-        :return: A list of: Call.
-        :rtype: list
-        """
-        pending = []
-        while True:
-            try:
-                call = self.queue.get(block=False)
-                if not isinstance(call, Call):
-                    continue
-                pending.append(call)
-            except Empty:
-                break
-        return pending
-
-    def backlog(self):
-        """
-        Get the number of call already queued to this worker.
-        :return: The number of queued calls.
-        :rtype: int
-        """
-        return self.queue.qsize()
-
-
-class Call:
+class Call(object):
     """
     A call to be executed by the thread pool.
     :ivar id: The unique call ID.
@@ -114,10 +75,8 @@ class Call:
     :type kwargs: dict
     """
 
-    def __init__(self, call_id, fn, args=None, kwargs=None):
+    def __init__(self, fn, args=None, kwargs=None):
         """
-        :param call_id: The unique call ID.
-        :type call_id: str
         :param fn: The function/method to be executed.
         :type fn: callable
         :param args: The list of args passed to the callable.
@@ -125,7 +84,7 @@ class Call:
         :param kwargs: The list of keyword args passed to the callable.
         :type kwargs: dict
         """
-        self.id = call_id
+        self.id = str(uuid4())
         self.fn = fn
         self.args = args or []
         self.kwargs = kwargs or {}
@@ -154,25 +113,36 @@ class Call:
         return utf8(self)
 
 
-class ThreadPool:
+class ThreadPool(object):
     """
     A load distributed thread pool.
-    :ivar capacity: The min # of workers.
-    :type capacity: int
+    :ivar queue: The pool request queue.
+    :type queue: Queue
     :ivar threads: List of: Worker
     :type threads: list
     """
 
-    def __init__(self, capacity=1):
+    def __init__(self, capacity=1, backlog=100):
         """
         :param capacity: The # of workers.
         :type capacity: int
+        :param backlog: Limit the queued calls.
+        :type backlog: int
         """
         self.capacity = capacity
+        self.queue = Queue(backlog)
         self.threads = []
-        for x in range(capacity):
-            self.__add()
-        
+
+    def start(self):
+        """
+        Start the pool.
+        Populate the pool with started worker threads.
+        """
+        for worker_id in range(self.capacity):
+            thread = Worker(worker_id, self.queue)
+            self.threads.append(thread)
+            thread.start()
+
     def run(self, fn, *args, **kwargs):
         """
         Schedule a call.
@@ -186,58 +156,66 @@ class ThreadPool:
         :return The call ID.
         :rtype str
         """
-        call_id = uuid4()
-        call = Call(call_id, fn, args, kwargs)
-        return self.schedule(call)
+        call = Call(fn, args, kwargs)
+        self.queue.put(call)
+        return call
 
-    def schedule(self, call):
-        """
-        Schedule a call.
-        :param call: A call to schedule for execution.
-        :param call: Call
-        :return: The call ID.
-        :rtype: str
-        """
-        pool = [(t.backlog(), t) for t in self.threads]
-        pool.sort()
-        backlog, worker = pool[0]
-        worker.put(call)
-
-    def shutdown(self):
+    def shutdown(self, hard=False):
         """
         Shutdown the pool.
-        Terminate and join all workers.
+        Drain the queue, terminate and join all workers.
+        :param hard: Abort threads in the pool.
+            When not aborted, work in progress will attempt to
+            be completed before shutdown.
+        :type hard: bool
         :return: List of orphaned calls.  List of: Call.
         :rtype: list
         """
-        orphans = []
+        drained = self.drain()
+        if hard:
+            for t in self.threads:
+                t.abort()
+        self.queue.put(Worker.HALT)
         for t in self.threads:
-            t.abort()
-            t.put(0)
-        for t in self.threads:
+            if t == Thread.current():
+                continue
             t.join()
-        for t in self.threads:
-            orphans += t.drain()
-        return orphans
+        return drained
 
-    def __add(self):
+    def drain(self):
         """
-        Add a thread to the pool.
+        Drain the input queue.
+        :return: List of drained calls.
+        :rtype: list
         """
-        n = len(self.threads)
-        thread = Worker(n)
-        self.threads.append(thread)
-        thread.start()
+        drained = []
+        while True:
+            try:
+                message = self.queue.get(block=False)
+                if not isinstance(message, Call):
+                    continue
+                drained.append(message)
+            except Empty:
+                break
+        return drained
 
     def __len__(self):
         return len(self.threads)
 
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, *unused):
+        self.shutdown()
+
     def __repr__(self):
-        s = list()
-        s.append('pool: capacity=%d' % self.capacity)
-        for t in self.threads:
-            s.append('worker: %s backlog: %d' % (t.name, t.backlog()))
-        return '\n'.join(s)
+        description = [
+            'pool:',
+            'capacity=%d' % len(self),
+            'queued: %d/%d' % (self.queue.qsize(), self.queue.maxsize)
+        ]
+        return ' '.join(description)
 
 
 class Direct:
