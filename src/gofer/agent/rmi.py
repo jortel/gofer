@@ -88,8 +88,8 @@ class Task(object):
             self.producer = producer
             self.send_started(request)
             result = self.plugin.dispatch(request)
-            self.commit()
             self.send_reply(request, result)
+            self.commit()
         finally:
             producer.close()
             Context.set()
@@ -219,6 +219,7 @@ class Scheduler(Thread):
         Read the pending queue and dispatch requests
         to the plugin thread pool.
         """
+        self.builtin.start()
         while not Thread.aborted():
             try:
                 request = self.pending.get()

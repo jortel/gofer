@@ -18,7 +18,8 @@ import inspect
 import errno
 import new as _new
 
-from threading import local as Local
+from copy import copy
+from threading import local as _Local
 from threading import Thread as _Thread
 from threading import currentThread as current_thread
 from threading import Event, RLock
@@ -142,13 +143,23 @@ class Thread(_Thread):
         setattr(self, Thread.ABORT, Event())
 
     @staticmethod
+    def current():
+        """
+        Get the current thread.
+
+        :return: The current thread.
+        :rtype: _Thread
+        """
+        return current_thread()
+
+    @staticmethod
     def aborted():
         """
         Check abort event.
         :return: True if raised.
         :rtype: bool
         """
-        thread = current_thread()
+        thread = Thread.current()
         try:
             event = getattr(thread, Thread.ABORT)
         except AttributeError:
@@ -164,6 +175,37 @@ class Thread(_Thread):
         """
         aborted = getattr(self, Thread.ABORT)
         aborted.set()
+
+
+class Local(object):
+    """
+    Thread local object.
+    Provides an interface whereby attributes can have a default.
+    The AttributeError is only raised when the local object does not
+    have the attribute set and not default has been specified.
+    """
+
+    KEY = 'storage'
+    DEFAULT = 'default'
+
+    def __init__(self, **default):
+        self.__dict__[Local.KEY] = _Local()
+        self.__dict__[Local.DEFAULT] = default
+
+    def __setattr__(self, name, value):
+        setattr(self.__dict__[Local.KEY], name, value)
+
+    def __getattr__(self, name):
+        try:
+            return getattr(self.__dict__[Local.KEY], name)
+        except AttributeError, nf:
+            d = self.__dict__[Local.DEFAULT].get(name)
+            if d is not None:
+                d = copy(d)
+                setattr(self.__dict__[Local.KEY], name, d)
+                return d
+            else:
+                raise nf
 
 
 class Singleton(type):
@@ -201,21 +243,16 @@ class ThreadSingleton(type):
     usage: __metaclass__ = ThreadSingleton
     """
 
-    _inst = Local()
+    _inst = Local(all={})
 
     @staticmethod
     def all():
-        try:
-            return ThreadSingleton._inst.d
-        except AttributeError:
-            d = {}
-            ThreadSingleton._inst.d = d
-            return d
+        return ThreadSingleton._inst.all
 
     @staticmethod
     def purge():
         d = ThreadSingleton.all()
-        ThreadSingleton._inst.d = {}
+        ThreadSingleton._inst.all = {}
         return d.values()
 
     def __call__(cls, *args, **kwargs):
