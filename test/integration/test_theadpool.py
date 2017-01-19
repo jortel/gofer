@@ -46,6 +46,7 @@ def fn2(n, results):
 def test(calls=100):
     results = []
     pool = ThreadPool(9)
+    pool.start()
     for n in range(calls):
         pool.run(fn1, n, results)
     while len(results) < calls:

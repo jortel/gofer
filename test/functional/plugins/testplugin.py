@@ -282,6 +282,32 @@ class Zombie(object):
         shell.run('sleep', str(n))
 
 
+class PluginShutdown(object):
+    """
+    Test a soft shutdown called from a plugin.
+    Designed to support an agent restart initiated by plugin RMI.
+
+    Note: THIS WILL LEAVE THE PLUGIN DEAD!!
+    """
+
+    PATH = '/tmp/plugin-shutdown'
+
+    @remote
+    def request(self):
+        with open(PluginShutdown.PATH, 'w+'):
+            pass
+        sleep(10)
+
+    @action(seconds=5)
+    def apply(self):
+        if not os.path.exists(PluginShutdown.PATH):
+            return
+        log.info('plugin-shutdown, requested')
+        plugin.shutdown()
+        log.info('plugin-shutdown, FINISHED')
+        os.unlink(PluginShutdown.PATH)
+
+
 class Heartbeat:
     """
     Provide agent heartbeat.

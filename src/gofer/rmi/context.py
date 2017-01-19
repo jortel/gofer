@@ -34,7 +34,7 @@ class Context(object):
     :type cancelled: Cancelled
     """
 
-    _current = Local()
+    _current = Local(sn=None, progress=None, cancelled=None)
 
     @staticmethod
     def set(context=None):

@@ -473,6 +473,14 @@ def test_forked(exit=0, with_cancel=1):
         sys.exit(0)
 
 
+def test_plugin_shutdown(exit=0):
+    agent = Agent()
+    shutdown = agent.PluginShutdown()
+    shutdown.request()
+    if exit:
+        sys.exit(0)
+
+
 def get_options():
     parser = OptionParser(option_class=ListOption)
     parser.add_option('-r', '--address', default='xyz', help='address')
@@ -505,6 +513,7 @@ if __name__ == '__main__':
     Agent.address = address
     Agent.base_options['authenticator'] = authenticator
 
+    # test_plugin_shutdown(1)
     # test_zombie()
     # test_memory()
     test_forked()

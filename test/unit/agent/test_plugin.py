@@ -242,7 +242,7 @@ class TestPlugin(TestCase):
         plugin.detach.assert_called_once_with(False)
         scheduler.return_value.shutdown.assert_called_once_with()
         scheduler.return_value.join.assert_called_once_with()
-        pool.return_value.shutdown.assert_called_once_with()
+        pool.return_value.shutdown.assert_called_once_with(hard=False)
 
     @patch('gofer.agent.plugin.Scheduler')
     @patch('gofer.agent.plugin.ThreadPool')
