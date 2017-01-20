@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.9.2
+Version: 2.10.0
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -233,6 +233,10 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Fri Jan 20 2017 Jeff Ortel <jortel@redhat.com> 2.10.0-1
+- Add 2.10 release notes. (jortel@redhat.com)
+- Support soft plugin shutdown. (jortel@redhat.com)
+
 * Fri Jul 08 2016 Jeff Ortel <jortel@redhat.com> 2.9.2-1
 - Use mp module instead of multiprocessing. (jortel@redhat.com)
 
