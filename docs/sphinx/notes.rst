@@ -302,3 +302,21 @@ Notes:
 Fixes:
 
 Deprecated:
+
+
+gofer 2.10
+^^^^^^^^^^
+
+Notes:
+
+- Added support for ``soft`` plugin shutdown. Mainly internal API enhancement but improves
+  behavior of plugin ``unload`` and ``reload``. Both operations now do a ``soft`` shutdown by default.
+
+- The thread-pool design improved.
+
+Fixes:
+
+- The ``hard`` plugin/thread-pool shutdown aborted threads which caused reply messages to silently
+  never be sent.  Only affected  ``unload`` and ``reload`` operations.
+
+Deprecated:
