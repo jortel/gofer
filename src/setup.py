@@ -19,7 +19,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='gofer',
-    version='2.7.0',
+    version='2.10.0',
     description='Universal python agent',
     author='Jeff Ortel',
     author_email='jortel@redhat.com',
