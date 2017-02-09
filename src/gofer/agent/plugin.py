@@ -459,7 +459,7 @@ class Plugin(object):
         - Purge pending requests.
         """
         Plugin.delete(self)
-        self.shutdown()
+        self.shutdown(hard=True)
         self.delegate.unloaded()
         self.scheduler.pending.delete()
         log.info('plugin:%s, unloaded', self.name)
