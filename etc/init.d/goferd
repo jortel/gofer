@@ -1,5 +1,5 @@
 #!/bin/bash
-# goferd         This shell script controls the gofer daemon.
+# goferd        This shell script controls the gofer daemon.
 # Author:       Jeff Ortel <jortel@redhat.com>
 # chkconfig:    345 97 2
 # description:  Gofer agent responds to commands from gofer server.
@@ -46,18 +46,10 @@ start() {
 
 stop() {
   echo -n "Stopping $PROG"
-  if [ -e $PID ]; then
-    pid=$(cat $PID)
-  fi
-  kill -9 $pid >/dev/null 2>&1
+  killproc -p $PID $PROG
   RETVAL=$?
-  if [ $RETVAL -eq "0" ]; then
-    rm -f $LOCK
-    success
-  else
-    failure
-  fi
   echo
+  rm -f $LOCK
   return $RETVAL
 }
 
