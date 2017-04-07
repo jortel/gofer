@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.10.1
+Version: 2.11.0
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -233,6 +233,8 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Fri Apr 07 2017 Jeff Ortel <jortel@redhat.com> 2.11.0-1
+- Bumped for semantic versioning.
 * Fri Apr 07 2017 Jeff Ortel <jortel@redhat.com> 2.10.1-1
 - Detect broken pipe instead of TIOCSCTTY. (jortel@redhat.com)
 - plugin unload should do hard shutdown. (jortel@redhat.com)
