@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.7.6
+Version: 2.7.7
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -233,6 +233,9 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Fri Apr 07 2017 Jeff Ortel <jortel@redhat.com> 2.7.7-1
+- Use killproc in init.d script. (jortel@redhat.com)
+
 * Wed Apr 13 2016 Jeff Ortel <jortel@redhat.com> 2.7.6-1
 - Fix proton reliable send. Reported on 1323726. (jortel@redhat.com)
 
