@@ -230,3 +230,18 @@ class Raised(Reply):
         :type payload: object
         """
         super(Raised, self).__init__(self.CODE, payload)
+
+
+class Ping(Reply):
+    """
+    A PING event.
+    """
+
+    CODE = 'PING'
+
+    def __init__(self, payload):
+        """
+        :param payload: The sending process ID.
+        :type payload: int
+        """
+        super(Ping, self).__init__(self.CODE, payload)

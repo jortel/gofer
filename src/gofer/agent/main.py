@@ -17,10 +17,8 @@ import sys
 import os
 import logging
 
-from fcntl import ioctl
 from time import sleep
 from getopt import getopt, GetoptError
-from termios import TIOCSCTTY
 
 from gofer.agent.logutil import LogHandler
 
@@ -159,8 +157,7 @@ def start_daemon(lock):
         fp = os.open('/dev/null', os.O_RDWR)
         os.dup(fp)
         os.dup(fp)
-        pty = os.openpty()
-        ioctl(pty[0], TIOCSCTTY, 0)
+        os.dup(fp)
     else:  # parent
         lock.setpid(pid)
         os.waitpid(pid, os.WNOHANG)

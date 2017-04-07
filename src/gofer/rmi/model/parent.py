@@ -46,7 +46,7 @@ class Call(protocol.Call):
         """
         pipe = Pipe()
         target = Target(self.method, *self.args, **self.kwargs)
-        child = Process(target, pipe.writer)
+        child = Process(target, pipe)
         monitor = Monitor(Context.current(), child)
         try:
             child.start()
@@ -173,8 +173,22 @@ class Raised(protocol.Raised):
         raise self.payload
 
 
+class Ping(protocol.Ping):
+    """
+    Called when a PING message is received.
+    """
+
+    def __call__(self):
+        """
+        The reported exception is instantiated and raised.
+        :raise Exception: always.
+        """
+        log.debug('pinged by %d', self.payload)
+
+
 # register reply message handling.
 protocol.Reply.register(Result.CODE, Result)
 protocol.Reply.register(Progress.CODE, Progress)
 protocol.Reply.register(Error.CODE, Error)
 protocol.Reply.register(Raised.CODE, Raised)
+protocol.Reply.register(Ping.CODE, Ping)

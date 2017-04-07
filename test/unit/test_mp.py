@@ -17,7 +17,7 @@ from unittest import TestCase
 
 from mock import Mock, patch
 
-from gofer.mp import Process, Pipe, Endpoint, Reader, Writer
+from gofer.mp import Process, Pipe, Endpoint, Reader, Writer, PipeBroken
 from gofer.mp import EPOLLIN, EPOLLHUP
 
 
@@ -234,3 +234,12 @@ class TestReader(TestCase):
         r = Reader(fd)
         r.poll()
         epoll.return_value.poll.assert_called_once_with()
+
+
+class TestWriter(TestCase):
+
+    @patch('os.write')
+    def test_pipe_broken(self, write):
+        write.side_effect = PipeBroken
+        writer = Writer(0)
+        self.assertRaises(PipeBroken, writer.put, '')
