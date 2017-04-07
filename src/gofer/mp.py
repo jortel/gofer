@@ -16,12 +16,17 @@
 import os
 import pickle
 
+from errno import EPIPE
 from signal import SIGKILL
 
 try:
     from select import epoll, EPOLLIN, EPOLLHUP
 except ImportError:
     from select import poll as epoll, POLLIN as EPOLLIN, POLLHUP as EPOLLHUP
+
+
+class PipeBroken(Exception):
+    pass
 
 
 class Process(object):
@@ -216,6 +221,9 @@ class Reader(Endpoint):
 
 
 class Writer(Endpoint):
+    """
+    The *writing* end of a Pipe.
+    """
 
     def put(self, thing):
         """
@@ -224,5 +232,11 @@ class Writer(Endpoint):
         :type thing: any
         """
         record = pickle.dumps(thing)
-        os.write(self.fd, record)
-        os.write(self.fd, Endpoint.EOR)
+        try:
+            os.write(self.fd, record)
+            os.write(self.fd, Endpoint.EOR)
+        except OSError, pe:
+            if pe.errno == EPIPE:
+                raise PipeBroken()
+            else:
+                raise

@@ -19,7 +19,7 @@ from mock import Mock
 
 from gofer.rmi.model.protocol import End
 from gofer.rmi.model.protocol import Message, Call, Reply
-from gofer.rmi.model.protocol import Progress, Result, Error, Raised
+from gofer.rmi.model.protocol import Progress, Result, Error, Raised, Ping
 
 
 class Pipe(object):
@@ -139,4 +139,10 @@ class TestReplies(TestCase):
         payload = Mock()
         reply = Raised(payload)
         self.assertEqual(reply.code, Raised.CODE)
+        self.assertEqual(reply.payload, payload)
+
+    def test_ping(self):
+        payload = Mock()
+        reply = Ping(payload)
+        self.assertEqual(reply.code, Ping.CODE)
         self.assertEqual(reply.payload, payload)

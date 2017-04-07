@@ -19,7 +19,7 @@ from mock import call, patch, Mock
 
 from gofer.rmi.model import protocol
 from gofer.rmi.model.parent import Monitor, Call
-from gofer.rmi.model.parent import Result, Progress, Error, Raised
+from gofer.rmi.model.parent import Result, Progress, Error, Raised, Ping
 
 
 MODULE = 'gofer.rmi.model.parent'
@@ -100,6 +100,11 @@ class TestReplies(TestCase):
         except ValueError, e:
             self.assertEqual(e, payload)
 
+    def test_ping(self):
+        payload = 1234
+        reply = Ping(payload)
+        reply()
+
 
 class TestCall(TestCase):
 
@@ -120,7 +125,7 @@ class TestCall(TestCase):
         pipe.assert_called_once_with()
         pipe.return_value.writer.close.assert_called_once_with()
         target.assert_called_once_with(_call.method, *_call.args, **_call.kwargs)
-        process.assert_called_once_with(target.return_value, pipe.return_value.writer)
+        process.assert_called_once_with(target.return_value, pipe.return_value)
         monitor.assert_called_once_with(context.current.return_value, process.return_value)
         monitor.return_value.start.assert_called_once_with()
         read.assert_called_once_with(pipe.return_value.reader)
