@@ -11,7 +11,7 @@ Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
 License: LGPLv2
-URL: https://fedorahosted.org/gofer/
+URL: https://github.com/jortel/gofer
 Source0: https://fedorahosted.org/releases/g/o/gofer/%{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch: noarch
