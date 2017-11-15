@@ -18,6 +18,8 @@ from gofer.config import Config, Graph
 from gofer.config import REQUIRED, OPTIONAL, ANY, BOOL, NUMBER, FLOAT
 
 #
+# The gofer server configuration
+#
 # [management]
 #   enabled
 #      The manager is (enabled|disabled).
@@ -27,8 +29,10 @@ from gofer.config import REQUIRED, OPTIONAL, ANY, BOOL, NUMBER, FLOAT
 #      The port number the manager listens on.
 #
 # [logging]
-#   <module>
-#      Logging level
+#   <package>
+#      Set the logging level.  Eg: gofer.agent=debug.
+#      The 'root' package can be used to set the logging level for all
+#      packages.  Eg: root=error.
 #
 # [pam]
 #   service

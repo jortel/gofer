@@ -27,12 +27,13 @@ Defines agent management properties.
 ---------
 
 This section sets logging properties.  Currently, the logging level can be set for each
-gofer packege as follows:
+gofer package as follows:
 
 ::
 
- <package> = <level>
+ <package>=<level>
 
+The special *root* package may be used to set the logging level for all packages.
 
 Levels (may be lower case):
 
@@ -55,8 +56,14 @@ Examples:
 ::
 
  [logging]
- agent = DEBUG
- messaging = WARNING
+ agent=DEBUG
+ messaging=WARNING
+
+
+::
+
+ [logging]
+ root=ERROR
 
 
 [pam]
@@ -157,7 +164,7 @@ This example enables messaging and defines the uuid:
 ::
 
  [main]
- enabled = 1
+ enabled=1
 
  [messaging]
  url=qpid+amqp://localhost
@@ -173,7 +180,7 @@ url and queue:
 ::
 
  [main]
- enabled = 1
+ enabled=1
  accept=*
 
 
@@ -184,7 +191,7 @@ sections to be used by the plugin:
 ::
 
  [main]
- enabled = 1
+ enabled=1
 
  [messaging]
  url=qpid+amqp://localhost
@@ -193,7 +200,7 @@ sections to be used by the plugin:
  queue=123
 
  [foobar]
- timeout = 100
+ timeout=100
 
 
 However, additional user defined sections and properties are supported and made available to
