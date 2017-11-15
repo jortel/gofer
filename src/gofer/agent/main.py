@@ -167,11 +167,14 @@ def start_daemon(lock):
 def setup_logging():
     """
     Set logging levels based on configuration.
+    The special name of 'root' is used to specify the root logger.
     """
     cfg = AgentConfig()
     for name, level in cfg.logging:
         if not level:
             continue
+        if name.lower() == 'root':
+            name = None
         try:
             logger = logging.getLogger(name)
             level = getattr(logging, level.upper())
