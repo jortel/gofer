@@ -54,7 +54,7 @@ class Connection(BaseConnection):
             if connector.ssl.host_validation:
                 mode = SSLDomain.VERIFY_PEER_NAME
             else:
-                mode = SSLDomain.VERIFY_PEER
+                mode = SSLDomain.ANONYMOUS_PEER
             domain.set_peer_authentication(mode)
         return domain
 
