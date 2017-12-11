@@ -14,7 +14,16 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-ROOT = '/opt/gofer'
+import os
+
+ROOT = os.path.expanduser('~/.gofer')
+
+import json
+
+from time import sleep
+from optparse import OptionParser
+from logging import getLogger
+from logging.handlers import RotatingFileHandler
 
 AGENT_CONF = """
 [management]
@@ -31,13 +40,7 @@ gofer.messaging=info
 service=passwd
 """
 
-import os
-import json
-
-from time import sleep
-from optparse import OptionParser
-from logging import getLogger
-from logging.handlers import RotatingFileHandler
+from gofer.common import mkdir
 
 # logging
 from gofer.agent import logutil
@@ -46,7 +49,8 @@ logutil.LogHandler.install()
 
 # configuration
 from gofer.agent.config import AgentConfig
-AgentConfig.PATH = '/opt/gofer/agent.conf'
+mkdir(ROOT)
+AgentConfig.PATH = os.path.join(ROOT, 'agent.conf')
 if not os.path.exists(AgentConfig.PATH):
     with open(AgentConfig.PATH, 'w+') as fp:
         fp.write(AGENT_CONF)
@@ -58,6 +62,10 @@ AgentLock.PATH = os.path.join(ROOT, 'gofer.pid')
 # pending queue
 from gofer.rmi.store import Pending
 Pending.PENDING = os.path.join(ROOT, 'messaging/pending')
+
+# tracking
+from gofer.rmi.tracker import Canceled
+Canceled.PATH = os.path.join(ROOT, 'messaging/canceled')
 
 # misc
 from gofer.agent.plugin import PluginDescriptor, PluginLoader

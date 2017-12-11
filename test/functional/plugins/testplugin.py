@@ -33,6 +33,7 @@ HEARTBEAT = 500
 # whiteboard
 plugin.whiteboard['secret'] = 'garfield'
 
+USER = 'gofer'
 
 @load
 def load():
@@ -164,7 +165,7 @@ class Dog:
         print 'not permitted.'
         
     @remote
-    @pam(user='jortel')
+    @pam(user=USER)
     def testpam(self):
         return 'PAM is happy!'
     
@@ -174,23 +175,23 @@ class Dog:
         return 'PAM (2) is happy!'
     
     @remote
-    @pam(user='jortel', service='su')
+    @pam(user=USER, service='su')
     def testpam3(self):
         return 'PAM (3) is happy!'
     
     @remote
-    @pam(user='jortel', service='xx')
+    @pam(user=USER, service='xx')
     def testpam4(self):
         return 'PAM (4) is happy!'
     
     
-    @user(name='jortel')
-    @user(name='jortel')
+    @user(name=USER)
+    @user(name=USER)
     @remote(secret=get_elmer)
     def testLayered(self):
         return 'LAYERED (1) is happy'
 
-    @user(name='jortel')
+    @user(name=USER)
     @remote(secret='elmer')
     def testLayered2(self):
         return 'LAYERED (2) is happy'
