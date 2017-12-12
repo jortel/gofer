@@ -14,6 +14,8 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
+import os
+
 from time import sleep
 from optparse import OptionParser, Option
 from hashlib import sha256
@@ -21,6 +23,7 @@ from logging import basicConfig
 from threading import Thread
 from datetime import datetime as dt
 
+from gofer.common import mkdir
 from gofer.rmi.dispatcher import *
 from gofer.rmi.async import ReplyConsumer
 from gofer.metrics import Timer
@@ -29,12 +32,18 @@ from gofer.messaging import Queue, Authenticator, ValidationFailed
 
 from plugins import *
 
-basicConfig(filename='/opt/gofer/server.log')
+ROOT = os.path.expanduser('~/.gofer')
+mkdir(ROOT)
+
+basicConfig(filename=os.path.join(ROOT, 'server.log'))
 
 log = getLogger(__name__)
 
 # getLogger('gofer.adapter').setLevel(DEBUG)
 # getLogger('gofer.messaging').setLevel(DEBUG)
+
+
+USER = 'gofer'
 
 
 class Agent(object):
@@ -227,16 +236,18 @@ def test_triggers():
     
 
 def demo_pam_authentication(yp, exit=0):
+    user = USER
+    password = yp[USER]
     # basic success
-    agent = Agent(user='jortel', password=yp['jortel'])
+    agent = Agent(user=user, password=password)
     dog = agent.Dog()
     print dog.testpam()
     # @user synonym
-    agent = Agent(user='jortel', password=yp['jortel'])
+    agent = Agent(user=user, password=password)
     dog = agent.Dog()
     print dog.testpam2()
     # the @pam with specified service
-    agent = Agent(user='jortel', password=yp['jortel'])
+    agent = Agent(user=user, password=password)
     dog = agent.Dog()
     print dog.testpam3()
     # no user
@@ -248,7 +259,7 @@ def demo_pam_authentication(yp, exit=0):
     except UserRequired:
         print 'no user, OK'
     # no password
-    agent = Agent(user='jortel')
+    agent = Agent(user=user)
     try:
         dog = agent.Dog()
         dog.testpam()
@@ -264,7 +275,7 @@ def demo_pam_authentication(yp, exit=0):
     except UserNotAuthorized:
         print 'wrong user, OK'
     # PAM failed
-    agent = Agent(user='jortel', password='xx')
+    agent = Agent(user=user, password='xx')
     try:
         dog = agent.Dog()
         dog.testpam()
@@ -272,7 +283,7 @@ def demo_pam_authentication(yp, exit=0):
     except NotAuthenticated:
         print 'PAM not authenticated, OK'
     # PAM failed, invalid service
-    agent = Agent(user='jortel', password='xx')
+    agent = Agent(user=user, password='xx')
     try:
         dog = agent.Dog()
         dog.testpam4()
@@ -284,14 +295,15 @@ def demo_pam_authentication(yp, exit=0):
 
 
 def demo_layered_security(yp, exit=0):
-    user = 'jortel'
+    user = USER
+    password = yp[user]
     # multi-user
     for user in ('jortel', 'jortel'):
-        agent = Agent(user=user, password=yp[user])
+        agent = Agent(user=user, password=password)
         dog = agent.Dog()
         print dog.testLayered()
     # mixed user and secret
-    agent = Agent(user=user, password=yp[user], secret='elmer')
+    agent = Agent(user=user, password=password, secret='elmer')
     dog = agent.Dog()
     print dog.testLayered2()
     dog = agent.Dog()
@@ -528,7 +540,7 @@ if __name__ == '__main__':
     # demo_progress(1)
     # test_performance()
 
-    demo_authentication(yp)
+    # demo_authentication(yp)
     smoke_test()
     demo_constructors()
     test_triggers()
