@@ -14,10 +14,10 @@
 #
 
 from logging import getLogger
-from threading import Thread
 from time import sleep
 
 from gofer.mp import Process, Pipe
+from gofer.common import Thread
 from gofer.rmi.context import Context
 from gofer.rmi.model import protocol
 from gofer.rmi.model.child import Call as Target

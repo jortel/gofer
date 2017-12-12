@@ -259,6 +259,21 @@ class TestThread(TestCase):
     def test_current(self, current):
         self.assertEqual(GThread.current(), current.return_value)
 
+    @patch('gofer.common.Thread.join')
+    @patch('gofer.common.Thread.abort')
+    @patch('threading.Thread.start')
+    def test_start(self, start, abort, join):
+        def _register(handler, *args):
+            handler(*args)
+        thread = GThread()
+        with patch('atexit.register') as register:
+            register.side_effect = _register
+            thread.start()
+        start.assert_called_once_with()
+        self.assertTrue(register.called)
+        abort.assert_called_once_with()
+        join.assert_called_once_with()
+
     @patch('gofer.common.current_thread')
     def test_aborted(self, current):
         thread = GThread()
