@@ -35,6 +35,7 @@ class TestConnection(TestCase):
         ssl_domain.MODE_CLIENT = 0x01
         ssl_domain.VERIFY_PEER = 0x02
         ssl_domain.VERIFY_PEER_NAME = 0x03
+        ssl_domain.ANONYMOUS_PEER = 0x04
         connector = Connector('amqps://localhost')
         connector.ssl.ca_certificate = 'ca'
         connector.ssl.client_certificate = 'client'
@@ -50,7 +51,7 @@ class TestConnection(TestCase):
         domain.set_credentials.assert_called_once_with(
             connector.ssl.client_certificate,
             connector.ssl.client_key, None)
-        domain.set_peer_authentication.assert_called_once_with(ssl_domain.VERIFY_PEER)
+        domain.set_peer_authentication.assert_called_once_with(ssl_domain.ANONYMOUS_PEER)
 
     @patch('gofer.messaging.adapter.model.SSL.validate')
     @patch('gofer.messaging.adapter.proton.connection.SSLDomain')
