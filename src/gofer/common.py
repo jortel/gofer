@@ -17,6 +17,7 @@ import os
 import inspect
 import errno
 import new as _new
+import atexit
 
 from copy import copy
 from threading import local as _Local
@@ -142,6 +143,16 @@ class Thread(_Thread):
         super(Thread, self).__init__(*args, **kwargs)
         setattr(self, Thread.ABORT, Event())
 
+    def start(self):
+        """
+        Start the thread.
+        """
+        def handler():
+            self.abort()
+            self.join()
+        atexit.register(handler)
+        super(Thread, self).start()
+
     @staticmethod
     def current():
         """
@@ -166,7 +177,7 @@ class Thread(_Thread):
             event = Event()
         aborted = event.isSet()
         if aborted:
-            log.info('thread:%s, ABORTED', thread.getName())
+            log.debug('thread:%s, ABORTED', thread.getName())
         return aborted
 
     def abort(self):
