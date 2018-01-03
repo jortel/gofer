@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.11.0
+Version: 2.11.1
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -233,6 +233,17 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Wed Jan 03 2018 Jeff Ortel <jortel@redhat.com> 2.11.1-1
+- Add interpreter exit handler to abort threads. (jortel@redhat.com)
+- Fix unit test. (jortel@redhat.com)
+- Testing environment fixes. 1. Working directory in user home. 2. Auth testing
+  using user=gofer instead of jortel. 3. Comment out auth testing in server.
+  (jortel@redhat.com)
+- Fix proton no ssl-validation to use anonymous-peer. (jortel@redhat.com)
+- support root logger in agent configuration. (jortel@redhat.com)
+- add dist containing sources (jortel@redhat.com)
+- update url to github. (jortel@redhat.com)
+
 * Fri Apr 07 2017 Jeff Ortel <jortel@redhat.com> 2.11.0-1
 - Bumped for semantic versioning.
 * Fri Apr 07 2017 Jeff Ortel <jortel@redhat.com> 2.10.1-1
