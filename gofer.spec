@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.7.7
+Version: 2.7.8
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -233,6 +233,9 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Wed Jan 03 2018 Jeff Ortel <jortel@redhat.com> 2.7.8-1
+- Backport pr:77 abort threads on interpreter shutdown. (jortel@redhat.com)
+
 * Fri Apr 07 2017 Jeff Ortel <jortel@redhat.com> 2.7.7-1
 - Use killproc in init.d script. (jortel@redhat.com)
 
