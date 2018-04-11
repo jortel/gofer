@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.11.3
+Version: 2.11.4
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -40,6 +40,10 @@ executed at the specified interval.
 
 %build
 pushd src
+%if 0%{?rhel} == 5
+rm -rf ./gofer/tools/
+rm ./gofer/devel/test.py
+%endif
 %{__python} setup.py build
 popd
 pushd docs/man/man1
@@ -78,6 +82,11 @@ cp etc/init.d/%{name}d %{buildroot}/%{_sysconfdir}/init.d
 %endif
 
 rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
+
+%if 0%{?rhel} == 5
+rm %{buildroot}/usr/bin/%{name}
+rm %{buildroot}/%{_mandir}/man1/gofer.*
+%endif
 
 %clean
 rm -rf %{buildroot}
@@ -157,6 +166,7 @@ Provides gofer python lib modules.
 
 
 # --- tools ------------------------------------------------------------------
+%if 0%{?fedora} || 0%{?rhel} >= 6
 
 %package -n %{name}-tools
 Summary: Gofer tools
@@ -173,6 +183,8 @@ Provides the gofer tools.
 %{_bindir}/%{name}
 %doc LICENSE
 %doc %{_mandir}/man1/gofer.*
+
+%endif
 
 
 # --- python-qpid messaging adapter ------------------------------------------
