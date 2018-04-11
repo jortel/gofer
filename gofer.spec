@@ -6,7 +6,7 @@
 %endif
 
 Name: gofer
-Version: 2.11.1
+Version: 2.11.2
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -233,6 +233,9 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Wed Apr 11 2018 Jeff Ortel <jortel@redhat.com> 2.11.2-1
+- Compat with python-amqp 2.1.4. (jortel@redhat.com)
+
 * Wed Jan 03 2018 Jeff Ortel <jortel@redhat.com> 2.11.1-1
 - Add interpreter exit handler to abort threads. (jortel@redhat.com)
 - Fix unit test. (jortel@redhat.com)
