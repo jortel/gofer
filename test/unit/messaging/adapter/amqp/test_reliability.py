@@ -32,6 +32,7 @@ class ConnectionException(Exception):
 class ChannelError(Exception):
 
     def __init__(self, code=0):
+        self.reply_code = code
         self.code = code
 
 
@@ -101,6 +102,22 @@ class TestReliable(TestCase):
     def test_reliable_channel_exception_not_found(self, sleep):
         url = 'test-url'
         fn = Mock(side_effect=[ChannelError(404), None])
+        messenger = Mock(url=url, connection=Mock())
+        args = (messenger, 2, 3)
+        kwargs = {'A': 1}
+
+        # test
+        wrapped = reliable(fn)
+
+        # validation
+        self.assertRaises(NotFound, wrapped, *args, **kwargs)
+        self.assertFalse(sleep.called)
+
+    @patch('gofer.messaging.adapter.amqp.reliability.ChannelError', ChannelError)
+    @patch('gofer.messaging.adapter.amqp.reliability.sleep')
+    def test_reliable_channel_exception_no_route(self, sleep):
+        url = 'test-url'
+        fn = Mock(side_effect=[ChannelError(312), None])
         messenger = Mock(url=url, connection=Mock())
         args = (messenger, 2, 3)
         kwargs = {'A': 1}
