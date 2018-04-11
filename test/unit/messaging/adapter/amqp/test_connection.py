@@ -66,6 +66,7 @@ class TestConnection(TestCase):
             ssl=ssl_domain.return_value,
             confirm_publish=True)
 
+        connection.return_value.connect.assert_called_once_with()
         self.assertEqual(c._impl, connection.return_value)
 
     def test_open_already(self):

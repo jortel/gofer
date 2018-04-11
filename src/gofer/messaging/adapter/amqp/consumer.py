@@ -15,6 +15,8 @@ from Queue import Empty
 from Queue import Queue as Inbox
 from logging import getLogger
 
+from amqp.spec import Basic
+
 from gofer.common import utf8
 from gofer.messaging.adapter.model import BaseReader, Message
 from gofer.messaging.adapter.amqp.connection import Connection
@@ -154,13 +156,13 @@ class Receiver(object):
         :type timeout: int
         """
         if len(channel.method_queue):
-            channel.wait()
+            channel.wait(Basic.Deliver)
             return
         epoll = select.epoll()
         epoll.register(fd, select.EPOLLIN)
         try:
             if epoll.poll(timeout):
-                channel.wait()
+                channel.wait(Basic.Deliver)
         finally:
             epoll.unregister(fd)
             epoll.close()

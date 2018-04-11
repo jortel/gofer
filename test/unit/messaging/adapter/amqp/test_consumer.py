@@ -249,12 +249,14 @@ class TestReader(TestCase):
 class TestReceiver(TestCase):
 
     @patch('select.epoll')
-    def test_wait(self, epoll):
+    @patch('gofer.messaging.adapter.amqp.consumer.Basic')
+    def test_wait(self, basic, epoll):
         fd = 0
         channel = Mock(method_queue=[])
         timeout = 10
 
         epoll.return_value.poll.return_value = [fd]
+        basic.Deliver = (10, 70)
 
         # test
         Receiver._wait(fd, channel, timeout)
@@ -263,22 +265,24 @@ class TestReceiver(TestCase):
         epoll.assert_called_once_with()
         epoll.return_value.register.assert_called_with(fd, select.EPOLLIN)
         epoll.return_value.poll.assert_called_with(timeout)
-        channel.wait.assert_called_once_with()
+        channel.wait.assert_called_once_with(basic.Deliver)
 
     @patch('select.epoll')
-    def test_wait_with_queued(self, epoll):
+    @patch('gofer.messaging.adapter.amqp.consumer.Basic')
+    def test_wait_with_queued(self, basic, epoll):
         fd = 0
         channel = Mock(method_queue=[Mock()])
         timeout = 10
 
         epoll.return_value.poll.return_value = [fd]
+        basic.Deliver = (10, 70)
 
         # test
         Receiver._wait(fd, channel, timeout)
 
         # validation
         self.assertFalse(epoll.called)
-        channel.wait.assert_called_once_with()
+        channel.wait.assert_called_once_with(basic.Deliver)
 
     @patch('select.epoll')
     def test_wait_nothing(self, epoll):
