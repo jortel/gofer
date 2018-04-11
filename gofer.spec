@@ -219,7 +219,7 @@ Summary: Gofer amqp messaging adapter python package
 Group: Development/Languages
 BuildRequires: python
 Requires: python-%{name} = %{version}
-Requires: python-amqp >= 1.4.5
+Requires: python-amqp >= 2.1.4
 
 %description -n python-%{name}-amqp
 Provides the gofer amqp messaging adapter package.

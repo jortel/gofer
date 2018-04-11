@@ -101,6 +101,7 @@ class Connection(BaseConnection):
             userid=userid,
             password=password,
             confirm_publish=True)
+        self._impl.connect()
         log.info('opened: %s', self.url)
 
     def channel(self):
