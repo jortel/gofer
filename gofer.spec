@@ -10,7 +10,7 @@
 
 Name: gofer
 Version: 2.11.4
-Release: 1%{?dist}
+Release: 2
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
 License: LGPLv2
@@ -248,6 +248,10 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Thu Apr 12 2018 Jeff Ortel <jortel@redhat.com> 2.11.4-2
+- packaging: with_systemd and with_tools; devel not packaged.
+  (jortel@redhat.com)
+
 * Wed Apr 11 2018 Jeff Ortel <jortel@redhat.com> 2.11.4-1
 - Apply upstream patch. (jortel@redhat.com)
 
