@@ -1,8 +1,11 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 
 # Determine supported
-%if 0%{?rhel} >= 7 || 0%{?fedora} >= 18
-%define systemd 1
+%if 0%{?fedora} || 0%{?rhel} >= 6
+%define with_tools 1
+%endif
+%if 0%{?fedora} || 0%{?rhel} >= 7
+%define with_systemd 1
 %endif
 
 Name: gofer
@@ -20,7 +23,7 @@ BuildRequires: python2-devel
 BuildRequires: python-setuptools
 BuildRequires: rpm-python
 Requires: python-%{name} = %{version}
-%if 0%{?systemd}
+%if 0%{?with_systemd}
 BuildRequires: systemd
 Requires(post): systemd
 Requires(preun): systemd
@@ -40,9 +43,9 @@ executed at the specified interval.
 
 %build
 pushd src
-%if 0%{?rhel} == 5
-rm -rf ./gofer/tools/
 rm ./gofer/devel/test.py
+%if !0%{?with_tools}
+rm -rf ./gofer/tools/
 %endif
 %{__python} setup.py build
 popd
@@ -75,7 +78,7 @@ cp docs/man/man1/* %{buildroot}/%{_mandir}/man1
 cp plugins/demo.conf %{buildroot}/%{_sysconfdir}/%{name}/plugins
 cp plugins/demo.py %{buildroot}/%{_usr}/share/%{name}/plugins
 
-%if 0%{?systemd}
+%if 0%{?with_systemd}
 cp usr/lib/systemd/system/* %{buildroot}/%{_unitdir}
 %else
 cp etc/init.d/%{name}d %{buildroot}/%{_sysconfdir}/init.d
@@ -83,7 +86,7 @@ cp etc/init.d/%{name}d %{buildroot}/%{_sysconfdir}/init.d
 
 rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
 
-%if 0%{?rhel} == 5
+%if !0%{?with_tools}
 rm %{buildroot}/usr/bin/%{name}
 rm %{buildroot}/%{_mandir}/man1/gofer.*
 %endif
@@ -100,7 +103,7 @@ rm -rf %{buildroot}
 %dir %{_usr}/share/%{name}/plugins/
 %{python_sitelib}/%{name}/agent/
 %{_bindir}/%{name}d
-%if 0%{?systemd}
+%if 0%{?with_systemd}
 %attr(644,root,root) %{_unitdir}/%{name}d.service
 %else
 %attr(755,root,root) %{_sysconfdir}/init.d/%{name}d
@@ -114,14 +117,14 @@ rm -rf %{buildroot}
 %doc %{_mandir}/man1/goferd.*
 
 %post
-%if 0%{?systemd}
+%if 0%{?with_systemd}
 %systemd_post %{name}d.service
 %else
 chkconfig --add %{name}d
 %endif
 
 %preun
-%if 0%{?systemd}
+%if 0%{?with_systemd}
 %systemd_preun %{name}d.service
 %else
 if [ $1 = 0 ] ; then
@@ -131,7 +134,7 @@ fi
 %endif
 
 %postun
-%if 0%{?systemd}
+%if 0%{?with_systemd}
 %systemd_postun_with_restart %{name}d.service
 %endif
 
@@ -166,7 +169,7 @@ Provides gofer python lib modules.
 
 
 # --- tools ------------------------------------------------------------------
-%if 0%{?fedora} || 0%{?rhel} >= 6
+%if 0%{?with_tools}
 
 %package -n %{name}-tools
 Summary: Gofer tools
