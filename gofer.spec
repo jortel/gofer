@@ -248,6 +248,9 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Tue Apr 24 2018 Jeff Ortel <jortel@redhat.com> 2.11.4-3
+- Fixed dist in spec. (jortel@redhat.com)
+
 * Thu Apr 12 2018 Jeff Ortel <jortel@redhat.com> 2.11.4-2
 - packaging: with_systemd and with_tools; devel not packaged.
   (jortel@redhat.com)
