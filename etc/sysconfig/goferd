@@ -1,3 +1,5 @@
-# goferd runs python optimized by default
-# set this to 0 to run with optimization disabled
+# Python interpreter.
+PYTHON=/usr/bin/python
+
+# Python optimization (0=disabled, 1=enabled).
 PYTHONOPTIMIZE=1

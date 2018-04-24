@@ -15,14 +15,11 @@
 
 import os
 import pickle
+import struct
 
 from errno import EPIPE
 from signal import SIGKILL
-
-try:
-    from select import epoll, EPOLLIN, EPOLLHUP
-except ImportError:
-    from select import poll as epoll, POLLIN as EPOLLIN, POLLHUP as EPOLLHUP
+from select import epoll, EPOLLIN, EPOLLHUP
 
 
 class PipeBroken(Exception):
@@ -156,9 +153,6 @@ class Endpoint(object):
     :type fd: int
     """
 
-    # pickled object separator
-    EOR = '\x1E'
-
     def __init__(self, fd):
         """
         :param fd: An open pipe file descriptor.
@@ -173,7 +167,7 @@ class Endpoint(object):
         """
         try:
             os.close(self.fd)
-        except:
+        except Exception:
             pass
 
 
@@ -199,16 +193,13 @@ class Reader(Endpoint):
         :return: The next read message.
         :rtype: object
         """
-        record = []
-        while True:
-            byte = os.read(self.fd, 1)
-            if not byte:
-                raise EOFError()
-            if byte == Endpoint.EOR:
-                break
-            record.append(byte)
-        if record:
-            return pickle.loads(''.join(record))
+        header = os.read(
+            self.fd,
+            len(struct.pack('I', 0)))
+        if header:
+            header = struct.unpack('I', header)[0]
+            record = os.read(self.fd, header)
+            return pickle.loads(record)
         else:
             raise EOFError()
 
@@ -231,11 +222,17 @@ class Writer(Endpoint):
         :param thing: An object.
         :type thing: any
         """
+        def write(buffer):
+            offset = 0
+            total = len(buffer)
+            while offset < total:
+                offset += os.write(self.fd, buffer[offset:])
         record = pickle.dumps(thing)
+        header = struct.pack('I', len(record))
         try:
-            os.write(self.fd, record)
-            os.write(self.fd, Endpoint.EOR)
-        except OSError, pe:
+            write(header)
+            write(record)
+        except OSError as pe:
             if pe.errno == EPIPE:
                 raise PipeBroken()
             else:

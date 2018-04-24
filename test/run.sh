@@ -14,6 +14,9 @@
 #
 
 dir="$(mktemp -d -t)"
+nosetests="nosetests"
+virtualenv="virtualenv"
+pip="pip"
 
 clean()
 {
@@ -23,14 +26,16 @@ clean()
 run()
 {
   echo $dir
-  virtualenv $dir
+  ${virtualenv} $dir
   source $dir/bin/activate
-  pip install nose
-  pip install nose-cov
-  pip install mock
-  pip install iniparse
-  pip install -e ../src/
-  nosetests --with-coverage --cover-package=gofer `find unit -type d`
+  ${pip} install future
+  ${pip} install six
+  ${pip} install nose
+  ${pip} install nose-cov
+  ${pip} install mock
+  ${pip} install iniparse
+  ${pip} install -e ../src/
+  ${nosetests} --with-coverage --cover-package=gofer `find unit -type d`
 }
 
 main()

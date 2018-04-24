@@ -16,8 +16,9 @@ from unittest import TestCase
 
 from mock import patch, Mock
 
-from gofer.devel import ipatch
+from gofer.compat import str
 from gofer.common import ThreadSingleton
+from gofer.devel import ipatch
 
 with ipatch('amqp'):
     from gofer.messaging.adapter.model import Connector

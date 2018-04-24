@@ -29,7 +29,7 @@ def retry(*exception):
                     impl = fn(connection)
                     log.info('connected: %s', url)
                     return impl
-                except exception, e:
+                except exception as e:
                     log.error('connect: %s, failed: %s', url, e)
                     if retries > 0:
                         log.info('retry in %d seconds', delay)

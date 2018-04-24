@@ -10,17 +10,20 @@ Gofer is packaged into RPMs for Linux.  These packages are as follows:
 - **python-gofer** - The common library.
 - **python-gofer-qpid** - The python-qpid messaging adapter.
 - **python-gofer-amqp** - The python-amqp messaging adapter.
+- **python-gofer-proton** - The python-proton (AMQP 1.0) messaging adapter.
 
 Depending on system capabilities, the *gofer* package registers goferd
 with systemd or upstart service managers.
 
-python optimizations
---------------------
+Daemon
+------
 
-By default, goferd runs python with optimizations enabled. If you want to disable those
-optimizations, this can be done by altering the environment file for this service,
-``/etc/sysconfig/goferd``, and setting the value of PYTHONOPTIMIZE to zero:
-``PYTHONOPTIMIZE=0``
+The daemon (service) is goferd.  The ``/etc/sysconfig/goferd`` file defines configuration
+and contains the following properties:
+
+- **PYTHON** - The python interpreter.
+- **PYTHONOPTIMIZE** - Python interpreter optimization (0=disabled, 1=enabled).
+
 
 Development
 ^^^^^^^^^^^

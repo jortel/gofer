@@ -36,6 +36,7 @@ class TestExchange(TestCase):
         self.assertEqual(exchange.auto_delete, False)
 
     @patch('gofer.messaging.adapter.amqp.reliability.Connection.channel')
+    @patch('gofer.messaging.adapter.amqp.connection.RealConnection', Mock())
     def test_declare(self, channel):
         url = 'test-url'
 
@@ -51,6 +52,7 @@ class TestExchange(TestCase):
             auto_delete=exchange.auto_delete)
 
     @patch('gofer.messaging.adapter.amqp.reliability.Connection.channel')
+    @patch('gofer.messaging.adapter.amqp.connection.RealConnection', Mock())
     def test_delete(self, channel):
         url = 'test-url'
 
@@ -62,6 +64,7 @@ class TestExchange(TestCase):
         channel.return_value.exchange_delete.assert_called_once_with(exchange.name, nowait=True)
 
     @patch('gofer.messaging.adapter.amqp.reliability.Connection.channel')
+    @patch('gofer.messaging.adapter.amqp.connection.RealConnection', Mock())
     def test_bind(self, channel):
         url = 'test-url'
         queue = BaseQueue('test-queue')
@@ -77,6 +80,7 @@ class TestExchange(TestCase):
             routing_key=queue.name)
 
     @patch('gofer.messaging.adapter.amqp.reliability.Connection.channel')
+    @patch('gofer.messaging.adapter.amqp.connection.RealConnection', Mock())
     def test_unbind(self, channel):
         url = 'test-url'
         queue = BaseQueue('test-queue')
@@ -104,6 +108,7 @@ class TestQueue(TestCase):
         self.assertEqual(queue.expiration, 0)
 
     @patch('gofer.messaging.adapter.amqp.reliability.Connection.channel')
+    @patch('gofer.messaging.adapter.amqp.connection.RealConnection', Mock())
     def test_declare(self, channel):
         url = 'test-url'
 
@@ -120,6 +125,7 @@ class TestQueue(TestCase):
             arguments=None)
 
     @patch('gofer.messaging.adapter.amqp.reliability.Connection.channel')
+    @patch('gofer.messaging.adapter.amqp.connection.RealConnection', Mock())
     def test_declare_auto_delete(self, channel):
         url = 'test-url'
 
@@ -138,6 +144,7 @@ class TestQueue(TestCase):
             arguments={'x-expires': queue.expiration * 1000})
 
     @patch('gofer.messaging.adapter.amqp.reliability.Connection.channel')
+    @patch('gofer.messaging.adapter.amqp.connection.RealConnection', Mock())
     def test_delete(self, channel):
         url = 'test-url'
 

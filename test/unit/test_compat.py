@@ -8,22 +8,32 @@
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+from six import PY2, unichr
 
-from uuid import uuid4
 from unittest import TestCase
 
-from mock import patch
-
 from gofer.compat import str
-from gofer.agent.config import AgentConfig, AGENT_SCHEMA, AGENT_DEFAULTS, Graph
 
 
-class TestAgentConfig(TestCase):
+class Thing(object):
 
-    @patch('gofer.agent.config.Config')
-    def test_init(self, cfg):
-        path = str(uuid4())
-        agent = AgentConfig(path)
-        cfg.assert_called_once_with(AGENT_DEFAULTS, path)
-        cfg.return_value.validate.assert_called_once_with(AGENT_SCHEMA)
-        self.assertTrue(isinstance(agent, Graph))
+    def __init__(self, n1, n2, a=0, b=0):
+        super(Thing, self).__init__()
+        self.name = 'Elmer' + unichr(255) + 'Fudd'
+        self.n1 = n1
+        self.n2 = n2
+        self.a = a
+        self.b = b
+
+    def __str__(self):
+        return str(self.name)
+
+
+class TestStrings(TestCase):
+
+    def test_str(self):
+        if PY2:
+            self.assertTrue(isinstance(str('hello'), unicode))
+            self.assertTrue(isinstance(str(Thing(1, 2)), unicode))
+        else:
+            self.assertTrue(isinstance(str('hello'), str))

@@ -12,6 +12,8 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
+from six import with_metaclass
+
 
 from gofer import NAME, Singleton
 from gofer.config import Config, Graph
@@ -167,14 +169,12 @@ PLUGIN_DEFAULTS = {
 }
 
 
-class AgentConfig(Graph):
+class AgentConfig(with_metaclass(Singleton, Graph)):
     """
     The gofer agent configuration.
     :cvar PATH: The absolute path to the config directory.
     :type PATH: str
     """
-
-    __metaclass__ = Singleton
 
     PATH = '/etc/%s/agent.conf' % NAME
 

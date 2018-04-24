@@ -3,9 +3,10 @@ Description=Gofer Agent
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/goferd --foreground
-Restart=on-abort
+Environment=PYTHON=/usr/bin/python
 EnvironmentFile=/etc/sysconfig/goferd
+ExecStart=/usr/bin/env ${PYTHON} /usr/bin/goferd --foreground
+Restart=on-abort
 
 [Install]
 WantedBy=multi-user.target

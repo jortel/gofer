@@ -18,11 +18,12 @@ Provides RMI dispatcher classes.
 """
 
 import sys
-import inspect
 import traceback as tb
 
-from gofer import NAME
-from gofer.common import Options, utf8, new
+from gofer import inspection
+from gofer.compat import str
+from gofer.common import Options, new
+from gofer.collation import MemberNotFound
 from gofer.messaging import Document
 from gofer.pam import authenticate as pam_authenticate
 from gofer.rmi.model import ALL
@@ -40,35 +41,26 @@ class DispatchError(Exception):
     pass
 
 
-class ClassNotFound(DispatchError):
+class NamespaceNotFound(DispatchError):
     """
-    Target class not found.
-    """
-
-    def __init__(self, classname):
-        DispatchError.__init__(self, classname)
-
-
-class MethodNotFound(DispatchError):
-    """
-    Target method not found.
+    Target namespace not found.
     """
 
-    def __init__(self, classname, method):
-        message = '%s.%s(), not found' % (classname, method)
+    def __init__(self, name):
+        message = '"{}" not provided by plugin.'.format(name)
         DispatchError.__init__(self, message)
 
 
-class NotPermitted(DispatchError):
+class MemberNotFound(DispatchError):
     """
-    Called method not decorated as *remote*.
+    Target member not found.
     """
 
-    def __init__(self, method):
-        message = '%s(), not permitted' % method.name
+    def __init__(self, ns, method):
+        message = '"{}.{}()" not provided by plugin.'.format(ns, method)
         DispatchError.__init__(self, message)
-        
-        
+
+
 class NotAuthorized(DispatchError):
     """
     Not authorized.
@@ -82,8 +74,7 @@ class AuthMethod(NotAuthorized):
     """
 
     def __init__(self, method, name):
-        message = \
-            '%s(), auth (%s) not supported' % (method.name, name)
+        message = '{}(), auth ({}) not supported'.format(method.name, name)
         NotAuthorized.__init__(self, message)
 
 
@@ -93,7 +84,7 @@ class SecretRequired(NotAuthorized):
     """
 
     def __init__(self, method):
-        message = '%s(), secret required' % method.name
+        message = '{}(), secret required'.format(method.name)
         NotAuthorized.__init__(self, message)
         
         
@@ -103,7 +94,7 @@ class UserRequired(NotAuthorized):
     """
 
     def __init__(self, method):
-        message = '%s(), user (name) required' % method.name
+        message = '{}(), user (name) required'.format(method.name)
         NotAuthorized.__init__(self, message)
         
         
@@ -113,7 +104,7 @@ class PasswordRequired(NotAuthorized):
     """
 
     def __init__(self, method):
-        message = '%s(), password required' % method.name
+        message = '{}(), password required'.format(method.name)
         NotAuthorized.__init__(self, message)
 
 
@@ -123,7 +114,7 @@ class NotAuthenticated(NotAuthorized):
     """
 
     def __init__(self, method, user):
-        message = '%s(), user "%s" not authenticated' % (method.name, user)
+        message = '{}(), user "{}" not authenticated'.format(method.name, user)
         NotAuthorized.__init__(self, message)
         
 
@@ -133,10 +124,11 @@ class UserNotAuthorized(NotAuthorized):
     """
 
     def __init__(self, method, expected, passed):
-        message = '%s(), user must be: %s, passed: %s' \
-            % (method.name,
-               expected,
-               passed)
+        message = \
+            '{}(), user must be: {}, passed: {}'.format(
+                method.name,
+                expected,
+                passed)
         NotAuthorized.__init__(self, message)
         
 
@@ -146,10 +138,11 @@ class SecretNotMatched(NotAuthorized):
     """
 
     def __init__(self, method, expected, passed):
-        message = '%s(), secret: %s not in: %s' \
-            % (method.name,
-               passed,
-               expected)
+        message = \
+            '{}(), secret: {} not in: {}'.format(
+                method.name,
+                passed,
+                expected)
         NotAuthorized.__init__(self, message)
         
         
@@ -167,7 +160,7 @@ class RemoteException(Exception):
         try:
             T = globals().get(target)
             if not T:
-                mod = __import__(mod, fromlist=[target])
+                mod = __import__(mod, fromlist=[str(target)])
                 T = getattr(mod, target)
             try:
                 inst = new(T, state)
@@ -175,7 +168,7 @@ class RemoteException(Exception):
                 inst = Exception()
             if isinstance(inst, Exception):
                 inst.args = args
-        except:
+        except Exception:
             inst = RemoteException(reply.exval)
         return inst
     
@@ -294,7 +287,7 @@ class Return(Document):
         inst = info[1]
         xclass = inst.__class__
         exval = '\n'.join(tb.format_exception(*info))
-        mod = inspect.getmodule(xclass)
+        mod = inspection.module(xclass)
         if mod:
             mod = mod.__name__
         args = None
@@ -338,14 +331,11 @@ class RMI(object):
         """
         self.name = '.'.join((request.classname, request.method))
         self.request = request
+        self.target = self.find_target(request, catalog)
         self.auth = auth
-        self.inst = self.find_class(request, catalog)
-        self.method = self.find_method(request, self.inst)
-        self.args = request.args
-        self.kwargs = request.kws
 
     @staticmethod
-    def find_class(request, catalog):
+    def find_target(request, catalog):
         """
         Get an instance of the class or module specified in
         the request using the catalog.
@@ -356,86 +346,46 @@ class RMI(object):
         :return: An instance.
         :rtype: (class|module)
         """
-        key = request.classname
-        inst = catalog.get(key, None)
-        if inst is None:
-            raise ClassNotFound(key)
-        if inspect.isclass(inst):
-            args, keywords = RMI.constructor(request)
-            return inst(*args, **keywords)
-        else:
-            return inst
-
-    @staticmethod
-    def find_method(request, inst):
-        """
-        Get method of the class specified in the request.
-        Ensures that remote invocation is permitted.
-        :param request: The request document.
-        :type request: Request
-        :param inst: A class or module object.
-        :type inst: (class|module)
-        :return: The requested method.
-        :rtype: (method|function)
-        """
-        cn, fn = (request.classname, request.method)
-        if hasattr(inst, fn):
-            return getattr(inst, fn)
-        else:
-            raise MethodNotFound(cn, fn)
-
-    @staticmethod
-    def fn(method):
-        """
-        Return the method's function (if a method) or
-        the *method* assuming it's a function.
-        :param method: An instance method.
-        :type method: instancemethod
-        :return: The function
-        :rtype: function
-        """
-        if inspect.ismethod(method):
-            fn = method.im_func
-        else:
-            fn = method
-        return fn
-
-    @staticmethod
-    def fninfo(method):
-        """
-        Get the *gofer* metadata embedded in the function
-        by the @remote decorator.
-        :param method: An instance method.
-        :type method: instancemethod
-        :return: The *gofer* attribute.
-        :rtype: Options
-        """
         try:
-            return getattr(RMI.fn(method), NAME)
-        except:
-            pass
+            namespace = catalog[request.classname]
+        except KeyError:
+            raise NamespaceNotFound(name=request.classname)
+
+        namespace = RMI.construct(request, namespace)
+
+        try:
+            target = namespace[request.method]
+        except MemberNotFound:
+            raise MemberNotFound(
+                ns=request.classname,
+                method=request.method)
+
+        return target
 
     @staticmethod
-    def constructor(request):
+    def construct(request, namespace):
         """
-        Get (optional) constructor arguments.
-        :return: cntr: ([],{})
+        Construct the namespace using the constructor properties
+        in the request.
+
+        Args:
+            request (Document): A request.
+            namespace (gofer.collation.Container): A class or module.
         """
         cntr = request.cntr
         if not cntr:
             cntr = ([], {})
-        return cntr
+        return namespace(*cntr[0], **cntr[1])
 
     def permitted(self):
         """
         Check whether remote invocation of the specified method is permitted.
         Applies security model using Security.
         """
-        fninfo = RMI.fninfo(self.method)
-        if fninfo is None:
-            raise NotPermitted(self)
+        fninfo = self.target.fninfo
         security = Security(self, fninfo)
         security.apply(self.auth)
+        return fninfo
 
     def __call__(self):
         """
@@ -444,23 +394,22 @@ class RMI(object):
         :rtype: Return
         """
         try:
-            self.permitted()
-            fninfo = RMI.fninfo(self.method)
-            model = ALL[fninfo.call.model](self.method, *self.args, **self.kwargs)
+            fninfo = self.permitted()
+            model = ALL[fninfo.call.model](
+                self.target,
+                *self.request.args or [],
+                **self.request.kwargs or {})
             retval = model()
             return Return.succeed(retval)
         except Exception:
-            log.exception(utf8(self.method))
+            log.exception(str(self.target))
             return Return.exception()
 
-    def __unicode__(self):
-        return unicode(self.request)
-
     def __str__(self):
-        return utf8(self)
+        return str(self.request)
 
     def __repr__(self):
-        return utf8(self)
+        return str(self.request)
 
 
 # --- Security classes -------------------------------------------------------
@@ -502,7 +451,7 @@ class Security:
             try:
                 fn = self.impl(name)
                 return fn(required, passed)
-            except NotAuthorized, e:
+            except NotAuthorized as e:
                 log.debug(e)
                 failed.append(e)
         if failed:
@@ -600,7 +549,7 @@ class Dispatcher:
 
     def __init__(self, classes=None):
         """
-        :param classes: The (cataloged) of target classes.
+        :param classes: The (catalog) of target classes and modules.
         :type classes: list
         """
         self.catalog = dict([(c.__name__, c) for c in classes or []])
@@ -632,7 +581,7 @@ class Dispatcher:
             log.debug('method: %s', method)
             return method()
         except Exception:
-            log.exception(utf8(document))
+            log.exception(str(document))
             return Return.exception()
 
     def __iadd__(self, other):
@@ -640,8 +589,7 @@ class Dispatcher:
             self.catalog.update(other.catalog)
             return self
         if isinstance(other, list):
-            other = dict([(c.__name__, c) for c in other])
-            self.catalog.update(other)
+            self.catalog.update({c.name: c for c in other})
             return self
         return self
 
@@ -654,10 +602,10 @@ class Dispatcher:
     def __iter__(self):
         _list = []
         for n, v in self.catalog.items():
-            if inspect.isclass(v):
+            if inspection.is_class(v):
                 _list.append(v)
                 continue
-            for fn in inspect.getmembers(v, inspect.isfunction):
+            for fn in inspection.functions(v):
                 if RMI.fninfo(fn[1]):
                     _list.append(fn[1])
                 continue

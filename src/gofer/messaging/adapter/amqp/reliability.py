@@ -15,7 +15,8 @@ from logging import getLogger
 
 from amqp import ChannelError
 
-from gofer.common import Thread, utf8
+from gofer.compat import str
+from gofer.common import Thread
 from gofer.messaging.adapter.model import Messenger, NotFound
 from gofer.messaging.adapter.amqp.connection import Connection, CONNECTION_EXCEPTIONS
 
@@ -25,6 +26,10 @@ log = getLogger(__name__)
 
 DELAY = 10  # seconds
 
+# AMQP reply
+NO_ROUTE = 312
+NOT_FOUND = 404
+
 
 def reliable(fn):
     def _fn(messenger, *args, **kwargs):
@@ -33,16 +38,15 @@ def reliable(fn):
             try:
                 repair()
                 return fn(messenger, *args, **kwargs)
-            except ChannelError, le:
-                # 312: NO_ROUTE, 404: NOT_FOUND
-                if le.reply_code not in (312, 404):
-                    log.error(utf8(le))
+            except ChannelError as le:
+                if le.reply_code not in (NO_ROUTE, NOT_FOUND):
+                    log.error(str(le))
                     repair = messenger.repair
                     sleep(DELAY)
                 else:
                     raise NotFound(*le.args)
-            except CONNECTION_EXCEPTIONS, pe:
-                log.error(utf8(pe))
+            except CONNECTION_EXCEPTIONS as pe:
+                log.error(str(pe))
                 repair = messenger.repair
                 sleep(DELAY)
     return _fn
@@ -50,12 +54,8 @@ def reliable(fn):
 
 def endpoint(fn):
     def _fn(url):
-        _endpoint = Endpoint(url)
-        _endpoint.open()
-        try:
+        with Endpoint(url) as _endpoint:
             return fn(_endpoint)
-        finally:
-            _endpoint.close()
     return _fn
 
 

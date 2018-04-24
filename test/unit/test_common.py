@@ -8,12 +8,14 @@
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+from six import with_metaclass, unichr
+
 
 import os
 import errno
 
-from Queue import Queue
 from threading import Thread, Event
+from queue import Queue
 
 from unittest import TestCase
 
@@ -24,43 +26,38 @@ from gofer.common import Thread as GThread
 from gofer.common import Local as GLocal
 from gofer.common import Singleton, ThreadSingleton, Options
 from gofer.common import synchronized, conditional, released
-from gofer.common import mkdir, rmdir, unlink, nvl, valid_path, new, utf8
+from gofer.common import mkdir, rmdir, unlink, nvl, valid_path
 from gofer.common import List
+from gofer.common import new, newT
+from gofer.compat import str
 
 
-class Thing(object):
-
-    __metaclass__ = Singleton
+class Thing(with_metaclass(Singleton, object)):
 
     def __init__(self, n1, n2, a=0, b=0):
+        super(Thing, self).__init__()
         self.__mutex = Mock()
+        self.name = 'Elmer' + unichr(255) + 'Fudd'
         self.n1 = n1
         self.n2 = n2
         self.a = a
         self.b = b
-
-    def __unicode__(self):
-        description = 'my dog' + unichr(255) + 'is fun'
-        return description
 
     def __str__(self):
-        return utf8(self)
+        return str(self.name)
 
 
-class Thing2(object):
-
-    __metaclass__ = Singleton
+class Thing2(with_metaclass(Singleton, object)):
 
     def __init__(self, n1, n2, a=0, b=0):
+        super(Thing2, self).__init__()
         self.n1 = n1
         self.n2 = n2
         self.a = a
         self.b = b
 
 
-class ThingT(object):
-
-    __metaclass__ = ThreadSingleton
+class ThingT(with_metaclass(ThreadSingleton, object)):
 
     def __init__(self, n1, n2, a=0, b=0):
         self.__mutex = Mock()
@@ -70,9 +67,7 @@ class ThingT(object):
         self.b = b
 
 
-class ThingT2(object):
-
-    __metaclass__ = ThreadSingleton
+class ThingT2(with_metaclass(ThreadSingleton, object)):
 
     def __init__(self, n1, n2, a=0, b=0):
         self.n1 = n1
@@ -111,12 +106,10 @@ class Thing6:
     pass
 
 
-class TestUtf8(TestCase):
+class Teststr(TestCase):
 
-    def test_utf8(self):
-        thing = Thing(1, 2)
-        s = utf8(thing)
-        self.assertEqual(s, unicode(thing).encode('utf-8'))
+    def test_str(self):
+        str(Thing(1, 2))
 
 
 class TestMkdir(TestCase):
@@ -203,7 +196,6 @@ class TestSingleton(TestCase):
         Singleton._inst.clear()
 
         try:
-
             # 1st
             thing = Thing(*args, **kwargs)
             self.assertTrue(isinstance(thing, Thing))
@@ -241,11 +233,10 @@ class TestSingleton(TestCase):
 
         # test
         key = Singleton.key(args, keywords)
+        expected = "['A', 1, 1.0, True, ('bool', True), ('float', 1.0), ('int', 1), ('string', '')]"
 
         # validation
-        self.assertEqual(
-            key,
-            "['A', 1, 1.0, True, ('bool', True), ('float', 1.0), ('int', 1), ('string', '')]")
+        self.assertEqual(expected, key)
 
 
 class TestThread(TestCase):
@@ -307,7 +298,7 @@ class TestThreadSingleton(TestCase):
         _all.clear()
         _all.update(things)
         purged = ThreadSingleton.purge()
-        self.assertEqual(things.values(), purged)
+        self.assertEqual(tuple(things.values()), tuple(purged))
         self.assertEqual(ThreadSingleton.all(), {})
 
     def test_call(self):
@@ -363,6 +354,16 @@ class TestDecorators(TestCase):
         mutex = Mock()
         thing = Thing3(mutex=mutex)
 
+        def _enter():
+            mutex.acquire()
+            return mutex
+
+        def _exit(*unused):
+            mutex.release()
+
+        mutex.__enter__ = Mock(side_effect=_enter)
+        mutex.__exit__ = Mock(side_effect=_exit)
+
         # test
         ret = thing.foo(1, a=2)
 
@@ -377,6 +378,16 @@ class TestDecorators(TestCase):
 
     def test_condition(self):
         condition = Mock()
+
+        def _enter():
+            condition.acquire()
+            return condition
+
+        def _exit(*unused):
+            condition.release()
+
+        condition.__enter__ = Mock(side_effect=_enter)
+        condition.__exit__ = Mock(side_effect=_exit)
         thing = Thing3(condition=condition)
 
         # test
@@ -465,10 +476,6 @@ class TestOptions(TestCase):
     def test_repr(self):
         options = Options(a=1, b=2)
         self.assertEqual(repr(options), repr(options.__dict__))
-
-    def test_unicode(self):
-        options = Options(a=1, b=2)
-        self.assertEqual(unicode(options), unicode(options.__dict__))
 
     def test_str(self):
         options = Options(a=1, b=2)
@@ -571,3 +578,16 @@ class TestLocal(TestCase):
         t.join()
 
         self.assertEqual(l.other, {})
+
+
+class TestNew(TestCase):
+
+    def test_new(self):
+        name = 'elmer'
+        age = 30
+        T = newT('Person', (object,), {'name': name})
+        inst = new(T, {'age': age})
+        self.assertTrue(isinstance(inst, T))
+        self.assertEqual(T.name, name)
+        self.assertEqual(inst.name, name)
+        self.assertEqual(inst.age, age)

@@ -12,12 +12,11 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-
 """
 Defined URL objects.
 """
 
-from gofer.common import utf8
+from gofer.compat import str
 
 
 AMQP = {
@@ -126,11 +125,8 @@ class URL(Part):
     def __eq__(self, other):
         return self.canonical == other.canonical
 
-    def __unicode__(self):
-        return self.canonical
-
     def __str__(self):
-        return utf8(self)
+        return str(self.canonical)
 
 
 class Scheme(Part):

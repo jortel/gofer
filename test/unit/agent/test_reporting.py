@@ -15,7 +15,10 @@ from unittest import TestCase
 
 from mock import Mock, patch
 
-from gofer.agent.reporting import indent, signature, loaded
+from gofer import inspection
+from gofer.agent.action import Action
+from gofer.agent.reporting import indent, loaded
+from gofer.collation import Module, Class, Method, Function
 
 
 HELP = """\
@@ -23,37 +26,44 @@ Plugins:
 
   <plugin> animals
     Classes:
-      <class> dog
-        methods:
-          fn1(words)
-          fn2(words, *others)
+      <class> Dog
+        Methods:
+          fn(name, age)
+          fn1(self, words)
+          fn2(self, words, *others)
+          fn3(self, words, *others, **keywords)
     Functions:
-      bar(n)
-      bar1(age)
+      bar1(n)
+      bar2(age)
+      bar3(month, day, year)
 
 Actions:
-  report {'hours': 24}
-  reboot {'minutes': 10}\
+  reboot 0:10:00
+  report 1 day, 0:00:00\
 """
 
 
-def remote(fn):
-    fn.gofer = {}
-    return fn
+def bar1(n):
+    pass
+
+
+def bar2(age):
+    pass
+
+
+def bar3(month, day, year):
+    pass
 
 
 class Dog(object):
 
     @staticmethod
-    @remote
     def fn(name, age):
         pass
 
-    @remote
     def fn1(self, words):
         pass
 
-    @remote
     def fn2(self, words, *others):
         pass
 
@@ -69,78 +79,52 @@ class Plugin(object):
         self.dispatcher = dispatcher
 
 
-class Action(object):
-
-    def __init__(self, name, interval):
-        self._name = name
-        self.interval = interval
-
-    def name(self):
-        return self._name
-
-
-class Module(object):
-
-    @remote
-    def bar(self, n):
-        pass
-
-    @remote
-    def bar1(self, age):
-        pass
-
-    def bar2(self):
-        pass
-
-
 class TestUtils(TestCase):
 
     def test_indent(self):
-        fmt = 'My %s has nine lives'
+        string = 'My {} has nine lives'
         cat = 'cat'
-        s = indent(fmt, 4, cat)
-        self.assertEqual(s, '    ' + fmt % cat)
-
-    def test_signature(self):
-        # function
-        fn = Dog.fn
-        self.assertEqual(signature(fn.__name__, fn), 'fn(name, age)')
-        # method
-        fn = Dog.fn1
-        self.assertEqual(signature(fn.__name__, fn), 'fn1(words)')
-        # method with varargs
-        fn = Dog.fn2
-        self.assertEqual(signature(fn.__name__, fn), 'fn2(words, *others)')
-        # method with varargs and keywords
-        fn = Dog.fn3
-        self.assertEqual(signature(fn.__name__, fn), 'fn3(words, *others, **keywords)')
+        actual = indent(string, 4, cat)
+        expected = '    ' + string.format(cat)
+        self.assertEqual(expected, actual)
 
 
 class TestReports(TestCase):
 
-    @patch('gofer.agent.reporting.inspect.isfunction')
-    @patch('gofer.agent.reporting.inspect.ismodule')
-    def test_help(self, is_mod, is_fn):
-        is_mod.side_effect = lambda thing: thing == Module
-        is_fn.return_value = True
-        container = Mock()
-        actions = Mock()
-        actions.collated.return_value = [
-            Action('report', dict(hours=24)),
-            Action('reboot', dict(minutes=10)),
-        ]
-        dispatcher = Mock(catalog={
-            'dog': Dog,
-            'mod': Module,
-        })
+    @patch('gofer.agent.decorator.Actions')
+    def test_loaded(self, actions):
+        catalog = {
+            Dog.__name__: Class(
+                Dog,
+                methods={
+                    n: Method(m) for n, m in inspection.methods(Dog)
+                }
+            ),
+            'stuff': Module(
+                'stuff',
+                functions={
+                    bar1.__name__: Function(bar1),
+                    bar2.__name__: Function(bar2),
+                    bar3.__name__: Function(bar3),
+                }
+            )
+        }
         plugins = [
-            Plugin('animals', True, dispatcher),
+            Plugin('animals', True, Mock(catalog=catalog)),
             Plugin('fish', False, None),
         ]
+
+        container = Mock()
         container.all.return_value = plugins
 
+        actions.collated.return_value = [
+            Action('report', None, hours=24),
+            Action('reboot', None, minutes=10)
+        ]
+
         # test
-        s = loaded(container, actions)
+        actual = loaded(container, actions)
 
         # validation
-        self.assertEqual(s, HELP % {'plugin': plugins[0].name})
+        expected = HELP % {'plugin': plugins[0].name}
+        self.assertEqual(expected, actual)

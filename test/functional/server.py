@@ -13,6 +13,8 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
+from __future__ import print_function
+
 
 import os
 
@@ -29,8 +31,6 @@ from gofer.rmi.async import ReplyConsumer
 from gofer.metrics import Timer
 from gofer.proxy import Agent as RealAgent
 from gofer.messaging import Queue, Authenticator, ValidationFailed
-
-from plugins import *
 
 ROOT = os.path.expanduser('~/.gofer')
 mkdir(ROOT)
@@ -64,17 +64,16 @@ class TestAuthenticator(Authenticator):
         h = sha256()
         h.update(message)
         digest = h.hexdigest()
-        # print 'signed: %s' % digest
+        # print('signed: {}'.format(digest)
         return digest
 
     def validate(self, document, message, signature):
         digest = self.sign(message)
         valid = signature == digest
-        # print 'matching signatures: [%s, %s]' % (signature, digest)
+        # print('matching signatures: [{}, {}]'.format(signature, digest))
         if valid:
             return
-        raise ValidationFailed(
-            'matching signatures: [%s, %s]' % (signature, digest))
+        raise ValidationFailed('matching signatures: [{}, {}]'.format(signature, digest))
 
 
 class ListOption(Option):
@@ -91,7 +90,7 @@ class ListOption(Option):
 
 
 def on_reply(reply):
-    print 'REPLY [%s]\n%s' % (dt.now(), reply)
+    print('REPLY [{}]\n{}'.format(dt.now(), reply))
 
 
 def demo(agent):
@@ -101,69 +100,66 @@ def demo(agent):
 
     # admin hello
     admin = agent.Admin()
-    print admin.hello()
+    print(admin.hello())
     
     # misc
     dog = agent.Dog()
     repolib = agent.RepoLib()
-    print dog.bark('RUF')
-    print dog.bark('hello')
-    print dog.wag(3)
-    print dog.bark('hello again')
-    print repolib.update()
+    print(dog.bark('RUF'))
+    print(dog.bark('hello'))
+    print(dog.wag(3))
+    print(dog.bark('hello again'))
+    print(repolib.update())
     
     # test auth failed
     try:
         cat = agent.Cat()
         cat.meow('hello')
     except:
-        print 'Auth failed, damn cats.'
+        print('Auth failed, damn cats.')
 
     # bad return
     try:
-        print cat.returnObject()
-    except Exception, e:
-        print e
+        print(cat.returnObject())
+    except Exception as e:
+        print(e)
         
     # raise bad exception
     try:
-        print cat.badException()
-    except Exception, e:
-        print e
+        print(cat.badException())
+    except Exception as e:
+        print(e)
 
     # test MethodNotFound
     try:
-        print repolib.updated()
-    except Exception, e:
+        print(repolib.updated())
+    except Exception as e:
         log.info('failed:', exc_info=True)
-        print e
+        print(e)
 
     # test NotPermitted
     try:
-        print dog.notpermitted()
-    except Exception, e:
+        print(dog.notpermitted())
+    except Exception as e:
         log.info('failed:', exc_info=True)
-        print e
+        print(e)
 
     # test KeyError raised in plugin
     try:
-        print dog.keyError('jeff')
-    except KeyError, e:
+        print(dog.keyError('jeff'))
+    except KeyError as e:
         log.info('failed:', exc_info=True)
-        print e
-    except Exception, e:
+        print(e)
+    except Exception as e:
         log.info('failed:', exc_info=True)
-        print e
+        print(e)
 
     # test custom Exception
     try:
-        print dog.myError()
-    except MyError, e:
+        print(dog.myError())
+    except Exception as e:
         log.info('failed:', exc_info=True)
-        print e
-    except Exception, e:
-        log.info('failed:', exc_info=True)
-        print e
+        print(e)
 
 
 def threads(n=10):
@@ -173,7 +169,7 @@ def threads(n=10):
         t = Thread(name=name, target=main)
         t.setDaemon(True)
         t.start()
-        print 'thread: %s, started' % t.getName()
+        print('thread: {}, started'.format(t.getName()))
     return t
 
 
@@ -183,22 +179,22 @@ def test_performance():
     dog = agent.Dog()
     t = Timer()
     t.start()
-    print 'measuring performance ...'
+    print('measuring performance ...')
     for i in range(0, N):
         dog.bark('performance!')
     t.stop()
-    print 'total=%s, percall=%f (ms)' % (t, (t.duration()/N)*1000)
+    print('total={}, percall={} (ms)'.format(t, (t.duration()/N)*1000))
     # sys.exit(0)
     # ASYNCHRONOUS
     agent = Agent(wait=0)
     dog = agent.Dog()
     t = Timer()
     t.start()
-    print 'measuring (async) performance ...'
+    print('measuring (async) performance ...')
     for i in range(0, N):
         dog.bark('performance!')
     t.stop()
-    print 'total=%s, percall=%f (ms)' % (t, (t.duration()/N)*1000)
+    print('total={}, percall={} (ms)'.format(t, (t.duration()/N)*1000))
     sys.exit(0)
 
 
@@ -210,12 +206,12 @@ def test_memory():
     dog = agent.Dog()
     t = Timer()
     t.start()
-    print 'testing memory ...'
+    print('testing memory ...')
     for n in range(0, N):
         dog.bark('hello!')
-        print 'tested %d' % n
+        print('tested {}'.format(n))
     t.stop()
-    print 'total=%s, percall=%f (ms)' % (t, (t.duration()/N)*1000)
+    print('total={}, percall={} (ms)'.format(t, (t.duration()/N)*1000))
     sys.exit(0)
 
 
@@ -230,9 +226,9 @@ def test_triggers():
     agent = Agent(trigger=1)
     dog = agent.Dog()
     t = dog.bark('delayed!')
-    print t
+    print(t)
     t()
-    print 'Manual trigger, OK'
+    print('Manual trigger, OK')
     
 
 def demo_pam_authentication(yp, exit=0):
@@ -241,15 +237,15 @@ def demo_pam_authentication(yp, exit=0):
     # basic success
     agent = Agent(user=user, password=password)
     dog = agent.Dog()
-    print dog.testpam()
+    print(dog.testpam())
     # @user synonym
     agent = Agent(user=user, password=password)
     dog = agent.Dog()
-    print dog.testpam2()
+    print(dog.testpam2())
     # the @pam with specified service
     agent = Agent(user=user, password=password)
     dog = agent.Dog()
-    print dog.testpam3()
+    print(dog.testpam3())
     # no user
     agent = Agent()
     try:
@@ -257,7 +253,7 @@ def demo_pam_authentication(yp, exit=0):
         dog.testpam()
         raise Exception('Exception (UserRequired) expected')
     except UserRequired:
-        print 'no user, OK'
+        print('no user, OK')
     # no password
     agent = Agent(user=user)
     try:
@@ -265,7 +261,7 @@ def demo_pam_authentication(yp, exit=0):
         dog.testpam()
         raise Exception('Exception (PasswordRequired) expected')
     except PasswordRequired:
-        print 'no password, OK'
+        print('no password, OK')
     # wrong user
     agent = Agent(user='xx', password='xx')
     try:
@@ -273,7 +269,7 @@ def demo_pam_authentication(yp, exit=0):
         dog.testpam()
         raise Exception('Exception (UserNotAuthorized) expected')
     except UserNotAuthorized:
-        print 'wrong user, OK'
+        print('wrong user, OK')
     # PAM failed
     agent = Agent(user=user, password='xx')
     try:
@@ -281,7 +277,7 @@ def demo_pam_authentication(yp, exit=0):
         dog.testpam()
         raise Exception('Exception (NotAuthenticated) expected')
     except NotAuthenticated:
-        print 'PAM not authenticated, OK'
+        print('PAM not authenticated, OK')
     # PAM failed, invalid service
     agent = Agent(user=user, password='xx')
     try:
@@ -289,7 +285,7 @@ def demo_pam_authentication(yp, exit=0):
         dog.testpam4()
         raise Exception('Exception (NotAuthenticated) expected')
     except NotAuthenticated:
-        print 'PAM not authenticated, invalid service, OK'
+        print('PAM not authenticated, invalid service, OK')
     if exit:
         sys.exit(0)
 
@@ -301,17 +297,17 @@ def demo_layered_security(yp, exit=0):
     for user in ('jortel', 'jortel'):
         agent = Agent(user=user, password=password)
         dog = agent.Dog()
-        print dog.testLayered()
+        print(dog.testLayered())
     # mixed user and secret
     agent = Agent(user=user, password=password, secret='elmer')
     dog = agent.Dog()
-    print dog.testLayered2()
+    print(dog.testLayered2())
     dog = agent.Dog()
-    print dog.testLayered2()
+    print(dog.testLayered2())
     try:
         agent = Agent()
         dog = agent.Dog()
-        print dog.testLayered2()
+        print(dog.testLayered2())
         raise Exception('Exception (UserRequired) expected')
     except UserRequired:
         pass
@@ -323,7 +319,7 @@ def demo_shared_secret(exit=0):
     # success
     agent = Agent(secret='garfield')
     cat = agent.Cat()
-    print cat.meow('secret, OK')
+    print(cat.meow('secret, OK'))
     # no secret
     agent = Agent()
     try:
@@ -331,7 +327,7 @@ def demo_shared_secret(exit=0):
         cat.meow('secret, OK')
         raise Exception('Exception (SecretRequired) expected')
     except SecretRequired:
-        print 'secret required, OK'
+        print('secret required, OK')
     # wrong secret
     agent = Agent(secret='foo')
     try:
@@ -339,7 +335,7 @@ def demo_shared_secret(exit=0):
         cat.meow('secret, OK')
         raise Exception('Exception (SecretNotMatched) expected')
     except SecretNotMatched:
-        print 'secret not matched, OK'
+        print('secret not matched, OK')
     if exit:
         sys.exit(0)
         
@@ -356,12 +352,12 @@ def demo_constructors(exit=0):
     agent = Agent()
     for name, age in (('jeff', 10), ('bart', 45),):
         cowboy = agent.Cowboy(name, age=age)
-        print cowboy.howdy()
+        print(cowboy.howdy())
         assert(cowboy.name() == name)
         assert(cowboy.age() == age)
     try:
         cowboy = agent.Cowboy()
-        print cowboy.howdy()
+        print(cowboy.howdy())
         raise Exception('Cowboy() should have failed.')
     except TypeError:
         pass
@@ -372,7 +368,7 @@ def demo_constructors(exit=0):
 def demo_getitem(exit=0):
     agent = Agent()
     fn = agent['Dog']['bark']
-    print fn('RUF')
+    print(fn('RUF'))
     if exit:
         sys.exit(0)
         
@@ -381,16 +377,16 @@ def demo_progress(exit=0):
     # synchronous
     def fn(report):
         pct = (float(report['completed'])/float(report['total']))*100
-        print 'Progress: sn=%s, data=%s, total=%s, complete=%s, pct:%d%% details=%s' % \
-            (report['sn'],
-             report['data'],
-             report['total'],
-             report['completed'],
-             int(pct),
-             report['details'])
+        print('Progress: sn={}, data={}, total={], complete={}, pct:{}% details={}'.format(
+            report['sn'],
+            report['data'],
+            report['total'],
+            report['completed'],
+            int(pct),
+            report['details']))
     agent = Agent(progress=fn, data={4: 5})
     p = agent.Progress()
-    print p.send(4)
+    print(p.send(4))
     if exit:
         sys.exit(0)
     
@@ -401,52 +397,52 @@ def main():
     # test ttl (not expired)
     agent = Agent(ttl=3)
     dog = agent.Dog()
-    print dog.sleep(1)
+    print(dog.sleep(1))
 
     # TTL
     agent = Agent(ttl=10)
     dog = agent.Dog()
-    print dog.sleep(1)
+    print(dog.sleep(1))
 
     # synchronous
-    print '(demo) synchronous'
+    print('(demo) synchronous')
     agent = Agent()
     demo(agent)
 
     # asynchronous (fire and forget)
-    print '(demo) asynchronous fire-and-forget'
+    print('(demo) asynchronous fire-and-forget')
     agent = Agent(wait=0)
     demo(agent)
 
     # asynchronous
-    print '(demo) asynchronous'
+    print('(demo) asynchronous')
     agent = Agent(reply=address)
     demo(agent)
 
 
 def smoke_test(exit=0):
-    print 'running smoke test ...'
+    print('running smoke test ...')
     agent = Agent()
-    for T in range(0, 50):
-        print 'test: %d' % T
+    for T in range(0, 500):
+        print('test: {}'.format(T))
         agent.testplugin.echo('have a nice day')
         admin = agent.Admin()
-        print admin.hello()
+        print(admin.hello())
         dog = agent.Dog()
-        print dog.bark('RUF')
-        print dog.bark('hello')
-        print dog.wag(3)
-        print dog.bark('hello again')
+        print(dog.bark('RUF'))
+        print(dog.bark('hello'))
+        print(dog.wag(3))
+        print(dog.bark('hello again'))
         rabbit = agent.Rabbit()
-        print rabbit.hop(T)
+        print(rabbit.hop(T))
         lion = agent.Lion()
-        print lion.roar()
+        print(lion.roar())
         duck = agent.Duck()
-        print duck.fly()
-        print duck.quack('aflak')
+        print(duck.fly())
+        print(duck.quack('aflak'))
         panther = agent.Panther()
-        print panther.test_progress()
-    print 'DONE'
+        print(panther.test_progress())
+    print('DONE')
     if exit:
         sys.exit(0)
 
@@ -458,7 +454,7 @@ def test_cancel(exit=0):
     agent = Agent()
     admin = agent.Admin()
     canceled = admin.cancel(sn)
-    print canceled
+    print(canceled)
     if exit:
         sys.exit(0)
 
@@ -466,9 +462,9 @@ def test_cancel(exit=0):
 def test_forked(exit=0, with_cancel=1):
     agent = Agent()
     panther = agent.Panther()
-    print 'forked test(): %s' % panther.test()
-    print 'forked test_progress(): %s' % panther.test_progress()
-    print 'forked test_suicide(): %s' % panther.test_suicide()
+    print('forked test(): {}'.format(panther.test()))
+    print('forked test_progress(): {}'.format(panther.test_progress()))
+    print('forked test_suicide(): {}'.format(panther.test_suicide()))
     try:
         panther.test_exceptions()
     except ValueError:
@@ -477,10 +473,10 @@ def test_forked(exit=0, with_cancel=1):
         agent = Agent(wait=0)
         panther = agent.Panther()
         sn = panther.sleep(30)
-        print 'started: %s' % sn
+        print('started: {}'.format(sn))
         sleep(3)
         admin = agent.Admin()
-        print 'cancelled: {}'.format(admin.cancel(sn))
+        print('cancelled: {}'.format(admin.cancel(sn)))
     if exit:
         sys.exit(0)
 
@@ -536,9 +532,8 @@ if __name__ == '__main__':
     reply_consumer = ReplyConsumer(queue, url=url, authenticator=authenticator)
     reply_consumer.start(on_reply)
 
-    # test_cancel()
-    # demo_progress(1)
-    # test_performance()
+    test_cancel()
+    demo_progress()
 
     # demo_authentication(yp)
     smoke_test()
@@ -548,16 +543,16 @@ if __name__ == '__main__':
 
     n_threads = int(options.threads)
     if n_threads:
-        print '======= RUNNING %d THREADS ============' % n_threads
+        print('======= RUNNING {} THREADS ============'.format(n_threads))
         sleep(2)
         last = threads(n_threads)
         last.join()
         sys.exit(0)
     for i in range(0, 100):
-        print '======= %d ========' % i
+        print('======= {} ========'.format(i))
         main()
 
     test_performance()
-    print 'finished.'
+    print('finished.')
 
 

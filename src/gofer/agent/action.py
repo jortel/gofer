@@ -13,13 +13,12 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-import inspect
-
 from logging import getLogger
 from datetime import datetime as dt
 from datetime import timedelta
 
-from gofer.common import utf8, released
+from gofer.compat import str
+from gofer.common import released
 
 
 log = getLogger(__name__)
@@ -28,6 +27,8 @@ log = getLogger(__name__)
 class Action:
     """
     Abstract recurring action (base).
+    :ivar name: The action name.
+    :type name: str
     :ivar target: The action target.
     :type target: (method|function)
     :ivar interval: The run interval.
@@ -36,8 +37,10 @@ class Action:
     :type last: datetime
     """
 
-    def __init__(self, target, **interval):
+    def __init__(self, name, target, **interval):
         """
+        :param name: The action name.
+        :type name: str
         :param target: The action target.
         :type target: (method|function)
         :keyword interval: The run interval.
@@ -49,25 +52,10 @@ class Action:
             - weeks
         :type interval: dict
         """
+        self.name = name
         self.target = target
-        for k, v in interval.items():
-            interval[k] = int(v)
-        self.interval = timedelta(**interval)
+        self.interval = timedelta(**{k: int(v) for k, v in interval.items()})
         self.last = dt(1900, 1, 1)
-
-    def name(self):
-        """
-        Get action name.  Default to class name.
-        :return: The action name.
-        :rtype: str
-        """
-        t = self.target
-        if inspect.ismethod(t):
-            cls = t.im_class
-        else:
-            cls = t.__module__
-        method = t.__name__
-        return '%s.%s()' % (cls, method)
 
     @released
     def __call__(self):
@@ -79,13 +67,19 @@ class Action:
             now = dt.utcnow()
             if _next < now:
                 self.last = now
-                log.debug('perform "%s"', self.name())
+                log.debug('perform "%s"', self.name)
                 self.target()
-        except Exception, e:
+        except Exception as e:
             log.exception(e)
 
-    def __unicode__(self):
-        return self.name()
+    def __eq__(self, other):
+        return isinstance(other, Action) and \
+            other.name == self.name and \
+            other.target and \
+            other.interval == self.interval
+
+    def __repr__(self):
+        return str(self.name)
 
     def __str__(self):
-        return utf8(self)
+        return str(self.name)

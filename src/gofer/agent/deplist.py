@@ -71,7 +71,7 @@ class DepList:
             while len(self.stack):
                 try:
                     top = self.top()
-                    ref = top[1].next()
+                    ref = next(top[1])
                     ref_d = self.index.get(ref)
                     if ref_d is None:
                         continue

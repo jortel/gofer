@@ -65,7 +65,7 @@ class TestReplies(TestCase):
         try:
             reply()
             self.fail(msg='End not raised')
-        except protocol.End, end:
+        except protocol.End as end:
             self.assertEqual(end.result, payload)
 
     @patch(MODULE + '.Context.current')
@@ -97,7 +97,7 @@ class TestReplies(TestCase):
         try:
             reply()
             self.fail(msg='ValueError not raised')
-        except ValueError, e:
+        except ValueError as e:
             self.assertEqual(e, payload)
 
     def test_ping(self):

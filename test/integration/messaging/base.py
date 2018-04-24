@@ -8,7 +8,9 @@
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+from __future__ import print_function
 
+from gofer.compat import str
 from gofer.messaging.consumer import Consumer
 from gofer.messaging import Producer, Reader, Exchange, Queue
 
@@ -43,10 +45,10 @@ class Test(object):
         self.url = url
 
     def producer_reader(self, address):
-        print 'using producer/reader'
+        print('using producer/reader')
         with Producer(url=self.url) as p:
             for x in range(0, N):
-                print '#%d - sent: %s' % (x, address)
+                print('#{} - sent: {}'.format(x, address))
                 p.send(str(address))
         received = 0
         queue = Queue(address.queue)
@@ -56,12 +58,12 @@ class Test(object):
                 if m is None:
                     break
                 m.ack()
-                print '#%d - received: %s' % (received, d)
+                print('#{} - received: {}'.format(received, d))
                 received += 1
-        print 'end'
+        print('end')
 
     def producer_consumer(self, address):
-        print 'using producer/consumer'
+        print('using producer/consumer')
 
         class TestCon(Consumer):
 
@@ -72,7 +74,7 @@ class Test(object):
 
             def dispatch(self, document):
                 self.received += 1
-                print '%d/%d - %s' % (self.received, N, document)
+                print('{}/{} - {}'.format(self.received, N, document))
                 if self.received == N:
                     self.stop()
 
@@ -81,14 +83,14 @@ class Test(object):
 
         with Producer(url=self.url) as p:
             for x in range(0, N):
-                print '#%d - sent: %s' % (x, address)
+                print('#{} - sent: {}'.format(x, address))
                 p.send(str(address))
 
         c.join()
-        print 'end'
+        print('end')
 
     def test_no_exchange(self):
-        print 'test builtin (direct) exchange'
+        print('test builtin (direct) exchange')
         address = Address('test.10')
         queue = Queue(address.queue)
         queue.durable = False
@@ -96,7 +98,7 @@ class Test(object):
         self.producer_reader(address)
 
     def test_custom_direct_exchange(self):
-        print 'test custom (direct) exchange'
+        print('test custom (direct) exchange')
         address = Address('test_11.direct/test.11')
         exchange = Exchange(address.exchange, policy='direct')
         exchange.durable = False
@@ -108,7 +110,7 @@ class Test(object):
         self.producer_reader(address)
 
     def test_custom_topic_exchange(self):
-        print 'test custom (topic) exchange'
+        print('test custom (topic) exchange')
         address = Address('test_12.topic/test.12')
         exchange = Exchange(address.exchange, policy='topic')
         exchange.durable = False
@@ -120,7 +122,7 @@ class Test(object):
         self.producer_reader(address)
 
     def test_crud(self):
-        print 'test CRUD'
+        print('test CRUD')
         queue = Queue('test.13')
         queue.durable = False
         queue.declare(self.url)
@@ -135,5 +137,4 @@ class Test(object):
         self.test_no_exchange()
         self.test_custom_direct_exchange()
         self.test_custom_topic_exchange()
-        print 'DONE'
-
+        print('DONE')

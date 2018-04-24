@@ -285,12 +285,14 @@ class TestReceiver(TestCase):
         channel.wait.assert_called_once_with(basic.Deliver)
 
     @patch('select.epoll')
-    def test_wait_nothing(self, epoll):
+    @patch('gofer.messaging.adapter.amqp.consumer.Basic')
+    def test_wait_nothing(self, basic, epoll):
         fd = 0
         channel = Mock(method_queue=[])
         timeout = 10
 
         epoll.return_value.poll.return_value = []
+        basic.Deliver = (10, 70)
 
         # test
         Receiver._wait(fd, channel, timeout)
@@ -380,4 +382,4 @@ class TestReceiver(TestCase):
         r.inbox.empty.return_value = False
         r.inbox.get.side_effect = Empty
         r._wait = Mock(side_effect=r.inbox.put)
-        self.assertRaises(r.fetch)
+        self.assertRaises(Empty, r.fetch)

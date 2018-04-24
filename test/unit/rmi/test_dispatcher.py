@@ -11,6 +11,12 @@
 
 from unittest import TestCase
 
+from gofer.rmi.dispatcher import DispatchError, NamespaceNotFound, MemberNotFound
 
-class Test(TestCase):
-    pass
+
+class TestExceptions(TestCase):
+
+    def test_exceptions(self):
+        self.assertTrue(isinstance(DispatchError(), Exception))
+        self.assertTrue(isinstance(NamespaceNotFound('google'), DispatchError))
+        self.assertTrue(isinstance(MemberNotFound('google', 'search'), DispatchError))

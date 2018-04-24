@@ -12,21 +12,37 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from __future__ import absolute_import
 
-from .common import Thread, Singleton, ThreadSingleton
-from .common import synchronized, conditional
-from .common import Options
+dir="$(mktemp -d -t)"
+nosetests="nosetests-3"
+virtualenv="virtualenv-3"
+pip="pip3"
 
-# process name used to build the following paths:
-#   /etc/<NAME>
-#   /etc/<NAME>/agent.conf
-#   /etc/<NAME>/conf.d
-#   /etc/<NAME>/plugins
-#   /var/lib/<NAME>
-#   /var/lib/<NAME>/messaging
-#   /usr/lib/<NAME>/<plugin>
-#   /var/run/<NAME>d.pid
-#   ~/.<NAME>/agent.conf
+clean()
+{
+  find ../ -name .coverage -exec rm -rf {} \;
+}
 
-NAME = __name__
+run()
+{
+  echo $dir
+  ${virtualenv} $dir
+  source $dir/bin/activate
+  ${pip} install future
+  ${pip} install six
+  ${pip} install nose
+  ${pip} install nose-cov
+  ${pip} install mock
+  ${pip} install iniparse
+  ${pip} install -e ../src/
+  ${nosetests} --with-coverage --cover-package=gofer `find unit -type d`
+}
+
+main()
+{
+  clean
+  run
+  clean
+}
+
+main

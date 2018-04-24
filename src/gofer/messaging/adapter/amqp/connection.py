@@ -8,6 +8,8 @@
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+from six import with_metaclass
+
 
 import ssl
 
@@ -17,7 +19,8 @@ from socket import error as SocketError
 from amqp import Connection as RealConnection
 from amqp import ConnectionError
 
-from gofer.common import ThreadSingleton, utf8
+from gofer.compat import str
+from gofer.common import ThreadSingleton
 from gofer.messaging.adapter.model import Connector, BaseConnection
 from gofer.messaging.adapter.connect import retry
 
@@ -31,12 +34,10 @@ PASSWORD = 'guest'
 CONNECTION_EXCEPTIONS = (IOError, SocketError, ConnectionError, AttributeError)
 
 
-class Connection(BaseConnection):
+class Connection(with_metaclass(ThreadSingleton, BaseConnection)):
     """
     An AMQP broker connection.
     """
-
-    __metaclass__ = ThreadSingleton
 
     @staticmethod
     def ssl_domain(connector):
@@ -88,7 +89,7 @@ class Connection(BaseConnection):
             # already open
             return
         connector = Connector.find(self.url)
-        host = ':'.join((connector.host, utf8(connector.port)))
+        host = ':'.join((connector.host, str(connector.port)))
         virtual_host = connector.virtual_host or VIRTUAL_HOST
         domain = self.ssl_domain(connector)
         userid = connector.userid or USERID
@@ -120,5 +121,5 @@ class Connection(BaseConnection):
         try:
             connection.close()
             log.info('closed: %s', self.url)
-        except Exception, pe:
-            log.exception(utf8(pe))
+        except Exception as pe:
+            log.exception(str(pe))

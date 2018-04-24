@@ -23,7 +23,8 @@ from threading import RLock
 from logging import getLogger
 from time import sleep
 
-from gofer.common import Thread, synchronized, utf8
+from gofer.compat import str
+from gofer.common import Thread, synchronized
 
 
 log = getLogger(__name__)
@@ -64,7 +65,7 @@ def digest(path):
                 while True:
                     s = fp.read(10240)
                     if s:
-                        _hash.update(s)
+                        _hash.update(s.encode('utf8'))
                     else:
                         break
             finally:
@@ -72,7 +73,7 @@ def digest(path):
         # directory
         else:
             for s in os.listdir(path):
-                _hash.update(s)
+                _hash.update(s.encode('utf8'))
         return _hash.hexdigest()
     except (IOError, OSError):
         pass
@@ -119,7 +120,7 @@ class Tracker(object):
         self.digest = digest
         try:
             self.target(self.path)
-        except Exception, e:
+        except Exception as e:
             log.info('path: "%s" call raised: "%s"', self, e)
 
     def __eq__(self, other):
@@ -128,11 +129,8 @@ class Tracker(object):
     def __hash__(self):
         return hash((self.path, self.target))
 
-    def __unicode__(self):
-        return self.path
-
     def __str__(self):
-        return utf8(self)
+        return str(self.path)
 
 
 class PathMonitor(Thread):

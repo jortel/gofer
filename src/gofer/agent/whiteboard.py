@@ -12,18 +12,20 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
+from six import with_metaclass
+
 
 from threading import RLock
-from gofer import Singleton, synchronized, utf8
+
+from gofer import Singleton, synchronized
+from gofer.compat import str
 
 
-class Whiteboard:
+class Whiteboard(with_metaclass(Singleton)):
     """
     Provides a dict-like object used to publish
     information to other plugins.
     """
-    
-    __metaclass__ = Singleton
     
     def __init__(self):
         self.__dict = {}
@@ -48,11 +50,7 @@ class Whiteboard:
     @synchronized
     def __repr__(self):
         return repr(self.__dict)
-    
-    @synchronized
-    def __unicode__(self):
-        return unicode(self.__dict)
 
     @synchronized
     def __str__(self):
-        return utf8(self)
+        return str(self.__dict)

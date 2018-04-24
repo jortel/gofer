@@ -17,7 +17,8 @@ from logging import getLogger
 from qpid.messaging import NotFound as _NotFound
 from qpid.messaging import ConnectionError, LinkError
 
-from gofer.common import Thread, utf8
+from gofer.compat import str
+from gofer.common import Thread
 from gofer.messaging.adapter.model import NotFound
 
 
@@ -34,14 +35,14 @@ def reliable(fn):
             try:
                 repair()
                 return fn(thing, *args, **kwargs)
-            except _NotFound, e:
+            except _NotFound as e:
                 raise NotFound(*e.args)
-            except LinkError, le:
-                log.error(utf8(le))
+            except LinkError as le:
+                log.error(str(le))
                 repair = thing.repair
                 sleep(DELAY)
-            except ConnectionError, pe:
-                log.error(utf8(pe))
+            except ConnectionError as pe:
+                log.error(str(pe))
                 repair = thing.repair
                 sleep(DELAY)
     return _fn

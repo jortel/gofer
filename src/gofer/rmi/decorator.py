@@ -13,19 +13,35 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-from gofer.collator import Collator
+from gofer import inspection
+from gofer.collation import Collator
 
 
 class Remote:
+    """
+    Collection of @remote decorated functions (method-functions).
+    """
 
     functions = []
 
     @staticmethod
     def add(fn):
+        """
+        Add the specified function.
+
+        Args:
+            fn (function): A function to be added.
+        """
         Remote.functions.append(fn)
 
     @staticmethod
     def purge(mod):
+        """
+        Purge functions for the specified module.
+
+        Args:
+            mod (module): A module.
+        """
         purged = []
         for fn in Remote.find(mod):
             purged.append(fn)
@@ -34,22 +50,37 @@ class Remote:
 
     @staticmethod
     def find(mod):
+        """
+        Yield all functions in the specified module.
+
+        Args:
+            mod (module): A module.
+
+        Yields:
+            function: Each function.
+        """
         for fn in Remote.functions:
-            if fn.__module__ == mod:
+            if inspection.module(fn) == mod:
                 yield fn
 
     @staticmethod
     def clear():
+        """
+        Clear the collection of functions.
+        """
         Remote.functions = []
 
     @staticmethod
     def collated():
+        """
+        Get a collated list of @remote decorated functions.
+
+        Returns:
+            list: Of (gofer.collation.Class|gofer.collation.Module)
+        """
         collated = []
-        c = Collator()
-        classes, functions = c.collate(Remote.functions)
-        for c in classes.keys():
-            collated.append(c)
-        for m in functions.keys():
-            m.__name__ = m.__name__.split('.')[-1]
-            collated.append(m)
+        collator = Collator()
+        classes, functions = collator({f: {} for f in Remote.functions})
+        collated.extend(classes)
+        collated.extend(functions)
         return collated

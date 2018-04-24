@@ -12,6 +12,7 @@
 from logging import basicConfig
 
 from base import Test
+
 from gofer.messaging.adapter.factory import Loader
 
 
@@ -31,6 +32,7 @@ def run():
     adapter = loader.catalog['amqp']
     test = Test(URL, adapter)
     test()
+
 
 if __name__ == '__main__':
     run()

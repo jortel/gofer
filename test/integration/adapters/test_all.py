@@ -8,16 +8,19 @@
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+from __future__ import absolute_import
 
-import test_amqp
-import test_proton
-import test_qpid
+
+from . import test_amqp
+from . import test_proton
+from . import test_qpid
 
 
 def run():
     test_amqp.run()
     test_proton.run()
     test_qpid.run()
+
 
 if __name__ == '__main__':
     run()

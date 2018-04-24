@@ -21,7 +21,7 @@ import os
 
 from time import sleep, time
 from logging import getLogger
-from Queue import Queue, Empty
+from queue import Queue, Empty
 
 from gofer import NAME, Thread
 from gofer.common import mkdir, rmdir, unlink
@@ -48,13 +48,10 @@ class Pending(object):
         :param path: The destination path.
         :type path: str
         """
-        fp = open(path, 'w+')
-        try:
+        with open(path, 'w+') as fp:
             body = request.dump()
             fp.write(body)
             log.debug('wrote [%s]: %s', path, body)
-        finally:
-            fp.close()
 
     @staticmethod
     def _read(path):
@@ -65,8 +62,7 @@ class Pending(object):
         :return: The read request.
         :rtype: Document
         """
-        fp = open(path)
-        try:
+        with open(path) as fp:
             try:
                 request = Document()
                 body = fp.read()
@@ -76,8 +72,6 @@ class Pending(object):
             except ValueError:
                 log.error('%s corrupt (discarded)', path)
                 unlink(path)
-        finally:
-            fp.close()
 
     def _list(self):
         """
@@ -164,7 +158,7 @@ class Pending(object):
             unlink(path)
             log.debug('%s committed', sn)
         except KeyError:
-            log.warn('%s not found for commit', sn)
+            log.warning('%s not found for commit', sn)
 
     def delete(self):
         """

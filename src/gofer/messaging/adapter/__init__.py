@@ -10,18 +10,20 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 #
 # Jeff Ortel <jortel@redhat.com>
+from __future__ import absolute_import
 
-from gofer.messaging.adapter.url import \
+
+from .url import \
     URL
 
-from gofer.messaging.adapter.factory import \
+from .factory import \
     Loader, \
     Adapter, \
     AdapterError, \
     AdapterNotFound, \
     NoAdaptersLoaded
 
-from gofer.messaging.adapter.model import \
+from .model import \
     SSL, \
     Connector, \
     Broker, \

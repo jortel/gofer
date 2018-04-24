@@ -19,10 +19,9 @@ Proxies (stubs) are the *local* representation of *remote*
 classes on which we invoke methods.
 """
 
-from new import classobj
 from threading import RLock
 
-from gofer.common import Options, synchronized
+from gofer.common import Options, newT, synchronized
 from gofer.rmi.policy import Policy
 from gofer.rmi.dispatcher import Request
 
@@ -46,8 +45,8 @@ class Builder(object):
         :return: A stub instance.
         :rtype: Stub
         """
-        stub = classobj(name, (Stub,), {})
-        inst = stub(url, address, options)
+        T = newT(name, (Stub,))
+        inst = T(url, address, options)
         return inst
 
 

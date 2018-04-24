@@ -135,6 +135,16 @@ class TestReliable(TestCase):
         url = Mock()
         args = (messenger.return_value,)
 
+        def _enter():
+            messenger.return_value.open()
+            return messenger.return_value
+
+        def _exit(*unused):
+            messenger.return_value.close()
+
+        messenger.return_value.__enter__ = Mock(side_effect=_enter)
+        messenger.return_value.__exit__ = Mock(side_effect=_exit)
+
         # test
         wrapped = endpoint(fn)
         wrapped(url)

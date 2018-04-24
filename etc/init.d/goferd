@@ -1,5 +1,5 @@
 #!/bin/bash
-# goferd         This shell script controls the gofer daemon.
+# goferd        This shell script controls the gofer daemon.
 # Author:       Jeff Ortel <jortel@redhat.com>
 # chkconfig:    345 97 2
 # description:  Gofer agent responds to commands from gofer server.
@@ -11,58 +11,58 @@ export SYSTEMCTL_IGNORE_DEPENDENCIES=1
 
 . /etc/init.d/functions
 
-BINDIR=/usr/bin
 PROG=goferd
-LOCK=/var/lock/subsys/$PROG
-PID=/var/run/$PROG.pid
+BINDIR=/usr/bin
+PYTHON=${BINDIR}/python
+LOCK=/var/lock/subsys/${PROG}
+PID=/var/run/${PROG}.pid
 
-[ -f /etc/sysconfig/$PROG ] && . /etc/sysconfig/$PROG
+[ -f /etc/sysconfig/${PROG} ] && . /etc/sysconfig/${PROG}
 
-# this is a no-op if the env var isn't set
 export PYTHONOPTIMIZE
 
 start() {
-  if [ -e $PID ]; then
-    pid=$(cat $PID)
+  if [ -e ${PID} ]; then
+    pid=$(cat ${PID})
   fi
-  kill -0 $pid >/dev/null 2>&1
+  kill -0 ${pid} >/dev/null 2>&1
   RETVAL=$?
-  if [ $RETVAL -eq "0" ]; then
-    echo "$PROG ($pid) already running."
-    return $RETVAL
+  if [ ${RETVAL} -eq "0" ]; then
+    echo "${PROG} (${pid}) already running."
+    return ${RETVAL}
   fi
   echo -n "Starting $PROG"
-  $BINDIR/$PROG
+  ${PYTHON} ${BINDIR}/${PROG}
   RETVAL=$?
-  if [ $RETVAL -eq "0" ]; then
-    touch $LOCK
+  if [ ${RETVAL} -eq "0" ]; then
+    touch ${LOCK}
     success
   else
     failure
   fi
   echo
-  return $RETVAL
+  return ${RETVAL}
 }
 
 stop() {
-  echo -n "Stopping $PROG"
-  killproc -p $PID $PROG
+  echo -n "Stopping ${PROG}"
+  killproc -p ${PID} ${PROG}
   RETVAL=$?
   echo
-  rm -f $LOCK
-  return $RETVAL
+  rm -f ${LOCK}
+  return ${RETVAL}
 }
 
 status() {
-  if [ -e $PID ]; then
-    pid=$(cat $PID)
+  if [ -e ${PID} ]; then
+    pid=$(cat ${PID})
   fi
-  kill -0 $pid >/dev/null 2>&1
+  kill -0 ${pid} >/dev/null 2>&1
   RETVAL=$?
-  if [ $RETVAL -eq "0" ]; then
-    echo "$PROG ($pid) is running."
+  if [ ${RETVAL} -eq "0" ]; then
+    echo "${PROG} (${pid}) is running."
   else
-    echo "$PROG is not running."
+    echo "${PROG} is not running."
   fi
 }
 
@@ -90,4 +90,4 @@ case "$1" in
   exit 1
 esac
 
-exit $RETVAL
+exit ${RETVAL}

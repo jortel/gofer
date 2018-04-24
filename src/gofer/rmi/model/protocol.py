@@ -15,7 +15,7 @@
 
 from logging import getLogger
 
-from gofer.common import utf8
+from gofer.compat import str
 
 
 log = getLogger(__file__)
@@ -87,7 +87,7 @@ class Message(object):
         log.debug('Sent: %s', self)
 
     def __str__(self):
-        return ':'.join((self.__class__.__name__, utf8(self.__dict__)))
+        return ':'.join((self.__class__.__name__, str(self.__dict__)))
 
 
 class Reply(Message):
@@ -169,7 +169,7 @@ class ProgressPayload(object):
         return str(self)
 
     def __str__(self):
-        return utf8(self.__dict__)
+        return str(self.__dict__)
 
 
 class Progress(Reply):

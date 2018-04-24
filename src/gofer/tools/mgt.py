@@ -12,6 +12,8 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
+from __future__ import print_function
+
 
 from optparse import OptionParser
 
@@ -38,7 +40,7 @@ def get_options():
 
 def display(reply):
     if reply.result:
-        print reply.result
+        print(reply.result)
 
 
 def main():

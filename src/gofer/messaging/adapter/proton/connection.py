@@ -8,6 +8,8 @@
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+from six import with_metaclass
+
 
 from uuid import uuid4
 from logging import getLogger
@@ -17,7 +19,8 @@ from proton import SSLDomain, SSLException
 from proton.utils import BlockingConnection
 from proton.reactor import DynamicNodeProperties
 
-from gofer.common import ThreadSingleton, utf8
+from gofer.compat import str
+from gofer.common import ThreadSingleton
 from gofer.messaging.adapter.model import Connector, BaseConnection
 from gofer.messaging.adapter.connect import retry
 
@@ -25,12 +28,10 @@ from gofer.messaging.adapter.connect import retry
 log = getLogger(__name__)
 
 
-class Connection(BaseConnection):
+class Connection(with_metaclass(ThreadSingleton, BaseConnection)):
     """
     Proton connection.
     """
-
-    __metaclass__ = ThreadSingleton
 
     @staticmethod
     def ssl_domain(connector):
@@ -99,7 +100,7 @@ class Connection(BaseConnection):
         :return: A sender.
         :rtype: proton.utils.BlockingSender
         """
-        name = utf8(uuid4())
+        name = str(uuid4())
         return self._impl.create_sender(address, name=name)
 
     def receiver(self, address=None, dynamic=False):
@@ -113,10 +114,10 @@ class Connection(BaseConnection):
         :rtype: proton.utils.BlockingReceiver
         """
         options = None
-        name = utf8(uuid4())
+        name = str(uuid4())
         if dynamic:
             # needed by dispatch router
-            options = DynamicNodeProperties({'x-opt-qd.address': unicode(address)})
+            options = DynamicNodeProperties({'x-opt-qd.address': str(address)})
             address = None
         return self._impl.create_receiver(address, name=name, dynamic=dynamic, options=options)
 
@@ -129,5 +130,5 @@ class Connection(BaseConnection):
         try:
             connection.close()
             log.info('closed: %s', self.url)
-        except Exception, pe:
-            log.debug(utf8(pe))
+        except Exception as pe:
+            log.debug(str(pe))

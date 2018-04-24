@@ -12,16 +12,17 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
+from __future__ import print_function
+
 
 import sys
 
 from optparse import OptionParser
 from logging import basicConfig, CRITICAL
 
-from gofer import utf8
+from gofer.compat import str, json
 from gofer.messaging import Connection
 from gofer.messaging.adapter.model import DEFAULT_URL
-from gofer.messaging.model import json
 from gofer.proxy import Agent
 
 
@@ -72,36 +73,36 @@ def get_options():
 
 def validate(options):
     if not options.address:
-        print 'Address must be specified'
+        print('Address must be specified')
         parser.print_help()
         sys.exit(1)
     if not options.target:
-        print 'Target must be specified'
+        print('Target must be specified')
         parser.print_help()
         sys.exit(1)
     if '.' not in options.target:
-        print 'Target must be: <class>.<method>'
+        print('Target must be: <class>.<method>')
         parser.print_help()
         sys.exit(1)
     if options.ttl:
         try:
             int(options.ttl)
         except ValueError:
-            print 'TTL must be <int>'
+            print('TTL must be <int>')
             parser.print_help()
             sys.exit(1)
     if options.wait:
         try:
             int(options.wait)
         except ValueError:
-            print 'Wait must be <int>'
+            print('Wait must be <int>')
             parser.print_help()
             sys.exit(1)
     if options.data:
         try:
             json.loads(options.data)
         except ValueError:
-            print 'data must be valid json'
+            print('data must be valid json')
             parser.print_help()
             sys.exit(1)
     if options.input:
@@ -115,9 +116,9 @@ def validate(options):
                 raise ValueError()
             if not isinstance(document[1], dict):
                 raise ValueError()
-        except ValueError, e:
-            print utf8(e)
-            print 'Input must be valid json: [[], {}]'
+        except ValueError as e:
+            print(str(e))
+            print('Input must be valid json: [[], {}]')
             parser.print_help()
             sys.exit(1)
 
@@ -134,7 +135,7 @@ def main():
         g_opt['wait'] = int(options.wait)
     if options.progress:
         def print_report(report):
-            print ''.join((options.progress, str(report['details'])))
+            print(''.join((options.progress, str(report['details']))))
         g_opt['progress'] = print_report
     if options.data:
         g_opt['data'] = json.loads(options.data)
@@ -163,4 +164,4 @@ def main():
         stub = getattr(agent, target[0])
         method = getattr(stub, target[1])
         retval = method(*arguments, **keywords)
-        print retval
+        print(retval)

@@ -14,6 +14,7 @@ from unittest import TestCase
 from mock import patch, Mock
 
 from gofer import NAME
+from gofer.compat import str
 from gofer.decorators import options, remote, direct, fork, pam, user, action
 from gofer.decorators import load, unload, initializer
 from gofer.decorators import DIRECT, FORK

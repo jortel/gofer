@@ -13,6 +13,8 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
+from gofer import inspection
+from gofer import collation
 from gofer.agent.decorator import Actions
 from gofer.agent.reporting import loaded
 from gofer.decorators import options
@@ -30,17 +32,12 @@ def remote(fn):
     return fn
 
 
-class Admin:
+class Admin(object):
     """
     Provides administration.
     """
 
-    def __init__(self, container):
-        """
-        :param container: The plugin container.
-        :type container: gofer.agent.plugin.Container
-        """
-        self.container = container
+    container = None
 
     @remote
     def cancel(self, sn=None, criteria=None):
@@ -113,14 +110,22 @@ class Builtin(object):
     The builtin pseudo-plugin.
     """
 
+    @staticmethod
+    def _dispatcher():
+        collator = collation.Collator()
+        classes, _ = collator({f[1]: {} for f in inspection.methods(Admin)})
+        dispatcher = Dispatcher()
+        dispatcher += classes
+        return dispatcher
+
     def __init__(self, plugin):
         """
         :param plugin: A real plugin.
         :type plugin: gofer.agent.plugin.Plugin
         """
+        Admin.container = plugin.container
         self.pool = ThreadPool(3)
-        self.dispatcher = Dispatcher()
-        self.dispatcher += [Admin(plugin.container)]
+        self.dispatcher = self._dispatcher()
         self.plugin = plugin
         self.latency = 0
 

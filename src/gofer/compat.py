@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011 Red Hat, Inc.
+# Copyright (c) 2018 Red Hat, Inc.
 #
 # This software is licensed to you under the GNU Lesser General Public
 # License as published by the Free Software Foundation; either version
@@ -12,21 +12,13 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from __future__ import absolute_import
+import six
 
-from .common import Thread, Singleton, ThreadSingleton
-from .common import synchronized, conditional
-from .common import Options
+# json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
-# process name used to build the following paths:
-#   /etc/<NAME>
-#   /etc/<NAME>/agent.conf
-#   /etc/<NAME>/conf.d
-#   /etc/<NAME>/plugins
-#   /var/lib/<NAME>
-#   /var/lib/<NAME>/messaging
-#   /usr/lib/<NAME>/<plugin>
-#   /var/run/<NAME>d.pid
-#   ~/.<NAME>/agent.conf
-
-NAME = __name__
+# str|unicode
+str = six.text_type

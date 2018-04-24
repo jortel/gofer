@@ -19,15 +19,15 @@ Action class for gofer agent.
 
 from logging import getLogger
 
-from gofer.common import utf8
-from gofer.collator import Collator
+from gofer.compat import str
+from gofer.collation import Collator
 from gofer.agent.action import Action
 
 
 log = getLogger(__name__)
 
 
-class Actions:
+class Actions(object):
     """
     :cvar functions: The list of decorated functions.
     """
@@ -46,18 +46,19 @@ class Actions:
     
     @staticmethod
     def collated():
+        """
+        Get a collated list of (decorated) actions.
+        :return: List of Action.
+        :rtype: list
+        """
         collated = []
         collator = Collator()
-        classes, functions = collator.collate(Actions.functions)
-        for _class, methods in classes.items():
-            inst = _class()
-            for method, options in methods:
-                method = getattr(inst, method.__name__)
-                action = Action(method, **options)
-                collated.append(action)
-        for module, fn_list in functions.items():
-            for function, options in fn_list:
-                action = Action(function, **options)
+        classes, functions = collator(Actions.functions)
+        namespaces = classes + functions
+        for ns in namespaces:
+            ns = ns()
+            for target in ns:
+                action = Action(str(target), target, **target.options)
                 collated.append(action)
         return collated
 
@@ -95,4 +96,4 @@ class Delegate(object):
             try:
                 fn()
             except Exception:
-                log.exception(utf8(fn))
+                log.exception(str(fn))

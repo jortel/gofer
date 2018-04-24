@@ -8,6 +8,7 @@
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+from six import with_metaclass
 
 """
 Request tracker classes.
@@ -20,7 +21,7 @@ from gofer import Singleton, synchronized, NAME
 from gofer.common import mkdir
 
 
-class Tracker:
+class Tracker(with_metaclass(Singleton)):
     """
     Request tracker used to track information about
     active RMI requests.
@@ -31,8 +32,6 @@ class Tracker:
     :ivar __mutex: The object mutex.
     :type __mutex: RLock
     """
-
-    __metaclass__ = Singleton
 
     def __init__(self):
         self.__all = dict()
@@ -124,11 +123,8 @@ class Canceled(object):
         :rtype: str
         """
         self.collection.add(sn)
-        fp = open(os.path.join(Canceled.PATH, sn), 'w+')
-        try:
+        with open(os.path.join(Canceled.PATH, sn), 'w+') as fp:
             fp.write(sn)
-        finally:
-            fp.close()
 
     def delete(self, sn):
         """

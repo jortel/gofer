@@ -59,7 +59,7 @@ class TestAgent:
         PluginLoader.load_all()
         agent = Agent()
         agent.start(False)
-        print 'Agent pid:%s started. Working directory [ %s ]' % (os.getpid(), self.root)
+        print('Agent pid:{} started. Working directory [ {} ]'.format(os.getpid(), self.root))
         while True:
             time.sleep(10)
 
@@ -103,7 +103,7 @@ def main(working_dir=None, background=False, spoofing=None):
         agent.start(spoofing)
         if not working_dir:
             shutil.rmtree(agent.root, ignore_errors=True)
-        print 'Done'
+        print('Done')
     if background:
         p = Process(target=run)
         p.daemon = True

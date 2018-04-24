@@ -20,7 +20,8 @@ from socket import socket as Socket
 from socket import AF_INET, SOCK_STREAM, IPPROTO_TCP
 from socket import TCP_NODELAY, SOL_SOCKET, SO_REUSEADDR, SO_LINGER
 
-from gofer.common import Thread, utf8
+from gofer.compat import str
+from gofer.common import Thread
 from gofer.messaging import Document
 from gofer.agent.plugin import Container
 from gofer.agent.builtin import Admin
@@ -39,13 +40,13 @@ class Handler(object):
     """
 
     def show(self):
-        container = Container()
-        admin = Admin(container)
+        admin = Admin()
+        admin.container = Container()
         return admin.help()
 
     def cancel(self, sn=None, criteria=None):
-        container = Container()
-        admin = Admin(container)
+        admin = Admin()
+        admin.container = Container()
         return admin.cancel(sn=sn, criteria=criteria)
 
     def load(self, path):
@@ -122,8 +123,8 @@ class Manager(Thread):
             call.load(message)
             reply = self.dispatch(call)
             client.send(reply)
-        except Exception, e:
-            log.error(utf8(e))
+        except Exception as e:
+            log.error(str(e))
 
     def run(self):
         """
@@ -147,9 +148,9 @@ class Manager(Thread):
             result = method(*call.args, **call.kwargs)
             reply.code = 0
             reply.result = result
-        except Exception, e:
+        except Exception as e:
             reply.code = 1
-            reply.result = utf8(e)
+            reply.result = str(e)
         return reply.dump()
 
 
@@ -192,10 +193,10 @@ class Method(object):
     def __call__(self, *args, **kwargs):
         try:
             result = self.call(*args, **kwargs)
-        except Exception, e:
+        except Exception as e:
             reply = Document()
             reply.code = 1
-            reply.result = utf8(e)
+            reply.result = str(e)
             result = reply
         return result
 

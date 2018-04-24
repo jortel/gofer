@@ -12,37 +12,28 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
+from __future__ import absolute_import
+
+from past.builtins import basestring
+from six import PY2
+
 
 import os
-import inspect
 import errno
-import new as _new
 import atexit
 
 from copy import copy
 from threading import local as _Local
 from threading import Thread as _Thread
-from threading import currentThread as current_thread
+from threading import current_thread
 from threading import Event, RLock
 from logging import getLogger
 
-try:
-    import simplejson as json
-except ImportError:
-    import json
+from . import inspection
+from .compat import str
 
 
 log = getLogger(__name__)
-
-
-def utf8(thing):
-    """
-    Get a utf-8 representation of an object.
-    :param thing: An object.
-    :return: A utf-8 representation.
-    :rtype: str
-    """
-    return unicode(thing).encode('utf-8')
 
 
 def mkdir(path):
@@ -53,7 +44,7 @@ def mkdir(path):
     """
     try:
         os.makedirs(path)
-    except OSError, e:
+    except OSError as e:
         if e.errno != errno.EEXIST:
             raise
 
@@ -66,7 +57,7 @@ def rmdir(path):
     """
     try:
         os.rmdir(path)
-    except OSError, e:
+    except OSError as e:
         if e.errno != errno.ENOENT:
             raise
 
@@ -79,7 +70,7 @@ def unlink(path):
     """
     try:
         os.unlink(path)
-    except OSError, e:
+    except OSError as e:
         if e.errno != errno.ENOENT:
             raise
 
@@ -107,7 +98,6 @@ def valid_path(path, mode=os.R_OK):
     :raise: ValueError
     """
     if not path:
-        # valid paths only
         return
     if not os.access(path, os.F_OK):
         raise ValueError('"%s" not found' % path)
@@ -128,8 +118,27 @@ def new(T, state=None):
         inst = T.__new__(T)
         inst.__dict__.update(state or {})
     else:
-        inst = _new.instance(T, state)
+        import new
+        inst = new.instance(T, state)
     return inst
+
+
+def newT(name, bases=(), state=None):
+    """
+    Build a new class.
+    :param name: The class name.
+    :type name: str
+    :param bases: Base classes.
+    :type bases: tuple
+    :param state: Class attributes.
+    :type state: dict
+    :return: The new class.
+    """
+    if PY2:
+        from new import classobj
+        return classobj(name, bases, state or {})
+    else:
+        return type(name, bases, state or {})
 
 
 class Thread(_Thread):
@@ -209,7 +218,7 @@ class Local(object):
     def __getattr__(self, name):
         try:
             return getattr(self.__dict__[Local.KEY], name)
-        except AttributeError, nf:
+        except AttributeError as nf:
             d = self.__dict__[Local.DEFAULT].get(name)
             if d is not None:
                 d = copy(d)
@@ -222,7 +231,10 @@ class Local(object):
 class Singleton(type):
     """
     Singleton metaclass
-    usage: __metaclass__ = Singleton
+    PY2
+        usage: __metaclass__ = Singleton
+    PY3
+        usage: class Thing(with_metaclass(Singleton, <bases>))
     """
 
     _inst = {}
@@ -251,7 +263,10 @@ class Singleton(type):
 class ThreadSingleton(type):
     """
     Thread Singleton metaclass
-    usage: __metaclass__ = ThreadSingleton
+    PY2
+        usage: __metaclass__ = ThreadSingleton
+    PY3
+        usage: class Thing(with_metaclass(ThreadSingleton, <bases>))
     """
 
     _inst = Local(all={})
@@ -286,7 +301,7 @@ def synchronized(fn):
     """
     def sfn(*args, **kwargs):
         inst = args[0]
-        bases = list(inspect.getmro(inst.__class__))
+        bases = list(inspection.mro(inst.__class__))
         mutex = None
         for cn in [c.__name__ for c in bases]:
             name = '_%s__mutex' % cn
@@ -295,11 +310,8 @@ def synchronized(fn):
                 break
         if mutex is None:
             raise AttributeError('mutex')
-        mutex.acquire()
-        try:
+        with mutex:
             return fn(*args, **kwargs)
-        finally:
-            mutex.release()
     return sfn
 
 
@@ -312,20 +324,17 @@ def conditional(fn):
     """
     def sfn(*args, **kwargs):
         inst = args[0]
-        bases = list(inspect.getmro(inst.__class__))
-        mutex = None
+        bases = list(inspection.mro(inst.__class__))
+        condition = None
         for cn in [c.__name__ for c in bases]:
             name = '_%s__condition' % cn
             if hasattr(inst, name):
-                mutex = getattr(inst, name)
+                condition = getattr(inst, name)
                 break
-        if mutex is None:
+        if condition is None:
             raise AttributeError('condition')
-        mutex.acquire()
-        try:
+        with condition:
             return fn(*args, **kwargs)
-        finally:
-            mutex.release()
     return sfn
 
 
@@ -391,10 +400,7 @@ class Options(object):
         return repr(self.__dict__)
 
     def __str__(self):
-        return utf8(self.__dict__)
-
-    def __unicode__(self):
-        return unicode(self.__dict__)
+        return str(self.__dict__)
 
 
 class List(object):

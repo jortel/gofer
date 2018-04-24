@@ -11,6 +11,7 @@
 
 from unittest import TestCase
 
+from gofer.compat import str
 from gofer.messaging.adapter.url import URL
 from gofer.messaging.adapter.url import PORT, Scheme
 
@@ -121,18 +122,6 @@ class TestURL(TestCase):
     def test_hash(self):
         url = URL('test')
         self.assertEqual(hash(url), hash(url.canonical))
-
-    def test_unicode(self):
-        urls = [
-            'qpid+amqp://elmer:fudd@test-host:5000/all',
-            'amqp://elmer:fudd@test-host:5000/all',
-            'amqp://test-host:5000/all',
-            'amqp://test-host:5000',
-            'amqp://test-host',
-        ]
-        for _url in urls:
-            url = URL(_url)
-            self.assertEqual(unicode(url), url.canonical)
 
     def test_str(self):
         urls = [

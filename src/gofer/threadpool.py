@@ -18,10 +18,11 @@ Thread Pool classes.
 """
 
 from uuid import uuid4
-from Queue import Queue, Empty
 from logging import getLogger
+from queue import Queue, Empty
 
-from gofer.common import Thread, released, utf8
+from gofer.compat import str
+from gofer.common import Thread, released
 
 
 log = getLogger(__name__)
@@ -59,7 +60,7 @@ class Worker(Thread):
             try:
                 call()
             except Exception:
-                log.exception(utf8(call))
+                log.exception(str(call))
 
 
 class Call(object):
@@ -98,19 +99,16 @@ class Call(object):
         except Exception:
             log.exception(self.id)
 
-    def __unicode__(self):
+    def __str__(self):
         s = list()
         s.append('call: ')
-        s.append(unicode(self.fn))
+        s.append(str(self.fn))
         s.append('(')
-        s.append(unicode(self.args))
+        s.append(str(self.args))
         s.append(', ')
-        s.append(unicode(self.kwargs))
+        s.append(str(self.kwargs))
         s.append(')')
         return ''.join(s)
-
-    def __str__(self):
-        return utf8(self)
 
 
 class ThreadPool(object):

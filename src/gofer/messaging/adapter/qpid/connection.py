@@ -12,6 +12,7 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
+from six import with_metaclass
 
 """
 Defined Qpid broker objects.
@@ -23,7 +24,8 @@ from qpid.messaging import Connection as RealConnection
 from qpid.messaging.transports import TRANSPORTS
 from qpid.messaging import ConnectionError
 
-from gofer.common import ThreadSingleton, utf8
+from gofer.compat import str
+from gofer.common import ThreadSingleton
 from gofer.messaging.adapter.model import Connector, BaseConnection
 from gofer.messaging.adapter.connect import retry
 
@@ -37,12 +39,10 @@ TCP = 'tcp'
 SSL = 'ssl'
 
 
-class Connection(BaseConnection):
+class Connection(with_metaclass(ThreadSingleton, BaseConnection)):
     """
     Represents a Qpid connection.
     """
-
-    __metaclass__ = ThreadSingleton
 
     @staticmethod
     def add_transports():
@@ -134,5 +134,5 @@ class Connection(BaseConnection):
         try:
             connection.close()
             log.info('closed: %s', self.url)
-        except Exception, pe:
-            log.debug(utf8(pe))
+        except Exception as pe:
+            log.debug(str(pe))

@@ -11,6 +11,12 @@
 
 from unittest import TestCase
 
+from gofer.rmi.stub import Builder
+from gofer.common import Options
 
-class Test(TestCase):
-    pass
+
+class TestBuilder(TestCase):
+
+    def test_stub(self):
+        builder = Builder()
+        builder('Test', 'http://', 'queue66', Options())
