@@ -10,7 +10,226 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 from unittest import TestCase
+from mock import Mock
+
+from gofer.messaging import Document
+from gofer.rmi.async import (
+    AsyncReply,
+    FinalReply,
+    Failed,
+    Succeeded,
+    Accepted,
+    Rejected,
+    Started,
+    Progress,
+)
+
+document = Document(
+    sn='123',
+    routing=['A', 'B'],
+    timestamp='XX',
+    data={'msg': 'Hello' + unichr(255)},
+    result={
+        'xmodule': ValueError.__module__,
+        'xclass': ValueError.__name__,
+        'xargs': 'Failed' + unichr(255),
+        'xstate': {},
+    },
+    total=100,
+    completed=10,
+    details='Done' + unichr(255))
 
 
-class Test(TestCase):
-    pass
+class Listener(object):
+    def __init__(self):
+        self.accepted = Mock()
+        self.rejected = Mock()
+        self.started = Mock()
+        self.progress = Mock()
+        self.succeeded = Mock()
+        self.failed = Mock()
+
+
+class TestAsyncReply(TestCase):
+
+    def test_init(self):
+        reply = AsyncReply(document)
+        self.assertEqual(reply.sn, document.sn)
+        self.assertEqual(reply.origin, document.routing[0])
+        self.assertEqual(reply.timestamp, document.timestamp)
+        self.assertEqual(reply.data, document.data)
+
+    def test_unicode(self):
+        reply = AsyncReply(document)
+        s = unicode(reply)
+        self.assertTrue(isinstance(s, unicode))
+
+
+class TestAccepted(TestCase):
+
+    def test_init(self):
+        reply = Accepted(document)
+        self.assertEqual(reply.sn, document.sn)
+        self.assertEqual(reply.origin, document.routing[0])
+        self.assertEqual(reply.timestamp, document.timestamp)
+        self.assertEqual(reply.data, document.data)
+
+    def test_notify(self):
+        l = Listener()
+        reply = Accepted(document)
+        reply.notify(l)
+        l.accepted.assert_called_once_with(reply)
+        f = Mock()
+        reply.notify(f)
+        f.assert_called_once_with(reply)
+
+    def test_unicode(self):
+        reply = Accepted(document)
+        s = unicode(reply)
+        self.assertTrue(isinstance(s, unicode))
+
+
+class TestRejected(TestCase):
+
+    def test_init(self):
+        reply = Rejected(document)
+        self.assertEqual(reply.sn, document.sn)
+        self.assertEqual(reply.origin, document.routing[0])
+        self.assertEqual(reply.timestamp, document.timestamp)
+        self.assertEqual(reply.data, document.data)
+
+    def test_notify(self):
+        l = Listener()
+        reply = Rejected(document)
+        reply.notify(l)
+        l.rejected.assert_called_once_with(reply)
+        f = Mock()
+        reply.notify(f)
+        f.assert_called_once_with(reply)
+
+    def test_unicode(self):
+        reply = Rejected(document)
+        s = unicode(reply)
+        self.assertTrue(isinstance(s, unicode))
+
+
+class TestStarted(TestCase):
+
+    def test_init(self):
+        reply = Started(document)
+        self.assertEqual(reply.sn, document.sn)
+        self.assertEqual(reply.origin, document.routing[0])
+        self.assertEqual(reply.timestamp, document.timestamp)
+        self.assertEqual(reply.data, document.data)
+
+    def test_notify(self):
+        l = Listener()
+        reply = Started(document)
+        reply.notify(l)
+        l.started.assert_called_once_with(reply)
+        f = Mock()
+        reply.notify(f)
+        f.assert_called_once_with(reply)
+
+    def test_unicode(self):
+        reply = Started(document)
+        s = unicode(reply)
+        self.assertTrue(isinstance(s, unicode))
+
+
+class TestProgress(TestCase):
+
+    def test_init(self):
+        reply = Progress(document)
+        self.assertEqual(reply.sn, document.sn)
+        self.assertEqual(reply.origin, document.routing[0])
+        self.assertEqual(reply.timestamp, document.timestamp)
+        self.assertEqual(reply.data, document.data)
+        self.assertEqual(reply.total, document.total)
+        self.assertEqual(reply.completed, document.completed)
+        self.assertEqual(reply.details, document.details)
+
+    def test_notify(self):
+        l = Listener()
+        reply = Progress(document)
+        reply.notify(l)
+        l.progress.assert_called_once_with(reply)
+        f = Mock()
+        reply.notify(f)
+        f.assert_called_once_with(reply)
+
+    def test_unicode(self):
+        reply = Progress(document)
+        s = unicode(reply)
+        self.assertTrue(isinstance(s, unicode))
+
+
+class TestFinalReply(TestCase):
+
+    def test_notify(self):
+        l = Listener()
+        reply = FinalReply(document)
+        reply.notify(l)
+        l.failed.assert_called_once_with(reply)
+        f = Mock()
+        reply.notify(f)
+        f.assert_called_once_with(reply)
+
+
+class TestSucceeded(TestCase):
+
+    def test_init(self):
+        reply = Succeeded(document)
+        self.assertEqual(reply.sn, document.sn)
+        self.assertEqual(reply.origin, document.routing[0])
+        self.assertEqual(reply.timestamp, document.timestamp)
+        self.assertEqual(reply.data, document.data)
+        self.assertFalse(reply.failed())
+        self.assertTrue(reply.succeeded())
+
+    def test_notify(self):
+        l = Listener()
+        reply = Succeeded(document)
+        reply.notify(l)
+        l.succeeded.assert_called_once_with(reply)
+        f = Mock()
+        reply.notify(f)
+        f.assert_called_once_with(reply)
+
+    def test_unicode(self):
+        reply = Succeeded(document)
+        s = unicode(reply)
+        self.assertTrue(isinstance(s, unicode))
+
+
+class TestFailed(TestCase):
+
+    def test_init(self):
+        reply = Failed(document)
+        self.assertEqual(reply.sn, document.sn)
+        self.assertEqual(reply.origin, document.routing[0])
+        self.assertEqual(reply.timestamp, document.timestamp)
+        self.assertEqual(reply.data, document.data)
+        self.assertTrue(reply.failed())
+        self.assertFalse(reply.succeeded())
+
+    def test_notify(self):
+        l = Listener()
+        reply = Failed(document)
+        reply.notify(l)
+        l.failed.assert_called_once_with(reply)
+        f = Mock()
+        reply.notify(f)
+        f.assert_called_once_with(reply)
+
+    def test_throw(self):
+        reply = Failed(document)
+        try:
+            reply.throw()
+        except ValueError:
+            pass
+
+    def test_unicode(self):
+        reply = Failed(document)
+        s = unicode(reply)
+        self.assertTrue(isinstance(s, unicode))

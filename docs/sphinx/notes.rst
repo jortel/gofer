@@ -320,3 +320,32 @@ Fixes:
   never be sent.  Only affected  ``unload`` and ``reload`` operations.
 
 Deprecated:
+
+
+gofer 2.11
+^^^^^^^^^^
+
+Notes:
+
+- Exit handler terminate threads.
+
+Fixes:
+
+- Fix compatibility python-amqp 2.1.4 Channel.wait().
+
+Deprecated:
+
+
+gofer 2.12
+^^^^^^^^^^
+
+Notes:
+
+- Support python 2.7+ and 3.2+
+
+- Python < 2.7 no longer supported.
+
+Fixes:
+
+
+Deprecated:
