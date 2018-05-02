@@ -64,7 +64,7 @@ class TestSign(TestCase):
 
         # validation
         h = sha256()
-        h.update(message)
+        h.update(message.encode('utf8'))
         authenticator.sign.assert_called_once_with(h.hexdigest())
         encode.assert_called_once_with(signature)
         self.assertEqual(signed, '{"message": "{\\"A\\":1}", "signature": "S0xBSkRGOTg4Ug=="}')
@@ -108,7 +108,7 @@ class TestValidation(TestCase):
         try:
             validate(authenticator, message)
             self.assertTrue(False, msg='validation exception expected')
-        except ValidationFailed, e:
+        except ValidationFailed as e:
             self.assertEqual(e.document, _document.return_value)
 
     def test_validate_exception(self):
@@ -121,7 +121,7 @@ class TestValidation(TestCase):
         try:
             validate(authenticator, message)
             self.assertTrue(False, msg='validation exception expected')
-        except ValidationFailed, e:
+        except ValidationFailed as e:
             self.assertEqual(e.details, reason)
             self.assertEqual(e.document, message)
 

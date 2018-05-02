@@ -11,13 +11,13 @@
 
 import select
 
-from Queue import Empty
-from Queue import Queue as Inbox
+from queue import Empty
+from queue import Queue as Inbox
 from logging import getLogger
 
 from amqp.spec import Basic
 
-from gofer.common import utf8
+from gofer.compat import str
 from gofer.messaging.adapter.model import BaseReader, Message
 from gofer.messaging.adapter.amqp.connection import Connection
 from gofer.messaging.adapter.amqp.reliability import reliable
@@ -150,8 +150,8 @@ class Receiver(object):
         Wait on channel.
         :param fd: The connection file descriptor.
         :type fd: int
-        :return: The channel.
-        :rtype: amqp.channel.Channel
+        :param channel: The channel.
+        :type: amqp.channel.Channel
         :param timeout: The read timeout in seconds.
         :type timeout: int
         """
@@ -202,8 +202,8 @@ class Receiver(object):
         try:
             channel = self.channel()
             channel.basic_cancel(self.tag)
-        except Exception, e:
-            log.debug(utf8(e))
+        except Exception as e:
+            log.debug(str(e))
 
     def fetch(self, timeout=None):
         """

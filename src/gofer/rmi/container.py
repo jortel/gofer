@@ -19,7 +19,8 @@ Agent base classes.
 
 from logging import getLogger
 
-from gofer.common import Options, utf8
+from gofer.compat import str
+from gofer.common import Options
 from gofer.rmi.stub import Builder
 
 
@@ -96,11 +97,11 @@ class Container(object):
         """
         return getattr(self, name)
 
-    def __unicode__(self):
-        return '{%s} options: %s' % (self.__address, unicode(self.__options))
-
     def __str__(self):
-        return utf8(self)
+        return '{} options: {}'.format(
+            str(self.__address),
+            str(self.__options)
+        )
     
     def __repr__(self):
-        return utf8(self)
+        return str(self)

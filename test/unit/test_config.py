@@ -11,11 +11,12 @@
 
 from unittest import TestCase
 
-from mock import call, patch, Mock
+from mock import call, Mock
 
 from copy import deepcopy as clone
 
 from gofer.config import *
+from gofer.devel import patch
 
 
 SCHEMA = (
@@ -279,7 +280,17 @@ class TestConfig(TestCase):
     @patch('gofer.config.json.load')
     def test_open_json(self, _load, _update, _open):
         _fp = Mock()
+
+        def _enter():
+            return _fp
+
+        def _exit(*unused):
+            _fp.close()
+
+        _fp.__enter__ = Mock(side_effect=_enter)
+        _fp.__exit__ = Mock(side_effect=_exit)
         _open.return_value = _fp
+
         path = '/path.json'
         cfg = Config()
         cfg.open(path)
@@ -390,6 +401,16 @@ class TestPatterns(TestCase):
 
     @patch('gofer.config.Patterns._Patterns__mutex')
     def test_get(self, _mutex):
+        def _enter():
+            _mutex.acquire()
+            return _mutex
+
+        def _exit(*unused):
+            _mutex.release()
+
+        _mutex.__enter__ = Mock(side_effect=_enter)
+        _mutex.__exit__ = Mock(side_effect=_exit)
+
         # new pattern
         p = Patterns.get(NUMBER)
         self.assertEqual(_mutex.acquire.call_count, 1)
@@ -414,18 +435,6 @@ class TestPatterns(TestCase):
         regex, flags = Patterns.split(pattern)
         self.assertEqual(regex, pattern[0])
         self.assertEqual(flags, pattern[1])
-
-    @patch('gofer.config.Patterns._Patterns__mutex')
-    def test_lock(self, _mutex):
-        Patterns._Patterns__lock()
-        _mutex.acquire.assert_called_once_with()
-        self.assertFalse(_mutex.release.called)
-
-    @patch('gofer.config.Patterns._Patterns__mutex')
-    def test_unlock(self, _mutex):
-        Patterns._Patterns__unlock()
-        _mutex.release.assert_called_once_with()
-        self.assertFalse(_mutex.acquire.called)
 
 
 class TestSection(TestCase):
@@ -527,13 +536,8 @@ class TestGraph(TestCase):
         graph = Graph(clone(VALID))
         sections = list(graph)
         self.assertEqual(len(sections), len(VALID))
-        self.assertEqual(sections[0], (VALID.items()[0]))
-        self.assertEqual(sections[1], (VALID.items()[1]))
-
-    def test_unicode(self):
-        graph = Graph(clone(MINIMAL))
-        s = unicode(graph)
-        self.assertEqual(s, '\n[section1]\nproperty1=10\nproperty2=http://redhat.com\nproperty3=howdy')
+        self.assertEqual(sections[0], (list(VALID.items())[0]))
+        self.assertEqual(sections[1], (list(VALID.items())[1]))
 
     def test_str(self):
         graph = Graph(clone(MINIMAL))
@@ -578,11 +582,6 @@ class TestGraphSection(TestCase):
         except AttributeError:
             pass
 
-    def test_unicode(self):
-        graph = Graph(clone(MINIMAL))
-        s = unicode(graph.section1)
-        self.assertEqual(s, 'property1=10\nproperty2=http://redhat.com\nproperty3=howdy')
-
     def test_str(self):
         graph = Graph(clone(MINIMAL))
         s = str(graph.section1)
@@ -596,7 +595,7 @@ class TestGraphSection(TestCase):
     def test_iter(self):
         graph = Graph(clone(MINIMAL))
         properties = list(graph.section1)
-        self.assertEqual(properties, MINIMAL['section1'].items())
+        self.assertEqual(tuple(properties), tuple(MINIMAL['section1'].items()))
 
 
 class TestReader(TestCase):
@@ -609,7 +608,7 @@ class TestReader(TestCase):
 class TestIReader(TestCase):
 
     def test_read(self):
-        fp = StringIO(I_READER)
+        fp = StringIO(str(I_READER))
         reader = IReader(fp)
         d = reader()
         self.assertEqual(
@@ -632,7 +631,7 @@ class TestIReader(TestCase):
 class TestJsonReader(TestCase):
 
     def test_read(self):
-        fp = StringIO(JSON_READER)
+        fp = StringIO(str(JSON_READER))
         reader = JReader(fp)
         d = reader()
         self.assertEqual(
@@ -652,24 +651,44 @@ class TestJsonReader(TestCase):
                 }})
 
     def test_read_invalid_json(self):
-        fp = StringIO('[')
+        fp = StringIO(str('['))
         reader = JReader(fp)
         self.assertEqual(reader(), {})
 
 
 class TestFileReader(TestCase):
 
-    @patch('__builtin__.open', Mock())
-    def test_unsupported(self):
+    @patch('__builtin__.open')
+    def test_unsupported(self, _open):
+        def _enter():
+            return _open.return_value
+
+        def _exit(*unused):
+            _open.return_value.close()
+
+        _open.return_value.__enter__ = Mock(side_effect=_enter)
+        _open.return_value.__exit__ = Mock(side_effect=_exit)
+
         reader = FileReader('test.unsupported')
         self.assertRaises(ValueError, reader)
 
     @patch('__builtin__.open')
     def test_iread(self, _open):
         path = 'test.conf'
-        _open.return_value = StringIO(I_READER)
+        _open.return_value = StringIO(str(I_READER))
+
+        def _enter():
+            return _open.return_value
+
+        def _exit(*unused):
+            _open.return_value.close()
+
+        _open.return_value.__enter__ = Mock(side_effect=_enter)
+        _open.return_value.__exit__ = Mock(side_effect=_exit)
+
         reader = FileReader(path)
         d = reader()
+
         _open.assert_called_with(path)
         self.assertEqual(
             d,
@@ -689,9 +708,20 @@ class TestFileReader(TestCase):
 
     @patch('__builtin__.open')
     def test_jread(self, _open):
-        _open.return_value = StringIO(JSON_READER)
+        _open.return_value = StringIO(str(JSON_READER))
+
+        def _enter():
+            return _open.return_value
+
+        def _exit(*unused):
+            _open.return_value.close()
+
+        _open.return_value.__enter__ = Mock(side_effect=_enter)
+        _open.return_value.__exit__ = Mock(side_effect=_exit)
+
         reader = FileReader('test.json')
         d = reader()
+
         self.assertEqual(
             d,
             {

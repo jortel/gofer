@@ -13,6 +13,8 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
+from __future__ import print_function
+
 
 import sys
 sys.path.append('../../')
@@ -27,35 +29,35 @@ basicConfig(filename='/tmp/gofer/async.log', level=INFO)
 
 
 def onReply(reply):
-    print 'CB:\n%s' % reply
+    print('CB:\n{}'.format(reply))
 
 
 class Listener:
 
     def succeeded(self, reply):
-        print reply
+        print(reply)
 
     def failed(self, reply):
-        print reply
+        print(reply)
 
     def accepted(self, reply):
-        print reply
+        print(reply)
 
     def started(self, reply):
-        print reply
+        print(reply)
         
     def progress(self, reply):
-        print reply
+        print(reply)
 
 
 if __name__ == '__main__':
     tag = 'XYZ'
-    print 'starting, uuid=%s' % tag
+    print('starting, uuid={}'.format(tag))
     queue = Queue(tag, url='tcp://localhost:5672')
     c = ReplyConsumer(queue)
-    #c.start(Listener())
+    # c.start(Listener())
     c.start(onReply)
     while True:
-        #print 'ReplyListener: sleeping...'
+        # print('ReplyListener: sleeping...')
         sleep(10)
     c.stop()

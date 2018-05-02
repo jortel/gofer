@@ -97,7 +97,7 @@ class ConsumerThread(Thread):
             log.debug('{%s} read: %s', self.getName(), document)
             self.dispatch(document)
             message.ack()
-        except DocumentError, de:
+        except DocumentError as de:
             self.rejected(de.code, de.description, de.document, de.details)
         except Exception:
             log.exception(self.getName())

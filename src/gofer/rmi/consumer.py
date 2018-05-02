@@ -69,10 +69,8 @@ class RequestConsumer(Consumer):
         if not address:
             return
         try:
-            producer = Producer(self.url)
-            producer.authenticator = self.authenticator
-            producer.open()
-            try:
+            with Producer(self.url) as producer:
+                producer.authenticator = self.authenticator
                 producer.send(
                     address,
                     sn=request.sn,
@@ -80,8 +78,6 @@ class RequestConsumer(Consumer):
                     status=status,
                     timestamp=timestamp(),
                     **details)
-            finally:
-                producer.close()
         except Exception:
             log.exception('send (%s), failed', status)
 

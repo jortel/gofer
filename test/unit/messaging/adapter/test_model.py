@@ -12,11 +12,14 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
+from six import with_metaclass
+
 
 from unittest import TestCase
 
 from mock import patch, Mock
 
+from gofer.compat import str
 from gofer.common import ThreadSingleton
 from gofer.messaging.model import Document, VERSION
 from gofer.messaging.adapter.url import URL
@@ -41,9 +44,7 @@ class Local(object):
     pass
 
 
-class FakeConnection(object):
-
-    __metaclass__ = ThreadSingleton
+class FakeConnection(with_metaclass(ThreadSingleton, object)):
 
     def __init__(self, url):
         self.url = url
@@ -78,7 +79,7 @@ class TestModelDecorator(TestCase):
         _fn = model(fn)
         try:
             _fn()
-        except ModelError, e:
+        except ModelError as e:
             self.assertEqual(e.args, (1, 2, 3))
 
 
@@ -138,10 +139,6 @@ class TestNode(TestCase):
     def test_address(self):
         n = Node('test')
         self.assertEqual(n.address, n.name)
-
-    def test_unicode(self):
-        n = Node('test')
-        self.assertEqual(unicode(n), n.name)
 
     def test_str(self):
         n = Node('test')
@@ -332,6 +329,16 @@ class TestQueue(TestCase):
             Mock(),
             None
         ]
+
+        def _open():
+            _reader.return_value.open()
+            return _reader.return_value
+
+        def _close(*unused):
+            _reader.return_value.close()
+
+        _reader.return_value.__enter__.side_effect = _open
+        _reader.return_value.__exit__.side_effect = _close
         _reader.return_value.get.side_effect = queued
 
         # test
@@ -898,10 +905,6 @@ class TestBaseConnection(TestCase):
         self.assertRaises(NotImplementedError, connection.open)
         self.assertRaises(NotImplementedError, connection.close)
 
-    def test_unicode(self):
-        connection = BaseConnection(TEST_URL)
-        self.assertEqual(unicode(connection), TEST_URL)
-
     def test_str(self):
         connection = BaseConnection(TEST_URL)
         self.assertEqual(str(connection), TEST_URL)
@@ -994,15 +997,6 @@ class TestSSL(TestCase):
         ssl.client_key = 'key'
         self.assertTrue(ssl)
 
-    def test_unicode(self):
-        ssl = SSL()
-        ssl.ca_certificate = 'test-ca'
-        ssl.client_key = 'test-key'
-        ssl.client_certificate = 'test-cert'
-        self.assertEqual(
-            unicode(ssl),
-            'ca: test-ca|key: test-key|certificate: test-cert|host-validation: False')
-
     def test_str(self):
         ssl = SSL()
         ssl.ca_certificate = 'test-ca'
@@ -1052,17 +1046,6 @@ class TestConnector(TestCase):
         # True by port
         connector = Connector('amqps://localhost')
         self.assertTrue(connector.use_ssl())
-
-    def test_unicode(self):
-        url = TEST_URL
-        b = Connector(url)
-        b.ssl.ca_certificate = 'test-ca'
-        b.ssl.client_key = 'test-key'
-        b.ssl.client_certificate = 'test-cert'
-        self.assertEqual(
-            unicode(b),
-            'URL: amqp://elmer:fudd@test.com|SSL: ca: test-ca|'
-            'key: test-key|certificate: test-cert|host-validation: False')
 
     def test_str(self):
         url = TEST_URL
@@ -1114,13 +1097,6 @@ class TestMessage(TestCase):
         message = Message(reader, impl, body)
         message.reject(True)
         reader.reject.assert_called_with(impl, True)
-
-    def test_unicode(self):
-        reader = Mock()
-        impl = Mock()
-        body = 'test-body'
-        message = Message(reader, impl, body)
-        self.assertEqual(unicode(message), body)
 
     def test_str(self):
         reader = Mock()

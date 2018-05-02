@@ -11,53 +11,26 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 
-import inspect
-
-from gofer import NAME
-from gofer.common import utf8
+from gofer.compat import str
+from gofer.collation import Class, Module
 
 
-def indent(string, indent, *args):
+def indent(string, n, *args, **kwargs):
     """
     Indent the specified string and replace arguments.
     :param string: A string.
-    :param string: basestring
-    :param indent: The number of spaces to indent.
-    :type indent: int
+    :param string: str
+    :param n: The number of spaces to indent.
+    :type n: int
     :param args: List of arguments.
     :type args: list
     :return: The indented string.
     :rtype: str
     """
     s = []
-    for n in range(0, indent):
+    for n in range(0, n):
         s.append(' ')
-    s.append(utf8(string) % args)
-    return ''.join(s)
-
-
-def signature(name, fn):
-    """
-    Build the signature for the specified function name and object.
-    :param name: A function name.
-    :type name: str
-    :param fn: A function/method object.
-    :type fn: function|method
-    :return: The signature.
-    :rtype: str
-    """
-    s = list()
-    s.append(name)
-    s.append('(')
-    spec = inspect.getargspec(fn)
-    if 'self' in spec[0]:
-        spec[0].remove('self')
-    if spec[1]:
-        spec[0].append('*%s' % spec[1])
-    if spec[2]:
-        spec[0].append('**%s' % spec[2])
-    s.append(', '.join(spec[0]))
-    s.append(')')
+    s.append(str(string).format(*args, **kwargs))
     return ''.join(s)
 
 
@@ -76,33 +49,24 @@ def loaded(container, actions):
     for p in container.all():
         if not p.enabled:
             continue
-        # plugins
         s.append('')
-        s.append(indent('<plugin> %s', 2, p.name))
-        # classes
+        s.append(indent('<plugin> {}', 2, p.name))
         s.append(indent('Classes:', 4))
-        for name, thing in p.dispatcher.catalog.items():
-            if inspect.ismodule(thing):
+        for name, thing in sorted(p.dispatcher.catalog.items()):
+            if isinstance(thing, Module):
                 continue
-            s.append(indent('<class> %s', 6, name))
-            s.append(indent('methods:', 8))
-            for m_name, m_object in inspect.getmembers(thing, inspect.ismethod):
-                fn = m_object.im_func
-                if not hasattr(fn, NAME):
-                    continue
-                s.append(indent(signature(m_name, fn), 10))
-        # functions
+            s.append(indent('<class> {}', 6, name))
+            s.append(indent('Methods:', 8))
+            for method in sorted(thing):
+                s.append(indent(str(method), 10))
         s.append(indent('Functions:', 4))
-        for name, thing in p.dispatcher.catalog.items():
-            if not inspect.ismodule(thing):
+        for name, thing in sorted(p.dispatcher.catalog.items()):
+            if isinstance(thing, Class):
                 continue
-            for f_name, f_object in inspect.getmembers(thing, inspect.isfunction):
-                fn = f_object
-                if not hasattr(fn, NAME):
-                    continue
-                s.append(indent(signature(f_name, fn), 6))
+            for fn in sorted(thing):
+                s.append(indent(str(fn), 6))
     s.append('')
     s.append('Actions:')
-    for a in [(a.name(), a.interval) for a in actions.collated()]:
-        s.append('  %s %s' % a)
+    for a in sorted([(a.name, a.interval) for a in actions.collated()]):
+        s.append(indent('{} {}', 2, *a))
     return '\n'.join(s)

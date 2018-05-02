@@ -15,12 +15,15 @@
 """
 Message authentication plumbing.
 """
+from builtins import bytes
+from six import PY3
+
 
 from hashlib import sha256
 from logging import getLogger
 from base64 import b64encode, b64decode
 
-from gofer.common import utf8
+from gofer.compat import str
 from gofer.messaging.model import Document, DocumentError
 
 
@@ -96,13 +99,13 @@ def sign(authenticator, message):
         return message
     try:
         h = sha256()
-        h.update(message)
+        h.update(message.encode('utf8'))
         digest = h.hexdigest()
         signature = authenticator.sign(digest)
         signed = Document(message=message, signature=encode(signature))
         message = signed.dump()
-    except Exception, e:
-        log.info(utf8(e))
+    except Exception as e:
+        log.info(str(e))
         log.debug(message, exc_info=True)
     return message
 
@@ -127,16 +130,16 @@ def validate(authenticator, message):
     try:
         if authenticator:
             h = sha256()
-            h.update(original)
+            h.update(original.encode('utf8'))
             digest = h.hexdigest()
             authenticator.validate(document, digest, decode(signature))
         return document
-    except ValidationFailed, de:
+    except ValidationFailed as de:
         de.document = document
-        log.info(utf8(de))
+        log.info(str(de))
         raise de
-    except Exception, e:
-        details = utf8(e)
+    except Exception as e:
+        details = str(e)
         log.info(details)
         log.debug(details, exc_info=True)
         de = ValidationFailed(details, original)
@@ -190,13 +193,24 @@ def load(json):
 
 def encode(signature):
     if signature:
-        return b64encode(signature)
+        if PY3:
+            return str(
+                b64encode(
+                    bytes(signature, encoding='utf8')),
+                encoding='utf8')
+        else:
+            return b64encode(signature)
     else:
         return ''
 
 
 def decode(signature):
     if signature:
-        return b64decode(signature)
+        if PY3:
+            return str(
+                b64decode(signature),
+                encoding='utf8')
+        else:
+            return b64decode(signature)
     else:
         return ''

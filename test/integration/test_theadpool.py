@@ -13,6 +13,8 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
+from __future__ import print_function
+
 
 import os
 import sys
@@ -24,6 +26,7 @@ from time import sleep
 
 sys.path.insert(0, os.path.join(os.getcwd(), '../../src/'))
 
+from gofer.compat import str
 from gofer.threadpool import ThreadPool
 
 
@@ -33,13 +36,13 @@ logging.basicConfig()
 def fn1(n, results):
     t = threading.currentThread()
     delay = random() / 2
-    print '%d) {%s} sleep(%f)' % (n, t.name, delay)
+    print('{}) {{{}}} sleep(%f)'.format(n, t.name, delay))
     sleep(delay)
     results.append(n)
 
 
 def fn2(n, results):
-    print str(n)
+    print(str(n))
     results.append(n)
 
 
@@ -51,8 +54,9 @@ def test(calls=100):
         pool.run(fn1, n, results)
     while len(results) < calls:
         sleep(1)
-    print 'shutdown pool...'
+    print('shutdown pool...')
     pool.shutdown()
+
 
 if __name__ == '__main__':
     test()

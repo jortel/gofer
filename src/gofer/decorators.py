@@ -13,9 +13,8 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-import inspect
-
 from gofer import NAME, Options
+from gofer import inspection
 from gofer.rmi.decorator import Remote
 from gofer.rmi.model import DIRECT, FORK, valid_model
 from gofer.agent.decorator import Actions
@@ -62,7 +61,7 @@ def remote(fx=None, model=DIRECT, secret=None):
             opt.security.append(auth)
         Remote.add(fn)
         return fn
-    if inspect.isfunction(fx):
+    if inspection.is_function(fx):
         return inner(fx)
     else:
         return inner
@@ -156,7 +155,7 @@ def action(fx=None, **interval):
     def inner(fn):
         Actions.add(fn, interval or dict(days=0x8E94))
         return fn
-    if inspect.isfunction(fx):
+    if inspection.is_function(fx):
         return inner(fx)
     else:
         return inner

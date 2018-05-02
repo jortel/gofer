@@ -191,13 +191,10 @@ class Script:
         shell = _Shell()
         context = Context.current()
         path = os.path.join('/tmp', context.sn)
-        fp = open(path, 'w+')
-        try:
+        with open(path, 'w+') as fp:
             fp.write(self.content)
-        finally:
-            fp.close()
         try:
-            os.chmod(path, 0755)
+            os.chmod(path, 0o755)
             cmd = [path]
             cmd += options
             cmd = ' '.join(cmd)

@@ -13,6 +13,7 @@ from unittest import TestCase
 
 from mock import Mock, patch
 
+from gofer.compat import str
 from gofer.agent.whiteboard import Whiteboard
 
 
@@ -29,8 +30,20 @@ class TestWhiteboard(TestCase):
         b = 20
         wb = Whiteboard()
         mutex = wb._Whiteboard__mutex
+
+        def _enter():
+            mutex.acquire()
+            return mutex
+
+        def _exit(*unused):
+            mutex.release()
+
+        mutex.__enter__ = Mock(side_effect=_enter)
+        mutex.__exit__ = Mock(side_effect=_exit)
+
         wb['a'] = a
         wb['b'] = b
+
         # setting
         self.assertEqual(mutex.acquire.call_count, 2)
         self.assertEqual(mutex.release.call_count, 2)
@@ -59,5 +72,5 @@ class TestWhiteboard(TestCase):
         self.assertEqual(mutex.release.call_count, 11)
         # repr
         self.assertEqual(str(wb), str(wb._Whiteboard__dict))
-        self.assertEqual(mutex.acquire.call_count, 13)
-        self.assertEqual(mutex.release.call_count, 13)
+        self.assertEqual(mutex.acquire.call_count, 12)
+        self.assertEqual(mutex.release.call_count, 12)

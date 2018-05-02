@@ -24,7 +24,7 @@ import time
 from math import modf
 from datetime import datetime
 
-from gofer.common import utf8
+from gofer.compat import str
 
 
 def timestamp():
@@ -51,21 +51,22 @@ class Timer(object):
     def duration(self):
         return self.stopped - self.started
 
-    def __unicode__(self):
+    def __str__(self):
+        def jmod(m):
+            return int(m[1]), int(m[0] * 1000)
         if self.started == 0:
             return 'idle'
         if self.started > 0 and self.stopped == 0:
             return 'started'
         duration = self.duration()
-        jmod = lambda m: (m[1], m[0]*1000)
         if duration < 1:
-            ms = (duration * 1000)
-            return '%d (ms)' % ms           
+            ms = int(duration * 1000)
+            return '{} (ms)'.format(ms)
         if duration < 60:
             m = modf(duration)
-            return '%d.%.3d (seconds)' % jmod(m)
+            return '{}.{:03d} (seconds)'.format(*jmod(m))
         m = modf(duration/60)
-        return '%d.%.3d (minutes)' % jmod(m)
+        return '{}.{:03d} (minutes)'.format(*jmod(m))
 
     def __enter__(self):
         self.start()
@@ -73,9 +74,6 @@ class Timer(object):
 
     def __exit__(self, *unused):
         self.stop()
-
-    def __str__(self):
-        return utf8(self)
 
 
 class Memory(object):
@@ -86,11 +84,11 @@ class Memory(object):
         mb = kb * 1000
         gb = mb * 1000
         if n_bytes > gb:
-            return '{0} gB'.format(n_bytes / gb)
+            return '{} gB'.format(int(n_bytes / gb))
         if n_bytes > mb:
-            return '{0} mB'.format(n_bytes / mb)
+            return '{} mB'.format(int(n_bytes / mb))
         if n_bytes > kb:
-            return '{0} kB'.format(n_bytes / kb)
+            return '{} kB'.format(int(n_bytes / kb))
         return str(n_bytes)
 
     @staticmethod

@@ -20,7 +20,8 @@ from logging import getLogger
 from threading import RLock
 from time import sleep
 
-from gofer import Thread, utf8, synchronized
+from gofer.compat import str
+from gofer import Thread, synchronized
 from gofer.rmi.context import Context
 from gofer.rmi.model import protocol
 from gofer.mp import PipeBroken, Writer as _Writer
@@ -61,8 +62,8 @@ class Call(protocol.Call):
             reply.send(pipe.writer)
         except PipeBroken:
             log.debug('Pipe broken.')
-        except Exception, e:
-            log.exception(utf8(e))
+        except Exception as e:
+            log.exception(str(e))
             reply = protocol.Raised(e)
             reply.send(pipe.writer)
 

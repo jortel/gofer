@@ -1,3 +1,6 @@
+from __future__ import print_function
+
+
 from logging import basicConfig, DEBUG
 from time import sleep
 
@@ -14,7 +17,7 @@ class Cancelled(object):
 class Progress(object):
 
     def report(self):
-        print self.__dict__
+        print(self.__dict__)
 
 
 class Thing(object):
@@ -34,7 +37,7 @@ def main():
     context = Context('0', Progress(), Cancelled())
     Context.set(context)
     call = Call(thing.echo, 10000)
-    print call()
+    print(call())
 
 
 if __name__ == '__main__':

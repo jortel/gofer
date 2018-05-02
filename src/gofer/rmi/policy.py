@@ -17,10 +17,13 @@
 Contains request delivery policies.
 """
 
+from past.builtins import basestring
+
 from logging import getLogger
 from uuid import uuid4
 
-from gofer.common import Thread, Options, nvl, utf8, released
+from gofer.compat import str
+from gofer.common import Thread, Options, nvl, released
 from gofer.messaging import Document, DocumentError
 from gofer.messaging import Producer, Reader, Queue, Exchange
 from gofer.rmi.dispatcher import Return, RemoteException
@@ -302,7 +305,7 @@ class Trigger:
         :param request: A request to send.
         :type request: object
         """
-        self._sn = utf8(uuid4())
+        self._sn = str(uuid4())
         self._policy = policy
         self._request = request
         self._pending = True
@@ -320,11 +323,8 @@ class Trigger:
         :param queue: The reply queue for synchronous calls.
         :type queue: Queue
         """
-        producer = Producer(self._policy.url)
-        producer.authenticator = self._policy.authenticator
-        producer.open()
-
-        try:
+        with Producer(self._policy.url) as producer:
+            producer.authenticator = self._policy.authenticator
             producer.send(
                 self._policy.address,
                 self._policy.ttl,
@@ -335,24 +335,16 @@ class Trigger:
                 secret=self._policy.secret,
                 pam=self._policy.pam,
                 data=self._policy.data)
-        finally:
-            producer.close()
 
         log.debug('sent (%s): %s', self._policy.address, self._request)
 
         if queue is None:
             # no reply expected
             return self._sn
-
-        reader = Reader(queue, self._policy.url)
-        reader.authenticator = self._policy.authenticator
-        reader.open()
-
-        try:
+        with Reader(queue, self._policy.url) as reader:
+            reader.authenticator = self._policy.authenticator
             policy = self._policy
             return policy.get_reply(self.sn, reader)
-        finally:
-            reader.close()
 
     def __call__(self):
         """
@@ -386,8 +378,5 @@ class Trigger:
             queue.purge(self._policy.url)
             queue.delete(self._policy.url)
 
-    def __unicode__(self):
-        return self._sn
-
     def __str__(self):
-        return utf8(self)
+        return str(self._sn)

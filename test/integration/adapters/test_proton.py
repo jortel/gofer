@@ -9,9 +9,11 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+
 from logging import basicConfig
 
 from base import Test
+
 from gofer.messaging.adapter.factory import Loader
 
 
@@ -33,6 +35,7 @@ def run():
     test = Test(URL, adapter)
     test.test_crud()
     test.test_no_exchange()
+
 
 if __name__ == '__main__':
     run()

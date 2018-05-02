@@ -69,7 +69,7 @@ class Call(protocol.Call):
             try:
                 reply = protocol.Reply.read(pipe)
                 reply()
-            except protocol.End, end:
+            except protocol.End as end:
                 return end.result
 
 

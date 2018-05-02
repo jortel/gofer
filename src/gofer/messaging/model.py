@@ -11,7 +11,8 @@
 
 from logging import getLogger
 
-from gofer.common import utf8, json, Options
+from gofer import Options
+from gofer.compat import str, json
 
 
 log = getLogger(__name__)
@@ -88,7 +89,7 @@ def validate(document):
     """
     if document.version != VERSION:
         error = VersionError(document, VERSION, document.version)
-        log.warn(utf8(error))
+        log.warning(str(error))
         raise error
 
 

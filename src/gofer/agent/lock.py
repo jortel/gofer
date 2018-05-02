@@ -22,7 +22,8 @@ import fcntl
 
 from threading import RLock
 
-from gofer.common import utf8
+from gofer.compat import str
+from gofer.common import mkdir
 
 
 class LockFailed(Exception):
@@ -49,7 +50,7 @@ class LockFile:
         """
         self.path = path
         self.__fp = None
-        self.__mkdir(path)
+        mkdir(os.path.dirname(path))
 
     def acquire(self, blocking=True):
         """
@@ -77,11 +78,9 @@ class LockFile:
         Release the lockfile.
         """
         try:
-            if self.__fp.closed:
-                return
-            fd = self.__fp.fileno()
-            self.__fp.close()
-        except:
+            if not self.__fp.closed:
+                self.__fp.close()
+        except Exception:
             pass
     
     def getpid(self):
@@ -91,8 +90,8 @@ class LockFile:
         :rtype: int
         """
         pid = 0
-        fp = open(self.path)
-        content = fp.read()
+        with open(self.path) as fp:
+            content = fp.read()
         if content:
             pid = int(content)
         return pid
@@ -104,14 +103,9 @@ class LockFile:
         :type pid: int
         """
         self.__fp.seek(0)
-        self.__fp.write(utf8(pid))
+        self.__fp.write(str(pid))
         self.__fp.flush()
         
-    def __mkdir(self, path):
-        dir = os.path.dirname(path)
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-
 
 class Lock:
     """
@@ -123,7 +117,7 @@ class Lock:
         self.__mutex = RLock()
         self.__lockf = LockFile(path)
 
-    def acquire(self, blocking=1):
+    def acquire(self, blocking=True):
         """
         Acquire the lock.
         Acquire the mutex; acquire the lockfile.
@@ -132,7 +126,7 @@ class Lock:
         :return: self
         :rtype: Lock
         """
-        self.__lock(blocking)
+        self.__mutex.acquire(blocking)
         if self.__push() == 1:
             try:
                 self.__lockf.acquire(blocking)
@@ -148,7 +142,7 @@ class Lock:
         """
         if self.__pop() == 0:
             self.__lockf.release()
-        self.__unlock()
+        self.__mutex.release()
         return self
 
     def setpid(self, pid):
@@ -157,11 +151,8 @@ class Lock:
         :param pid: The process ID.
         :type pid: int
         """
-        self.__lock()
-        try:
+        with self.__mutex:
             self.__lockf.setpid(pid)
-        finally:
-            self.__unlock()
 
     def __push(self):
         """
@@ -169,12 +160,9 @@ class Lock:
         :return: The incremented depth
         :rtype: int
         """
-        self.__lock()
-        try:
+        with self.__mutex:
             self.__depth += 1
             return self.__depth
-        finally:
-            self.__unlock()
             
     def __pop(self):
         """
@@ -182,17 +170,14 @@ class Lock:
         :return: The decremented depth
         :rtype: int
         """
-        self.__lock()
-        try:
+        with self.__mutex:
             if self.__depth > 0:
                 self.__depth -= 1
             return self.__depth
-        finally:
-            self.__unlock()
-            
-    def __lock(self, blocking=1):
-        if not self.__mutex.acquire(blocking):
-            raise LockFailed()
-        
-    def __unlock(self):
-        self.__mutex.release()
+
+    def __enter__(self):
+        self.acquire()
+        return self
+
+    def __exit__(self, **unused):
+        self.release()

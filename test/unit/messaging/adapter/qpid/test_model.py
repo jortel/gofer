@@ -13,6 +13,7 @@ from unittest import TestCase
 
 from mock import patch, Mock
 
+from gofer.compat import str
 from gofer.devel import ipatch
 
 with ipatch('qpid'):
@@ -232,7 +233,7 @@ class TestMethod(TestCase):
             content=method.content,
             reply_to=method.reply_to,
             properties=method.properties,
-            correlation_id=str(uuid.return_value),
+            correlation_id=str(uuid.return_value).encode(),
             subject=model.SUBJECT
         )
 

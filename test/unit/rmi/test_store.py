@@ -10,15 +10,25 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
 from unittest import TestCase
-from mock import patch, Mock
+from mock import Mock
 
 from gofer.rmi.store import Pending, Sequential
+
+from gofer.devel import patch
 
 
 class TestPendingQueue(TestCase):
 
     @patch('__builtin__.open')
     def test_write(self, _open):
+        def _enter():
+            return _open.return_value
+
+        def _exit(*unused):
+            _open.return_value.close()
+
+        _open.return_value.__enter__ = Mock(side_effect=_enter)
+        _open.return_value.__exit__ = Mock(side_effect=_exit)
         request = Mock()
         path = '/tmp/123'
         Pending._write(request, path)
@@ -29,6 +39,14 @@ class TestPendingQueue(TestCase):
     @patch('__builtin__.open')
     @patch('gofer.rmi.store.unlink')
     def test_read(self, unlink, _open):
+        def _enter():
+            return _open.return_value
+
+        def _exit(*unused):
+            _open.return_value.close()
+
+        _open.return_value.__enter__ = Mock(side_effect=_enter)
+        _open.return_value.__exit__ = Mock(side_effect=_exit)
         body = '{"A": 1}'
         _open.return_value.read.return_value = body
         path = '/tmp/123'
@@ -42,6 +60,14 @@ class TestPendingQueue(TestCase):
     @patch('__builtin__.open')
     @patch('gofer.rmi.store.unlink')
     def test_read_invalid_json(self, unlink, _open):
+        def _enter():
+            return _open.return_value
+
+        def _exit(*unused):
+            _open.return_value.close()
+
+        _open.return_value.__enter__ = Mock(side_effect=_enter)
+        _open.return_value.__exit__ = Mock(side_effect=_exit)
         body = '__invalid__'
         _open.return_value.read.return_value = body
         path = '/tmp/123'

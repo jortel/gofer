@@ -16,7 +16,7 @@
 import os
 import logging
 
-from gofer import utf8
+from gofer.compat import str
 from gofer.messaging.model import ModelError
 from gofer.messaging.adapter.url import URL
 
@@ -26,8 +26,6 @@ log = logging.getLogger(__name__)
 
 # --- constants --------------------------------------------------------------
 
-# __package__ not supported in python 2.4
-PACKAGE = '.'.join(__name__.split('.')[:-1])
 
 # symbols required to be supported by all adapters
 REQUIRED = [
@@ -91,8 +89,10 @@ class Loader:
         catalog = {}
         _dir = os.path.dirname(__file__)
         for name in sorted(os.listdir(_dir)):
-            package = '.'.join((PACKAGE, name))
+            package = '.'.join((__package__, name))
             path = os.path.join(_dir, name)
+            if os.path.basename(path) == '__pycache__':
+                continue
             if not os.path.isdir(path):
                 continue
             try:
@@ -102,8 +102,8 @@ class Loader:
                 catalog[package] = pkg
                 for capability in pkg.PROVIDES:
                     catalog[capability] = pkg
-            except (ImportError, AttributeError), e:
-                log.warn('Import: %s, failed: %s', package, utf8(e))
+            except (ImportError, AttributeError) as e:
+                log.warning('Import: %s, failed: %s', package, str(e))
         return _list, catalog
 
     def load(self):

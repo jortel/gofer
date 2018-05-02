@@ -12,8 +12,9 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
+from six import PY2
 
-from mock import patch, Mock
+from mock import Mock, patch as _patch
 
 
 class Module(object):
@@ -22,10 +23,11 @@ class Module(object):
         pass
 
 
-class Fake(object):
+class Fake(Exception):
+    # Exception to support being caught in python3.
 
     def __init__(self, *args, **keywords):
-        self.args = args
+        super(Fake, self).__init__(*args)
         self.keywords = keywords
 
 
@@ -35,7 +37,7 @@ class SideEffect(object):
         self.values = iter(values)
 
     def __call__(self, *args, **kwargs):
-        value = self.values.next()
+        value = next(self.values)
         if isinstance(value, Mock):
             return value
         if callable(value):
@@ -88,7 +90,11 @@ class Patch(object):
 
     def __enter__(self):
         parent = __import__
-        p = patch('__builtin__.__import__')
+        if PY2:
+            builtin = '__builtin__'
+        else:
+            builtin = 'builtins'
+        p = _patch('{}.__import__'.format(builtin))
         mocked = p.__enter__()
         importer = Import(self.package, parent)
         mocked.side_effect = importer
@@ -104,4 +110,11 @@ def ipatch(package):
     return Patch(package)
 
 
-
+def patch(target, *args, **kwargs):
+    bp3 = 'builtins'
+    bp2 = '__builtin__'
+    if PY2:
+        target = target.replace(bp3, bp2)
+    else:
+        target = target.replace(bp2, bp3)
+    return _patch(target, *args, **kwargs)

@@ -15,7 +15,7 @@
 
 from subprocess import Popen, PIPE
 
-from gofer import utf8
+from gofer.compat import str
 from gofer.rmi.context import Context
 
 
@@ -84,5 +84,5 @@ class Shell(object):
             p.stderr.close()
             status = p.wait()
             return status, result
-        except OSError, e:
-            return -1, utf8(e)
+        except OSError as e:
+            return -1, str(e)

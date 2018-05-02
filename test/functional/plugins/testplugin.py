@@ -13,11 +13,15 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
+from __future__ import print_function
+
+
 import os
 from hashlib import sha256
 from logging import getLogger
 from time import sleep
 
+from gofer.compat import str
 from gofer.agent.plugin import Plugin
 from gofer.agent.rmi import Context
 from gofer.decorators import *
@@ -37,22 +41,22 @@ USER = 'gofer'
 
 @load
 def load():
-    print 'Initialized!'
+    print('Initialized!')
 
 
 @unload
 def unload():
-    print 'Unloaded'
+    print('Unloaded')
 
 
 @action
 def one_timer():
-    print 'one time action'
+    print('one time action')
 
 
 @action(seconds=90)
 def recurring_action():
-    print 'recurring action'
+    print('recurring action')
 
 
 def get_elmer():
@@ -65,17 +69,17 @@ class TestAuthenticator(Authenticator):
         h = sha256()
         h.update(message)
         digest = h.hexdigest()
-        # print 'signed: %s' % digest
+        # print('signed: {}'.format(digest))
         return digest
 
     def validate(self, document, message, signature):
         digest = self.sign(message)
         valid = signature == digest
-        # print 'matching signatures: [%s, %s]' % (signature, digest)
+        # print('matching signatures: [{}, {}]'.format(signature, digest))
         if valid:
             return
-        raise ValidationFailed(
-            'matching signatures: [%s, %s]' % (signature, digest))
+        raise ValidationFailed('matching signatures: [{}, {]]'.format(signature, digest))
+
 
 if plugin.cfg.messaging.auth:
     plugin.authenticator = TestAuthenticator()
@@ -100,7 +104,7 @@ class MyError(Exception):
 class RepoLib:
     @remote
     def update(self):
-        print 'Repo updated'
+        print('Repo updated')
 
 
 class Rabbit:
@@ -114,7 +118,7 @@ class Cat:
     
     @remote(secret=plugin.whiteboard['secret'])
     def meow(self, words):
-        print 'Ruf %s' % words
+        print('Ruf {}'.format(words))
         return 'Yes master.  I will meow because that is what cats do. "%s"' % words
     
     @remote
@@ -139,18 +143,18 @@ class Dog:
     def bark(self, words, wait=0):
         if wait:
             sleep(wait)
-        print '[%s] Ruf %s' % (self.name, words)
+        print('[%{}] Ruf {}'.format(self.name, words))
         return 'Yes master.  I will bark because that is what dogs do. "%s"' % words
 
     @remote
     def wag(self, n):
         for i in range(0, n):
-            print 'wag'
+            print('wag')
         return 'Yes master.  I will wag my tail because that is what dogs do.'
     
     @remote
     def keyError(self, key):
-        raise KeyError, key
+        raise KeyError(key)
     
     @remote
     def myError(self):
@@ -162,7 +166,7 @@ class Dog:
         return 'Good morning, master!'
 
     def notpermitted(self):
-        print 'not permitted.'
+        print('not permitted.')
         
     @remote
     @pam(user=USER)

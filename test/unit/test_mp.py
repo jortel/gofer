@@ -26,8 +26,15 @@ MODULE = 'gofer.mp'
 
 class Thing(object):
 
+    def __init__(self):
+        self.name = 'Elmer'
+        self.age = 100
+
     def __eq__(self, other):
         return isinstance(other, Thing) and self.__dict__ == other.__dict__
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class TestProcess(TestCase):

@@ -13,12 +13,15 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
+from __future__ import print_function
+
 
 import os
 
 ROOT = os.path.expanduser('~/.gofer')
 
-import json
+
+from gofer.compat import str, json
 
 from time import sleep
 from optparse import OptionParser
@@ -144,7 +147,7 @@ class TestAgent:
         agent.start(False)
         while True:
             sleep(10)
-            print 'Agent: sleeping...'
+            print('Agent: sleeping...')
 
 
 if __name__ == '__main__':
@@ -154,5 +157,5 @@ if __name__ == '__main__':
     threads = int(options.threads)
     auth = options.auth
     exchange = options.exchange
-    print 'starting agent, pid=%d, threads=%d, url=%s' % (os.getpid(), threads, url)
+    print('starting agent, pid=%d, threads=%d, url=%s' % (os.getpid(), threads, url))
     agent = TestAgent(url, uuid, threads, auth, exchange)

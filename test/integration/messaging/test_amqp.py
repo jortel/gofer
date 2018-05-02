@@ -8,6 +8,8 @@
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+from __future__ import print_function
+
 
 from logging import basicConfig
 
@@ -19,9 +21,10 @@ URL = 'amqp+amqp://localhost:5673'
 
 
 def run():
-    print URL
+    print(URL)
     test = Test(URL)
     test()
+
 
 if __name__ == '__main__':
     run()

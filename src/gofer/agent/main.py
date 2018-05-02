@@ -12,6 +12,8 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
+from __future__ import print_function
+
 
 import sys
 import os
@@ -20,13 +22,14 @@ import logging
 from time import sleep
 from getopt import getopt, GetoptError
 
+from gofer.compat import str
 from gofer.agent.logutil import LogHandler
 
 LogHandler.install()
 
 from gofer import NAME
 from gofer import pam
-from gofer.common import Thread, released, utf8
+from gofer.common import Thread, released
 from gofer.config import get_bool
 from gofer.agent.plugin import Plugin, PluginLoader
 from gofer.agent.manager import Manager
@@ -138,7 +141,7 @@ def usage():
     s.append('  -f, --foreground')
     s.append('      Run in the foreground and not as a daemon.')
     s.append('\n')
-    print '\n'.join(s)
+    print('\n'.join(s))
 
 
 def start_daemon(lock):
@@ -179,8 +182,8 @@ def setup_logging():
             logger = logging.getLogger(name)
             level = getattr(logging, level.upper())
             logger.setLevel(level)
-        except Exception, e:
-            log.error(utf8(e))
+        except Exception as e:
+            log.error(str(e))
 
 
 def main():
@@ -196,9 +199,10 @@ def main():
                 daemon = False
                 continue
         start(daemon)
-    except GetoptError, e:
-        print e
+    except GetoptError as e:
+        print(str(e))
         usage()
+
 
 if __name__ == '__main__':
     main()

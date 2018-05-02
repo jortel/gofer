@@ -13,13 +13,16 @@ import os
 
 from unittest import TestCase
 
-from mock import patch, Mock
+from mock import Mock
 
-from gofer.messaging.adapter.factory import Loader, PACKAGE
+from gofer.compat import str
+from gofer.messaging.adapter.factory import Loader, __package__ as PACKAGE
 from gofer.messaging.adapter.factory import Adapter
 from gofer.messaging.adapter.factory import AdapterError, AdapterNotFound, NoAdaptersLoaded
 from gofer.messaging.adapter.url import URL
 from gofer.messaging.model import ModelError
+
+from gofer.devel import patch
 
 
 class TestExceptions(TestCase):
@@ -30,13 +33,13 @@ class TestExceptions(TestCase):
     def test_no_adapters_loaded(self):
         exception = NoAdaptersLoaded()
         self.assertTrue(isinstance(exception, AdapterError))
-        self.assertEqual(exception.message, NoAdaptersLoaded.DESCRIPTION)
+        self.assertEqual(str(exception), NoAdaptersLoaded.DESCRIPTION)
 
     def test_adapter_not_found(self):
         name = 'qpid'
         exception = AdapterNotFound(name)
         self.assertTrue(isinstance(exception, AdapterError))
-        self.assertEqual(exception.message, AdapterNotFound.DESCRIPTION % name)
+        self.assertEqual(str(exception), AdapterNotFound.DESCRIPTION % name)
 
 
 class TestLoader(TestCase):

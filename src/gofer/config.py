@@ -46,14 +46,16 @@ schema = (
 cfg = Config('base.conf')
 cfg.validate(schema)
 """
+from past.builtins import basestring
+
 
 import os
 import re
 
 from threading import RLock
-from StringIO import StringIO
+from io import StringIO
 
-from gofer.common import json, utf8
+from gofer.compat import str, json
 
 
 # -- constants ----------------------------------------------------------------
@@ -337,15 +339,12 @@ class Patterns(object):
         """
         key = regex
         regex, flags = Patterns.split(regex)
-        Patterns.__lock()
-        try:
+        with Patterns.__mutex:
             p = Patterns.patterns.get(regex)
             if p is None:
                 p = re.compile(regex, flags)
                 Patterns.patterns[key] = p
             return p
-        finally:
-            Patterns.__unlock()
 
     @staticmethod
     def split(thing):
@@ -356,14 +355,6 @@ class Patterns(object):
             regex = thing
             flags = 0
         return regex, flags
-
-    @staticmethod
-    def __lock():
-        Patterns.__mutex.acquire()
-
-    @staticmethod
-    def __unlock():
-        Patterns.__mutex.release()
 
 
 class Section(object):
@@ -417,7 +408,7 @@ class Section(object):
         try:
             property = section.get(p.name)
             p.validate(property)
-        except PropertyException, pe:
+        except PropertyException as pe:
             pe.name = '.'.join((self.name, pe.name))
             raise pe
 
@@ -505,16 +496,13 @@ class Graph(object):
     def __repr__(self):
         return repr(self.__dict)
 
-    def __unicode__(self):
+    def __str__(self):
         s = []
         for name, section in sorted(self.__dict.items()):
-            s.append('\n[%s]' % name)
+            s.append('\n[{}]'.format(str(name)))
             gs = GraphSection(section)
-            s.append(unicode(gs))
+            s.append(str(gs))
         return '\n'.join(s)
-
-    def __str__(self):
-        return utf8(self)
 
 
 class GraphSection(object):
@@ -555,8 +543,8 @@ class GraphSection(object):
         def _str(self):
             s = []
             for k, v in content.items():
-                s.append('%s=%s' % (utf8(k), utf8(v)))
-            return utf8('\n'.join(s))
+                s.append('{}={}'.format(str(k), str(v)))
+            return '\n'.join(s)
 
         gs.__getattr__ = _get
         gs.__setattr__ = _set
@@ -687,7 +675,7 @@ class TextReader(Reader):
         :return: The (formatting, body)
         :rtype: tuple
         """
-        lines = map(lambda s: s.strip(), content.split('\n'))
+        lines = [s.strip() for s in content.split('\n')]
         while lines[0] == '':
             lines = lines[1:]
         body = '\n'.join(lines[1:])
@@ -711,7 +699,7 @@ class TextReader(Reader):
         formatting, body = self.split(self.content)
         try:
             _T = TextReader.READER[formatting]
-            fp = StringIO(body)
+            fp = StringIO(str(body))
             reader = _T(fp)
             return reader()
         except KeyError:
@@ -744,13 +732,10 @@ class FileReader(Reader):
         :raise ValueError: on parsing error.
         """
         _, ext = os.path.splitext(self.path)
-        fp = open(self.path)
-        try:
+        with open(self.path) as fp:
             try:
                 _T = FileReader.EXTENSION[ext]
                 reader = _T(fp)
                 return reader()
             except KeyError:
                 raise ValueError('%s not supported' % ext)
-        finally:
-            fp.close()

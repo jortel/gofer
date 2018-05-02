@@ -12,6 +12,8 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
+from six import with_metaclass
+
 
 """
 Plugin classes.
@@ -53,12 +55,10 @@ def attach(fn):
     return _fn
 
 
-class Container(object):
+class Container(with_metaclass(Singleton, object)):
     """
     Plugin container.
     """
-
-    __metaclass__ = Singleton
 
     def __init__(self):
         self.__mutex = RLock()
@@ -87,9 +87,8 @@ class Container(object):
         :param plugin: The plugin to delete.
         :type plugin: Plugin
         """
-        for k, v in self.plugins.items():
-            if v == plugin:
-                del self.plugins[k]
+        for k in {k for k, v in self.plugins.items() if v == plugin}:
+            del self.plugins[k]
         return plugin
 
     @synchronized
@@ -639,7 +638,7 @@ class PluginLoader:
         descriptor = PluginDescriptor(conf)
         plugin = Plugin(descriptor, path)
         if not plugin.enabled:
-            log.warn('plugin:%s, DISABLED', plugin.name)
+            log.warning('plugin:%s, DISABLED', plugin.name)
             plugin = None
         else:
             plugin = PluginLoader._load(plugin)

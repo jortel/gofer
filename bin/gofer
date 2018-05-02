@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 #
 # Copyright (c) 2015 Red Hat, Inc.
 #
@@ -13,11 +13,13 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
+from __future__ import print_function
+from builtins import str
+
 
 import os
 import sys
 
-from gofer import utf8
 from gofer.tools import mgt, call
 
 
@@ -33,7 +35,7 @@ def usage():
         parser = cmd.parser
         parser.set_usage('%s %s %s' % (program, name, cmd.USAGE))
         parser.print_help()
-        print '\n'
+        print('\n')
 
 
 if __name__ == '__main__':
@@ -53,6 +55,6 @@ if __name__ == '__main__':
     try:
         cmd.main()
         sys.exit(0)
-    except Exception, e:
-        print utf8(e)
+    except Exception as e:
+        print(str(e))
         sys.exit(1)

@@ -17,7 +17,8 @@ from logging import getLogger
 
 from uuid import uuid4
 
-from gofer.common import Thread, valid_path, utf8
+from gofer.compat import str
+from gofer.common import Thread, valid_path
 from gofer.messaging.model import VERSION, Document
 from gofer.messaging.adapter.url import URL
 from gofer.messaging.adapter.factory import Adapter
@@ -39,8 +40,8 @@ def model(fn):
             return fn(*args, **keywords)
         except ModelError:
             raise
-        except Exception, e:
-            log.exception(utf8(e))
+        except Exception as e:
+            log.exception(str(e))
             raise ModelError(*e.args)
     return _fn
 
@@ -66,7 +67,7 @@ class Model(object):
         :return: A unique domain ID.
         :rtype: str
         """
-        return '::'.join((self.__class__.__name__, utf8(id(self))))
+        return '::'.join((self.__class__.__name__, str(id(self))))
 
 
 class _Domain(object):
@@ -174,11 +175,8 @@ class Node(Model):
         """
         raise NotImplementedError()
 
-    def __unicode__(self):
-        return self.name
-
     def __str__(self):
-        return utf8(self)
+        return str(self.name)
     
 
 class BaseExchange(Node):
@@ -347,7 +345,7 @@ class Queue(BaseQueue):
         :param url: The (optional) broker URL.
         :type url: str
         """
-        BaseQueue.__init__(self, name or utf8(uuid4()))
+        BaseQueue.__init__(self, name or str(uuid4()))
         self.url = url
 
     @model
@@ -388,17 +386,13 @@ class Queue(BaseQueue):
         :type url: str
         """
         url = url or self.url
-        reader = Reader(self, url=url)
-        reader.open()
-        try:
+        with Reader(self, url=url) as reader:
             while not Thread.aborted():
                 message = reader.get()
                 if message:
                     message.ack()
                 else:
                     break
-        finally:
-            reader.close()
 
 
 # --- messenger --------------------------------------------------------------
@@ -504,11 +498,8 @@ class Message(Model):
         """
         self._reader.reject(self._impl, requeue)
 
-    def __unicode__(self):
-        return unicode(self._body)
-
     def __str__(self):
-        return utf8(self)
+        return str(self._body)
 
 
 class BaseReader(Messenger):
@@ -839,7 +830,7 @@ class Producer(Messenger):
         :rtype: str
         :raise: ModelError
         """
-        sn = utf8(uuid4())
+        sn = str(uuid4())
         routing = (None, address)
         document = Document(sn=sn, version=VERSION, routing=routing)
         document += body
@@ -890,11 +881,8 @@ class BaseConnection(Model):
         """
         raise NotImplementedError()
 
-    def __unicode__(self):
-        return unicode(self.url)
-
     def __str__(self):
-        return utf8(self)
+        return str(self.url)
 
     def __enter__(self):
         self.open()
@@ -978,21 +966,21 @@ class SSL(Model):
         valid_path(self.client_certificate)
         valid_path(self.client_key)
 
-    def __nonzero__(self):
+    def __bool__(self):
         return (self.ca_certificate or
                 self.client_certificate or
                 self.client_key) is not None
 
-    def __unicode__(self):
-        s = list()
-        s.append('ca: %s' % self.ca_certificate)
-        s.append('key: %s' % self.client_key)
-        s.append('certificate: %s' % self.client_certificate)
-        s.append('host-validation: %s' % self.host_validation)
-        return '|'.join(s)
+    def __nonzero__(self):
+        return self.__bool__()
 
     def __str__(self):
-        return utf8(self)
+        return 'ca: {}|key: {}|certificate: {}|host-validation: {}'.format(
+            str(self.ca_certificate),
+            str(self.client_key),
+            str(self.client_certificate),
+            str(self.host_validation)
+        )
 
 
 class Connector(Model):
@@ -1117,14 +1105,11 @@ class Connector(Model):
         """
         return self.url.is_ssl()
 
-    def __unicode__(self):
-        s = list()
-        s.append('URL: %s' % self.url)
-        s.append('SSL: %s' % self.ssl)
-        return '|'.join(s)
-
     def __str__(self):
-        return utf8(self)
+        return 'URL: {}|SSL: {}'.format(
+            str(self.url),
+            str(self.ssl)
+        )
 
 
 class Broker(Connector):

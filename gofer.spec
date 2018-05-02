@@ -1,4 +1,3 @@
-%{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 
 # Determine supported
 %if 0%{?fedora} || 0%{?rhel} >= 6
@@ -7,10 +6,17 @@
 %if 0%{?fedora} || 0%{?rhel} >= 7
 %define with_systemd 1
 %endif
+%if 0%{?fedora} || 0%{?rhel} >= 8
+%define with_python3 1
+%endif
+%if 0%{?fedora}
+%define p2n 2
+%endif
+
 
 Name: gofer
-Version: 2.11.4
-Release: 3%{?dist}
+Version: 2.12
+Release: 0%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
 License: LGPLv2
@@ -18,10 +24,6 @@ URL: https://github.com/jortel/gofer
 Source0: https://fedorahosted.org/releases/g/o/gofer/%{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch: noarch
-BuildRequires: gzip
-BuildRequires: python2-devel
-BuildRequires: python-setuptools
-BuildRequires: rpm-python
 Requires: python-%{name} = %{version}
 %if 0%{?with_systemd}
 BuildRequires: systemd
@@ -47,7 +49,14 @@ rm ./gofer/devel/test.py
 %if !0%{?with_tools}
 rm -rf ./gofer/tools/
 %endif
-%{__python} setup.py build
+%if 0%{?p2n}
+%{py2_build}
+%else
+%{py_build}
+%endif
+%if 0%{?with_python3}
+%{py3_build}
+%endif
 popd
 pushd docs/man/man1
 gzip *
@@ -56,7 +65,14 @@ popd
 %install
 rm -rf %{buildroot}
 pushd src
-%{__python} setup.py install -O1 --skip-build --root %{buildroot}
+%if 0%{?p2n}
+%{py2_install}
+%else
+%{py_install}
+%endif
+%if 0%{?with_python3}
+%{py3_install}
+%endif
 popd
 
 mkdir -p %{buildroot}/usr/bin
@@ -84,7 +100,10 @@ cp usr/lib/systemd/system/* %{buildroot}/%{_unitdir}
 cp etc/init.d/%{name}d %{buildroot}/%{_sysconfdir}/init.d
 %endif
 
-rm -rf %{buildroot}/%{python_sitelib}/%{name}*.egg-info
+rm -rf %{buildroot}/%{python2_sitelib}/%{name}*.egg-info
+%if 0%{?with_python3}
+rm -rf %{buildroot}/%{python3_sitelib}/%{name}*.egg-info
+%endif
 
 %if !0%{?with_tools}
 rm %{buildroot}/usr/bin/%{name}
@@ -101,7 +120,6 @@ rm -rf %{buildroot}
 %dir %{_sysconfdir}/%{name}/plugins/
 %dir %{_usr}/lib/%{name}/plugins/
 %dir %{_usr}/share/%{name}/plugins/
-%{python_sitelib}/%{name}/agent/
 %{_bindir}/%{name}d
 %if 0%{?with_systemd}
 %attr(644,root,root) %{_unitdir}/%{name}d.service
@@ -139,42 +157,12 @@ fi
 %endif
 
 
-# --- python lib -------------------------------------------------------------
-
-%package -n python-%{name}
-Summary: Gofer python lib modules
-Group: Development/Languages
-BuildRequires: python
-Requires: pam
-%if 0%{?rhel} && 0%{?rhel} < 6
-Requires: python-ctypes
-Requires: python-simplejson
-Requires: python-hashlib
-Requires: python-uuid
-%endif
-
-%description -n python-%{name}
-Provides gofer python lib modules.
-
-%files -n python-%{name}
-%defattr(-,root,root,-)
-%{python_sitelib}/%{name}/*.py*
-%{python_sitelib}/%{name}/rmi/
-%dir %{python_sitelib}/%{name}/messaging/
-%dir %{python_sitelib}/%{name}/messaging/adapter
-%{python_sitelib}/%{name}/messaging/*.py*
-%{python_sitelib}/%{name}/messaging/adapter/*.py*
-%{python_sitelib}/%{name}/devel/
-%doc LICENSE
-
-
 # --- tools ------------------------------------------------------------------
 %if 0%{?with_tools}
 
 %package -n %{name}-tools
 Summary: Gofer tools
 Group: Development/Languages
-BuildRequires: python
 Requires: python-%{name} = %{version}
 
 %description -n%{name}-tools
@@ -182,7 +170,6 @@ Provides the gofer tools.
 
 %files -n %{name}-tools
 %defattr(-,root,root,-)
-%{python_sitelib}/%{name}/tools/
 %{_bindir}/%{name}
 %doc LICENSE
 %doc %{_mandir}/man1/gofer.*
@@ -190,58 +177,210 @@ Provides the gofer tools.
 %endif
 
 
-# --- python-qpid messaging adapter ------------------------------------------
+# --- python lib -------------------------------------------------------------
 
-%package -n python-%{name}-qpid
-Summary: Gofer Qpid messaging adapter python package
+%package -n python%{?p2n}-%{name}
+Summary: Gofer python lib modules
 Group: Development/Languages
-BuildRequires: python
-Requires: python-%{name} = %{version}
-Requires: python-qpid >= 0.18
-%if 0%{?rhel} && 0%{?rhel} < 6
-Requires: python-ssl
+BuildRequires: python%{?p2n}-devel
+BuildRequires: python%{?p2n}-setuptools
+Requires: python%{?p2n}-future
+Requires: python%{?p2n}-six
+Requires: pam
+%if 0%{?rhel} == 5
+Requires: python%{?p2n}-ctypes
+Requires: python%{?p2n}-simplejson
+Requires: python%{?p2n}-hashlib
+Requires: python%{?p2n}-uuid
 %endif
 
-%description -n python-%{name}-qpid
+%if 0%{?p2n}
+%{?python_provide:%python_provide python2-%{name}}
+%endif
+
+%description -n python%{?p2n}-%{name}
+Provides gofer python common modules.
+
+%files -n python%{?p2n}-%{name}
+%defattr(-,root,root,-)
+%{python2_sitelib}/%{name}/*.py*
+%{python2_sitelib}/%{name}/agent/
+%{python2_sitelib}/%{name}/rmi/
+%{python2_sitelib}/%{name}/tools/
+%{python2_sitelib}/%{name}/devel/
+%dir %{python2_sitelib}/%{name}/messaging/
+%dir %{python2_sitelib}/%{name}/messaging/adapter
+%{python2_sitelib}/%{name}/messaging/*.py*
+%{python2_sitelib}/%{name}/messaging/adapter/*.py*
+%doc LICENSE
+
+# ---
+
+%if 0%{?with_python3}
+
+%package -n python3-%{name}
+Summary: Gofer python lib modules
+Group: Development/Languages
+BuildRequires: python3-devel
+BuildRequires: python3-setuptools
+Requires: python3-future
+Requires: python3-six
+Requires: pam
+
+%{?python_provide:%python_provide python3-%{name}}
+
+%description -n python3-%{name}
+Provides gofer python common modules.
+
+%files -n python3-%{name}
+%defattr(-,root,root,-)
+%{python3_sitelib}/%{name}/*.py
+%{python3_sitelib}/%{name}/__pycache__/
+%{python3_sitelib}/%{name}/agent/
+%{python3_sitelib}/%{name}/rmi/
+%{python3_sitelib}/%{name}/tools/
+%{python3_sitelib}/%{name}/devel/
+%dir %{python3_sitelib}/%{name}/messaging/
+%dir %{python3_sitelib}/%{name}/messaging/adapter
+%{python3_sitelib}/%{name}/messaging/*.py
+%{python3_sitelib}/%{name}/messaging/__pycache__/
+%{python3_sitelib}/%{name}/messaging/adapter/*.py
+%{python3_sitelib}/%{name}/messaging/adapter/__pycache__/
+%doc LICENSE
+
+%endif
+
+
+# --- python-qpid messaging adapter ------------------------------------------
+
+%package -n python%{?p2n}-%{name}-qpid
+Summary: Gofer Qpid messaging adapter python package
+Group: Development/Languages
+BuildRequires: python%{?p2n}-devel
+Requires: python%{?p2n}-%{name} = %{version}
+Requires: python%{?p2n}-qpid >= 0.18
+%if 0%{?rhel} == 5
+Requires: python%{?p2n}-ssl
+%endif
+
+%if 0%{?p2n}
+%{?python_provide:%python_provide python2-%{name}-qpid}
+%endif
+
+%description -n python%{?p2n}-%{name}-qpid
 Provides the gofer qpid messaging adapter package.
 
-%files -n python-%{name}-qpid
-%{python_sitelib}/%{name}/messaging/adapter/qpid
+%files -n python%{?p2n}-%{name}-qpid
+%{python2_sitelib}/%{name}/messaging/adapter/qpid
 %doc LICENSE
+
+# ---
+
+%if 0%{?with_python3}
+
+%package -n python3-%{name}-qpid
+Summary: Gofer Qpid messaging adapter python package
+Group: Development/Languages
+BuildRequires: python3-devel
+Requires: python3-%{name} = %{version}
+Requires: python3-qpid >= 0.18
+
+%{?python_provide:%python_provide python3-%{name}-qpid}
+
+%description -n python3-%{name}-qpid
+Provides the gofer qpid messaging adapter package.
+
+%files -n python3-%{name}-qpid
+%{python3_sitelib}/%{name}/messaging/adapter/qpid
+%doc LICENSE
+
+%endif
 
 
 # --- python-qpid-proton messaging adapter -----------------------------------
 
-%package -n python-%{name}-proton
+%package -n python%{?p2n}-%{name}-proton
 Summary: Gofer Qpid proton messaging adapter python package
 Group: Development/Languages
-BuildRequires: python
-Requires: python-%{name} = %{version}
-Requires: python-qpid-proton >= 0.9-5
+BuildRequires: python%{?p2n}-devel
+Requires: python%{?p2n}-%{name} = %{version}
+Requires: python%{?p2n}-qpid-proton >= 0.9-5
 
-%description -n python-%{name}-proton
+%if 0%{?p2n}
+%{?python_provide:%python_provide python2-%{name}-proton}
+%endif
+
+%description -n python%{?p2n}-%{name}-proton
 Provides the gofer qpid proton messaging adapter package.
 
-%files -n python-%{name}-proton
-%{python_sitelib}/%{name}/messaging/adapter/proton
+%files -n python%{?p2n}-%{name}-proton
+%{python2_sitelib}/%{name}/messaging/adapter/proton
 %doc LICENSE
+
+# ---
+
+%if 0%{?with_python3}
+
+%package -n python3-%{name}-proton
+Summary: Gofer Qpid proton messaging adapter python package
+Group: Development/Languages
+BuildRequires: python3-devel
+Requires: python3-%{name} = %{version}
+Requires: python3-qpid-proton >= 0.9-5
+
+%{?python_provide:%python_provide python3-%{name}-proton}
+
+%description -n python3-%{name}-proton
+Provides the gofer qpid proton messaging adapter package.
+
+%files -n python3-%{name}-proton
+%{python3_sitelib}/%{name}/messaging/adapter/proton
+%doc LICENSE
+
+%endif
 
 
 # --- python-amqp messaging adapter ------------------------------------------
 
-%package -n python-%{name}-amqp
+%package -n python%{?p2n}-%{name}-amqp
 Summary: Gofer amqp messaging adapter python package
 Group: Development/Languages
-BuildRequires: python
-Requires: python-%{name} = %{version}
-Requires: python-amqp >= 2.1.4
+BuildRequires: python%{?p2n}-devel
+Requires: python%{?p2n}-%{name} = %{version}
+Requires: python%{?p2n}-amqp >= 2.1.4
 
-%description -n python-%{name}-amqp
+%if 0%{?p2n}
+%{?python_provide:%python_provide python2-%{name}-amqp}
+%endif
+
+%description -n python%{?p2n}-%{name}-amqp
 Provides the gofer amqp messaging adapter package.
 
-%files -n python-%{name}-amqp
-%{python_sitelib}/%{name}/messaging/adapter/amqp
+%files -n python%{?p2n}-%{name}-amqp
+%{python2_sitelib}/%{name}/messaging/adapter/amqp
 %doc LICENSE
+
+# ---
+
+%if 0%{?with_python3}
+
+%package -n python3-%{name}-amqp
+Summary: Gofer amqp messaging adapter python package
+Group: Development/Languages
+BuildRequires: python3-devel
+Requires: python3-%{name} = %{version}
+Requires: python3-amqp >= 2.1.4
+
+%{?python_provide:%python_provide python3-%{name}-amqp}
+
+%description -n python3-%{name}-amqp
+Provides the gofer amqp messaging adapter package.
+
+%files -n python3-%{name}-amqp
+%{python3_sitelib}/%{name}/messaging/adapter/amqp
+%doc LICENSE
+
+%endif
 
 
 # --- changelog --------------------------------------------------------------
@@ -274,6 +413,13 @@ Provides the gofer amqp messaging adapter package.
 - support root logger in agent configuration. (jortel@redhat.com)
 - add dist containing sources (jortel@redhat.com)
 - update url to github. (jortel@redhat.com)
+
+* Sat Aug 19 2017 Zbigniew Jędrzejewski-Szmek <zbyszek@in.waw.pl> - 2.11.0-3
+- Python 2 binary package renamed to python2-gofer
+  See https://fedoraproject.org/wiki/FinalizingFedoraSwitchtoPython3
+
+* Wed Jul 26 2017 Fedora Release Engineering <releng@fedoraproject.org> - 2.11.0-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_27_Mass_Rebuild
 
 * Fri Apr 07 2017 Jeff Ortel <jortel@redhat.com> 2.11.0-1
 - Bumped for semantic versioning.

@@ -8,12 +8,15 @@
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
+from six import get_unbound_function
 
 from unittest import TestCase
 
 from mock import Mock, patch
 
-from gofer.agent.decorator import Actions, Delegate
+from gofer.compat import str
+from gofer.agent.decorator import Action, Actions, Delegate
+from gofer.collation import Class, Module, Method, Function
 
 
 class TestActions(TestCase):
@@ -36,40 +39,56 @@ class TestActions(TestCase):
             Actions.clear()
             self.assertEqual(Actions.functions, {})
 
-    @patch('gofer.agent.decorator.Action')
-    @patch('gofer.agent.decorator.Collator.collate')
-    def test_collated(self, collate, action):
-        functions = (
-            (Mock(__name__='m1'), dict(days=30)),
-            (Mock(__name__='m2'), dict(minutes=40)),
-            (Mock(__name__='fn1'), dict(hours=10)),
-            (Mock(__name__='fn2'), dict(seconds=20)),
-        )
-        class_1 = Mock(__name__='class_1')
-        mod_1 = Mock(__name__='mod_1')
-        collate.return_value = (
-            {class_1: functions[0:2]},
-            {mod_1: functions[2:4]}
-        )
-        actions = [
-            Mock(),
-            Mock(),
-            Mock(),
-            Mock(),
-        ]
-        action.side_effect = actions
+    @patch('gofer.agent.decorator.Collator.__call__')
+    def test_collated(self, collate):
+        def fn1(): pass
 
-        with patch('gofer.agent.decorator.Actions.functions', dict(functions)):
-            collated = Actions.collated()
-            self.assertEqual(
-                action.call_args_list,
-                [
-                    ((class_1().m1,), functions[0][1]),
-                    ((class_1().m2,), functions[1][1]),
-                    ((functions[2][0],), functions[2][1]),
-                    ((functions[3][0],), functions[3][1]),
-                ])
-            self.assertEqual(collated, actions)
+        def fn2(): pass
+
+        def fn3(): pass
+
+        def fn4(): pass
+
+        class T(object):
+            def m1(self): pass
+
+            def m2(self): pass
+
+            def m3(self): pass
+
+            def m4(self): pass
+
+        methods = [
+            Method(get_unbound_function(T.m1), dict(days=30)),
+            Method(get_unbound_function(T.m2), dict(minutes=40)),
+            Method(get_unbound_function(T.m3), dict(hours=10)),
+            Method(get_unbound_function(T.m4), dict(seconds=20)),
+        ]
+        functions = [
+            Function(fn1, dict(days=30)),
+            Function(fn2, dict(minutes=40)),
+            Function(fn3, dict(hours=10)),
+            Function(fn4, dict(seconds=20)),
+        ]
+
+        functions = [
+            Module(Mock(__name__='M1'), functions={f.name: f for f in functions})
+        ]
+        classes = [
+            Class(Mock(__name__='C1'), methods={m.name: m for m in methods})
+        ]
+
+        collate.return_value = (classes, functions)
+
+        actual = sorted(Actions.collated(), key=lambda a: a.name)
+
+        expected = []
+        for ns in classes + functions:
+            for target in ns:
+                expected.append(Action(str(target), target, **target.options))
+
+        expected = sorted(expected, key=lambda a: a.name)
+        self.assertEqual(expected, actual)
 
 
 class TestDelegate(TestCase):
