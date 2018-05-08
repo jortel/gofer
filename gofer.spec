@@ -387,6 +387,9 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Tue May 08 2018 Jeff Ortel <jortel@redhat.com> 2.12-0
+- Add support for python3; Drop support for python<2.7. (jortel@redhat.com)
+
 * Tue Apr 24 2018 Jeff Ortel <jortel@redhat.com> 2.11.4-3
 - Fixed dist in spec. (jortel@redhat.com)
 
