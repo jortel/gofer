@@ -19,9 +19,9 @@ Provides (local) message storage classes.
 
 import os
 
-from time import sleep, time
 from logging import getLogger
-from queue import Queue, Empty
+from six.moves.queue import Queue, Empty
+from time import sleep, time
 
 from gofer import NAME, Thread
 from gofer.common import mkdir, rmdir, unlink

@@ -15,13 +15,11 @@
 """
 Message authentication plumbing.
 """
-from builtins import bytes
-from six import PY3
 
-
+from base64 import b64encode, b64decode
 from hashlib import sha256
 from logging import getLogger
-from base64 import b64encode, b64decode
+from six import PY3
 
 from gofer.compat import str
 from gofer.messaging.model import Document, DocumentError
@@ -142,7 +140,7 @@ def validate(authenticator, message):
         details = str(e)
         log.info(details)
         log.debug(details, exc_info=True)
-        de = ValidationFailed(details, original)
+        de = ValidationFailed(details, document)
         raise de
 
 

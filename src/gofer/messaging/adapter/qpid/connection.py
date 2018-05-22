@@ -12,13 +12,12 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from six import with_metaclass
-
 """
 Defined Qpid broker objects.
 """
 
 from logging import getLogger
+from six import with_metaclass
 
 from qpid.messaging import Connection as RealConnection
 from qpid.messaging.transports import TRANSPORTS

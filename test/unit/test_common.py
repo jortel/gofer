@@ -8,14 +8,13 @@
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
-from six import with_metaclass, unichr
-
 
 import os
 import errno
 
+from six import with_metaclass, unichr
+from six.moves.queue import Queue
 from threading import Thread, Event
-from queue import Queue
 
 from unittest import TestCase
 

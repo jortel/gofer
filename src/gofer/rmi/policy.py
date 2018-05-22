@@ -16,13 +16,10 @@
 """
 Contains request delivery policies.
 """
-
-from past.builtins import basestring
-
 from logging import getLogger
 from uuid import uuid4
 
-from gofer.compat import str
+from gofer.compat import str, basestring
 from gofer.common import Thread, Options, nvl, released
 from gofer.messaging import Document, DocumentError
 from gofer.messaging import Producer, Reader, Queue, Exchange

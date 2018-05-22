@@ -104,7 +104,7 @@ class ReplyConsumer(Consumer):
             log.exception(document)
 
 
-class AsyncReply:
+class AsyncReply(object):
     """
     Asynchronous request reply.
     :ivar sn: The request serial number.

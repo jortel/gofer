@@ -67,18 +67,17 @@ class TestAuthenticator(Authenticator):
 
     def sign(self, message):
         h = sha256()
-        h.update(message)
+        h.update(message.encode('utf8'))
         digest = h.hexdigest()
         # print('signed: {}'.format(digest))
         return digest
 
-    def validate(self, document, message, signature):
-        digest = self.sign(message)
-        valid = signature == digest
+    def validate(self, document, digest, signature):
+        valid = signature == self.sign(digest)
         # print('matching signatures: [{}, {}]'.format(signature, digest))
         if valid:
             return
-        raise ValidationFailed('matching signatures: [{}, {]]'.format(signature, digest))
+        raise ValidationFailed('matching signatures: [{}, {}]]'.format(signature, digest))
 
 
 if plugin.cfg.messaging.auth:

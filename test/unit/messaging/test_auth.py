@@ -111,7 +111,9 @@ class TestValidation(TestCase):
         except ValidationFailed as e:
             self.assertEqual(e.document, _document.return_value)
 
-    def test_validate_exception(self):
+    @patch('gofer.messaging.auth.Document')
+    def test_validate_exception(self, _document):
+        _document.return_value = Document()
         message = '[]'
         reason = 'this is bad'
         authenticator = Mock()
@@ -123,7 +125,7 @@ class TestValidation(TestCase):
             self.assertTrue(False, msg='validation exception expected')
         except ValidationFailed as e:
             self.assertEqual(e.details, reason)
-            self.assertEqual(e.document, message)
+            self.assertEqual(e.document, _document.return_value)
 
     @patch('gofer.messaging.auth.Document')
     def test_no_message(self, _document):

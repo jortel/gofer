@@ -46,16 +46,13 @@ schema = (
 cfg = Config('base.conf')
 cfg.validate(schema)
 """
-from past.builtins import basestring
-
-
 import os
 import re
 
 from threading import RLock
 from io import StringIO
 
-from gofer.compat import str, json
+from gofer.compat import str, basestring, json
 
 
 # -- constants ----------------------------------------------------------------

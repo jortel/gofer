@@ -12,10 +12,9 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from six import with_metaclass
-
 
 from threading import RLock
+from six import with_metaclass
 
 from gofer import Singleton, synchronized
 from gofer.compat import str

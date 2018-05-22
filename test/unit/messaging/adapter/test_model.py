@@ -14,9 +14,7 @@
 #
 from six import with_metaclass
 
-
 from unittest import TestCase
-
 from mock import patch, Mock
 
 from gofer.compat import str

@@ -12,13 +12,11 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-import six
+from six import PY2
 
-# json
-try:
-    import simplejson as json
-except ImportError:
-    import json
-
-# str|unicode
-str = six.text_type
+if PY2:
+    str = unicode
+    basestring = basestring
+else:
+    basestring = str
+    str = str

@@ -14,23 +14,21 @@
 #
 from __future__ import absolute_import
 
-from past.builtins import basestring
-from six import PY2
-
 
 import os
 import errno
 import atexit
 
 from copy import copy
+from logging import getLogger
 from threading import local as _Local
 from threading import Thread as _Thread
 from threading import current_thread
 from threading import Event, RLock
-from logging import getLogger
+from six import PY2
 
 from . import inspection
-from .compat import str
+from .compat import str, basestring
 
 
 log = getLogger(__name__)

@@ -15,7 +15,7 @@
 
 
 Name: gofer
-Version: 2.12
+Version: 2.12.0
 Release: 0%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -184,7 +184,6 @@ Summary: Gofer python lib modules
 Group: Development/Languages
 BuildRequires: python%{?p2n}-devel
 BuildRequires: python%{?p2n}-setuptools
-Requires: python%{?p2n}-future
 Requires: python%{?p2n}-six
 Requires: pam
 %if 0%{?rhel} == 5
@@ -204,6 +203,7 @@ Provides gofer python common modules.
 %files -n python%{?p2n}-%{name}
 %defattr(-,root,root,-)
 %{python2_sitelib}/%{name}/*.py*
+%{python2_sitelib}/%{name}/compat/
 %{python2_sitelib}/%{name}/agent/
 %{python2_sitelib}/%{name}/rmi/
 %{python2_sitelib}/%{name}/tools/
@@ -222,8 +222,7 @@ Provides gofer python common modules.
 Summary: Gofer python lib modules
 Group: Development/Languages
 BuildRequires: python3-devel
-BuildRequires: python3-setuptools
-Requires: python3-future
+BuildRequires: python3-setuptools`
 Requires: python3-six
 Requires: pam
 
@@ -236,6 +235,7 @@ Provides gofer python common modules.
 %defattr(-,root,root,-)
 %{python3_sitelib}/%{name}/*.py
 %{python3_sitelib}/%{name}/__pycache__/
+%{python3_sitelib}/%{name}/compat/
 %{python3_sitelib}/%{name}/agent/
 %{python3_sitelib}/%{name}/rmi/
 %{python3_sitelib}/%{name}/tools/
