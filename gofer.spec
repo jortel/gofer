@@ -387,6 +387,12 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Tue May 22 2018 Jeff Ortel <jortel@redhat.com> 2.12.0-0
+- python-future not available in el6/el7. (jortel@redhat.com)
+- Fixed exception propagation of builtin exceptions when raised by different python versions (2/3).
+- Fixed raising ValidationError when non-validation related exceptions are caught.
+- Z-bit added to version: 2.12.0
+
 * Tue May 08 2018 Jeff Ortel <jortel@redhat.com> 2.12-0
 - Add support for python3; Drop support for python<2.7. (jortel@redhat.com)
 
