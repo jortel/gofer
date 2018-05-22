@@ -17,10 +17,9 @@
 Provided to support PY3/PY3 compatibility.
 """
 
-from six import PY2, get_unbound_function
-
-
 import inspect
+
+from six import PY2, get_unbound_function
 
 from gofer.compat import str
 

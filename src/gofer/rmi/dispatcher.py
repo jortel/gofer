@@ -152,7 +152,37 @@ class RemoteException(Exception):
     """
 
     @staticmethod
+    def _import(mod, target):
+        """
+        Import the concrete exception class.
+
+        Args:
+            mod (str): The module name.
+            target (str): The class name.
+
+        Returns:
+            class: The imported class.
+        """
+        def _import(m):
+            m = __import__(m, fromlist=[str(target)])
+            return getattr(m, target)
+        try:
+            return _import(mod)
+        except ImportError:
+            return _import(Exception.__module__)
+
+    @staticmethod
     def instance(reply):
+        """
+        Create an instance of the remote exception.
+
+        Args:
+            reply (Document):  The reply.
+
+        Returns:
+            Exception: The concrete remote exception.
+            RemoteException: When concrete exception cannot be propagated.
+        """
         target = reply.xclass
         mod = reply.xmodule
         state = reply.xstate
@@ -160,8 +190,7 @@ class RemoteException(Exception):
         try:
             T = globals().get(target)
             if not T:
-                mod = __import__(mod, fromlist=[str(target)])
-                T = getattr(mod, target)
+                T = RemoteException._import(mod, target)
             try:
                 inst = new(T, state)
             except Exception:

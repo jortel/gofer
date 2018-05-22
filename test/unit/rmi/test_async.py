@@ -9,9 +9,12 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
+from six import unichr
+
 from unittest import TestCase
 from mock import Mock
 
+from gofer.compat import str
 from gofer.messaging import Document
 from gofer.rmi.async import (
     AsyncReply,
@@ -59,10 +62,10 @@ class TestAsyncReply(TestCase):
         self.assertEqual(reply.timestamp, document.timestamp)
         self.assertEqual(reply.data, document.data)
 
-    def test_unicode(self):
+    def test_str(self):
         reply = AsyncReply(document)
-        s = unicode(reply)
-        self.assertTrue(isinstance(s, unicode))
+        s = str(reply)
+        self.assertTrue(isinstance(s, str))
 
 
 class TestAccepted(TestCase):
@@ -83,10 +86,10 @@ class TestAccepted(TestCase):
         reply.notify(f)
         f.assert_called_once_with(reply)
 
-    def test_unicode(self):
+    def test_str(self):
         reply = Accepted(document)
-        s = unicode(reply)
-        self.assertTrue(isinstance(s, unicode))
+        s = str(reply)
+        self.assertTrue(isinstance(s, str))
 
 
 class TestRejected(TestCase):
@@ -107,10 +110,10 @@ class TestRejected(TestCase):
         reply.notify(f)
         f.assert_called_once_with(reply)
 
-    def test_unicode(self):
+    def test_str(self):
         reply = Rejected(document)
-        s = unicode(reply)
-        self.assertTrue(isinstance(s, unicode))
+        s = str(reply)
+        self.assertTrue(isinstance(s, str))
 
 
 class TestStarted(TestCase):
@@ -131,10 +134,10 @@ class TestStarted(TestCase):
         reply.notify(f)
         f.assert_called_once_with(reply)
 
-    def test_unicode(self):
+    def test_str(self):
         reply = Started(document)
-        s = unicode(reply)
-        self.assertTrue(isinstance(s, unicode))
+        s = str(reply)
+        self.assertTrue(isinstance(s, str))
 
 
 class TestProgress(TestCase):
@@ -158,10 +161,10 @@ class TestProgress(TestCase):
         reply.notify(f)
         f.assert_called_once_with(reply)
 
-    def test_unicode(self):
+    def test_str(self):
         reply = Progress(document)
-        s = unicode(reply)
-        self.assertTrue(isinstance(s, unicode))
+        s = str(reply)
+        self.assertTrue(isinstance(s, str))
 
 
 class TestFinalReply(TestCase):
@@ -196,10 +199,10 @@ class TestSucceeded(TestCase):
         reply.notify(f)
         f.assert_called_once_with(reply)
 
-    def test_unicode(self):
+    def test_str(self):
         reply = Succeeded(document)
-        s = unicode(reply)
-        self.assertTrue(isinstance(s, unicode))
+        s = str(reply)
+        self.assertTrue(isinstance(s, str))
 
 
 class TestFailed(TestCase):
@@ -229,7 +232,7 @@ class TestFailed(TestCase):
         except ValueError:
             pass
 
-    def test_unicode(self):
+    def test_str(self):
         reply = Failed(document)
-        s = unicode(reply)
-        self.assertTrue(isinstance(s, unicode))
+        s = str(reply)
+        self.assertTrue(isinstance(s, str))

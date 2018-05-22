@@ -62,7 +62,7 @@ class TestAuthenticator(Authenticator):
 
     def sign(self, message):
         h = sha256()
-        h.update(message)
+        h.update(message.encode())
         digest = h.hexdigest()
         # print('signed: {}'.format(digest)
         return digest

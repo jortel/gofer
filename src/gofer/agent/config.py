@@ -14,7 +14,6 @@
 #
 from six import with_metaclass
 
-
 from gofer import NAME, Singleton
 from gofer.config import Config, Graph
 from gofer.config import REQUIRED, OPTIONAL, ANY, BOOL, NUMBER, FLOAT

@@ -12,8 +12,6 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from six import with_metaclass
-
 
 """
 Plugin classes.
@@ -25,6 +23,7 @@ import sys
 
 from logging import getLogger
 from threading import RLock
+from six import with_metaclass
 
 from gofer import Singleton, synchronized, NAME
 from gofer.agent.config import PLUGIN_SCHEMA, PLUGIN_DEFAULTS
