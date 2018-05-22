@@ -16,7 +16,7 @@
 
 Name: gofer
 Version: 2.12.0
-Release: 0%{?dist}
+Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
 License: LGPLv2
@@ -222,7 +222,7 @@ Provides gofer python common modules.
 Summary: Gofer python lib modules
 Group: Development/Languages
 BuildRequires: python3-devel
-BuildRequires: python3-setuptools`
+BuildRequires: python3-setuptools
 Requires: python3-six
 Requires: pam
 
