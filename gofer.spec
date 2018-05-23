@@ -387,6 +387,9 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Wed May 23 2018 Jeff Ortel <jortel@redhat.com> 2.12.0-1
+- Fix buildrequires: python3-setuptools. (jortel@redhat.com)
+
 * Tue May 22 2018 Jeff Ortel <jortel@redhat.com> 2.12.0-0
 - python-future not available in el6/el7. (jortel@redhat.com)
 - Fixed exception propagation of builtin exceptions when raised by different python versions (2/3).
