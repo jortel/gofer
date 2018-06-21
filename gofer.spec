@@ -248,6 +248,9 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Thu Jun 21 2018 Jeff Ortel <jortel@redhat.com> 2.11.5-1
+- Reload plugin on no-route caused by missing queue. (jortel@redhat.com)
+
 * Tue Apr 24 2018 Jeff Ortel <jortel@redhat.com> 2.11.4-3
 - Fixed dist in spec. (jortel@redhat.com)
 
