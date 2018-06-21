@@ -15,6 +15,7 @@
 
 from logging import getLogger
 
+from gofer.common import Thread
 from gofer.messaging import Consumer, Producer, Document
 from gofer.metrics import timestamp
 
@@ -36,7 +37,31 @@ class RequestConsumer(Consumer):
         :type plugin: gofer.agent.plugin.Plugin
         """
         super(RequestConsumer, self).__init__(node, plugin.url)
-        self.scheduler = plugin.scheduler
+        self.plugin = plugin
+
+    @property
+    def scheduler(self):
+        return self.plugin.scheduler
+
+    def no_route(self):
+        """
+        The link cannot be established.
+
+        Likely that the queue does not exist.
+        Abort and reload the plugin.
+
+        Returns:
+            Thread: The thread performing the reload.
+        """
+        def _reload():
+            try:
+                self.plugin.reload()
+            except Exception:
+                log.exception('Reload plugin: %s, failed', self.plugin.name)
+        self.abort()
+        thread = Thread(target=_reload)
+        thread.start()
+        return thread
 
     def rejected(self, code, description, document, details):
         """
@@ -49,7 +74,7 @@ class RequestConsumer(Consumer):
         :param document: The received document.
         :type document: Document
         :param details: The explanation.
-        :type details: str
+        :type details: dict
         """
         details = dict(
             code=code,
