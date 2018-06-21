@@ -53,6 +53,13 @@ def attach(fn):
     return _fn
 
 
+class PluginError(Exception):
+    """
+    General plugin error.
+    """
+    pass
+
+
 class Container(object):
     """
     Plugin container.
@@ -125,12 +132,12 @@ class Container(object):
         :type path: str
         """
         if path in self.plugins:
-            raise ValueError('plugin: %s, already loaded' % path)
+            raise PluginError('plugin: %s, already loaded' % path)
         plugin = PluginLoader.load(path)
         if plugin:
             plugin.start()
         else:
-            raise Exception('failed')
+            raise PluginError('load failed')
 
     @synchronized
     def reload(self, path):
@@ -140,12 +147,12 @@ class Container(object):
         :type path: str
         """
         if path not in self.plugins:
-            raise ValueError('plugin: %s, not-found' % path)
+            raise PluginError('plugin: %s, not-found' % path)
         plugin = self.find(path)
         if plugin:
             plugin.reload()
         else:
-            raise Exception('failed')
+            raise PluginError('reload failed')
 
     @synchronized
     def unload(self, path):
@@ -155,12 +162,12 @@ class Container(object):
         :type path: str
         """
         if path not in self.plugins:
-            raise ValueError('plugin: %s, not-found' % path)
+            raise PluginError('plugin: %s, not-found' % path)
         plugin = self.find(path)
         if plugin:
             plugin.unload()
         else:
-            raise Exception('failed')
+            raise PluginError('unload failed')
 
 
 class Plugin(object):
@@ -653,7 +660,7 @@ class PluginLoader:
         :type plugin: str
         :return: The fully qualified path to the plugin module.
         :rtype: str
-        :raise Exception: When not found.
+        :raise PluginError: When not found.
         """
         mod = '%s.py' % plugin
         for root in PluginLoader.PATH:
@@ -661,7 +668,7 @@ class PluginLoader:
             if os.path.exists(path):
                 return path
         reason = '%s, not found in:%s' % (mod, PluginLoader.PATH)
-        raise Exception(reason)
+        raise PluginError(reason)
 
     @staticmethod
     def _load(plugin):
