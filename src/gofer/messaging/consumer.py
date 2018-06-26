@@ -12,9 +12,10 @@
 from time import sleep
 from logging import getLogger
 
+from gofer.compat import str
 from gofer.common import Thread, released
 from gofer.messaging.model import DocumentError
-from gofer.messaging.adapter.model import Reader
+from gofer.messaging.adapter.model import Reader, NotFound
 
 
 log = getLogger(__name__)
@@ -70,6 +71,10 @@ class ConsumerThread(Thread):
             try:
                 self.reader.open()
                 break
+            except NotFound as le:
+                log.error(str(le))
+                sleep(10)
+                self.no_route()
             except Exception:
                 log.exception(self.getName())
                 sleep(30)
@@ -99,11 +104,14 @@ class ConsumerThread(Thread):
             message.ack()
         except DocumentError as de:
             self.rejected(de.code, de.description, de.document, de.details)
+        except NotFound as le:
+            log.error(str(le))
+            sleep(10)
+            self.repair()
         except Exception:
             log.exception(self.getName())
-            sleep(60)
-            self.close()
-            self.open()
+            sleep(30)
+            self.repair()
 
     def rejected(self, code, description, document, details):
         """
@@ -119,6 +127,21 @@ class ConsumerThread(Thread):
         :type details: str
         """
         log.debug('rejected: %s', document)
+
+    def repair(self):
+        """
+        Repair the consumer.
+        """
+        self.close()
+        self.open()
+
+    def no_route(self):
+        """
+        The link cannot be established.
+        Likely that the queue does not exist.
+        The default is to repair.
+        """
+        self.repair()
 
     def dispatch(self, document):
         """

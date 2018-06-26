@@ -14,7 +14,7 @@ from unittest import TestCase
 
 from mock import Mock, patch
 
-from gofer.messaging import Node
+from gofer.messaging import Node, NotFound
 from gofer.messaging.consumer import ConsumerThread, Consumer
 from gofer.messaging import DocumentError, ValidationFailed
 
@@ -97,6 +97,23 @@ class TestConsumerThread(TestCase):
 
         # validation
         consumer.reader.close.assert_called_once_with()
+
+    @patch('gofer.messaging.consumer.sleep')
+    def test_open_not_found_raised(self, sleep):
+        url = 'test-url'
+        node = Node('test-queue')
+        consumer = ConsumerThread(node, url)
+        consumer.reader = Mock()
+        consumer.reader.open.side_effect = [NotFound, None]
+        consumer.no_route = Mock()
+
+        # test
+        consumer.open()
+
+        # validation
+        sleep.assert_called_once_with(10)
+        consumer.no_route.assert_called_once_with()
+        self.assertEqual(consumer.reader.open.call_count, 2)
 
     @patch('gofer.messaging.consumer.sleep')
     def test_open_exception(self, sleep):
@@ -197,7 +214,25 @@ class TestConsumerThread(TestCase):
         # validation
         consumer.close.assert_called_once_with()
         consumer.open.assert_called_once_with()
-        sleep.assert_called_once_with(60)
+        sleep.assert_called_once_with(30)
+
+    @patch('gofer.messaging.consumer.sleep')
+    def test_read_not_found(self, sleep):
+        url = 'test-url'
+        node = Node('test-queue')
+        consumer = ConsumerThread(node, url)
+        consumer.reader = Mock()
+        consumer.reader.next.side_effect = NotFound
+        consumer.open = Mock()
+        consumer.close = Mock()
+
+        # test
+        consumer.read()
+
+        # validation
+        consumer.close.assert_called_once_with()
+        consumer.open.assert_called_once_with()
+        sleep.assert_called_once_with(10)
 
     def test_rejected(self):
         url = 'test-url'
@@ -210,6 +245,20 @@ class TestConsumerThread(TestCase):
         node = Node('test-queue')
         consumer = ConsumerThread(node, url)
         consumer.dispatch(Mock())
+
+    def test_repair(self):
+        url = 'test-url'
+        node = Node('test-queue')
+        consumer = ConsumerThread(node, url)
+        consumer.open = Mock()
+        consumer.close = Mock()
+
+        # Test
+        consumer.repair()
+
+        # Validation
+        consumer.close.assert_called_once_with()
+        consumer.open.assert_called_once_with()
 
 
 class TestConsumer(TestCase):

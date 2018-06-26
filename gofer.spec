@@ -15,7 +15,7 @@
 
 
 Name: gofer
-Version: 2.12.0
+Version: 2.12.1
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
