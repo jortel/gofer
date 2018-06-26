@@ -146,7 +146,7 @@ class Pending(object):
         """
         while not Thread.aborted():
             try:
-                return self.queue.get(timeout=10)
+                return self.queue.get(timeout=3)
             except Empty:
                 pass
         # aborted
