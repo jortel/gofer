@@ -47,23 +47,28 @@ Levels (may be lower case):
 
 Gofer packages:
 
-- agent
-- messaging
-- rmi
+The list of common packages.  Set to DEBUG for more information.
+
+- **root** - The root logger for the python process.  Applies to all packages.
+- **gofer** - All of gofer.
+- **gofer.agent** - The agent which includes plugin management and request dispatching.
+- **gofer.messaging** - All AMQP messaging.
+- **gofer.rmi** - The RMI request/response protocol and processing.
+
 
 Examples:
 
 ::
 
  [logging]
- agent=DEBUG
- messaging=WARNING
+ gofer.agent=DEBUG
+ gofer.messaging=DEBUG
 
 
 ::
 
  [logging]
- root=ERROR
+ root=DEBUG
 
 
 [pam]

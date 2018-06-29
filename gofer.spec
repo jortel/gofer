@@ -91,9 +91,6 @@ rm %{buildroot}/usr/bin/%{name}
 rm %{buildroot}/%{_mandir}/man1/gofer.*
 %endif
 
-%clean
-rm -rf %{buildroot}
-
 %files
 %defattr(-,root,root,-)
 %dir %{_sysconfdir}/%{name}/
