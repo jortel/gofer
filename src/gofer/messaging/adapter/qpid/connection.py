@@ -17,7 +17,6 @@ Defined Qpid broker objects.
 """
 
 from logging import getLogger
-from six import with_metaclass
 
 from qpid.messaging import Connection as RealConnection
 from qpid.messaging.transports import TRANSPORTS
@@ -38,7 +37,7 @@ TCP = 'tcp'
 SSL = 'ssl'
 
 
-class Connection(with_metaclass(ThreadSingleton, BaseConnection)):
+class Connection(BaseConnection, metaclass=ThreadSingleton):
     """
     Represents a Qpid connection.
     """

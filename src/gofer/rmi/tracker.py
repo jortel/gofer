@@ -15,13 +15,12 @@ Request tracker classes.
 import os
 
 from threading import RLock
-from six import with_metaclass
 
 from gofer import Singleton, synchronized, NAME
 from gofer.common import mkdir
 
 
-class Tracker(with_metaclass(Singleton)):
+class Tracker(metaclass=Singleton):
     """
     Request tracker used to track information about
     active RMI requests.

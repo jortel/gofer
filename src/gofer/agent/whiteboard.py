@@ -14,13 +14,12 @@
 #
 
 from threading import RLock
-from six import with_metaclass
 
 from gofer import Singleton, synchronized
 from gofer.compat import str
 
 
-class Whiteboard(with_metaclass(Singleton)):
+class Whiteboard(metaclass=Singleton):
     """
     Provides a dict-like object used to publish
     information to other plugins.

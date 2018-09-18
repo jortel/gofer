@@ -12,7 +12,6 @@
 import ssl
 
 from logging import getLogger
-from six import with_metaclass
 from socket import error as SocketError
 
 from amqp import Connection as RealConnection
@@ -33,7 +32,7 @@ PASSWORD = 'guest'
 CONNECTION_EXCEPTIONS = (IOError, SocketError, ConnectionError, AttributeError)
 
 
-class Connection(with_metaclass(ThreadSingleton, BaseConnection)):
+class Connection(BaseConnection, metaclass=ThreadSingleton):
     """
     An AMQP broker connection.
     """

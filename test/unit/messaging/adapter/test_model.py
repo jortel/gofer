@@ -12,7 +12,6 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from six import with_metaclass
 
 from unittest import TestCase
 from mock import patch, Mock
@@ -42,7 +41,7 @@ class Local(object):
     pass
 
 
-class FakeConnection(with_metaclass(ThreadSingleton, object)):
+class FakeConnection(metaclass=ThreadSingleton):
 
     def __init__(self, url):
         self.url = url

@@ -23,7 +23,6 @@ import sys
 
 from logging import getLogger
 from threading import RLock
-from six import with_metaclass
 
 from gofer import Singleton, synchronized, NAME
 from gofer.agent.config import PLUGIN_SCHEMA, PLUGIN_DEFAULTS
@@ -61,7 +60,7 @@ class PluginError(Exception):
     pass
 
 
-class Container(with_metaclass(Singleton, object)):
+class Container(metaclass=Singleton):
     """
     Plugin container.
     """

@@ -12,7 +12,7 @@
 import os
 import errno
 
-from six import with_metaclass, unichr
+from six import unichr
 from six.moves.queue import Queue
 from threading import Thread, Event
 
@@ -31,7 +31,7 @@ from gofer.common import new, newT
 from gofer.compat import str
 
 
-class Thing(with_metaclass(Singleton, object)):
+class Thing(metaclass=Singleton):
 
     def __init__(self, n1, n2, a=0, b=0):
         super(Thing, self).__init__()
@@ -46,7 +46,7 @@ class Thing(with_metaclass(Singleton, object)):
         return str(self.name)
 
 
-class Thing2(with_metaclass(Singleton, object)):
+class Thing2(metaclass=Singleton):
 
     def __init__(self, n1, n2, a=0, b=0):
         super(Thing2, self).__init__()
@@ -56,7 +56,7 @@ class Thing2(with_metaclass(Singleton, object)):
         self.b = b
 
 
-class ThingT(with_metaclass(ThreadSingleton, object)):
+class ThingT(metaclass=ThreadSingleton):
 
     def __init__(self, n1, n2, a=0, b=0):
         self.__mutex = Mock()
@@ -66,7 +66,7 @@ class ThingT(with_metaclass(ThreadSingleton, object)):
         self.b = b
 
 
-class ThingT2(with_metaclass(ThreadSingleton, object)):
+class ThingT2(metaclass=ThreadSingleton):
 
     def __init__(self, n1, n2, a=0, b=0):
         self.n1 = n1
