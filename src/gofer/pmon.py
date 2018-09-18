@@ -23,7 +23,6 @@ from threading import RLock
 from logging import getLogger
 from time import sleep
 
-from gofer.compat import str
 from gofer.common import Thread, synchronized
 
 

@@ -9,7 +9,6 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from gofer.compat import str
 from gofer.messaging.consumer import Consumer
 from gofer.messaging import Producer, Reader, Exchange, Queue
 

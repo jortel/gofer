@@ -13,7 +13,6 @@ from unittest import TestCase
 
 from mock import patch, Mock
 
-from gofer.compat import str
 from gofer.devel import ipatch
 
 with ipatch('qpid'):

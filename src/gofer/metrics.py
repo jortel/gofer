@@ -24,8 +24,6 @@ import time
 from math import modf
 from datetime import datetime
 
-from gofer.compat import str
-
 
 def timestamp():
     dt = datetime.utcnow()

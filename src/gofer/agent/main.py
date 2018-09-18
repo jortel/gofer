@@ -20,7 +20,6 @@ import logging
 from time import sleep
 from getopt import getopt, GetoptError
 
-from gofer.compat import str
 from gofer.agent.logutil import LogHandler
 
 LogHandler.install()

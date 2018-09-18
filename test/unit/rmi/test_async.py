@@ -12,7 +12,6 @@
 from unittest import TestCase
 from mock import Mock
 
-from gofer.compat import str
 from gofer.messaging import Document
 from gofer.rmi.async import (
     AsyncReply,

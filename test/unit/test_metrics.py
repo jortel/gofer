@@ -15,7 +15,6 @@ from datetime import datetime
 
 from mock import patch
 
-from gofer.compat import str
 from gofer.metrics import Timer, Memory
 from gofer.metrics import timestamp
 

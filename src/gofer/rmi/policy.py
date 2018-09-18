@@ -19,7 +19,6 @@ Contains request delivery policies.
 from logging import getLogger
 from uuid import uuid4
 
-from gofer.compat import str, basestring
 from gofer.common import Thread, Options, nvl, released
 from gofer.messaging import Document, DocumentError
 from gofer.messaging import Producer, Reader, Queue, Exchange
@@ -70,7 +69,7 @@ class Timeout:
             return thing
         if isinstance(thing, float):
             return int(thing)
-        if not isinstance(thing, basestring):
+        if not isinstance(thing, str):
             raise TypeError(thing)
         if not len(thing):
             raise ValueError(thing)

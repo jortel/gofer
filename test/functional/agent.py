@@ -19,7 +19,7 @@ import os
 ROOT = os.path.expanduser('~/.gofer')
 
 
-from gofer.compat import str, json
+from gofer.compat import json
 
 from time import sleep
 from optparse import OptionParser

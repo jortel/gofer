@@ -12,7 +12,7 @@
 from logging import getLogger
 
 from gofer import Options
-from gofer.compat import str, json
+from gofer.compat import json
 
 
 log = getLogger(__name__)

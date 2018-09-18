@@ -13,13 +13,7 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-"""
-Provided to support PY3/PY3 compatibility.
-"""
-
 import inspect
-
-from gofer.compat import str
 
 
 def mro(cls):

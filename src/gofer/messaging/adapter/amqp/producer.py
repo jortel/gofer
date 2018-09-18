@@ -13,7 +13,6 @@ from logging import getLogger
 
 from amqp import Message
 
-from gofer.compat import str
 from gofer.messaging.adapter.model import BaseSender
 from gofer.messaging.adapter.amqp.connection import Connection
 from gofer.messaging.adapter.amqp.reliability import reliable

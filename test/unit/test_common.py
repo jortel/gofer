@@ -27,7 +27,6 @@ from gofer.common import synchronized, conditional, released
 from gofer.common import mkdir, rmdir, unlink, nvl, valid_path
 from gofer.common import List
 from gofer.common import new, newT
-from gofer.compat import str
 
 
 class Thing(metaclass=Singleton):

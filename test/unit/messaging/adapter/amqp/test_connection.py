@@ -16,7 +16,6 @@ from unittest import TestCase
 
 from mock import patch, Mock
 
-from gofer.compat import str
 from gofer.common import ThreadSingleton
 from gofer.devel import ipatch
 

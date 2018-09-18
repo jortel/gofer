@@ -22,7 +22,6 @@ from qpid.messaging import Connection as RealConnection
 from qpid.messaging.transports import TRANSPORTS
 from qpid.messaging import ConnectionError
 
-from gofer.compat import str
 from gofer.common import ThreadSingleton
 from gofer.messaging.adapter.model import Connector, BaseConnection
 from gofer.messaging.adapter.connect import retry

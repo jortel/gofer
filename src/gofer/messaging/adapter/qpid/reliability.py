@@ -17,7 +17,6 @@ from logging import getLogger
 from qpid.messaging import NotFound as _NotFound
 from qpid.messaging import ConnectionError, LinkError
 
-from gofer.compat import str
 from gofer.common import Thread
 from gofer.messaging.adapter.model import NotFound
 

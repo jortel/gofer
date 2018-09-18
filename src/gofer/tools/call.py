@@ -18,7 +18,7 @@ import sys
 from optparse import OptionParser
 from logging import basicConfig, CRITICAL
 
-from gofer.compat import str, json
+from gofer.compat import json
 from gofer.messaging import Connection
 from gofer.messaging.adapter.model import DEFAULT_URL
 from gofer.proxy import Agent

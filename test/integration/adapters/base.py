@@ -11,7 +11,6 @@
 
 from uuid import uuid4
 
-from gofer.compat import str
 from gofer.messaging import Queue, NotFound
 
 N = 10

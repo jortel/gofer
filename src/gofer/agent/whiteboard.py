@@ -16,7 +16,6 @@
 from threading import RLock
 
 from gofer import Singleton, synchronized
-from gofer.compat import str
 
 
 class Whiteboard(metaclass=Singleton):

@@ -15,7 +15,6 @@ from logging import getLogger
 
 from amqp import ChannelError
 
-from gofer.compat import str
 from gofer.common import Thread
 from gofer.messaging.adapter.model import Messenger, NotFound
 from gofer.messaging.adapter.amqp.connection import Connection, CONNECTION_EXCEPTIONS

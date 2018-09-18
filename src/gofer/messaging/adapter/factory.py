@@ -16,7 +16,6 @@
 import os
 import logging
 
-from gofer.compat import str
 from gofer.messaging.model import ModelError
 from gofer.messaging.adapter.url import URL
 

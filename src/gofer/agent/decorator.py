@@ -19,7 +19,6 @@ Action class for gofer agent.
 
 from logging import getLogger
 
-from gofer.compat import str
 from gofer.collation import Collator
 from gofer.agent.action import Action
 

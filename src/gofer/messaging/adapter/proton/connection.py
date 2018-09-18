@@ -17,7 +17,6 @@ from proton import SSLDomain, SSLException
 from proton.utils import BlockingConnection
 from proton.reactor import DynamicNodeProperties
 
-from gofer.compat import str
 from gofer.common import ThreadSingleton
 from gofer.messaging.adapter.model import Connector, BaseConnection
 from gofer.messaging.adapter.connect import retry

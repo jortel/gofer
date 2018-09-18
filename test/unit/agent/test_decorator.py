@@ -13,7 +13,6 @@ from unittest import TestCase
 
 from mock import Mock, patch
 
-from gofer.compat import str
 from gofer.agent.decorator import Action, Actions, Delegate
 from gofer.collation import Class, Module, Method, Function
 

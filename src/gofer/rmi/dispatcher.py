@@ -21,7 +21,6 @@ import sys
 import traceback as tb
 
 from gofer import inspection
-from gofer.compat import str
 from gofer.common import Options, new
 from gofer.collation import MemberNotFound
 from gofer.messaging import Document
