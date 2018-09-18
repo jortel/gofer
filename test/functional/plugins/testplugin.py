@@ -17,7 +17,6 @@ from hashlib import sha256
 from logging import getLogger
 from time import sleep
 
-from gofer.compat import str
 from gofer.agent.plugin import Plugin
 from gofer.agent.rmi import Context
 from gofer.decorators import *

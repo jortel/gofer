@@ -12,7 +12,6 @@
 from time import sleep
 from logging import getLogger
 
-from gofer.compat import str
 from gofer.common import Thread, released
 from gofer.messaging.model import DocumentError
 from gofer.messaging.adapter.model import Reader, NotFound

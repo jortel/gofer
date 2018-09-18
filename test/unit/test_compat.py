@@ -11,8 +11,6 @@
 
 from unittest import TestCase
 
-from gofer.compat import str
-
 
 class Thing(object):
 

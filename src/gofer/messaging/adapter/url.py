@@ -16,9 +16,6 @@
 Defined URL objects.
 """
 
-from gofer.compat import str
-
-
 AMQP = {
     'tcp':  5672,
     'amqp': 5672,

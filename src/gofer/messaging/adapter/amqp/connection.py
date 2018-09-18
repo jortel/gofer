@@ -17,7 +17,6 @@ from socket import error as SocketError
 from amqp import Connection as RealConnection
 from amqp import ConnectionError
 
-from gofer.compat import str
 from gofer.common import ThreadSingleton
 from gofer.messaging.adapter.model import Connector, BaseConnection
 from gofer.messaging.adapter.connect import retry

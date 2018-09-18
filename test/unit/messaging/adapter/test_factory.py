@@ -15,7 +15,6 @@ from unittest import TestCase
 
 from mock import Mock
 
-from gofer.compat import str
 from gofer.messaging.adapter.factory import Loader, __package__ as PACKAGE
 from gofer.messaging.adapter.factory import Adapter
 from gofer.messaging.adapter.factory import AdapterError, AdapterNotFound, NoAdaptersLoaded

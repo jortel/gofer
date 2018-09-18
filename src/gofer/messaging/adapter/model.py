@@ -17,7 +17,6 @@ from logging import getLogger
 
 from uuid import uuid4
 
-from gofer.compat import str
 from gofer.common import Thread, valid_path
 from gofer.messaging.model import VERSION, Document
 from gofer.messaging.adapter.url import URL

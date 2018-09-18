@@ -14,7 +14,6 @@ from logging import getLogger
 
 from proton import Message
 
-from gofer.compat import str
 from gofer.messaging.adapter.model import Messenger, BaseExchange, BaseQueue
 from gofer.messaging.adapter.proton.connection import Connection
 from gofer.messaging.adapter.proton.reliability import reliable

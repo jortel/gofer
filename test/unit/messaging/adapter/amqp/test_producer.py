@@ -14,7 +14,6 @@ from unittest import TestCase
 
 from mock import Mock, patch
 
-from gofer.compat import str
 from gofer.devel import ipatch
 
 with ipatch('amqp'):

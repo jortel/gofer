@@ -16,7 +16,6 @@ from logging import getLogger
 from proton import ConnectionException
 from proton.utils import LinkDetached
 
-from gofer.compat import str
 from gofer.common import Thread
 from gofer.messaging.adapter.model import NotFound
 from gofer.messaging.adapter.reliability import DAY

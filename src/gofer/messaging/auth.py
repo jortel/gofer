@@ -20,7 +20,6 @@ from base64 import b64encode, b64decode
 from hashlib import sha256
 from logging import getLogger
 
-from gofer.compat import str
 from gofer.messaging.model import Document, DocumentError
 
 

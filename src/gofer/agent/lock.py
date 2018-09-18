@@ -22,7 +22,6 @@ import fcntl
 
 from threading import RLock
 
-from gofer.compat import str
 from gofer.common import mkdir
 
 

@@ -20,7 +20,6 @@ from socket import socket as Socket
 from socket import AF_INET, SOCK_STREAM, IPPROTO_TCP
 from socket import TCP_NODELAY, SOL_SOCKET, SO_REUSEADDR, SO_LINGER
 
-from gofer.compat import str
 from gofer.common import Thread
 from gofer.messaging import Document
 from gofer.agent.plugin import Container

@@ -24,7 +24,6 @@ from time import sleep
 
 sys.path.insert(0, os.path.join(os.getcwd(), '../../src/'))
 
-from gofer.compat import str
 from gofer.threadpool import ThreadPool
 
 

@@ -19,7 +19,6 @@ Agent base classes.
 
 from logging import getLogger
 
-from gofer.compat import str
 from gofer.common import Options
 from gofer.rmi.stub import Builder
 

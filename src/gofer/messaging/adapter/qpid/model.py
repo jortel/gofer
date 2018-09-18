@@ -14,7 +14,6 @@ from logging import getLogger
 
 from qpid.messaging import Message
 
-from gofer.compat import str
 from gofer.messaging.adapter.model import Messenger, BaseExchange, BaseQueue
 from gofer.messaging.adapter.qpid.connection import Connection
 from gofer.messaging.adapter.qpid.reliability import reliable

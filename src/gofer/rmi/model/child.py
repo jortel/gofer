@@ -20,7 +20,6 @@ from logging import getLogger
 from threading import RLock
 from time import sleep
 
-from gofer.compat import str
 from gofer import Thread, synchronized
 from gofer.rmi.context import Context
 from gofer.rmi.model import protocol

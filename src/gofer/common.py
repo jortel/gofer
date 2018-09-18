@@ -25,7 +25,6 @@ from threading import current_thread
 from threading import Event, RLock
 
 from . import inspection
-from .compat import str, basestring
 
 
 log = getLogger(__name__)
@@ -232,11 +231,11 @@ class Singleton(type):
     def key(args, keywords):
         key = []
         for thing in args:
-            if isinstance(thing, (basestring, int, float, bool)):
+            if isinstance(thing, (str, int, float, bool)):
                 key.append(thing)
         for k in sorted(keywords.keys()):
             v = keywords[k]
-            if isinstance(v, (basestring, int, float, bool)):
+            if isinstance(v, (str, int, float, bool)):
                 key.append((k, v))
         return repr(key)
 

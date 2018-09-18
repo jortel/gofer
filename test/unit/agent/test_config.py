@@ -14,7 +14,6 @@ from unittest import TestCase
 
 from mock import patch
 
-from gofer.compat import str
 from gofer.agent.config import AgentConfig, AGENT_SCHEMA, AGENT_DEFAULTS, Graph
 
 

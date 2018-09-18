@@ -15,8 +15,6 @@
 
 from logging import getLogger
 
-from gofer.compat import str
-
 
 log = getLogger(__file__)
 

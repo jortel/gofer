@@ -15,7 +15,6 @@
 
 from subprocess import Popen, PIPE
 
-from gofer.compat import str
 from gofer.rmi.context import Context
 
 
