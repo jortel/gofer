@@ -230,7 +230,7 @@ class Singleton(type):
     PY2
         usage: __metaclass__ = Singleton
     PY3
-        usage: class Thing(with_metaclass(Singleton, <bases>))
+        usage: class Thing(metaclass=Singleton)
     """
 
     _inst = {}
@@ -262,7 +262,7 @@ class ThreadSingleton(type):
     PY2
         usage: __metaclass__ = ThreadSingleton
     PY3
-        usage: class Thing(with_metaclass(ThreadSingleton, <bases>))
+        usage: class Thing(metaclass=ThreadSingleton)
     """
 
     _inst = Local(all={})
