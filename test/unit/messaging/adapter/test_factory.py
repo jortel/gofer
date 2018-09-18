@@ -52,7 +52,7 @@ class TestLoader(TestCase):
         self.assertEqual(ldr.list, [])
         self.assertEqual(ldr.catalog, {})
 
-    @patch('__builtin__.__import__')
+    @patch('builtins.__import__')
     @patch('os.path.isdir')
     @patch('os.listdir')
     def test__load(self, _listdir, _isdir, _import):

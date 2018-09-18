@@ -19,7 +19,7 @@ from gofer.devel import patch
 
 class TestPendingQueue(TestCase):
 
-    @patch('__builtin__.open')
+    @patch('builtins.open')
     def test_write(self, _open):
         def _enter():
             return _open.return_value
@@ -36,7 +36,7 @@ class TestPendingQueue(TestCase):
         _open.return_value.write.assert_called_once_with(request.dump.return_value)
         _open.return_value.close.assert_called_once_with()
 
-    @patch('__builtin__.open')
+    @patch('builtins.open')
     @patch('gofer.rmi.store.unlink')
     def test_read(self, unlink, _open):
         def _enter():
@@ -57,7 +57,7 @@ class TestPendingQueue(TestCase):
         self.assertFalse(unlink.called)
         self.assertEqual(document.__dict__, {'A': 1})
 
-    @patch('__builtin__.open')
+    @patch('builtins.open')
     @patch('gofer.rmi.store.unlink')
     def test_read_invalid_json(self, unlink, _open):
         def _enter():

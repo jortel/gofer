@@ -12,8 +12,7 @@
 import os
 import errno
 
-from six import unichr
-from six.moves.queue import Queue
+from queue import Queue
 from threading import Thread, Event
 
 from unittest import TestCase
@@ -36,7 +35,7 @@ class Thing(metaclass=Singleton):
     def __init__(self, n1, n2, a=0, b=0):
         super(Thing, self).__init__()
         self.__mutex = Mock()
-        self.name = 'Elmer' + unichr(255) + 'Fudd'
+        self.name = 'Elmer' + chr(255) + 'Fudd'
         self.n1 = n1
         self.n2 = n2
         self.a = a

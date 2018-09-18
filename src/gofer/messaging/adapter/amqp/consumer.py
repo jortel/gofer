@@ -12,7 +12,7 @@
 import select
 
 from logging import getLogger
-from six.moves.queue import Empty, Queue as Inbox
+from queue import Empty, Queue as Inbox
 
 from amqp.spec import Basic
 

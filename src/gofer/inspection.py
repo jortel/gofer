@@ -19,8 +19,6 @@ Provided to support PY3/PY3 compatibility.
 
 import inspect
 
-from six import PY2, get_unbound_function
-
 from gofer.compat import str
 
 
@@ -103,7 +101,7 @@ def methods(cls, name=None):
     members = []
     for m in inspect.getmembers(cls, predicate=predicate):
         if inspect.ismethod(m[1]):
-            m = (m[0], get_unbound_function(m[1]))
+            m = (m[0], m[1])
         members.append(m)
     return [
         m for m in members if not name or m[0] == name
@@ -139,16 +137,7 @@ def signature(fn):
         str: String representation of the signature.
     """
     assert inspect.isfunction(fn), 'Must be function.'
-
-    if PY2:
-        sp = inspect.getargspec(fn)
-        return inspect.formatargspec(
-            args=sp.args,
-            varkw=sp.keywords,
-            varargs=sp.varargs,
-            defaults=sp.defaults)
-    else:
-        return str(inspect.signature(fn))
+    return str(inspect.signature(fn))
 
 
 def is_module(thing):

@@ -12,8 +12,6 @@
 # Jeff Ortel <jortel@redhat.com>
 #
 
-from six import PY2
-
 from mock import Mock, patch as _patch
 
 
@@ -90,11 +88,7 @@ class Patch(object):
 
     def __enter__(self):
         parent = __import__
-        if PY2:
-            builtin = '__builtin__'
-        else:
-            builtin = 'builtins'
-        p = _patch('{}.__import__'.format(builtin))
+        p = _patch('builtins.__import__')
         mocked = p.__enter__()
         importer = Import(self.package, parent)
         mocked.side_effect = importer
@@ -110,11 +104,4 @@ def ipatch(package):
     return Patch(package)
 
 
-def patch(target, *args, **kwargs):
-    bp3 = 'builtins'
-    bp2 = '__builtin__'
-    if PY2:
-        target = target.replace(bp3, bp2)
-    else:
-        target = target.replace(bp2, bp3)
-    return _patch(target, *args, **kwargs)
+patch = _patch

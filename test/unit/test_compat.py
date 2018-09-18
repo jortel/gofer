@@ -8,7 +8,6 @@
 # NON-INFRINGEMENT, or FITNESS FOR A PARTICULAR PURPOSE. You should
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
-from six import PY2, unichr
 
 from unittest import TestCase
 
@@ -19,7 +18,7 @@ class Thing(object):
 
     def __init__(self, n1, n2, a=0, b=0):
         super(Thing, self).__init__()
-        self.name = 'Elmer' + unichr(255) + 'Fudd'
+        self.name = 'Elmer' + chr(255) + 'Fudd'
         self.n1 = n1
         self.n2 = n2
         self.a = a
@@ -32,8 +31,4 @@ class Thing(object):
 class TestStrings(TestCase):
 
     def test_str(self):
-        if PY2:
-            self.assertTrue(isinstance(str('hello'), unicode))
-            self.assertTrue(isinstance(str(Thing(1, 2)), unicode))
-        else:
-            self.assertTrue(isinstance(str('hello'), str))
+        self.assertTrue(isinstance(str('hello'), str))

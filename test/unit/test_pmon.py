@@ -9,8 +9,6 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from six import unichr
-
 from unittest import TestCase
 
 from gofer.pmon import PathMonitor
@@ -21,6 +19,6 @@ class TestMonitor(TestCase):
     def test_add(self):
         def target(p):
             pass
-        path = '/tmp/file_' + unichr(255)
+        path = '/tmp/file_' + chr(255)
         monitor = PathMonitor()
         monitor.add(path, target)
