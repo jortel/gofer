@@ -28,8 +28,6 @@ run()
   echo $dir
   ${virtualenv} $dir
   source $dir/bin/activate
-  ${pip} install future
-  ${pip} install six
   ${pip} install nose
   ${pip} install nose-cov
   ${pip} install mock

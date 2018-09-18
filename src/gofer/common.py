@@ -23,7 +23,6 @@ from threading import local as _Local
 from threading import Thread as _Thread
 from threading import current_thread
 from threading import Event, RLock
-from six import PY2
 
 from . import inspection
 from .compat import str, basestring
@@ -130,11 +129,7 @@ def newT(name, bases=(), state=None):
     :type state: dict
     :return: The new class.
     """
-    if PY2:
-        from new import classobj
-        return classobj(name, bases, state or {})
-    else:
-        return type(name, bases, state or {})
+    return type(name, bases, state or {})
 
 
 class Thread(_Thread):
@@ -227,10 +222,8 @@ class Local(object):
 class Singleton(type):
     """
     Singleton metaclass
-    PY2
-        usage: __metaclass__ = Singleton
-    PY3
-        usage: class Thing(metaclass=Singleton)
+
+    usage: class Thing(metaclass=Singleton)
     """
 
     _inst = {}
@@ -259,10 +252,8 @@ class Singleton(type):
 class ThreadSingleton(type):
     """
     Thread Singleton metaclass
-    PY2
-        usage: __metaclass__ = ThreadSingleton
-    PY3
-        usage: class Thing(metaclass=ThreadSingleton)
+
+    usage: class Thing(metaclass=ThreadSingleton)
     """
 
     _inst = Local(all={})

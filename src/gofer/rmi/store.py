@@ -20,7 +20,7 @@ Provides (local) message storage classes.
 import os
 
 from logging import getLogger
-from six.moves.queue import Queue, Empty
+from queue import Queue, Empty
 from time import sleep, time
 
 from gofer import NAME, Thread

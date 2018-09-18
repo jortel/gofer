@@ -185,5 +185,5 @@ class TestMethod(unittest.TestCase):
         self.assertEqual(hash(method), hash(Person.walk))
 
     def test_signature(self):
-        method = collation.Method(inspection.get_unbound_function(Person.walk))
+        method = collation.Method(Person.walk)
         self.assertEqual('(self, speed=10)', method.signature)

@@ -19,7 +19,6 @@ Message authentication plumbing.
 from base64 import b64encode, b64decode
 from hashlib import sha256
 from logging import getLogger
-from six import PY3
 
 from gofer.compat import str
 from gofer.messaging.model import Document, DocumentError
@@ -191,24 +190,18 @@ def load(json):
 
 def encode(signature):
     if signature:
-        if PY3:
-            return str(
-                b64encode(
-                    bytes(signature, encoding='utf8')),
-                encoding='utf8')
-        else:
-            return b64encode(signature)
+        return str(
+            b64encode(
+                bytes(signature, encoding='utf8')),
+            encoding='utf8')
     else:
         return ''
 
 
 def decode(signature):
     if signature:
-        if PY3:
-            return str(
-                b64decode(signature),
-                encoding='utf8')
-        else:
-            return b64decode(signature)
+        return str(
+            b64decode(signature),
+            encoding='utf8')
     else:
         return ''

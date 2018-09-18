@@ -18,7 +18,7 @@ Thread Pool classes.
 """
 
 from logging import getLogger
-from six.moves.queue import Queue, Empty
+from queue import Queue, Empty
 from uuid import uuid4
 
 from gofer.compat import str

@@ -12,11 +12,6 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from six import PY2
 
-if PY2:
-    str = unicode
-    basestring = basestring
-else:
-    basestring = str
-    str = str
+basestring = str
+str = str
