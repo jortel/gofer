@@ -12,7 +12,6 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from __future__ import absolute_import
 
 from .common import Thread, Singleton, ThreadSingleton
 from .common import synchronized, conditional

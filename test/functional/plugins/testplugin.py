@@ -11,8 +11,6 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from __future__ import print_function
-
 
 import os
 from hashlib import sha256

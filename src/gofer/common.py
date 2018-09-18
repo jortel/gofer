@@ -12,8 +12,6 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from __future__ import absolute_import
-
 
 import os
 import errno

@@ -10,8 +10,6 @@
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 #
 # Jeff Ortel <jortel@redhat.com>
-from __future__ import absolute_import
-
 
 from .url import \
     URL
