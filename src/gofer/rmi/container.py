@@ -38,12 +38,6 @@ class Container(object):
           (Authenticator) A message authenticator.
       - progress
           (callable) A progress callback.
-      - secret
-          (str) A shared secret.
-      - user
-          (str) A user (name) used for authentication.
-      - password
-          (str) A password used for authentication.
       - exchange
           (str) An optional AMQP exchange used for synchronous replies.
       - reply

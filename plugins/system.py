@@ -18,16 +18,14 @@ System plugin.
 
 import os
 
-from gofer.decorators import pam, remote
+from gofer.decorators import remote
 from gofer.rmi.shell import Shell as _Shell
 from gofer.agent.rmi import Context
-from gofer.pam import authenticate
 
 
 class System(object):
     
     @remote
-    @pam(user='root')
     def halt(self, when=1):
         """
         Halt the system.
@@ -45,7 +43,6 @@ class System(object):
         return shell.run('shutdown', '-h', when, '&')
 
     @remote
-    @pam(user='root')
     def reboot(self, when=1):
         """
         Reboot the system.
@@ -63,7 +60,6 @@ class System(object):
         return shell.run('shutdown', '-r', when, '&')
         
     @remote
-    @pam(user='root')
     def cancel(self):
         """
         Cancel a scheduled shutdown; halt() or reboot().
@@ -88,7 +84,6 @@ class Service(object):
         self.name = name
 
     @remote
-    @pam(user='root')
     def start(self):
         """
         Start the named service.
@@ -99,7 +94,6 @@ class Service(object):
         return shell.run('service', self.name, 'start')
 
     @remote
-    @pam(user='root')
     def stop(self):
         """
         Stop the named service.
@@ -110,7 +104,6 @@ class Service(object):
         return shell.run('service', self.name, 'stop')
 
     @remote
-    @pam(user='root')
     def restart(self):
         """
         Restart the named service.
@@ -147,19 +140,15 @@ class Shell:
     def run(self, cmd):
         """
         Run a shell command.
-        The command is executed as: "su - <user> -c <cmd>" and the
-        user/password is authenticated using PAM.
+        The command is executed as: "su - <user> -c <cmd>".
         :param cmd: The command & arguments.
         :type cmd: str
 
         :return: (status, {stdout:<str>, stderr:<str>})
         :rtype: tuple
         """
-        if authenticate(self.user, self.password):
-            shell = _Shell()
-            return shell.run('su', '-', self.user, '-c', cmd)
-        else:
-            return os.EX_NOPERM, {}
+        shell = _Shell()
+        return shell.run('su', '-', self.user, '-c', cmd)
 
 
 class Script:
@@ -175,8 +164,7 @@ class Script:
     def run(self, user, password, *options):
         """
         Run a shell command.
-        The command is executed as: "su - <user> -c <cmd>" and the
-        user/password is authenticated using PAM.
+        The command is executed as: "su - <user> -c <cmd>".
         :param user: A user name.
         :type user: str
         :param password: The password.
@@ -186,8 +174,6 @@ class Script:
         :return: (status, {stdout:<str>, stderr:<str>})
         :rtype: tuple
         """
-        if not authenticate(user, password):
-            return os.EX_NOPERM, {}
         shell = _Shell()
         context = Context.current()
         path = os.path.join('/tmp', context.sn)

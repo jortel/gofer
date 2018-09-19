@@ -20,11 +20,10 @@ Provides RMI dispatcher classes.
 import sys
 import traceback as tb
 
-from gofer import inspection
+from gofer import NAME, inspection
 from gofer.common import Options, new
-from gofer.collation import MemberNotFound
+from gofer import collation
 from gofer.messaging import Document
-from gofer.pam import authenticate as pam_authenticate
 from gofer.rmi.model import ALL
 
 from logging import getLogger
@@ -60,91 +59,6 @@ class MemberNotFound(DispatchError):
         DispatchError.__init__(self, message)
 
 
-class NotAuthorized(DispatchError):
-    """
-    Not authorized.
-    """
-    pass
-
-
-class AuthMethod(NotAuthorized):
-    """
-    Authentication method not supported.
-    """
-
-    def __init__(self, method, name):
-        message = '{}(), auth ({}) not supported'.format(method.name, name)
-        NotAuthorized.__init__(self, message)
-
-
-class SecretRequired(NotAuthorized):
-    """
-    Shared secret required and not passed.
-    """
-
-    def __init__(self, method):
-        message = '{}(), secret required'.format(method.name)
-        NotAuthorized.__init__(self, message)
-        
-        
-class UserRequired(NotAuthorized):
-    """
-    User (name)  required and not passed.
-    """
-
-    def __init__(self, method):
-        message = '{}(), user (name) required'.format(method.name)
-        NotAuthorized.__init__(self, message)
-        
-        
-class PasswordRequired(NotAuthorized):
-    """
-    Password required and not passed.
-    """
-
-    def __init__(self, method):
-        message = '{}(), password required'.format(method.name)
-        NotAuthorized.__init__(self, message)
-
-
-class NotAuthenticated(NotAuthorized):
-    """
-    PAM authentication failed.
-    """
-
-    def __init__(self, method, user):
-        message = '{}(), user "{}" not authenticated'.format(method.name, user)
-        NotAuthorized.__init__(self, message)
-        
-
-class UserNotAuthorized(NotAuthorized):
-    """
-    The specified user is not authorized to invoke the RMI.
-    """
-
-    def __init__(self, method, expected, passed):
-        message = \
-            '{}(), user must be: {}, passed: {}'.format(
-                method.name,
-                expected,
-                passed)
-        NotAuthorized.__init__(self, message)
-        
-
-class SecretNotMatched(NotAuthorized):
-    """
-    Specified secret, not matched.
-    """
-
-    def __init__(self, method, expected, passed):
-        message = \
-            '{}(), secret: {} not in: {}'.format(
-                method.name,
-                passed,
-                expected)
-        NotAuthorized.__init__(self, message)
-        
-        
 class RemoteException(Exception):
     """
     The re-raised (propagated) exception base class.
@@ -348,19 +262,16 @@ class RMI(object):
     :type catalog: dict
     """
 
-    def __init__(self, request, auth, catalog):
+    def __init__(self, request, catalog):
         """
         :param request: The request document.
         :type request: Request
-        :param auth: Authentication properties.
-        :type auth: Options
         :param catalog: A dict of class mappings.
         :type catalog: dict
         """
         self.name = '.'.join((request.classname, request.method))
-        self.request = request
         self.target = self.find_target(request, catalog)
-        self.auth = auth
+        self.request = request
 
     @staticmethod
     def find_target(request, catalog):
@@ -383,7 +294,7 @@ class RMI(object):
 
         try:
             target = namespace[request.method]
-        except MemberNotFound:
+        except collation.MemberNotFound:
             raise MemberNotFound(
                 ns=request.classname,
                 method=request.method)
@@ -405,16 +316,6 @@ class RMI(object):
             cntr = ([], {})
         return namespace(*cntr[0], **cntr[1])
 
-    def permitted(self):
-        """
-        Check whether remote invocation of the specified method is permitted.
-        Applies security model using Security.
-        """
-        fninfo = self.target.fninfo
-        security = Security(self, fninfo)
-        security.apply(self.auth)
-        return fninfo
-
     def __call__(self):
         """
         Invoke the method.
@@ -422,7 +323,7 @@ class RMI(object):
         :rtype: Return
         """
         try:
-            fninfo = self.permitted()
+            fninfo = self.target.fninfo
             model = ALL[fninfo.call.model](
                 self.target,
                 *self.request.args or [],
@@ -439,115 +340,6 @@ class RMI(object):
     def __repr__(self):
         return str(self.request)
 
-
-# --- Security classes -------------------------------------------------------
-
-
-class Security:
-    """
-    Layered Security.
-    :ivar method: The method name.
-    :type method: str
-    :ivar stack: The security stack; list of auth specifications defined by decorators.
-    :type stack: list
-    """
-    
-    def __init__(self, method, fninfo):
-        """
-        :param method: The method name.
-        :type method: RMI
-        :param fninfo: The decorated function info.
-        :type fninfo: Options
-        """
-        self.method = method
-        self.stack = fninfo.security
-
-    def apply(self, passed):
-        """
-        Apply auth specifications.
-        :param passed: The request's *auth* info passed.
-        :type passed: Options.
-        :raise SecretRequired: On secret required and not passed.
-        :raise SecretNotMatched: On not matched.
-        :raise UserRequired: On user required and not passed.
-        :raise PasswordRequired: On password required and not passed.
-        :raise UserNotAuthorized: On user not authorized.
-        :raise NotAuthenticated: On PAM auth failed.
-        """
-        failed = []
-        for name, required in self.stack:
-            try:
-                fn = self.impl(name)
-                return fn(required, passed)
-            except NotAuthorized as e:
-                log.debug(e)
-                failed.append(e)
-        if failed:
-            raise failed[-1]
-
-    def impl(self, name):
-        """
-        Find auth implementation by name.
-        :param name: auth type (name)
-        :type name: str
-        :return: The implementation method
-        :rtype: instancemethod
-        """
-        try:
-            return getattr(self, name)
-        except AttributeError:
-            raise AuthMethod(self.method, name)
-
-    def secret(self, required, passed):
-        """
-        Perform shared secret auth.
-        :param required: Method specific auth specification.
-        :type required: Options
-        :param passed: The credentials passed.
-        :type passed: Options
-        :raise SecretRequired: On secret required and not passed.
-        :raise SecretNotMatched: On not matched.
-        """
-        secret = required.secret
-        if callable(secret):
-            secret = secret()
-        if not secret:
-            return
-        if not isinstance(secret, (list, tuple)):
-            secret = (secret,)
-        if not passed.secret:
-            raise SecretRequired(self.method)
-        if passed.secret in secret:
-            return
-        raise SecretNotMatched(self.method, passed.secret, secret)
-    
-    def pam(self, required, passed):
-        """
-        Perform PAM authentication.
-        :param required: Method specific auth specification.
-        :type required: Options
-        :param passed: The credentials passed.
-        :type passed: Options
-        :raise UserRequired: On user required and not passed.
-        :raise PasswordRequired: On password required and not passed.
-        :raise UserNotAuthorized: On user not authorized.
-        :raise NotAuthenticated: On PAM auth failed.
-        """
-        if passed.pam:
-            passed = Options(passed.pam)
-        else:
-            passed = Options()
-        if not passed.user:
-            raise UserRequired(self.method)
-        if not passed.password:
-            raise PasswordRequired(self.method)
-        if passed.user != required.user:
-            raise UserNotAuthorized(self.method, required.user, passed.user)
-        valid = pam_authenticate(passed.user, passed.password, required.service)
-        if not valid:
-            raise NotAuthenticated(self.method, passed.user)
-
-
 # --- Dispatcher -------------------------------------------------------------
 
 
@@ -557,13 +349,6 @@ class Dispatcher:
     :ivar catalog: The (catalog) of target classes.
     :type catalog: dict
     """
-
-    @staticmethod
-    def auth(document):
-        return Options(
-            uuid=document.routing[-1],
-            secret=document.secret,
-            pam=document.pam,)
 
     @staticmethod
     def log(document):
@@ -602,10 +387,9 @@ class Dispatcher:
         """
         try:
             self.log(document)
-            auth = self.auth(document)
             request = Request(document.request)
             log.debug('request: %s', request)
-            method = RMI(request, auth, self.catalog)
+            method = RMI(request, self.catalog)
             log.debug('method: %s', method)
             return method()
         except Exception:
@@ -634,7 +418,7 @@ class Dispatcher:
                 _list.append(v)
                 continue
             for fn in inspection.functions(v):
-                if RMI.fninfo(fn[1]):
+                if hasattr(fn[1], NAME):
                     _list.append(fn[1])
                 continue
         return iter(_list)

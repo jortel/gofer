@@ -37,8 +37,6 @@ gofer.messaging=info
 
 [messaging]
 
-[pam]
-service=passwd
 """
 
 from gofer.common import mkdir

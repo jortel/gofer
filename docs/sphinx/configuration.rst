@@ -71,12 +71,6 @@ Examples:
  root=DEBUG
 
 
-[pam]
------
-
-- **service** - The (optional) service to be used for PAM authentication.
-
-
 Plugin Descriptors
 ^^^^^^^^^^^^^^^^^^
 

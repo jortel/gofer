@@ -44,6 +44,10 @@ log = getLogger(__name__)
 USER = 'gofer'
 
 
+class TestFailed(Exception):
+    pass
+
+
 class Agent(object):
 
     url = None
@@ -91,7 +95,7 @@ def on_reply(reply):
     print('REPLY [{}]\n{}'.format(dt.now(), reply))
 
 
-def demo(agent):
+def demo(agent, expect_raised=True):
 
     # module function
     agent.testplugin.echo('have a nice day')
@@ -102,45 +106,51 @@ def demo(agent):
     
     # misc
     dog = agent.Dog()
+    cat = agent.Cat()
     repolib = agent.RepoLib()
     print(dog.bark('RUF'))
     print(dog.bark('hello'))
     print(dog.wag(3))
     print(dog.bark('hello again'))
     print(repolib.update())
-    
-    # test auth failed
-    try:
-        cat = agent.Cat()
-        cat.meow('hello')
-    except:
-        print('Auth failed, damn cats.')
 
     # bad return
     try:
         print(cat.returnObject())
-    except Exception as e:
+    except TypeError as e:
         print(e)
+    else:
+        if expect_raised:
+            raise TestFailed('TypeError expected.')
         
-    # raise bad exception
+    # test raised bad exception
     try:
         print(cat.badException())
     except Exception as e:
         print(e)
+    else:
+        if expect_raised:
+            raise TestFailed('TypeError expected.')
 
     # test MethodNotFound
     try:
         print(repolib.updated())
-    except Exception as e:
+    except MemberNotFound as e:
         log.info('failed:', exc_info=True)
         print(e)
+    else:
+        if expect_raised:
+            raise TestFailed('MemberNotFound expected.')
 
-    # test NotPermitted
+    # test not decorated with @remote
     try:
-        print(dog.notpermitted())
-    except Exception as e:
+        print(dog.not_decorated())
+    except MemberNotFound as e:
         log.info('failed:', exc_info=True)
         print(e)
+    else:
+        if expect_raised:
+            raise TestFailed('MemberNotFound expected.')
 
     # test KeyError raised in plugin
     try:
@@ -148,16 +158,19 @@ def demo(agent):
     except KeyError as e:
         log.info('failed:', exc_info=True)
         print(e)
-    except Exception as e:
-        log.info('failed:', exc_info=True)
-        print(e)
+    else:
+        if expect_raised:
+            raise TestFailed('KeyError expected.')
 
     # test custom Exception
     try:
         print(dog.myError())
-    except Exception as e:
+    except RemoteException as e:
         log.info('failed:', exc_info=True)
         print(e)
+    else:
+        if expect_raised:
+            raise TestFailed('RemoteException expected.')
 
 
 def threads(n=10):
@@ -229,123 +242,6 @@ def test_triggers():
     print('Manual trigger, OK')
     
 
-def demo_pam_authentication(yp, exit=0):
-    user = USER
-    password = yp[USER]
-    # basic success
-    agent = Agent(user=user, password=password)
-    dog = agent.Dog()
-    print(dog.testpam())
-    # @user synonym
-    agent = Agent(user=user, password=password)
-    dog = agent.Dog()
-    print(dog.testpam2())
-    # the @pam with specified service
-    agent = Agent(user=user, password=password)
-    dog = agent.Dog()
-    print(dog.testpam3())
-    # no user
-    agent = Agent()
-    try:
-        dog = agent.Dog()
-        dog.testpam()
-        raise Exception('Exception (UserRequired) expected')
-    except UserRequired:
-        print('no user, OK')
-    # no password
-    agent = Agent(user=user)
-    try:
-        dog = agent.Dog()
-        dog.testpam()
-        raise Exception('Exception (PasswordRequired) expected')
-    except PasswordRequired:
-        print('no password, OK')
-    # wrong user
-    agent = Agent(user='xx', password='xx')
-    try:
-        dog = agent.Dog()
-        dog.testpam()
-        raise Exception('Exception (UserNotAuthorized) expected')
-    except UserNotAuthorized:
-        print('wrong user, OK')
-    # PAM failed
-    agent = Agent(user=user, password='xx')
-    try:
-        dog = agent.Dog()
-        dog.testpam()
-        raise Exception('Exception (NotAuthenticated) expected')
-    except NotAuthenticated:
-        print('PAM not authenticated, OK')
-    # PAM failed, invalid service
-    agent = Agent(user=user, password='xx')
-    try:
-        dog = agent.Dog()
-        dog.testpam4()
-        raise Exception('Exception (NotAuthenticated) expected')
-    except NotAuthenticated:
-        print('PAM not authenticated, invalid service, OK')
-    if exit:
-        sys.exit(0)
-
-
-def demo_layered_security(yp, exit=0):
-    user = USER
-    password = yp[user]
-    # multi-user
-    for user in ('jortel', 'jortel'):
-        agent = Agent(user=user, password=password)
-        dog = agent.Dog()
-        print(dog.testLayered())
-    # mixed user and secret
-    agent = Agent(user=user, password=password, secret='elmer')
-    dog = agent.Dog()
-    print(dog.testLayered2())
-    dog = agent.Dog()
-    print(dog.testLayered2())
-    try:
-        agent = Agent()
-        dog = agent.Dog()
-        print(dog.testLayered2())
-        raise Exception('Exception (UserRequired) expected')
-    except UserRequired:
-        pass
-    if exit:
-        sys.exit(0)
-
-        
-def demo_shared_secret(exit=0):
-    # success
-    agent = Agent(secret='garfield')
-    cat = agent.Cat()
-    print(cat.meow('secret, OK'))
-    # no secret
-    agent = Agent()
-    try:
-        cat = agent.Cat()
-        cat.meow('secret, OK')
-        raise Exception('Exception (SecretRequired) expected')
-    except SecretRequired:
-        print('secret required, OK')
-    # wrong secret
-    agent = Agent(secret='foo')
-    try:
-        cat = agent.Cat()
-        cat.meow('secret, OK')
-        raise Exception('Exception (SecretNotMatched) expected')
-    except SecretNotMatched:
-        print('secret not matched, OK')
-    if exit:
-        sys.exit(0)
-        
-
-def demo_authentication(yp, exit=0):
-    demo_shared_secret()
-    demo_pam_authentication(yp)
-    demo_layered_security(yp)
-    if exit:
-        sys.exit(0)
-
-
 def demo_constructors(exit=0):
     agent = Agent()
     for name, age in (('jeff', 10), ('bart', 45),):
@@ -410,18 +306,18 @@ def main():
     # asynchronous (fire and forget)
     print('(demo) asynchronous fire-and-forget')
     agent = Agent(wait=0)
-    demo(agent)
+    demo(agent, expect_raised=False)
 
     # asynchronous
     print('(demo) asynchronous')
     agent = Agent(reply=address)
-    demo(agent)
+    demo(agent, expect_raised=False)
 
 
 def smoke_test(exit=0):
     print('running smoke test ...')
     agent = Agent()
-    for T in range(0, 500):
+    for T in range(0, 10):
         print('test: {}'.format(T))
         agent.testplugin.echo('have a nice day')
         admin = agent.Admin()
@@ -492,7 +388,6 @@ def get_options():
     parser.add_option('-r', '--address', default='xyz', help='address')
     parser.add_option('-u', '--url', help='broker URL')
     parser.add_option('-t', '--threads', default=0, help='number of threads')
-    parser.add_option('-U', '--user', action='extend', help='list of userid:password')
     parser.add_option('-a', '--auth', default='', help='enable message auth')
     parser.add_option('-e', '--exchange', default='', help='exchange')
     opts, args = parser.parse_args()
@@ -504,11 +399,6 @@ if __name__ == '__main__':
 
     url = options.url
     address = options.address
-
-    yp = {}
-    for user in options.user:
-        u, p = user.split(':')
-        yp[u] = p
 
     if options.auth:
         authenticator = TestAuthenticator()
@@ -538,6 +428,7 @@ if __name__ == '__main__':
     demo_constructors()
     test_triggers()
     demo_getitem()
+    demo(Agent())
 
     n_threads = int(options.threads)
     if n_threads:

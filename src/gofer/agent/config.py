@@ -34,10 +34,6 @@ from gofer.config import REQUIRED, OPTIONAL, ANY, BOOL, NUMBER, FLOAT
 #      The 'root' package can be used to set the logging level for all
 #      packages.  Eg: root=error.
 #
-# [pam]
-#   service
-#      The default PAM service for authentication.  Default:passwd
-#
 
 AGENT_SCHEMA = (
     ('management', REQUIRED,
@@ -49,11 +45,6 @@ AGENT_SCHEMA = (
     ),
     ('logging', REQUIRED,
         []
-    ),
-    ('pam', REQUIRED,
-        (
-            ('service', OPTIONAL, ANY),
-        )
     ),
 )
 
@@ -144,9 +135,6 @@ AGENT_DEFAULTS = {
     },
     'logging': {
     },
-    'pam': {
-        'service': 'passwd'
-    }
 }
 
 
