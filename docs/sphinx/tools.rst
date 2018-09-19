@@ -90,7 +90,7 @@ Show the status of goferd
               stop()
           <class> Script
             methods:
-              run(user, password, *options)
+              run(*options)
         Functions:
     
       <plugin> demo

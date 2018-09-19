@@ -29,9 +29,6 @@ plugin = Plugin.find(__name__)
 
 HEARTBEAT = 500
 
-# whiteboard
-plugin.whiteboard['secret'] = 'garfield'
-
 USER = 'gofer'
 
 @load
@@ -110,7 +107,7 @@ class Rabbit:
 
 class Cat:
     
-    @remote(secret=plugin.whiteboard['secret'])
+    @remote
     def meow(self, words):
         print('Ruf {}'.format(words))
         return 'Yes master.  I will meow because that is what cats do. "%s"' % words
@@ -159,41 +156,9 @@ class Dog:
         sleep(n)
         return 'Good morning, master!'
 
-    def notpermitted(self):
+    def not_decorated(self):
         print('not permitted.')
-        
-    @remote
-    @pam(user=USER)
-    def testpam(self):
-        return 'PAM is happy!'
-    
-    @remote
-    @user(name='jortel')
-    def testpam2(self):
-        return 'PAM (2) is happy!'
-    
-    @remote
-    @pam(user=USER, service='su')
-    def testpam3(self):
-        return 'PAM (3) is happy!'
-    
-    @remote
-    @pam(user=USER, service='xx')
-    def testpam4(self):
-        return 'PAM (4) is happy!'
-    
-    
-    @user(name=USER)
-    @user(name=USER)
-    @remote(secret=get_elmer)
-    def testLayered(self):
-        return 'LAYERED (1) is happy'
 
-    @user(name=USER)
-    @remote(secret='elmer')
-    def testLayered2(self):
-        return 'LAYERED (2) is happy'
-    
     @remote
     def __str__(self):
         return 'REMOTE:Dog'

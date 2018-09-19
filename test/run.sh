@@ -14,9 +14,9 @@
 #
 
 dir="$(mktemp -d -t)"
-nosetests="nosetests"
-virtualenv="virtualenv"
-pip="pip"
+nosetests="nosetests-3"
+virtualenv="virtualenv-3"
+pip="pip3"
 
 clean()
 {
@@ -28,8 +28,6 @@ run()
   echo $dir
   ${virtualenv} $dir
   source $dir/bin/activate
-  ${pip} install future
-  ${pip} install six
   ${pip} install nose
   ${pip} install nose-cov
   ${pip} install mock

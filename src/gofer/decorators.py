@@ -31,7 +31,6 @@ def options(fn):
     """
     if not hasattr(fn, NAME):
         opt = Options()
-        opt.security = []
         opt.call = Options(model=DIRECT)
         setattr(fn, NAME, opt)
     else:
@@ -39,7 +38,7 @@ def options(fn):
     return opt
 
 
-def remote(fx=None, model=DIRECT, secret=None):
+def remote(fx=None, model=DIRECT):
     """
     The *remote* decorator.
     Used to expose function/methods as RMI targets.
@@ -47,18 +46,11 @@ def remote(fx=None, model=DIRECT, secret=None):
     :type fx: function
     :param model: The RMI call model (direct|forked)
     :type model: str
-    :param secret: An optional shared secret. *DEPRECATED*
-    :type secret: str
     :return: The decorated function.
     """
     def inner(fn):
         opt = options(fn)
         opt.call.model = valid_model(model)
-        if secret:
-            required = Options()
-            required.secret = secret
-            auth = ('secret', required)
-            opt.security.append(auth)
         Remote.add(fn)
         return fn
     if inspection.is_function(fx):
@@ -89,52 +81,6 @@ def fork(fn):
     opt = options(fn)
     opt.call.model = valid_model(FORK)
     return fn
-
-
-def pam(user, service=None):
-    """
-    The *pam* decorator.
-    This security decorator is used to specify that the
-    function requires PAM authentication.  The *user* and *password* passed
-    in the RMI request is authenticated using PAM.  The *user* in the RMI
-    request _must_ match the *user* specified here.
-    :param user: The user name.
-    :type user: str
-    :param service: The optional PAM server used for authentication.
-    :type service: str
-    :return: The decorated function.
-    """
-    def inner(fn):
-        opt = options(fn)
-        required = Options()
-        required.user = user
-        required.service = service
-        auth = ('pam', required)
-        opt.security.append(auth)
-        return fn
-    return inner
-
-
-def user(name=None):
-    """
-    The *user* decorator.
-    This security decorator is used to specify that the
-    function requires PAM authentication.  The *user* and *password* passed
-    in the RMI request is authenticated using PAM.  The *user* in the RMI
-    request _must_ match the *name* specified here.
-    :param name: The user name.
-    :type name: str
-    :return: The decorated function.
-    """
-    def inner(fn):
-        opt = options(fn)
-        required = Options()
-        required.user = name
-        required.service = None
-        auth = ('pam', required)
-        opt.security.append(auth)
-        return fn
-    return inner
 
 
 def action(fx=None, **interval):

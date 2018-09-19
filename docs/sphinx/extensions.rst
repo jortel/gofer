@@ -82,7 +82,7 @@ Examples:
  Dog = animals['Dog']
 
  class Retriever(Dog):
-    @remote(secret='wagf')
+    @remote
     def fetch(self):
         pass
 
@@ -92,31 +92,7 @@ Results in the following *remote* API:
 Retriever:
 
 - bark()
-   - auth: *None*
 - fetch()
-   - auth: *shared secret*
-
-However, notice that the *auth* on the inherited bark() is different than fetch().
-To change this, simply override the method and re-decorate as needed:
-
-::
-
- from gofer.agent.plugin import Plugin
-
- # import Dog from animals plugin
-
- animals = Plugin.find('animals')
- Dog = animals['Dog']
-
- class Retriever(Dog):
-
-    @remote(secret='wag')
-    def bark(self):
-        Dog.bark(self)
-
-    @remote(secret='wag')
-    def fetch(self):
-        pass
 
 
 Delegation

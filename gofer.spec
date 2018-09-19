@@ -111,7 +111,6 @@ Summary: Gofer python lib modules
 Group: Development/Languages
 BuildRequires: python3-devel
 BuildRequires: python3-setuptools
-Requires: pam
 
 %{?python_provide:%python_provide python3-%{name}}
 

@@ -36,11 +36,8 @@ parser.add_option('-i', '--input', help='RMI input (json) document')
 parser.add_option('-w', '--wait', help='seconds to wait for a synchronous reply')
 parser.add_option('-p', '--progress', help='progress prefix')
 parser.add_option('-d', '--data', help='user (json) data')
-parser.add_option('-S', '--secret', help='shared secret')
-parser.add_option('-T', '--ttl', help='shared secret')
+parser.add_option('-T', '--ttl', help='RMI time-to-live')
 parser.add_option('-A', '--authenticator', help='authenticator python package')
-parser.add_option('-U', '--user', help='user')
-parser.add_option('-P', '--password', help='password')
 
 
 def cast(value):
@@ -137,18 +134,12 @@ def main():
         g_opt['progress'] = print_report
     if options.data:
         g_opt['data'] = json.loads(options.data)
-    if options.secret:
-        g_opt['secret'] = options.secret
     if options.authenticator:
         parts = options.authenticator.split('.')
         path = '.'.join(parts[:-1])
         name = parts[-1]
         mod = __import__(path, {}, {}, [name])
         g_opt['authenticator'] = getattr(mod, name)()
-    if options.user:
-        g_opt['user'] = options.user
-    if options.password:
-        g_opt['password'] = options.password
     if options.reply:
         g_opt['reply'] = options.reply
     if options.input:

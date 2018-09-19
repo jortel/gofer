@@ -29,12 +29,6 @@ The *remote* decorator is used to designate a function or class method as being 
 
 Options:
 
-- **secret** - used to specify a *shared* secret that must be passed for authorization.
-    - required: No
-    - type: str|callable
-    - default: None
-    - note: **DEPRECATED** in 2.7
-
 - **model** - the RMI execution model (direct|fork).
   The *fork* model spawns a child process for each method invocation.
     - required: No
@@ -61,39 +55,3 @@ to insulate the goferd process from unwanted side effects such as memory and fil
 global configuration changes and core dumps.
 
 Added: 2.8
-
-
-@pam
-----
-
-The *pam* decorator is used to specify PAM authentication criteria for access to a function or class
-method.  This additional authentication may be used in conjunction with shared secrets.
-
-**DEPRECATED** in 2.7
-
-Options:
-
-- **user** - specified user name.
-    - required: Yes
-    - type: str
-    - default: n/a
-- **service** - used to specify the PAM service to be used for the authentication.
-    - required: No
-    - type: str
-    - default: passwd
-
-@user
------
-
-The *user* decorator is used to specify PAM authentication criteria for access to a function or class
-method.  This additional authentication may be used in conjunction with shared secrets.  This is an
-alias for the @pam decorator.
-
-**DEPRECATED** in 2.7
-
-Options:
-
-- **name** - specified user name.
-    - required: Yes
-    - type: str
-    - default: n/a

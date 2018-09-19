@@ -49,7 +49,7 @@ class Shell(object):
         """
         Run the specified command.
         :param command: A command and parameters.
-        :type command: tuple
+        :type command: Iterable
         :return: (status, {stdout:<str>, stderr:<str>})
         :rtype: tuple
         """

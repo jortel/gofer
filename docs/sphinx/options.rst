@@ -14,18 +14,12 @@ Summary
    The asynchronous RMI reply address.  Eg: amq.direct/test-queue
  *trigger*
    Specifies trigger used for RMI calls. (0=auto <default>, 1=manual)
- *secret*
-   The shared secret (security)
  *ttl*
    The TTL (seconds) for the agent to accept the RMI request.
  *wait*
    The time (seconds) to wait (block) for a result.
  *progress*
    A progress callback specified for synchronous RMI. Must have signature: fn(report).
- *user*
-   A user (name), used for PAM authenticated access to remote methods.
- *password*
-   A password, used for PAM authenticated access to remote methods.
  *authenticator*
    A subclass of pulp.messaging.auth.Authenticator that provides message authentication.
  *data*
@@ -79,23 +73,6 @@ Passed to Agent() and apply to all RMI calls.
  trigger()             # pull the trigger
 
 
-secret
-------
-
-The **secret** option is used to provide *shared secret* credentials to each RMI call.  This option is
-only used for agent plugin RMI methods where a *secret* is specified as required.
-
-Examples: Assume the agent has a plugin with methods decorated with a secret='foobar'
-
-Passed to Agent() and apply to all RMI calls.
-
-::
-
- from gofer.proxy import Agent
-
- agent = Agent(url, uuid, secret='foobar')
-
-
 ttl and wait
 ------------
 
@@ -128,22 +105,3 @@ Passed to Agent() and apply to all RMI calls.
 
  # TTL 30 seconds, wait for 5 seconds
  agent = Agent(url, uuid, ttl=30, wait=5)
-
-
-user/password
--------------
-
-The **user** and **password** options are used to provide PAM authentication credentials to each RMI call.
-This option is only used for agent plugin RMI methods decorated with @pam or @user.
-This is really just a short-hand for the **pam** option.
-
-Examples: Assume the agent has a plugin with methods decorated with @pam(user='root')
-
-Passed to Agent() and apply to all RMI calls.
-
-::
-
- from gofer.proxy import Agent
-
- agent = Agent(url, uuid, user='root', password='xxx')
-

@@ -392,28 +392,6 @@ equals this (in the agent):
  dog = Dog('rover', age=10)
 
 
-Security
-^^^^^^^^
-
-When *remote* methods or functions are decorated to require a shared secret for request authentication,
-it must be passed as an option.
-
-Example:
-
-::
-
- from gofer.proxy import Agent
- from gofer.messaging.dispatcher import NotAuthorized
-
- agent = Agent('amqp://localhost', 'test', secret='mycathas9lives')
- # invoke methods on the agent (remotely)
- dog = agent.Dog()
- try:
-    dog.bark('secure hello')
- except NotAuthorized:
-    log.error('wrong secret')
-
-
 Progress Reporting
 ^^^^^^^^^^^^^^^^^^
 

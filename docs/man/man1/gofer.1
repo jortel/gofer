@@ -15,8 +15,8 @@ gofer mgt [ -h ] [ -H \fIHOST\fR ] [ -p \fIPORT\fR ]
 
 gofer rmi [ -h ] [ -u \fIURL\fR ] [ -a \fIADDRESS\fR ] [ -t \fITARGET\fR ]
           [ -i \fIINPUT\fR ] [ -r \fIREPLY\fR ] [ -w \fISECONDS\fR ]
-          [ -p \fIPREFIX\fR ] [ -d \fIDATA\fR ] [ -S \fISECRET\fR ] [ -T \fISECONDS\fR ]
-          [ -A \fIPATH\fR ] [ -U \fINAME\fR ] [ -A \fIPASSWORD\fR ]
+          [ -p \fIPREFIX\fR ] [ -d \fIDATA\fR ] [ -T \fISECONDS\fR ]
+          [ -A \fIPATH\fR ]
 
 .SH DESCRIPTION
 
@@ -89,20 +89,11 @@ with the prepended prefix.
 -d [ --data ] \fIDATA\fR
 User data round-tripped with the RMI request.
 .TP
--S [ --secret ] \fISECRET\fR
-The shared secret to include with the RMI request.
-.TP
 -T [ --ttl ] \fISECONDS\fR
 The request TTL in seconds.
 .TP
 -A [ --authenticator ] \fIPATH\fR
 The python path to a message \fIAuthenticator\fR.  Eg: redhat.gofer.Authenticator.
-.TP
--U [ --user ] \fINAME\fR
-The user name passed in the RMI request.
-.TP
--P [ --password ] \fIPASSWORD\fR
-The password passed in the RMI request.
 
 .SH EXAMPLES
 

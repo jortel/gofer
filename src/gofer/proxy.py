@@ -29,16 +29,3 @@ class Agent(Container):
         :type address: str
         """
         super(Agent, self).__init__(url, address, **options)
-
-
-def agent(url, address, **options):
-    """
-    Get a proxy for the remote Agent.
-    :param url: The agent URL.
-    :type url: str
-    :param address: The AMQP address to the agent.
-    :type address: str
-    :return: An agent (proxy).
-    :rtype: Agent
-    """
-    return Agent(url, address, **options)
