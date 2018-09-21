@@ -266,10 +266,6 @@ class Plugin(object):
         return self.descriptor
 
     @property
-    def uuid(self):
-        return self.cfg.messaging.uuid
-
-    @property
     def url(self):
         return self.cfg.messaging.url
 
@@ -541,7 +537,7 @@ class BrokerModel(object):
 
     @property
     def node(self):
-        return self.cfg.queue or self.plugin.uuid
+        return self.cfg.queue
 
     @property
     def exchange(self):

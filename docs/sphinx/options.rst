@@ -43,7 +43,7 @@ Passed to Agent() and apply to all RMI calls.
 
  from gofer.proxy import Agent
 
- agent = Agent(url, uuid, reply='foo')
+ agent = Agent(url, address, reply='foo')
 
 
 trigger
@@ -66,7 +66,7 @@ Passed to Agent() and apply to all RMI calls.
 
  from gofer.proxy import Agent
 
- agent = Agent(uuid, trigger=1)
+ agent = Agent(url, address, trigger=1)
  dog = agent.Dog()
  trigger = dog.bark('delayed!')
  print trigger.sn      # do something with serial number
@@ -98,10 +98,10 @@ Passed to Agent() and apply to all RMI calls.
  from gofer.proxy import Agent
 
  # TTL 5 seconds
- agent = Agent(url, uuid, ttl=5)
+ agent = Agent(url, address, ttl=5)
 
  # TTL 5 minutes
- agent = Agent(url, uuid, ttl=5m)
+ agent = Agent(url, address, ttl=5m)
 
  # TTL 30 seconds, wait for 5 seconds
- agent = Agent(url, uuid, ttl=30, wait=5)
+ agent = Agent(url, address, ttl=30, wait=5)
