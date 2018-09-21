@@ -25,7 +25,7 @@ from gofer.messaging import Document
 from gofer.agent.plugin import Container
 from gofer.agent.builtin import Admin
 
-
+ENCODING = 'utf8'
 HOST = 'localhost'
 PORT = 5650
 
@@ -119,8 +119,8 @@ class Manager(Thread):
             client.setsockopt(SOL_SOCKET, SO_LINGER, struct.pack('ii', 1, 1))
             message = client.recv(4096)
             call = Document()
-            call.load(message)
-            reply = self.dispatch(call)
+            call.load(message.decode(ENCODING))
+            reply = self.dispatch(call).encode(ENCODING)
             client.send(reply)
         except Exception as e:
             log.error(str(e))
@@ -181,8 +181,8 @@ class Method(object):
             method.name = self.name
             method.args = args
             method.kwargs = kwargs
-            socket.send(method.dump())
-            reply = socket.recv(4096)
+            socket.send(method.dump().encode(ENCODING))
+            reply = socket.recv(4096).decode(ENCODING)
             result = Document()
             result.load(reply)
             return result
