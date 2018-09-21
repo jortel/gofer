@@ -28,4 +28,6 @@ from .common import Options
 #   /var/run/<NAME>d.pid
 #   ~/.<NAME>/agent.conf
 
+ENCODING = 'utf8'
+
 NAME = __name__
