@@ -1,3 +1,4 @@
+
 Name: gofer
 Version: 3.0.0
 Release: 0.1%{?dist}
@@ -6,9 +7,12 @@ Group:   Development/Languages
 License: LGPLv2
 URL: https://github.com/jortel/gofer
 Source0: https://fedorahosted.org/releases/g/o/gofer/%{name}-%{version}.tar.gz
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch: noarch
 Requires: python3-%{name} = %{version}
+BuildRequires: systemd
+Requires(post): systemd
+Requires(preun): systemd
+Requires(postun): systemd
 %description
 Gofer provides an extensible, light weight, universal python agent.
 The gofer core agent is a python daemon (service) that provides
@@ -51,17 +55,14 @@ cp bin/* %{buildroot}/usr/bin
 cp etc/%{name}/*.conf %{buildroot}/%{_sysconfdir}/%{name}
 cp etc/sysconfig/%{name}d %{buildroot}/%{_sysconfdir}/sysconfig
 cp docs/man/man1/* %{buildroot}/%{_mandir}/man1
-
 cp plugins/demo.conf %{buildroot}/%{_sysconfdir}/%{name}/plugins
 cp plugins/demo.py %{buildroot}/%{_usr}/share/%{name}/plugins
-
 cp usr/lib/systemd/system/* %{buildroot}/%{_unitdir}
 
 rm -rf %{buildroot}/%{python3_sitelib}/%{name}*.egg-info
 
 
 %files
-%defattr(-,root,root,-)
 %dir %{_sysconfdir}/%{name}/
 %dir %{_sysconfdir}/%{name}/conf.d/
 %dir %{_sysconfdir}/%{name}/plugins/
@@ -98,7 +99,6 @@ Requires: python-%{name} = %{version}
 Provides the gofer tools.
 
 %files -n %{name}-tools
-%defattr(-,root,root,-)
 %{_bindir}/%{name}
 %doc LICENSE
 %doc %{_mandir}/man1/gofer.*
@@ -118,7 +118,6 @@ BuildRequires: python3-setuptools
 Provides gofer python common modules.
 
 %files -n python3-%{name}
-%defattr(-,root,root,-)
 %{python3_sitelib}/%{name}/*.py
 %{python3_sitelib}/%{name}/__pycache__/
 %{python3_sitelib}/%{name}/compat/
@@ -196,6 +195,10 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Fri Sep 21 2018 Jeff Ortel <jortel@redhat.com> 3.0.0-0.1
+- Python2 packages removed.
+- Released 3.0 features.
+
 * Tue Sep 18 2018 Jeff Ortel <jortel@redhat.com> 2.12.2-1
 - Adapter reliability logging at WARN instead of ERROR. (jortel@redhat.com)
 - Update logging documentation; Clean removed from spec. (jortel@redhat.com)
