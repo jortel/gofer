@@ -4,8 +4,10 @@
         "accept": "*"
     },
     "messaging": {
-        "url": "",
-        "uuid": ""
+        "url": ""
+    },
+    "model": {
+        "queue": ""
     }
 }
 

@@ -30,7 +30,9 @@ Plugin descriptor: ``/etc/gofer/plugins/plugin.conf``
 
  [messaging]
  url=amqp://localhost
- uuid=test
+
+ [model]
+ queue=test
 
 
 Code:   ``/user/share/gofer/plugins/plugin.py``
@@ -72,7 +74,9 @@ descriptor as follows:
 
  [messaging]
  url=amqp://localhost
- uuid=zoo
+
+ [model]
+ queue=zoo
 
 
 Synchronous Invocation
@@ -501,8 +505,8 @@ You can test your new stuff as follows:
  [GCC 4.4.3 20100127 (Red Hat 4.4.3-4)] on linux2
  Type "help", "copyright", "credits" or "license" for more information.
  >>> from gofer.proxy import Agent
- >>> uuid = <your consumer ID>
- >>> agent = Agent('amqp://localhost', uuid)
+ >>> address = <agent queue>
+ >>> agent = Agent('amqp://localhost', address)
  >>> foo = agent.Foo()
  >>> print foo.bar()
 
@@ -516,8 +520,8 @@ Or, using the proxy module API:
  [GCC 4.4.3 20100127 (Red Hat 4.4.3-4)] on linux2
  Type "help", "copyright", "credits" or "license" for more information.
  >>> from gofer import proxy
- >>> uuid = <your consumer ID>
- >>> agent = proxy.agent('amqp://localhost', uuid)
+ >>> address = <agent queue>
+ >>> agent = Agent('amqp://localhost', address)
  >>> foo = agent.Foo()
  >>> print foo.bar()
 
@@ -533,8 +537,8 @@ Another useful tool, it invoke *Admin.help()* from within interactive python as 
  [GCC 4.4.3 20100127 (Red Hat 4.4.3-4)] on linux2
  Type "help", "copyright", "credits" or "license" for more information.
  >>> from pulp.server.agent import Agent
- >>> uuid = <your consumer ID>
- >>> agent = Agent('amqp://localhost', uuid)
+ >>> address = <agent queue>
+ >>> agent = Agent('amqp://localhost', address)
  >>> admin = agent.Admin()
  >>> print admin.help()
 

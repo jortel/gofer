@@ -1,6 +1,24 @@
 Release Notes
 =============
 
+gofer 3.0.0
+^^^^^^^^^^^
+
+Notes:
+
+ - The features deprecated in 2.7 have been removed:
+     - Python2 support.
+     - Authorization Support. Includes @pam and @user decorators and shared secret.
+     - The @initializer decorator.
+     - The proxy.agent function.
+
+ - Queue not-found handled by reloading the plugin.
+
+Fixes:
+ - Proton adapter reliability logs at WARN on link heartbeat timeout.
+
+Deprecated:
+
 
 gofer 2.12
 ^^^^^^^^^^

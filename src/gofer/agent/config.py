@@ -66,8 +66,6 @@ AGENT_SCHEMA = (
 #
 # [messaging]
 #
-#   uuid
-#      The (optional) agent identity. This value also specifies the queue name.
 #   url
 #      The (optional) broker connection URL.
 #   cacert
@@ -108,7 +106,6 @@ PLUGIN_SCHEMA = (
     ('messaging', REQUIRED,
         (
             ('url', OPTIONAL, ANY),
-            ('uuid', OPTIONAL, ANY),
             ('cacert', OPTIONAL, ANY),
             ('clientcert', OPTIONAL, ANY),
             ('clientkey', OPTIONAL, ANY),
@@ -119,8 +116,8 @@ PLUGIN_SCHEMA = (
     ),
     ('model', OPTIONAL,
         (
-            ('managed', OPTIONAL, '(0|1|2)'),
             ('queue', OPTIONAL, ANY),
+            ('managed', OPTIONAL, '(0|1|2)'),
             ('expiration', OPTIONAL, NUMBER)
         )
     ),

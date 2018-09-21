@@ -285,8 +285,8 @@ class Heartbeat:
     def send(self):
         delay = int(HEARTBEAT)
         address = 'amq.topic/heartbeat'
-        if plugin.uuid:
+        if plugin.node:
             with Producer(plugin.url) as p:
-                body = dict(uuid=plugin.uuid, next=delay)
+                body = dict(node=plugin.node, next=delay)
                 p.send(address, ttl=delay, heartbeat=body)
-        return plugin.uuid
+        return plugin.node

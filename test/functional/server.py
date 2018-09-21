@@ -385,10 +385,10 @@ def test_plugin_shutdown(exit=0):
 
 def get_options():
     parser = OptionParser(option_class=ListOption)
-    parser.add_option('-r', '--address', default='xyz', help='address')
+    parser.add_option('-a', '--address', default='xyz', help='address')
     parser.add_option('-u', '--url', help='broker URL')
     parser.add_option('-t', '--threads', default=0, help='number of threads')
-    parser.add_option('-a', '--auth', default='', help='enable message auth')
+    parser.add_option('-A', '--auth', default='', help='enable message auth')
     parser.add_option('-e', '--exchange', default='', help='exchange')
     opts, args = parser.parse_args()
     return opts
