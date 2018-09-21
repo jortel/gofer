@@ -14,6 +14,7 @@ from unittest import TestCase
 
 from mock import patch, Mock
 
+from gofer import ENCODING
 from gofer.messaging import Document
 from gofer.messaging.auth import ValidationFailed, Authenticator
 from gofer.messaging.auth import sign, validate
@@ -64,7 +65,7 @@ class TestSign(TestCase):
 
         # validation
         h = sha256()
-        h.update(message.encode('utf8'))
+        h.update(message.encode(ENCODING))
         authenticator.sign.assert_called_once_with(h.hexdigest())
         encode.assert_called_once_with(signature)
         self.assertEqual(signed, '{"message": "{\\"A\\":1}", "signature": "S0xBSkRGOTg4Ug=="}')

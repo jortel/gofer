@@ -23,6 +23,7 @@ from threading import RLock
 from logging import getLogger
 from time import sleep
 
+from gofer import ENCODING
 from gofer.common import Thread, synchronized
 
 
@@ -64,7 +65,7 @@ def digest(path):
                 while True:
                     s = fp.read(10240)
                     if s:
-                        _hash.update(s.encode('utf8'))
+                        _hash.update(s.encode(ENCODING))
                     else:
                         break
             finally:
@@ -72,7 +73,7 @@ def digest(path):
         # directory
         else:
             for s in os.listdir(path):
-                _hash.update(s.encode('utf8'))
+                _hash.update(s.encode(ENCODING))
         return _hash.hexdigest()
     except (IOError, OSError):
         pass

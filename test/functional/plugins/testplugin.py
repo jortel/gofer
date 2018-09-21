@@ -17,6 +17,7 @@ from hashlib import sha256
 from logging import getLogger
 from time import sleep
 
+from gofer import ENCODING
 from gofer.agent.plugin import Plugin
 from gofer.agent.rmi import Context
 from gofer.decorators import *
@@ -59,7 +60,7 @@ class TestAuthenticator(Authenticator):
 
     def sign(self, message):
         h = sha256()
-        h.update(message.encode('utf8'))
+        h.update(message.encode(ENCODING))
         digest = h.hexdigest()
         # print('signed: {}'.format(digest))
         return digest
