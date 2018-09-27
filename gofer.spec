@@ -93,11 +93,7 @@ rm -rf %{buildroot}/%{python3_sitelib}/%{name}*.egg-info
 %package -n %{name}-tools
 Summary: Gofer tools
 Group: Development/Languages
-%if 0%{?with_python2}
-Requires: python%{?p2n}-%{name} = %{version}
-%else
 Requires: python3-%{name} = %{version}
-%endif
 
 %description -n%{name}-tools
 Provides the gofer tools.
