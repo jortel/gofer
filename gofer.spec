@@ -195,6 +195,19 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Thu Sep 27 2018 Jeff Ortel <jortel@redhat.com> 3.0.0-0.1
+- Fix tools dep. (jortel@redhat.com)
+- Standard encoding constant. (jortel@redhat.com)
+- Packaging. (jortel@redhat.com)
+- messaging uuid removed; notes updated. (jortel@redhat.com)
+- pre-release 3.0.0-0.1 (jortel@redhat.com)
+- removed deprecated: authorization; pam; secret. (jortel@redhat.com)
+- init.d removed; sysconf default to python3. (jortel@redhat.com)
+- compat/builtins removed. (jortel@redhat.com)
+- six dependency removed. (jortel@redhat.com)
+- with_metaclass removed. (jortel@redhat.com)
+- __future__ removed. (jortel@redhat.com)
+
 * Fri Sep 21 2018 Jeff Ortel <jortel@redhat.com> 3.0.0-0.1
 - Python2 packages removed.
 - Released 3.0 features.
