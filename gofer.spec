@@ -9,7 +9,7 @@
 %endif
 
 Name: gofer
-Version: 2.11.6
+Version: 2.11.7
 Release: 1%{?dist}
 Summary: A lightweight, extensible python agent
 Group:   Development/Languages
@@ -245,6 +245,10 @@ Provides the gofer amqp messaging adapter package.
 
 
 %changelog
+* Mon Oct 01 2018 Jeff Ortel <jortel@redhat.com> 2.11.7-1
+- bz:1417345, consumer log node-not-found at debug instead of error.
+  (jortel@redhat.com)
+
 * Tue Sep 18 2018 Jeff Ortel <jortel@redhat.com> 2.11.6-1
 - Adapter reliability logging at WARN instead of ERROR. (jortel@redhat.com)
 - Update logging documentation; Clean removed from spec. (jortel@redhat.com)
