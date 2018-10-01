@@ -37,11 +37,11 @@ def reliable(fn):
             except _NotFound as e:
                 raise NotFound(*e.args)
             except LinkError as le:
-                log.warn(str(le))
+                log.warning(str(le))
                 repair = thing.repair
                 sleep(DELAY)
             except ConnectionError as pe:
-                log.warn(str(pe))
+                log.warning(str(pe))
                 repair = thing.repair
                 sleep(DELAY)
     return _fn

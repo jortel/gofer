@@ -71,7 +71,7 @@ class ConsumerThread(Thread):
                 self.reader.open()
                 break
             except NotFound as le:
-                log.error(str(le))
+                log.debug(str(le))
                 sleep(10)
                 self.no_route()
             except Exception:

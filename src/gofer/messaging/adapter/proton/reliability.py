@@ -44,13 +44,13 @@ def reliable(fn):
                 return fn(messenger, *args, **kwargs)
             except LinkDetached as le:
                 if le.condition != NOT_FOUND:
-                    log.warn(str(le))
+                    log.warning(str(le))
                     repair = messenger.repair
                     sleep(DELAY)
                 else:
                     raise NotFound(*le.args)
             except ConnectionException as pe:
-                log.warn(str(pe))
+                log.warning(str(pe))
                 repair = messenger.repair
                 sleep(DELAY)
     return _fn

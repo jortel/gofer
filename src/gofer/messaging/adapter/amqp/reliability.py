@@ -39,13 +39,13 @@ def reliable(fn):
                 return fn(messenger, *args, **kwargs)
             except ChannelError as le:
                 if le.reply_code not in (NO_ROUTE, NOT_FOUND):
-                    log.warn(str(le))
+                    log.warning(str(le))
                     repair = messenger.repair
                     sleep(DELAY)
                 else:
                     raise NotFound(*le.args)
             except CONNECTION_EXCEPTIONS as pe:
-                log.warn(str(pe))
+                log.warning(str(pe))
                 repair = messenger.repair
                 sleep(DELAY)
     return _fn
