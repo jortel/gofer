@@ -106,7 +106,7 @@ class ConsumerThread(Thread):
         except NotFound, le:
             log.debug(utf8(le))
             sleep(10)
-            self.repair()
+            self.no_route()
         except Exception:
             log.exception(self.getName())
             sleep(30)
