@@ -104,7 +104,7 @@ class ConsumerThread(Thread):
         except DocumentError, de:
             self.rejected(de.code, de.description, de.document, de.details)
         except NotFound, le:
-            log.error(utf8(le))
+            log.debug(utf8(le))
             sleep(10)
             self.repair()
         except Exception:
