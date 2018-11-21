@@ -4,7 +4,7 @@ Gofer
 ![travis](https://travis-ci.org/jortel/gofer.svg?branch=master)
 
 Gofer provides an extensible, light weight, universal python agent. It has no
-relation to the [Gofer](http://en.wikipedia.org/wiki/Gopher) protocol.
+relation to the [Gopher](http://en.wikipedia.org/wiki/Gopher) protocol.
 The gofer core agent is a python daemon (service) that provides infrastructure
 for exposing a remote API and for running Recurring Actions. The APIs contributed by
 plugins are accessible by Remote Method Invocation (RMI). The transport for RMI is
