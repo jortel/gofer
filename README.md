@@ -39,7 +39,7 @@ Documentation can be found [here](http://gofer.readthedocs.org/en/latest/)
 Branches
 --------
 
-**master** - developement, python 3 *(only)*.
+**master** - 3.0 developement, python 3 *(only)*.
 
 **gofer-2.12** - 2.12.x maintenance, python 2.7+, python 3.
 
