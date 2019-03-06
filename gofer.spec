@@ -27,7 +27,11 @@ URL: https://github.com/jortel/gofer
 Source0: https://fedorahosted.org/releases/g/o/gofer/%{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch: noarch
-Requires: python-%{name} = %{version}
+%if 0%{?with_python2}
+Requires: python%{?p2n}-%{name} = %{version}
+%else
+Requires: python3-%{name} = %{version}
+%endif
 %if 0%{?with_systemd}
 BuildRequires: systemd
 Requires(post): systemd
