@@ -390,6 +390,8 @@ def get_options():
     parser.add_option('-t', '--threads', default=0, help='number of threads')
     parser.add_option('-A', '--auth', default='', help='enable message auth')
     parser.add_option('-e', '--exchange', default='', help='exchange')
+    # gofer2/3 compat
+    parser.add_option('-U', '--user', action='extend', help='list of userid:password')
     opts, args = parser.parse_args()
     return opts
 
