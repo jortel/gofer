@@ -275,7 +275,7 @@ class TestConfig(TestCase):
         _reader.assert_called_with(path)
         _update.assert_called_with(_reader.return_value.return_value)
 
-    @patch('__builtin__.open')
+    @patch('builtins.open')
     @patch('gofer.config.Config.update')
     @patch('gofer.config.json.load')
     def test_open_json(self, _load, _update, _open):
@@ -658,7 +658,7 @@ class TestJsonReader(TestCase):
 
 class TestFileReader(TestCase):
 
-    @patch('__builtin__.open')
+    @patch('builtins.open')
     def test_unsupported(self, _open):
         def _enter():
             return _open.return_value
@@ -672,7 +672,7 @@ class TestFileReader(TestCase):
         reader = FileReader('test.unsupported')
         self.assertRaises(ValueError, reader)
 
-    @patch('__builtin__.open')
+    @patch('builtins.open')
     def test_iread(self, _open):
         path = 'test.conf'
         _open.return_value = StringIO(str(I_READER))
@@ -706,7 +706,7 @@ class TestFileReader(TestCase):
                     'property5': '',
                 }})
 
-    @patch('__builtin__.open')
+    @patch('builtins.open')
     def test_jread(self, _open):
         _open.return_value = StringIO(str(JSON_READER))
 

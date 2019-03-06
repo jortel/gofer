@@ -12,13 +12,11 @@
 import ssl
 
 from logging import getLogger
-from six import with_metaclass
 from socket import error as SocketError
 
 from amqp import Connection as RealConnection
 from amqp import ConnectionError
 
-from gofer.compat import str
 from gofer.common import ThreadSingleton
 from gofer.messaging.adapter.model import Connector, BaseConnection
 from gofer.messaging.adapter.connect import retry
@@ -33,7 +31,7 @@ PASSWORD = 'guest'
 CONNECTION_EXCEPTIONS = (IOError, SocketError, ConnectionError, AttributeError)
 
 
-class Connection(with_metaclass(ThreadSingleton, BaseConnection)):
+class Connection(BaseConnection, metaclass=ThreadSingleton):
     """
     An AMQP broker connection.
     """

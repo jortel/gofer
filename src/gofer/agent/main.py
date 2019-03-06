@@ -12,8 +12,6 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from __future__ import print_function
-
 
 import sys
 import os
@@ -22,13 +20,11 @@ import logging
 from time import sleep
 from getopt import getopt, GetoptError
 
-from gofer.compat import str
 from gofer.agent.logutil import LogHandler
 
 LogHandler.install()
 
 from gofer import NAME
-from gofer import pam
 from gofer.common import Thread, released
 from gofer.config import get_bool
 from gofer.agent.plugin import Plugin, PluginLoader
@@ -71,7 +67,6 @@ class Agent(object):
 
     def __init__(self):
         cfg = AgentConfig()
-        pam.SERVICE = cfg.pam.service
 
     def start(self, block=True):
         """

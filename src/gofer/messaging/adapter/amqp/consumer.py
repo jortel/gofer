@@ -12,11 +12,10 @@
 import select
 
 from logging import getLogger
-from six.moves.queue import Empty, Queue as Inbox
+from queue import Empty, Queue as Inbox
 
 from amqp.spec import Basic
 
-from gofer.compat import str
 from gofer.messaging.adapter.model import BaseReader, Message
 from gofer.messaging.adapter.amqp.connection import Connection
 from gofer.messaging.adapter.amqp.reliability import reliable

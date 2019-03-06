@@ -9,12 +9,10 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from six import get_unbound_function
 from unittest import TestCase
 
 from mock import Mock, patch
 
-from gofer.compat import str
 from gofer.agent.decorator import Action, Actions, Delegate
 from gofer.collation import Class, Module, Method, Function
 
@@ -59,10 +57,10 @@ class TestActions(TestCase):
             def m4(self): pass
 
         methods = [
-            Method(get_unbound_function(T.m1), dict(days=30)),
-            Method(get_unbound_function(T.m2), dict(minutes=40)),
-            Method(get_unbound_function(T.m3), dict(hours=10)),
-            Method(get_unbound_function(T.m4), dict(seconds=20)),
+            Method(T.m1, dict(days=30)),
+            Method(T.m2, dict(minutes=40)),
+            Method(T.m3, dict(hours=10)),
+            Method(T.m4, dict(seconds=20)),
         ]
         functions = [
             Function(fn1, dict(days=30)),

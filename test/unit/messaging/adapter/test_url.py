@@ -11,7 +11,6 @@
 
 from unittest import TestCase
 
-from gofer.compat import str
 from gofer.messaging.adapter.url import URL
 from gofer.messaging.adapter.url import PORT, Scheme
 

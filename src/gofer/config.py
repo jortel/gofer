@@ -52,7 +52,7 @@ import re
 from threading import RLock
 from io import StringIO
 
-from gofer.compat import str, basestring, json
+from gofer.compat import json
 
 
 # -- constants ----------------------------------------------------------------
@@ -183,7 +183,7 @@ class Config(dict):
         """
         super(Config, self).__init__()
         for _input in inputs:
-            if isinstance(_input, basestring):
+            if isinstance(_input, str):
                 self.open(_input)
                 continue
             if isinstance(_input, Reader):

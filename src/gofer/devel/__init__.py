@@ -11,7 +11,5 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from __future__ import absolute_import
-
 
 from .test import ipatch, patch

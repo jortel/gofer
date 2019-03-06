@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 
 from logging import basicConfig, DEBUG
 from time import sleep

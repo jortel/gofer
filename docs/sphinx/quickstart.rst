@@ -15,7 +15,7 @@ Then,
      yum install gofer python-gofer-qpid
 
 2. Edit the ``/etc/gofer/plugins/demo.conf`` and set the url to point at your broker.
-   Then, set queue=123. Or, look in ``/var/log/messages`` to find the auto-assigned UUID
+   Then, set queue=123. Or, look in ``/var/log/messages`` to find the auto-assigned *address*
    for your system.
 
    ::
@@ -156,7 +156,7 @@ Step 6
 
 Add *server-side* code to invoke methods on your plugin.
 
-This is done by instantiating a *proxy* for the agent.  You need to specifying the *uuid* of the
+This is done by instantiating a *proxy* for the agent.  You need to specifying the *address* of the
 agent (plugin).
 
 ::
@@ -166,8 +166,8 @@ agent (plugin).
  from gofer.proxy import Agent
 
  url = 'amqp://localhost'
- uuid = '123'
- agent = Agent(url, uuid)
+ address = '123'
+ agent = Agent(url, address)
  myclass = agent.MyClass()
  myclass.hello()
 
@@ -182,8 +182,8 @@ is invoked directly using the plugin module's namespace:
  from gofer.proxy import Agent
 
  url = 'amqp://localhost'
- uuid = '123'
- agent = Agent(url, uuid)
+ address = '123'
+ agent = Agent(url, address)
  agent.myplugin.hello()
 
 
@@ -216,8 +216,8 @@ new stuff as follows:
  >>> from gofer.proxy import Agent
  >>>
  >>> url = 'amqp://localhost'
- >>> uuid = '123'
- >>> agent = Agent(url, uuid)
+ >>> address = '123'
+ >>> agent = Agent(url, address)
  >>> myclass = agent.MyClass()
  >>> print myclass.hello()
  MyPlugin says, "hello".
@@ -234,8 +234,8 @@ Another useful tool, it invoke *Admin.help()* from within interactive python as 
  >>> from gofer.proxy import Agent
  >>>
  >>> url = 'amqp://localhost'
- >>> uuid = '123'
- >>> agent = Agent(url, uuid)
+ >>> address = '123'
+ >>> agent = Agent(url, address)
  >>> admin = agent.Admin()
  >>> print admin.help()
 
@@ -252,54 +252,3 @@ Another useful tool, it invoke *Admin.help()* from within interactive python as 
  Functions:
    demo.echo()
  >>>
-
-
-Security
---------
-
-The @remote decorator and gofer infrastructure supports (1) option:
-
-- secret (default=None): A shared secret used for authentication.  The value may be:
-
-  - str
-  - [str,..]
-  - (str,..)
-  -  *callable*
-
-
-In this example, MyClass.hello() must provide the *secret* to be invoked.
-
-::
-
- c = agent.MyClass(secret='mycathas9lives')
- c.hello()
-
-
-::
-
- from gofer.decorators import  *
-
- class MyClass:
-
-    @remote(secret='mycathas9lives')
-    def hello(self):
-        return 'MyPlugin says, "hello".'
-
-The decorator also support the *secret* being a callable that returns the secret matched to the request.
-
-Example:
-
-::
-
- from gofer.decorators import  *
-
- def getsecret():
-    ...
-   return secret
-
- class MyClass:
-
-    @remote(secret=getsecret)
-    def hello(self):
-        return 'MyPlugin says, "hello".'
-

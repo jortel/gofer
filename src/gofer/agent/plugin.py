@@ -23,7 +23,6 @@ import sys
 
 from logging import getLogger
 from threading import RLock
-from six import with_metaclass
 
 from gofer import Singleton, synchronized, NAME
 from gofer.agent.config import PLUGIN_SCHEMA, PLUGIN_DEFAULTS
@@ -61,7 +60,7 @@ class PluginError(Exception):
     pass
 
 
-class Container(with_metaclass(Singleton, object)):
+class Container(metaclass=Singleton):
     """
     Plugin container.
     """
@@ -265,10 +264,6 @@ class Plugin(object):
     @property
     def cfg(self):
         return self.descriptor
-
-    @property
-    def uuid(self):
-        return self.cfg.messaging.uuid
 
     @property
     def url(self):
@@ -542,7 +537,7 @@ class BrokerModel(object):
 
     @property
     def node(self):
-        return self.cfg.queue or self.plugin.uuid
+        return self.cfg.queue
 
     @property
     def exchange(self):

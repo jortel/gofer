@@ -13,7 +13,6 @@ from unittest import TestCase
 
 from mock import Mock, patch
 
-from gofer.compat import str
 from gofer.agent.whiteboard import Whiteboard
 
 

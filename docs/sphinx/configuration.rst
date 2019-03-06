@@ -71,12 +71,6 @@ Examples:
  root=DEBUG
 
 
-[pam]
------
-
-- **service** - The (optional) service to be used for PAM authentication.
-
-
 Plugin Descriptors
 ^^^^^^^^^^^^^^^^^^
 
@@ -113,7 +107,6 @@ to be canceled prior to being started.
 
 - **authenticator** - The (optional) fully qualified path to a message *Authenticator* to be
   loaded from the PYTHON path.
-- **uuid** - The agent identity. This value also specifies the queue name.
 - **'url** - The (optional) broker connection URL.
   No value indicates the plugin should **not** connect to broker.
   *format*: ``<adapter>+<protocol>://<user>:<password>@<host>:<port>/<virtual-host>``,
@@ -156,7 +149,7 @@ File extensions just be (.conf|.json).
    - 2: The queue is declared on *attach* and bound the the exchange as needed and
      drained and deleted on explicit *detach*.
 
-- **queue** - The (optional) AMQP queue name.  This has precedent over uuid.
+- **queue** - The (optional) AMQP queue name.
   Format: <exchange>/<queue> where *exchange* is optional.
 
 - **expiration** - The (optional) auto-deleted queue expiration (seconds).
@@ -164,7 +157,7 @@ File extensions just be (.conf|.json).
 Examples
 ^^^^^^^^
 
-This example enables messaging and defines the uuid:
+This example enables messaging and defines the *queue*:
 
 ::
 
@@ -178,7 +171,7 @@ This example enables messaging and defines the uuid:
  queue=123
 
 
-This example enables messaging and does **not** define the uuid.  It is expected
+This example enables messaging and does **not** define the *queue*.  It is expected
 that the plugin defines an @load decorated method/function that provides the
 url and queue:
 

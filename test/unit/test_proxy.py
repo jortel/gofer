@@ -14,7 +14,7 @@ from unittest import TestCase
 from mock import patch
 
 from gofer import Options
-from gofer.proxy import Agent, agent
+from gofer.proxy import Agent
 from gofer.rmi.container import Container
 
 
@@ -30,12 +30,3 @@ class TestProxy(TestCase):
         self.assertEqual(_agent._Container__url, url)
         self.assertEqual(_agent._Container__address, address)
         self.assertEqual(_agent._Container__options.__dict__, _options.__dict__)
-
-    @patch('gofer.proxy.Agent')
-    def test_agent(self, _agent):
-        url = 'qpid+amqp://host'
-        address = 'xyz'
-        options = {'A': 1, 'B': 2}
-        proxy = agent(url, address, **options)
-        _agent.assert_called_with(url, address, **options)
-        self.assertEqual(proxy, _agent.return_value)

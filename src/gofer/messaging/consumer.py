@@ -12,7 +12,6 @@
 from time import sleep
 from logging import getLogger
 
-from gofer.compat import str
 from gofer.common import Thread, released
 from gofer.messaging.model import DocumentError
 from gofer.messaging.adapter.model import Reader, NotFound
@@ -72,7 +71,7 @@ class ConsumerThread(Thread):
                 self.reader.open()
                 break
             except NotFound as le:
-                log.error(str(le))
+                log.debug(str(le))
                 sleep(10)
                 self.no_route()
             except Exception:
@@ -105,9 +104,9 @@ class ConsumerThread(Thread):
         except DocumentError as de:
             self.rejected(de.code, de.description, de.document, de.details)
         except NotFound as le:
-            log.error(str(le))
+            log.debug(str(le))
             sleep(10)
-            self.repair()
+            self.no_route()
         except Exception:
             log.exception(self.getName())
             sleep(30)

@@ -1,5 +1,5 @@
 # Python interpreter.
-PYTHON=/usr/bin/python
+PYTHON=/usr/bin/python3
 
 # Python optimization (0=disabled, 1=enabled).
 PYTHONOPTIMIZE=1

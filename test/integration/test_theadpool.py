@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 #
 # Copyright (c) 2011 Red Hat, Inc.
 #
@@ -13,8 +13,6 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from __future__ import print_function
-
 
 import os
 import sys
@@ -26,7 +24,6 @@ from time import sleep
 
 sys.path.insert(0, os.path.join(os.getcwd(), '../../src/'))
 
-from gofer.compat import str
 from gofer.threadpool import ThreadPool
 
 

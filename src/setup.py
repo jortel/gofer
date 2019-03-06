@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2011 Red Hat, Inc.
 #
 # This software is licensed to you under the GNU Lesser General Public
@@ -19,7 +16,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='gofer',
-    version='2.10.0',
+    version='3.0.0',
     description='Universal python agent',
     author='Jeff Ortel',
     author_email='jortel@redhat.com',

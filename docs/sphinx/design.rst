@@ -68,8 +68,6 @@ The message format is json:
    - **sn**         - Serial Number (uuid).
    - **version**    - The API version.
    - **routing**    - A tuple containing the amqp (sender, destination).
-   - **secret**     - The (optional) shared secret used for request authentication. **DEPRECATED** in 2.7.
-   - **pam**        - The (optional) PAM authentication credentials. **DEPRECATED** in 2.7.
    - **replyto**    - The reply amqp address (optional).
    - one of
       - **request** - An RMI request. See: Request.

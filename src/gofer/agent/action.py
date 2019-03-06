@@ -17,7 +17,6 @@ from logging import getLogger
 from datetime import datetime as dt
 from datetime import timedelta
 
-from gofer.compat import str
 from gofer.common import released
 
 

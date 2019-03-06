@@ -12,8 +12,6 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from __future__ import absolute_import
-
 
 import os
 import errno
@@ -25,10 +23,8 @@ from threading import local as _Local
 from threading import Thread as _Thread
 from threading import current_thread
 from threading import Event, RLock
-from six import PY2
 
 from . import inspection
-from .compat import str, basestring
 
 
 log = getLogger(__name__)
@@ -132,11 +128,7 @@ def newT(name, bases=(), state=None):
     :type state: dict
     :return: The new class.
     """
-    if PY2:
-        from new import classobj
-        return classobj(name, bases, state or {})
-    else:
-        return type(name, bases, state or {})
+    return type(name, bases, state or {})
 
 
 class Thread(_Thread):
@@ -229,10 +221,8 @@ class Local(object):
 class Singleton(type):
     """
     Singleton metaclass
-    PY2
-        usage: __metaclass__ = Singleton
-    PY3
-        usage: class Thing(with_metaclass(Singleton, <bases>))
+
+    usage: class Thing(metaclass=Singleton)
     """
 
     _inst = {}
@@ -241,11 +231,11 @@ class Singleton(type):
     def key(args, keywords):
         key = []
         for thing in args:
-            if isinstance(thing, (basestring, int, float, bool)):
+            if isinstance(thing, (str, int, float, bool)):
                 key.append(thing)
         for k in sorted(keywords.keys()):
             v = keywords[k]
-            if isinstance(v, (basestring, int, float, bool)):
+            if isinstance(v, (str, int, float, bool)):
                 key.append((k, v))
         return repr(key)
 
@@ -261,10 +251,8 @@ class Singleton(type):
 class ThreadSingleton(type):
     """
     Thread Singleton metaclass
-    PY2
-        usage: __metaclass__ = ThreadSingleton
-    PY3
-        usage: class Thing(with_metaclass(ThreadSingleton, <bases>))
+
+    usage: class Thing(metaclass=ThreadSingleton)
     """
 
     _inst = Local(all={})

@@ -167,8 +167,6 @@ class TestPlugin(TestCase):
         self.assertEqual(plugin.name, descriptor.main.name)
         # cfg
         self.assertEqual(plugin.cfg, descriptor)
-        # uuid
-        self.assertEqual(plugin.uuid, descriptor.messaging.uuid)
         # latency
         self.assertEqual(plugin.latency, descriptor.main.latency)
         # url

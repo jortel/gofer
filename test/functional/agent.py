@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 #
 # Copyright (c) 2011 Red Hat, Inc.
 #
@@ -13,15 +13,13 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from __future__ import print_function
-
 
 import os
 
 ROOT = os.path.expanduser('~/.gofer')
 
 
-from gofer.compat import str, json
+from gofer.compat import json
 
 from time import sleep
 from optparse import OptionParser
@@ -38,9 +36,11 @@ gofer.agent=info
 gofer.messaging=info
 
 [messaging]
+url=
 
-[pam]
-service=passwd
+[model]
+queue=
+
 """
 
 from gofer.common import mkdir
@@ -84,7 +84,7 @@ root = getLogger()
 root.addHandler(log_handler)
 
 
-def install_plugins(url, uuid, threads, auth, exchange):
+def install_plugins(url, queue, threads, auth, exchange):
     root = os.path.dirname(__file__)
     _dir = os.path.join(root, 'plugins')
     for fn in os.listdir(_dir):
@@ -93,10 +93,10 @@ def install_plugins(url, uuid, threads, auth, exchange):
         if ext in ('.conf', '.json'):
             conf = Config(path)
             pd = PluginDescriptor(conf)
-            if pd.messaging.uuid == 'TEST':
+            if pd.model.queue == 'TEST':
                 pd.main.threads = threads
                 pd.messaging.url = url
-                pd.messaging.uuid = uuid
+                pd.model.queue = queue
                 pd.messaging.auth = auth
             if exchange:
                 pd.messaging.exchange = exchange
@@ -117,21 +117,21 @@ def install_plugins(url, uuid, threads, auth, exchange):
             continue
 
 
-def install(url, uuid, threads, auth, exchange):
+def install(url, queue, threads, auth, exchange):
     PluginDescriptor.ROOT = os.path.join(ROOT, 'plugins')
     PluginLoader.PATH = [os.path.join(ROOT, 'lib/plugins')]
     for path in (PluginDescriptor.ROOT, PluginLoader.PATH[0]):
         if not os.path.exists(path):
             os.makedirs(path)
-    install_plugins(url, uuid, threads, auth, exchange)
+    install_plugins(url, queue, threads, auth, exchange)
 
 
 def get_options():
     parser = OptionParser()
-    parser.add_option('-i', '--uuid', default='xyz', help='agent UUID')
+    parser.add_option('-q', '--queue', default='xyz', help='agent queue')
     parser.add_option('-u', '--url', help='broker URL')
     parser.add_option('-t', '--threads', default='3', help='number of threads')
-    parser.add_option('-a', '--auth', default='', help='enable message auth')
+    parser.add_option('-A', '--auth', default='', help='enable message auth')
     parser.add_option('-e', '--exchange', default='', help='exchange')
     opts, args = parser.parse_args()
     return opts
@@ -139,9 +139,9 @@ def get_options():
 
 class TestAgent:
 
-    def __init__(self, url, uuid, threads, auth, exchange):
+    def __init__(self, url, queue, threads, auth, exchange):
         setup_logging()
-        install(url, uuid, threads, auth, exchange)
+        install(url, queue, threads, auth, exchange)
         PluginLoader.load_all()
         agent = Agent()
         agent.start(False)
@@ -152,10 +152,10 @@ class TestAgent:
 
 if __name__ == '__main__':
     options = get_options()
-    uuid = options.uuid
+    queue = options.queue
     url = options.url or 'tcp://localhost:5672'
     threads = int(options.threads)
     auth = options.auth
     exchange = options.exchange
     print('starting agent, pid=%d, threads=%d, url=%s' % (os.getpid(), threads, url))
-    agent = TestAgent(url, uuid, threads, auth, exchange)
+    agent = TestAgent(url, queue, threads, auth, exchange)

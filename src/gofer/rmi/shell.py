@@ -15,7 +15,6 @@
 
 from subprocess import Popen, PIPE
 
-from gofer.compat import str
 from gofer.rmi.context import Context
 
 
@@ -50,7 +49,7 @@ class Shell(object):
         """
         Run the specified command.
         :param command: A command and parameters.
-        :type command: tuple
+        :type command: Iterable
         :return: (status, {stdout:<str>, stderr:<str>})
         :rtype: tuple
         """

@@ -19,7 +19,6 @@ Provides async AMQP message consumer classes.
 
 from logging import getLogger
 
-from gofer.compat import str
 from gofer.messaging import Document, Consumer
 from gofer.rmi.dispatcher import Reply, Return, RemoteException
 

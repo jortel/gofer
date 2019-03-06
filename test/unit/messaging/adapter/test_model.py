@@ -12,12 +12,10 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from six import with_metaclass
 
 from unittest import TestCase
 from mock import patch, Mock
 
-from gofer.compat import str
 from gofer.common import ThreadSingleton
 from gofer.messaging.model import Document, VERSION
 from gofer.messaging.adapter.url import URL
@@ -42,7 +40,7 @@ class Local(object):
     pass
 
 
-class FakeConnection(with_metaclass(ThreadSingleton, object)):
+class FakeConnection(metaclass=ThreadSingleton):
 
     def __init__(self, url):
         self.url = url

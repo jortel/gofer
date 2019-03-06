@@ -11,7 +11,6 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 
-from gofer.compat import str
 from gofer.collation import Class, Module
 
 

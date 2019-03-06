@@ -19,8 +19,7 @@ Contains request delivery policies.
 from logging import getLogger
 from uuid import uuid4
 
-from gofer.compat import str, basestring
-from gofer.common import Thread, Options, nvl, released
+from gofer.common import Thread, nvl, released
 from gofer.messaging import Document, DocumentError
 from gofer.messaging import Producer, Reader, Queue, Exchange
 from gofer.rmi.dispatcher import Return, RemoteException
@@ -70,7 +69,7 @@ class Timeout:
             return thing
         if isinstance(thing, float):
             return int(thing)
-        if not isinstance(thing, basestring):
+        if not isinstance(thing, str):
             raise TypeError(thing)
         if not len(thing):
             raise ValueError(thing)
@@ -164,17 +163,6 @@ class Policy(object):
     @property
     def trigger(self):
         return self.options.trigger or 0
-
-    @property
-    def pam(self):
-        if self.options.user:
-            return Options(user=self.options.user, password=self.options.password)
-        else:
-            return None
-
-    @property
-    def secret(self):
-        return self.options.secret
 
     @property
     def data(self):
@@ -329,8 +317,6 @@ class Trigger:
                 sn=self.sn,
                 replyto=reply,
                 request=self._request,
-                secret=self._policy.secret,
-                pam=self._policy.pam,
                 data=self._policy.data)
 
         log.debug('sent (%s): %s', self._policy.address, self._request)

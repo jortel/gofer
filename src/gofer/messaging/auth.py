@@ -19,9 +19,8 @@ Message authentication plumbing.
 from base64 import b64encode, b64decode
 from hashlib import sha256
 from logging import getLogger
-from six import PY3
 
-from gofer.compat import str
+from gofer import ENCODING
 from gofer.messaging.model import Document, DocumentError
 
 
@@ -97,7 +96,7 @@ def sign(authenticator, message):
         return message
     try:
         h = sha256()
-        h.update(message.encode('utf8'))
+        h.update(message.encode(ENCODING))
         digest = h.hexdigest()
         signature = authenticator.sign(digest)
         signed = Document(message=message, signature=encode(signature))
@@ -128,7 +127,7 @@ def validate(authenticator, message):
     try:
         if authenticator:
             h = sha256()
-            h.update(original.encode('utf8'))
+            h.update(original.encode(ENCODING))
             digest = h.hexdigest()
             authenticator.validate(document, digest, decode(signature))
         return document
@@ -191,24 +190,18 @@ def load(json):
 
 def encode(signature):
     if signature:
-        if PY3:
-            return str(
-                b64encode(
-                    bytes(signature, encoding='utf8')),
-                encoding='utf8')
-        else:
-            return b64encode(signature)
+        return str(
+            b64encode(
+                bytes(signature, encoding=ENCODING)),
+            encoding=ENCODING)
     else:
         return ''
 
 
 def decode(signature):
     if signature:
-        if PY3:
-            return str(
-                b64decode(signature),
-                encoding='utf8')
-        else:
-            return b64decode(signature)
+        return str(
+            b64decode(signature),
+            encoding=ENCODING)
     else:
         return ''

@@ -12,7 +12,6 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from __future__ import absolute_import
 
 from .common import Thread, Singleton, ThreadSingleton
 from .common import synchronized, conditional
@@ -28,5 +27,7 @@ from .common import Options
 #   /usr/lib/<NAME>/<plugin>
 #   /var/run/<NAME>d.pid
 #   ~/.<NAME>/agent.conf
+
+ENCODING = 'utf8'
 
 NAME = __name__

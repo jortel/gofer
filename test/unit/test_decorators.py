@@ -14,8 +14,7 @@ from unittest import TestCase
 from mock import patch, Mock
 
 from gofer import NAME
-from gofer.compat import str
-from gofer.decorators import options, remote, direct, fork, pam, user, action
+from gofer.decorators import options, remote, direct, fork, action
 from gofer.decorators import load, unload, initializer
 from gofer.decorators import DIRECT, FORK
 
@@ -32,7 +31,6 @@ class TestOptions(TestCase):
         self.assertEqual(
             str(opt),
             str({
-                'security': [],
                 'call': {'model': DIRECT}
                 }))
         self.assertEqual(getattr(fn, NAME), opt)
@@ -44,7 +42,6 @@ class TestOptions(TestCase):
         self.assertEqual(
             str(opt),
             str({
-                'security': [],
                 'call': {'model': DIRECT}
                 }))
         self.assertEqual(getattr(fn, NAME), opt)
@@ -60,7 +57,6 @@ class TestRemote(TestCase):
         self.assertEqual(
             str(opt),
             str({
-                'security': [],
                 'call': {'model': DIRECT}
                 }))
         _remote.add.assert_called_once_with(fn)
@@ -73,24 +69,7 @@ class TestRemote(TestCase):
         self.assertEqual(
             str(opt),
             str({
-                'security': [],
                 'call': {'model': FORK}
-                }))
-        _remote.add.assert_called_once_with(fn)
-
-    @patch('gofer.decorators.Remote')
-    def test_secret(self, _remote):
-        def fn(): pass
-        secret = 'fedex'
-        remote(secret=secret)(fn)
-        opt = getattr(fn, NAME)
-        self.assertEqual(
-            str(opt),
-            str({
-                'security': [
-                    ('secret', {'secret': 'fedex'})
-                ],
-                'call': {'model': DIRECT}
                 }))
         _remote.add.assert_called_once_with(fn)
 
@@ -104,7 +83,6 @@ class TestDirect(TestCase):
         self.assertEqual(
             str(opt),
             str({
-                'security': [],
                 'call': {'model': DIRECT}
                 }))
 
@@ -118,53 +96,7 @@ class TestFork(TestCase):
         self.assertEqual(
             str(opt),
             str({
-                'security': [],
                 'call': {'model': FORK}
-                }))
-
-
-class TestPam(TestCase):
-
-    def test_call(self):
-        def fn(): pass
-        pam(user='root')(fn)
-        opt = getattr(fn, NAME)
-        self.assertEqual(
-            str(opt),
-            str({
-                'security': [
-                    ('pam', {'user': 'root', 'service': None})
-                ],
-                'call': {'model': DIRECT}
-                }))
-
-    def test_service(self):
-        def fn(): pass
-        pam(user='root', service='find')(fn)
-        opt = getattr(fn, NAME)
-        self.assertEqual(
-            str(opt),
-            str({
-                'security': [
-                    ('pam', {'user': 'root', 'service': 'find'})
-                ],
-                'call': {'model': DIRECT}
-                }))
-
-
-class TestUser(TestCase):
-
-    def test_call(self):
-        def fn(): pass
-        user(name='root')(fn)
-        opt = getattr(fn, NAME)
-        self.assertEqual(
-            str(opt),
-            str({
-                'security': [
-                    ('pam', {'user': 'root', 'service': None})
-                ],
-                'call': {'model': DIRECT}
                 }))
 
 

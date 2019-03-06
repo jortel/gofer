@@ -14,7 +14,7 @@
 #
 
 import libvirt
-from gofer.decorators import *
+from gofer.decorators import remote
 from gofer.agent.plugin import Plugin
 from logging import getLogger
 
@@ -83,7 +83,6 @@ class Virt:
             con.close()
             
     @remote
-    @pam(user='root')
     def start(self, id):
         """
         Start (create) a domain.
@@ -98,7 +97,6 @@ class Virt:
             con.close()
         
     @remote
-    @pam(user='root')
     def shutdown(self, id):
         """
         Shutdown a domain.

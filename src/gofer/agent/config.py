@@ -12,7 +12,6 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from six import with_metaclass
 
 from gofer import NAME, Singleton
 from gofer.config import Config, Graph
@@ -35,10 +34,6 @@ from gofer.config import REQUIRED, OPTIONAL, ANY, BOOL, NUMBER, FLOAT
 #      The 'root' package can be used to set the logging level for all
 #      packages.  Eg: root=error.
 #
-# [pam]
-#   service
-#      The default PAM service for authentication.  Default:passwd
-#
 
 AGENT_SCHEMA = (
     ('management', REQUIRED,
@@ -50,11 +45,6 @@ AGENT_SCHEMA = (
     ),
     ('logging', REQUIRED,
         []
-    ),
-    ('pam', REQUIRED,
-        (
-            ('service', OPTIONAL, ANY),
-        )
     ),
 )
 
@@ -76,8 +66,6 @@ AGENT_SCHEMA = (
 #
 # [messaging]
 #
-#   uuid
-#      The (optional) agent identity. This value also specifies the queue name.
 #   url
 #      The (optional) broker connection URL.
 #   cacert
@@ -118,7 +106,6 @@ PLUGIN_SCHEMA = (
     ('messaging', REQUIRED,
         (
             ('url', OPTIONAL, ANY),
-            ('uuid', OPTIONAL, ANY),
             ('cacert', OPTIONAL, ANY),
             ('clientcert', OPTIONAL, ANY),
             ('clientkey', OPTIONAL, ANY),
@@ -129,8 +116,8 @@ PLUGIN_SCHEMA = (
     ),
     ('model', OPTIONAL,
         (
-            ('managed', OPTIONAL, '(0|1|2)'),
             ('queue', OPTIONAL, ANY),
+            ('managed', OPTIONAL, '(0|1|2)'),
             ('expiration', OPTIONAL, NUMBER)
         )
     ),
@@ -145,9 +132,6 @@ AGENT_DEFAULTS = {
     },
     'logging': {
     },
-    'pam': {
-        'service': 'passwd'
-    }
 }
 
 
@@ -168,7 +152,7 @@ PLUGIN_DEFAULTS = {
 }
 
 
-class AgentConfig(with_metaclass(Singleton, Graph)):
+class AgentConfig(Graph, metaclass=Singleton):
     """
     The gofer agent configuration.
     :cvar PATH: The absolute path to the config directory.

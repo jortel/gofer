@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 #
 # Copyright (c) 2011 Red Hat, Inc.
 #
@@ -13,8 +13,6 @@
 #
 # Jeff Ortel <jortel@redhat.com>
 #
-from __future__ import print_function
-
 
 import sys
 sys.path.append('../../')

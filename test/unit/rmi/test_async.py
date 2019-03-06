@@ -9,12 +9,9 @@
 # have received a copy of GPLv2 along with this software; if not, see
 # http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt.
 
-from six import unichr
-
 from unittest import TestCase
 from mock import Mock
 
-from gofer.compat import str
 from gofer.messaging import Document
 from gofer.rmi.async import (
     AsyncReply,
@@ -31,16 +28,16 @@ document = Document(
     sn='123',
     routing=['A', 'B'],
     timestamp='XX',
-    data={'msg': 'Hello' + unichr(255)},
+    data={'msg': 'Hello' + chr(255)},
     result={
         'xmodule': ValueError.__module__,
         'xclass': ValueError.__name__,
-        'xargs': 'Failed' + unichr(255),
+        'xargs': 'Failed' + chr(255),
         'xstate': {},
     },
     total=100,
     completed=10,
-    details='Done' + unichr(255))
+    details='Done' + chr(255))
 
 
 class Listener(object):

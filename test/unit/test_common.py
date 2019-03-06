@@ -12,8 +12,7 @@
 import os
 import errno
 
-from six import with_metaclass, unichr
-from six.moves.queue import Queue
+from queue import Queue
 from threading import Thread, Event
 
 from unittest import TestCase
@@ -28,15 +27,14 @@ from gofer.common import synchronized, conditional, released
 from gofer.common import mkdir, rmdir, unlink, nvl, valid_path
 from gofer.common import List
 from gofer.common import new, newT
-from gofer.compat import str
 
 
-class Thing(with_metaclass(Singleton, object)):
+class Thing(metaclass=Singleton):
 
     def __init__(self, n1, n2, a=0, b=0):
         super(Thing, self).__init__()
         self.__mutex = Mock()
-        self.name = 'Elmer' + unichr(255) + 'Fudd'
+        self.name = 'Elmer' + chr(255) + 'Fudd'
         self.n1 = n1
         self.n2 = n2
         self.a = a
@@ -46,7 +44,7 @@ class Thing(with_metaclass(Singleton, object)):
         return str(self.name)
 
 
-class Thing2(with_metaclass(Singleton, object)):
+class Thing2(metaclass=Singleton):
 
     def __init__(self, n1, n2, a=0, b=0):
         super(Thing2, self).__init__()
@@ -56,7 +54,7 @@ class Thing2(with_metaclass(Singleton, object)):
         self.b = b
 
 
-class ThingT(with_metaclass(ThreadSingleton, object)):
+class ThingT(metaclass=ThreadSingleton):
 
     def __init__(self, n1, n2, a=0, b=0):
         self.__mutex = Mock()
@@ -66,7 +64,7 @@ class ThingT(with_metaclass(ThreadSingleton, object)):
         self.b = b
 
 
-class ThingT2(with_metaclass(ThreadSingleton, object)):
+class ThingT2(metaclass=ThreadSingleton):
 
     def __init__(self, n1, n2, a=0, b=0):
         self.n1 = n1
